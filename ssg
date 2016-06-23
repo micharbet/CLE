@@ -4,7 +4,7 @@
 #
 
 # store the whole file int one variable
-CLE_64=$(base64 -w 0 clerc)
+CLE_64=$(base64 -w 0 dot-clerc)
 
 # it will be decoded on the other side
 ssh -t $1 "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile .clerc-$LOGNAME"
