@@ -1,0 +1,133 @@
+#
+# Command Live Environment
+# author: Michael Arbet marbet@redhat.com
+# version: 3.0 July 2016
+#
+# bash tweaks
+# - colorized prompt with exit code highlight
+# - aliases and functions
+# - history tweaks (timestamps etc)
+# - shell options
+#
+# useful within .bashrc or without installation to the remote account
+# using ssg utility
+
+# check if this is interactive session and if not, skip all the tweaks
+# this is required for scp compattibility if used within .bashrc
+# note: LOGNAME contains user name even in scp session,
+#       whereas 'who am i' produces empty string
+CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
+if [ -n "$CLE_LCLUSER" ]; then 
+
+# clerc local hook - may be useful in some cases
+[ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
+
+#
+#	Colorized prompt with exit status
+#
+#CLE_COLOR='marley'
+
+# tweaked hostname to remove some substrings
+HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
+
+case "$CLE_COLOR" in
+red)	 COLOR="\[\e[0;31m\]"; COLBOLD="\[\e[1;31m\]" ;;
+green)	 COLOR="\[\e[0;32m\]"; COLBOLD="\[\e[1;32m\]" ;;
+yellow)	 COLOR="\[\e[0;33m\]"; COLBOLD="\[\e[1;33m\]" ;;
+blue)	 COLOR="\[\e[0;34m\]"; COLBOLD="\[\e[1;34m\]" ;;
+magenta) COLOR="\[\e[0;35m\]"; COLBOLD="\[\e[1;35m\]" ;;
+cyan)	 COLOR="\[\e[0;36m\]"; COLBOLD="\[\e[1;36m\]" ;;
+white)	 COLOR="\[\e[0;37m\]"; COLBOLD="\[\e[1;37m\]" ;;
+bold)
+	PS="\[\e[1m\]\A \u@$HN: \w \\$"
+	PS2=" \[\e[1m\]...\\$\[\e[0m\] "
+	;;
+grey|gray)
+	PS="\[\e[1;30m\]\A \u@$HN: \w \[\e[1;30m\]\\$"
+	PS2=" \[\e[1;30m\]...\\$\[\e[0m\] "
+	;;
+marley|*)
+	# if you don't know, have a smoke and imagine...
+	# ...bobmarley style :-)
+	PS="\[\e[1;32m\]\A \[\e[1;31m\]\u \[\e[1;33m\]$HN \[\e[0;32m\]\w \\$"     # marley
+	PS2=" \[\e[1;31m\]...\\$\[\e[0m\] "
+	;;
+esac
+
+if [ -z "$PS" ]; then
+	PS="$COLBOLD\A \u $HN $COLOR\w $COLBOLD\\$"
+	PS2="$COLBOLD ...\\$\[\e[0m\] "
+fi
+
+# prompt function - called upon each new prompt line
+function statusprompt {
+	EE=$?  # store exit status code (it would disappear!)
+	if [ $EE -eq 0 ]; then
+		EEPS="\[\e[1m\][$EE]"
+	else
+		EEPS="\[\e[41m\]\a[$EE]\[\e[m\]"
+	fi
+	# Final prompt composition
+	PS1="$EEPS $PS\[\e[m\] "
+	# change window title
+	echo -en "\e]0;$CLE_RMTUSER -> $LOGNAME@$HN: $PWD\007"
+}
+PROMPT_COMMAND=statusprompt
+
+#  
+#  ..... functions and aliases 
+#
+
+# basic aliases - those might be overridden by .aliases file
+alias ls='ls --color=auto'
+alias ll='ls -l'
+alias l='ls -l'
+alias lt='ls -lt'
+alias la='ls -al'
+alias llr='ls -lR'
+alias cd..='cd ..'
+alias cd...='cd ../..'
+alias xx='XPOINT=`pwd`; echo Directory boorkamrk set here: $XPOINT'
+alias cx='cd $XPOINT'
+alias cd-='cd -'
+alias grep='grep --color=auto'
+alias mv='mv -i'
+alias rm='rm -i'
+
+# load user defined aliases
+[ -f ~/.aliases ] && . ~/.aliases
+if [ -n "$CLE_RMTUSER" ]; then
+	CLE_ALIASES=$HOME/.aliases-$CLE_RMTUSER
+	[ -f $CLE_ALIASES ] && . $CLE_ALIASES
+	HISTFILE=$HOME/.bash_history_$CLE_RMTUSER  # private history files
+else
+	CLE_ALIASES=$HOME/.aliases
+fi
+
+# default aliases - those are here not to be overridden by  .aliases file
+alias al=alias
+alias alsav='alias; echo "ENTER for save, Ctrl-C"; read ; alias >$CLE_ALIASES; echo Saved to file .$CLE_ALIASES'
+alias aload=". $CLE_ALIASES"
+alias aledi='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
+alias hh=history
+alias path='echo $PATH|tr : \\n'
+
+function psg {   # grep filtered ps
+ ps -ef |grep -i $1|grep -v grep
+}
+
+# assorted enviroment variables
+export EDITOR=vi
+export PAGER="less -s"
+HISTCONTROL=ignorespace:ignoredups:erasedups
+HISTTIMEFORMAT="%d%b %H:%M:%S  "
+
+# for better cmdline beahavior - checking widow size 
+shopt -s checkwinsize
+
+
+# path extensions - conditional to prevent the same item is there several times
+[ -d $HOME/bin ] && echo $PATH|grep -v $HOME/bin >/dev/null && PATH=$PATH:$HOME/bin
+
+CLE_DONE=ok
+fi # End of login shell setup
