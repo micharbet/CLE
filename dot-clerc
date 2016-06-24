@@ -1,7 +1,7 @@
 #
 # Command Live Environment
 # author: Michael Arbet marbet@redhat.com
-# version: 3.0 July 2016
+# version: 3.0 June 2016
 #
 # bash tweaks
 # - colorized prompt with exit code highlight
@@ -17,46 +17,53 @@
 # note: LOGNAME contains user name even in scp session,
 #       whereas 'who am i' produces empty string
 CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
-if [ -n "$CLE_LCLUSER" ]; then 
+if [ -n "$CLE_LCLUSER" -a -z "$CLE_DONE" ]; then 
 
-# clerc local hook - may be useful in some cases
+# clerc local hook - may be useful in some cases to setup details
+# like e.g CLE_COLOR
 [ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
+
+# tweaked hostname to remove some substrings (redhat and gss only)
+HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
 
 #
 #	Colorized prompt with exit status
 #
-#CLE_COLOR='marley'
 
-# tweaked hostname to remove some substrings
-HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
+if [ -z "$CLE_PS" ]; then
+	case "${CLE_COLOR:=marley}" in ### 'marley' is the default stuff :-)
+	red)	 COLOR="\[\e[0;31m\]"; COLBOLD="\[\e[1;31m\]" ;;
+	green)	 COLOR="\[\e[0;32m\]"; COLBOLD="\[\e[1;32m\]" ;;
+	yellow)	 COLOR="\[\e[0;33m\]"; COLBOLD="\[\e[1;33m\]" ;;
+	blue)	 COLOR="\[\e[0;34m\]"; COLBOLD="\[\e[1;34m\]" ;;
+	magenta) COLOR="\[\e[0;35m\]"; COLBOLD="\[\e[1;35m\]" ;;
+	cyan)	 COLOR="\[\e[0;36m\]"; COLBOLD="\[\e[1;36m\]" ;;
+	white)	 COLOR="\[\e[0;37m\]"; COLBOLD="\[\e[1;37m\]" ;;
+	bold)
+		CLE_PS="\[\e[1m\]\A \u@$HN: \w \\$"
+		PS2=" \[\e[1m\]...\\$\[\e[0m\] "
+		;;
+	grey|gray)
+		CLE_PS="\[\e[1;30m\]\A \u@$HN: \w \[\e[1;30m\]\\$"
+		PS2=" \[\e[1;30m\]...\\$\[\e[0m\] "
+		;;
+	marley)
+		# if you have no idea, have a smoke and imagine...
+		# ... bobmarley style :-)
+		CLE_PS="\[\e[1;32m\]\A \[\e[1;31m\]\u \[\e[1;33m\]$HN \[\e[0;32m\]\w \\$"
+		PS2=" \[\e[1;31m\]...\\$\[\e[0m\] "
+		;;
+		# setup your own style here
+	*)
+		# something unknow was set
+		CLE_PS="($CLE_COLOR)" ;;
+	esac
 
-case "$CLE_COLOR" in
-red)	 COLOR="\[\e[0;31m\]"; COLBOLD="\[\e[1;31m\]" ;;
-green)	 COLOR="\[\e[0;32m\]"; COLBOLD="\[\e[1;32m\]" ;;
-yellow)	 COLOR="\[\e[0;33m\]"; COLBOLD="\[\e[1;33m\]" ;;
-blue)	 COLOR="\[\e[0;34m\]"; COLBOLD="\[\e[1;34m\]" ;;
-magenta) COLOR="\[\e[0;35m\]"; COLBOLD="\[\e[1;35m\]" ;;
-cyan)	 COLOR="\[\e[0;36m\]"; COLBOLD="\[\e[1;36m\]" ;;
-white)	 COLOR="\[\e[0;37m\]"; COLBOLD="\[\e[1;37m\]" ;;
-bold)
-	PS="\[\e[1m\]\A \u@$HN: \w \\$"
-	PS2=" \[\e[1m\]...\\$\[\e[0m\] "
-	;;
-grey|gray)
-	PS="\[\e[1;30m\]\A \u@$HN: \w \[\e[1;30m\]\\$"
-	PS2=" \[\e[1;30m\]...\\$\[\e[0m\] "
-	;;
-marley|*)
-	# if you don't know, have a smoke and imagine...
-	# ...bobmarley style :-)
-	PS="\[\e[1;32m\]\A \[\e[1;31m\]\u \[\e[1;33m\]$HN \[\e[0;32m\]\w \\$"     # marley
-	PS2=" \[\e[1;31m\]...\\$\[\e[0m\] "
-	;;
-esac
-
-if [ -z "$PS" ]; then
-	PS="$COLBOLD\A \u $HN $COLOR\w $COLBOLD\\$"
-	PS2="$COLBOLD ...\\$\[\e[0m\] "
+	# compose propmpts if they're still not set
+	if [ -z "$CLE_PS" ]; then
+		CLE_PS="$COLBOLD\A \u $HN $COLOR\w $COLBOLD\\$"
+		PS2="$COLBOLD ...\\$\[\e[0m\] "
+	fi
 fi
 
 # prompt function - called upon each new prompt line
@@ -68,7 +75,7 @@ function statusprompt {
 		EEPS="\[\e[41m\]\a[$EE]\[\e[m\]"
 	fi
 	# Final prompt composition
-	PS1="$EEPS $PS\[\e[m\] "
+	PS1="$EEPS $CLE_PS\[\e[m\] "
 	# change window title
 	echo -en "\e]0;$CLE_RMTUSER -> $LOGNAME@$HN: $PWD\007"
 }
@@ -85,6 +92,7 @@ alias l='ls -l'
 alias lt='ls -lt'
 alias la='ls -al'
 alias llr='ls -lR'
+alias lld='ls -ld'
 alias cd..='cd ..'
 alias cd...='cd ../..'
 alias xx='XPOINT=`pwd`; echo Directory boorkamrk set here: $XPOINT'
@@ -95,14 +103,14 @@ alias mv='mv -i'
 alias rm='rm -i'
 
 # load user defined aliases
-[ -f ~/.aliases ] && . ~/.aliases
+[ -f $HOME/.aliases ] && . $HOME/.aliases
 if [ -n "$CLE_RMTUSER" ]; then
 	CLE_ALIASES=$HOME/.aliases-$CLE_RMTUSER
-	[ -f $CLE_ALIASES ] && . $CLE_ALIASES
 	HISTFILE=$HOME/.bash_history_$CLE_RMTUSER  # private history files
 else
 	CLE_ALIASES=$HOME/.aliases
 fi
+[ -f $CLE_ALIASES ] && . $CLE_ALIASES
 
 # default aliases - those are here not to be overridden by  .aliases file
 alias al=alias
