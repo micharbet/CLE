@@ -1,6 +1,6 @@
 #
 # Command Live Environment
-# author: Michael Arbet marbet@redhat.com
+# author: Michael Arbet (marbet@redhat.com)
 # version: 3.0 June 2016
 #
 # bash tweaks
@@ -9,22 +9,24 @@
 # - history tweaks (timestamps etc)
 # - shell options
 #
-# useful within .bashrc or without installation to the remote account
-# using ssg utility
+# can be executed from .bashrc upon each regular login
+# or using script ssg (ssh workaround) seamlessly passed to the user environment
 
-# check if this is interactive session and if not, skip all the tweaks
+# First check if this is interactive session and if not, skip all the tweaks
 # this is required for scp compattibility if used within .bashrc
 # note: LOGNAME contains user name even in scp session,
-#       whereas 'who am i' produces empty string
+#       whereas 'who am i' produces empty string - this is why CLE_LCUSER
+#
 CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
 if [ -n "$CLE_LCLUSER" -a -z "$CLE_DONE" ]; then 
 
+
 # clerc local hook - may be useful in some cases to setup details
-# like e.g CLE_COLOR
+# like e.g CLE_COLOR, CLE_PS, CLE_HN, anything...
 [ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
 
 # tweaked hostname to remove some substrings (redhat and gss only)
-HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
+CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
 
 #
 #	Colorized prompt with exit status
@@ -40,28 +42,28 @@ if [ -z "$CLE_PS" ]; then
 	cyan)	 COLOR="\[\e[0;36m\]"; COLBOLD="\[\e[1;36m\]" ;;
 	white)	 COLOR="\[\e[0;37m\]"; COLBOLD="\[\e[1;37m\]" ;;
 	bold)
-		CLE_PS="\[\e[1m\]\A \u@$HN: \w \\$"
+		CLE_PS="\[\e[1m\]\A \u@$CLE_HN: \w \\$"
 		PS2=" \[\e[1m\]...\\$\[\e[0m\] "
 		;;
 	grey|gray)
-		CLE_PS="\[\e[1;30m\]\A \u@$HN: \w \[\e[1;30m\]\\$"
+		CLE_PS="\[\e[1;30m\]\A \u@$CLE_HN: \w \[\e[1;30m\]\\$"
 		PS2=" \[\e[1;30m\]...\\$\[\e[0m\] "
 		;;
 	marley)
 		# if you have no idea, have a smoke and imagine...
 		# ... bobmarley style :-)
-		CLE_PS="\[\e[1;32m\]\A \[\e[1;31m\]\u \[\e[1;33m\]$HN \[\e[0;32m\]\w \\$"
+		CLE_PS="\[\e[1;32m\]\A \[\e[1;31m\]\u \[\e[1;33m\]$CLE_HN \[\e[0;32m\]\w \\$"
 		PS2=" \[\e[1;31m\]...\\$\[\e[0m\] "
 		;;
 		# setup your own style here
 	*)
-		# something unknow was set
+		# something unknow was set but we want to work even with this...
 		CLE_PS="($CLE_COLOR)" ;;
 	esac
 
 	# compose propmpts if they're still not set
 	if [ -z "$CLE_PS" ]; then
-		CLE_PS="$COLBOLD\A \u $HN $COLOR\w $COLBOLD\\$"
+		CLE_PS="$COLBOLD\A \u $CLE_HN $COLOR\w $COLBOLD\\$"
 		PS2="$COLBOLD ...\\$\[\e[0m\] "
 	fi
 fi
@@ -77,9 +79,10 @@ function statusprompt {
 	# Final prompt composition
 	PS1="$EEPS $CLE_PS\[\e[m\] "
 	# change window title
-	echo -en "\e]0;$CLE_RMTUSER -> $LOGNAME@$HN: $PWD\007"
+	echo -en "\e]0;$CLE_RMTUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=statusprompt
+
 
 #  
 #  ..... functions and aliases 
@@ -101,15 +104,20 @@ alias cd-='cd -'
 alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
+alias suba='sudo bash'
 
-# load user defined aliases
+# load user defined aliases #1
 [ -f $HOME/.aliases ] && . $HOME/.aliases
+
+# personalized aliases
 if [ -n "$CLE_RMTUSER" ]; then
 	CLE_ALIASES=$HOME/.aliases-$CLE_RMTUSER
 	HISTFILE=$HOME/.bash_history_$CLE_RMTUSER  # private history files
 else
 	CLE_ALIASES=$HOME/.aliases
 fi
+
+# load personalized aliases
 [ -f $CLE_ALIASES ] && . $CLE_ALIASES
 
 # default aliases - those are here not to be overridden by  .aliases file
@@ -119,6 +127,9 @@ alias aload=". $CLE_ALIASES"
 alias aledi='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
 alias hh=history
 alias path='echo $PATH|tr : \\n'
+
+# store basic alias set
+[ -f $CLE_ALIASES ] || alias >$CLE_ALIASES
 
 function psg {   # grep filtered ps
  ps -ef |grep -i $1|grep -v grep
@@ -139,3 +150,6 @@ shopt -s checkwinsize
 
 CLE_DONE=ok
 fi # End of login shell setup
+
+# that's all the magic :-)
+
