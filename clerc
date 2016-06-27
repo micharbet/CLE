@@ -1,7 +1,7 @@
 #
 # Command Live Environment
 # author: Michael Arbet (marbet@redhat.com)
-# version: 3.0 June 2016
+# version: 3.1 June 2016
 #
 # bash tweaks
 # - colorized prompt with exit code highlight
@@ -12,6 +12,13 @@
 # can be executed from .bashrc upon each regular login
 # or using script ssg (ssh workaround) seamlessly passed to the user environment
 
+# TODO: double $PWD
+CLE_RC=${BASH_SOURCE[0]}
+case $CLE_RC in
+/*)	;;
+*)	CLE_RC=$PWD/$CLE_RC ;;
+esac
+
 # First check if this is interactive session and if not, skip all the tweaks
 # this is required for scp compattibility if used within .bashrc
 # note: LOGNAME contains user name even in scp session,
@@ -20,18 +27,18 @@
 CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
 if [ -n "$CLE_LCLUSER" -a -z "$CLE_DONE" ]; then 
 
-
-# clerc local hook - may be useful in some cases to setup details
-# like e.g CLE_COLOR, CLE_PS, CLE_HN, anything...
-[ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
-
 # tweaked hostname to remove some substrings (redhat and gss only)
 CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
+
+# server time in prompt by default
+CLE_TIME='\A'
+
+# like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
+[ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
 
 #
 #	Colorized prompt with exit status
 #
-
 if [ -z "$CLE_PS" ]; then
 	case "${CLE_COLOR:=marley}" in ### 'marley' is the default stuff :-)
 	red)	 COLOR="\[\e[0;31m\]"; COLBOLD="\[\e[1;31m\]" ;;
@@ -63,7 +70,7 @@ if [ -z "$CLE_PS" ]; then
 
 	# compose propmpts if they're still not set
 	if [ -z "$CLE_PS" ]; then
-		CLE_PS="$COLBOLD\A \u $CLE_HN $COLOR\w $COLBOLD\\$"
+		CLE_PS="$COLBOLD$CLE_TIME \u $CLE_HN $COLOR\w $COLBOLD\\$"
 		PS2="$COLBOLD ...\\$\[\e[0m\] "
 	fi
 fi
@@ -85,7 +92,7 @@ PROMPT_COMMAND=statusprompt
 
 
 #  
-#  ..... functions and aliases 
+#  ALIASES 
 #
 
 # basic aliases - those might be overridden by .aliases file
@@ -98,7 +105,7 @@ alias llr='ls -lR'
 alias lld='ls -ld *'
 alias cd..='cd ..'
 alias cd...='cd ../..'
-alias xx='XPOINT=`pwd`; echo Directory boorkamrk set here: $XPOINT'
+alias xx='XPOINT=`pwd`; echo Directory boorkmark set here: $XPOINT'
 alias cx='cd $XPOINT'
 alias cd-='cd -'
 alias grep='grep --color=auto'
@@ -131,8 +138,65 @@ alias path='echo $PATH|tr : \\n'
 # store basic alias set
 [ -f $CLE_ALIASES ] || alias >$CLE_ALIASES
 
+#
+# functions
+#
+
 function psg {   # grep filtered ps
  ps -ef |grep -i $1|grep -v grep
+}
+
+# You can replace 'ssg' with 'ssh' although this is not recommended
+function ssg {
+	# store the whole file into one string
+	CLE_64=$(base64 -w 0 $CLE_RC)
+	# ...it will be decoded on the other side
+	`which ssh` -t $1 "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile .clerc-$LOGNAME"
+}
+
+function cle {
+	case "$1_$2" in
+	show_)
+		( set -o posix; set |grep CLE_)
+		echo PID=$$
+		;;
+	reload_)
+		unset CLE_DONE
+		. $CLE_RC
+		;;
+	prompt_*)
+		unset CLE_PS
+		CLE_COLOR="$2"
+		cle reload
+		;;
+	deploy_local)
+		cp $CLE_RC $HOME/.clerc
+		grep '# Command Live Environment' $HOME/.bashrc >&/dev/null
+		if [ $? != 0 ]; then
+			echo "Pres enter to add CLE into .bashrc or Ctrl-C to quit"
+			read
+			echo >>$HOME/.bashrc
+			echo >>$HOME/.bashrc '# Command Live Environment'
+			echo >>$HOME/.bashrc '[ -f $HOME/.clerc ] && . $HOME/.clerc'
+			echo >>$HOME/.bashrc
+			echo '... added following to the end of .bashrc'
+			tail -3 $HOME/.bashrc
+		else
+			echo CLE is already hooked into .bashrc :
+			tail -3 $HOME/.bashrc
+		fi
+		;;
+	deploy_system)
+		;;
+	save_)
+		echo Press ENTER to owerwrite .clerc_local or Ctrl-C to quit
+		read
+		echo CLE_COLOR=$CLE_COLOR >$HOME/.clerc_local
+		;;
+	*)
+		echo what? "$1_$2"
+		;;
+	esac
 }
 
 # assorted enviroment variables
