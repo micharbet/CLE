@@ -1,5 +1,5 @@
 #
-# Command Live Environment
+# CLE :: Command Live Environment
 # author: Michael Arbet (marbet@redhat.com)
 # version: 3.1 June 2016
 #
@@ -19,7 +19,21 @@ case $CLE_RC in
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
 
-# First check if this is interactive session and if not, skip all the tweaks
+# check is we're running manually from source
+if [ `basename $CLE_RC` = 'clerc' ]; then
+	echo
+	echo "  *** Welcome to Command Live Environment - CLE ***"
+	echo
+	echo "If this is your first run, consider setting up in your profile."
+	echo "Issue following command to copy source script into $HOME/.clerc"
+	echo "and activate the environment in $HOME/.bashrc"
+	echo
+	echo "     [1m cle deploy local [0m"
+	echo
+	CLE_DONE=""
+fi
+
+# check if this is interactive session and if not, skip all the tweaks
 # this is required for scp compattibility if used within .bashrc
 # note: LOGNAME contains user name even in scp session,
 #       whereas 'who am i' produces empty string - this is why CLE_LCUSER
@@ -129,9 +143,9 @@ fi
 
 # default aliases - those are here not to be overridden by  .aliases file
 alias al=alias
-alias alsav='alias; echo "ENTER for save, Ctrl-C"; read ; alias >$CLE_ALIASES; echo Saved to file .$CLE_ALIASES'
-alias aload=". $CLE_ALIASES"
-alias aledi='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
+alias alisa='alias; echo "ENTER for save, Ctrl-C"; read ; alias >$CLE_ALIASES; echo Saved to file .$CLE_ALIASES'
+alias alilo=". $CLE_ALIASES"
+alias alied='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
 alias hh=history
 alias path='echo $PATH|tr : \\n'
 
@@ -142,7 +156,8 @@ alias path='echo $PATH|tr : \\n'
 # functions
 #
 
-function psg {   # grep filtered ps
+# grep filtered ps
+function psg {
  ps -ef |grep -i $1|grep -v grep
 }
 
@@ -152,8 +167,10 @@ function ssg {
 	CLE_64=$(base64 -w 0 $CLE_RC)
 	# ...it will be decoded on the other side
 	`which ssh` -t $1 "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile .clerc-$LOGNAME"
+	unset CLE_64
 }
 
+# main controlling function
 function cle {
 	case "$1_$2" in
 	show_)
@@ -164,12 +181,13 @@ function cle {
 		unset CLE_DONE
 		. $CLE_RC
 		;;
-	prompt_*)
+	color_*)
 		unset CLE_PS
 		CLE_COLOR="$2"
 		cle reload
 		;;
 	deploy_local)
+		# hook CLE int user's profile
 		cp $CLE_RC $HOME/.clerc
 		grep '# Command Live Environment' $HOME/.bashrc >&/dev/null
 		if [ $? != 0 ]; then
@@ -187,14 +205,19 @@ function cle {
 		fi
 		;;
 	deploy_system)
+		# hook CLE into /etc/profile.d
+		echo "cle deploy system ... to be done"
 		;;
 	save_)
 		echo Press ENTER to owerwrite .clerc_local or Ctrl-C to quit
 		read
 		echo CLE_COLOR=$CLE_COLOR >$HOME/.clerc_local
 		;;
+	help_)
+		echo "CLE help ... to be done"
+		;;
 	*)
-		echo what? "$1_$2"
+		echo what? "cle $1 $2 ??"
 		;;
 	esac
 }
