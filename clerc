@@ -112,6 +112,9 @@ PROMPT_COMMAND=statusprompt
 #
 
 # basic aliases - those might be overridden by .aliases file
+##
+## CLE internal aliases and functions:
+## ls commands aliases: l ll la lt llr lld
 alias ls='ls --color=auto'
 alias ll='ls -l'
 alias l='ls -l'
@@ -119,14 +122,17 @@ alias lt='ls -lt'
 alias la='ls -al'
 alias llr='ls -lR'
 alias lld='ls -ld *'
+## cd command aliases: cd.. cd... cd-
 alias cd..='cd ..'
 alias cd...='cd ../..'
+alias cd-='cd -'
+## xx & cx   -- directory bookmark
 alias xx='XPOINT=`pwd`; echo Directory boorkmark set here: $XPOINT'
 alias cx='cd $XPOINT'
-alias cd-='cd -'
 alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
+## suba   -- sudo bash
 alias suba='sudo bash'
 
 # load user defined aliases #1
@@ -145,10 +151,14 @@ fi
 
 # default aliases - those are here not to be overridden by  .aliases file
 alias al=alias
+## alisa   -- save your set of aliases into local file
 alias alisa='alias; echo "ENTER for save, Ctrl-C"; read ; alias >$CLE_ALIASES; echo Saved to file .$CLE_ALIASES'
+## alilo   -- load aliases from file
 alias alilo=". $CLE_ALIASES"
+## alied   -- edit stored aliases
 alias alied='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
 alias hh=history
+## path    -- show content of $PATH in more readable way
 alias path='echo $PATH|tr : \\n'
 
 # store basic alias set
@@ -158,12 +168,13 @@ alias path='echo $PATH|tr : \\n'
 # functions
 #
 
-# grep filtered ps
+## psg   -- ps filtered through grep
 function psg {
  ps -ef |grep -i $1|grep -v grep
 }
 
 # You can replace 'ssg' with 'ssh' although this is not recommended
+## ssg [user@]hostname   -- login to remote system using this environment
 function ssg {
 	# store the whole file into one string
 	CLE_64=$(base64 -w 0 $CLE_RC)
@@ -172,24 +183,23 @@ function ssg {
 	unset CLE_64
 }
 
-# main controlling function
+##
+## CLE command & control:
 function cle {
 	case "$1_$2" in
 	show_)
+		## cle show   -- show CLE related variables
 		( set -o posix; set |grep CLE_)
 		echo PID=$$
 		;;
-	reload_)
-		unset CLE_DONE
-		. $CLE_RC
-		;;
 	color_*)
+		## cle color blue|green|red|marley|..etc  -- set prompt color
 		unset CLE_PS
 		CLE_COLOR="$2"
 		cle reload
 		;;
 	deploy_local)
-		# hook CLE int user's profile
+		## cle deploy local   -- hook CLE into user's profile
 		cp $CLE_RC $HOME/.clerc
 		grep '# Command Live Environment' $HOME/.bashrc >&/dev/null
 		if [ $? != 0 ]; then
@@ -207,19 +217,33 @@ function cle {
 		fi
 		;;
 	deploy_system)
-		# hook CLE into /etc/profile.d
+		## cle deploy system  -- hook CLE into /etc/profile.d
 		echo "cle deploy system ... to be done"
 		;;
+	edit_)
+		## cle edit     -- edit resource file
+		echo CLE edit .... to be implemented later
+		;;
 	save_)
+		## cle save     -- store setiings into .clerc_local
 		echo Press ENTER to owerwrite .clerc_local or Ctrl-C to quit
 		read
 		echo CLE_COLOR=$CLE_COLOR >$HOME/.clerc_local
 		;;
+	reload_)
+		## cle reload   -- reload CLE
+		unset CLE_DONE
+		. $CLE_RC
+		;;
 	help_)
-		echo "CLE help ... to be done"
+		## cle help   -- self documenting feature
+		echo CLE help:
+		echo ---------
+		awk 'BEGIN { FS="#" } /##/ { print $3 }' $CLE_RC
 		;;
 	*)
 		echo what? "cle $1 $2 ??"
+		cle help
 		;;
 	esac
 }
