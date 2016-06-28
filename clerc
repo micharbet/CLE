@@ -19,6 +19,8 @@ case $CLE_RC in
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
 
+CLE_VERSION='3.1 - June 2016'
+ 
 # check is we're running manually from source
 if [ `basename $CLE_RC` = 'clerc' ]; then
 	echo
