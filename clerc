@@ -1,7 +1,9 @@
 #
-# CLE :: Command Live Environment
-# author: Michael Arbet (marbet@redhat.com)
-# version: 3.1 June 2016
+##
+## CLE :: Command Live Environment
+## author: Michael Arbet (marbet@redhat.com)
+## version: 3.1 June 2016
+##
 #
 # bash tweaks
 # - colorized prompt with exit code highlight
@@ -19,7 +21,7 @@ case $CLE_RC in
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
 
-CLE_VERSION='3.1 - June 2016'
+CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
  
 # check is we're running manually from source
 if [ `basename $CLE_RC` = 'clerc' ]; then
@@ -112,8 +114,9 @@ PROMPT_COMMAND=statusprompt
 #
 
 # basic aliases - those might be overridden by .aliases file
-##
+#
 ## CLE internal aliases and functions:
+## -----------------------------------
 ## ls commands aliases: l ll la lt llr lld
 alias ls='ls --color=auto'
 alias ll='ls -l'
@@ -122,17 +125,17 @@ alias lt='ls -lt'
 alias la='ls -al'
 alias llr='ls -lR'
 alias lld='ls -ld *'
-## cd command aliases: cd.. cd... cd-
+## cd command aliases:  cd.. cd... cd-
 alias cd..='cd ..'
 alias cd...='cd ../..'
 alias cd-='cd -'
-## xx & cx   -- directory bookmark
+## xx & cx -- directory bookmark
 alias xx='XPOINT=`pwd`; echo Directory boorkmark set here: $XPOINT'
 alias cx='cd $XPOINT'
 alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
-## suba   -- sudo bash
+## suba    -- sudo bash
 alias suba='sudo bash'
 
 # load user defined aliases #1
@@ -168,7 +171,7 @@ alias path='echo $PATH|tr : \\n'
 # functions
 #
 
-## psg   -- ps filtered through grep
+## psg     -- ps filtered through grep
 function psg {
  ps -ef |grep -i $1|grep -v grep
 }
@@ -179,27 +182,27 @@ function ssg {
 	# store the whole file into one string
 	CLE_64=$(base64 -w 0 $CLE_RC)
 	# ...it will be decoded on the other side
-	`which ssh` -t $1 "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile .clerc-$LOGNAME"
+	if [ -n "$1" ]; then
+		`which ssh` -t $1 "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile .clerc-$LOGNAME"
+	else
+		cle help ssg
+	fi
 	unset CLE_64
 }
 
 ##
 ## CLE command & control:
+## ----------------------
 function cle {
 	case "$1_$2" in
-	show_)
-		## cle show   -- show CLE related variables
-		( set -o posix; set |grep CLE_)
-		echo PID=$$
-		;;
 	color_*)
 		## cle color blue|green|red|marley|..etc  -- set prompt color
 		unset CLE_PS
 		CLE_COLOR="$2"
 		cle reload
 		;;
-	deploy_local)
-		## cle deploy local   -- hook CLE into user's profile
+	deploy_user)
+		## cle deploy user     -- hook CLE into user's profile
 		cp $CLE_RC $HOME/.clerc
 		grep '# Command Live Environment' $HOME/.bashrc >&/dev/null
 		if [ $? != 0 ]; then
@@ -217,33 +220,37 @@ function cle {
 		fi
 		;;
 	deploy_system)
-		## cle deploy system  -- hook CLE into /etc/profile.d
+		## cle deploy system   -- hook CLE into /etc/profile.d
 		echo "cle deploy system ... to be done"
 		;;
 	edit_)
-		## cle edit     -- edit resource file
-		echo CLE edit .... to be implemented later
+		## cle edit            -- edit resource file
+		echo "CLE edit .... to be implemented later"
 		;;
 	save_)
-		## cle save     -- store setiings into .clerc_local
-		echo Press ENTER to owerwrite .clerc_local or Ctrl-C to quit
+		## cle save            -- store setiings into .clerc_local
+		echo "Press ENTER to owerwrite .clerc_local or Ctrl-C to quit"
 		read
-		echo CLE_COLOR=$CLE_COLOR >$HOME/.clerc_local
+		echo "CLE_COLOR=$CLE_COLOR >$HOME/.clerc_local"
 		;;
 	reload_)
-		## cle reload   -- reload CLE
+		## cle reload          -- reload CLE
 		unset CLE_DONE
 		. $CLE_RC
 		;;
-	help_)
-		## cle help   -- self documenting feature
-		echo CLE help:
-		echo ---------
-		awk 'BEGIN { FS="#" } /##/ { print $3 }' $CLE_RC
+	show_)
+		## cle show            -- show CLE related variables
+		( set -o posix; set |grep CLE_)
+		echo PID=$$
+		;;
+	help_*)
+		## cle help [cmd]      -- self documenting feature
+		# double-hash denotes help content :-)
+		awk -F# "/## *$2/"' { print $3 }' $CLE_RC
 		;;
 	*)
-		echo what? "cle $1 $2 ??"
-		cle help
+		echo what? "cle $1 $2??"
+		echo check: cle help
 		;;
 	esac
 }
