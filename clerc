@@ -243,6 +243,9 @@ function cle {
 		( set -o posix; set |grep CLE_)
 		echo PID=$$
 		;;
+	diff_)
+		diff ~/.clerc $CLE_RC
+		;;
 	help_*)
 		## cle help [cmd]      -- self documenting feature
 		# double-hash denotes help content :-)
