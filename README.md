@@ -8,7 +8,7 @@ CLE contains following bash tweaks:
  - shell options
  - controlled with command `cle`
  - **ssg** - the ssh wrapper (read below)
- - self contained **help** 
+ - self contained **help** (check this out: `cle help`)
 
 
 ### CLE setup
@@ -58,7 +58,7 @@ account as .clerc-YOURNAME.
 - man page
 
 
-*** Why 'CLE' and where are previous versions?
+### Why 'CLE' and where are previous versions?
 
  CLE was developed over years of work in command line, where I always tried
 to have easily distinguished prompt. It has been always possible to accomplish
@@ -68,20 +68,22 @@ firs version was just a backup of my .kshrc (long, long ago I used mainly
 Korn Shell) This version does exist probably on some old boxes or maybe in
 scattered backup files. You all probably have something similar.
 
- Second version contained resource itself and minimal set of
+ Second version contained resource file itself and minimal set of
 utilities (scripts like 'cle', 'hlp', etc - some of them are part of different
-project 'rootils') This version worked without 'ssg' however required to be
+project 'rootils' now) This version worked without 'ssg' however required to be
 installed on each particular account. This was much easier using 'cle' script
 but still it was necessary step and and affected remote account with changes
-that might be unwelcome by other administrators. BTW, in version 2 current 
+that might be also unwelcome by other administrators. BTW, in version 2 current 
 name "Command Live Environment" was introduced as I considered it was bringing
 more live into plain command line. This version was developed in specific
 armed forces controlled environment and is not publicly available.
 
  In third version I solved issues with necessity of setup by ingenious way -
 passing resource file encoded with base64 through a shell variable to the
-remote system. Result is no setup and no harm to current environment! Whoa!
-And you can always use the same and still customizable environment everywhere.
+remote system. Result is no setup, no other tweaks on remote site  and no harm
+to the current environment! Whoa! The only what you need is working CLE on
+your workstation that you are using to manage the world :-)
+You can always use the same and still customizable environment everywhere.
 Encoding `ssg` utility and `cle` managment script into the sinle file was just
 a nature evolution that enhanced word 'Live'. The `clerc` resource file now
 contains a mechanism of multiplication it's own DNA 1) This all with embeded
