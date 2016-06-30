@@ -181,11 +181,9 @@ function psg {
 # You can replace 'ssg' with 'ssh' although this is not recommended
 ## ssg [user@]hostname   -- login to remote system running this environment
 function ssg {
-	# store the whole file into one string
 	CLE_64=$(base64 -w 0 $CLE_RC)
-	# ...it will be decoded on the other side
 	if [ -n "$1" ]; then
-		`which ssh` -t $1 "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile .clerc-$LOGNAME"
+		`which ssh` -t $1 "echo $CLE_64|base64 -d >.clerc-tmp-$LOGNAME; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile .clerc-tmp-$LOGNAME"
 	else
 		cle help ssg
 	fi
@@ -195,12 +193,11 @@ function ssg {
 ## suu [username]        -- sudo wrapper; root is the default account
 function suu {
 	CLE_64=$(base64 -w 0 $CLE_RC)
-	#su -l -c "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; /bin/bash --rcfile .clerc-$LOGNAME" $1
-	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-'$LOGNAME'; export CLE_RMTUSER='$LOGNAME'; exec bash --rcfile $HOME/.clerc-'$LOGNAME
+	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-tmp-'$LOGNAME'; export CLE_RMTUSER='$LOGNAME'; exec bash --rcfile $HOME/.clerc-tmp-'$LOGNAME
 	unset CLE_64
 }
 
-# internal helper functions
+# internal helper function - save prompt variables
 function _clepromptsave {
 	if [ -z "$CLE_RMTUSER" ]; then
 		CLE_PROMPT=$HOME/.cleprompt
