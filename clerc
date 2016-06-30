@@ -21,8 +21,6 @@ case $CLE_RC in
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
 
-CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
- 
 # check is we're running manually from source
 if [ `basename $CLE_RC` = 'clerc' ]; then
 	echo
@@ -34,7 +32,7 @@ if [ `basename $CLE_RC` = 'clerc' ]; then
 	echo
 	echo "     [1m cle deploy user [0m"
 	echo
-	CLE_DONE=""
+	CLE_EXE=""
 fi
 
 # check if this is interactive session and if not, skip all the tweaks
@@ -43,8 +41,17 @@ fi
 #       whereas 'who am i' produces empty string - this is why CLE_LCUSER
 #
 CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
-if [ -n "$CLE_LCLUSER" -a -z "$CLE_DONE" ]; then 
+if [ -n "$CLE_LCLUSER" -a -z "$CLE_EXE" ]; then 
 
+# internal helper function: execute associated script and
+# add the filename to CLE_EXE - useful as a debug log
+CLE_EXE=$CLE_RC
+function _clexe {
+	[ -f $1 ] && CLE_EXE=$CLE_EXE:$1 && . $1
+}
+
+CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
+ 
 # tweaked hostname to remove some substrings (redhat and gss only)
 CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
 
@@ -52,11 +59,10 @@ CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
 CLE_TIME='\A '
 CLE_COLOR='marley'
 
-# local setup
-# like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
-[ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
-[ -f $HOME/.cleprompt ] && . $HOME/.cleprompt
-[ -f $HOME/.cleprompt-$CLE_RMTUSER ] && . $HOME/.cleprompt-$CLE_RMTUSER
+# local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
+_clexe $HOME/.clerc_local
+_clexe $HOME/.cleprompt
+_clexe $HOME/.cleprompt-$CLE_RMTUSER
 
 #
 #	Colorized prompt with exit status
@@ -141,7 +147,7 @@ alias mv='mv -i'
 alias rm='rm -i'
 
 # load user defined aliases #1
-[ -f $HOME/.aliases ] && . $HOME/.aliases
+_clexe $HOME/.aliases
 
 # personalized aliases
 if [ -n "$CLE_RMTUSER" ]; then
@@ -152,7 +158,7 @@ else
 fi
 
 # load personalized aliases
-[ -f $CLE_ALIASES ] && . $CLE_ALIASES
+_clexe $CLE_ALIASES
 
 # default aliases - those are here not to be overridden by  .aliases file
 alias al=alias
@@ -261,7 +267,7 @@ function cle {
 		;;
 	reload_)
 		## cle reload          -- reload CLE
-		unset CLE_DONE
+		unset CLE_EXE
 		. $CLE_RC
 		;;
 	env_)
@@ -301,7 +307,6 @@ shopt -s checkwinsize
 # romove disturbing stuff
 unset SUDO_COMMAND
 
-CLE_DONE=ok
 fi # End of login shell setup
 
 # that's all the magic :-)
