@@ -52,6 +52,7 @@ CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
 CLE_TIME='\A'
 
 # like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
+[ -f $HOME/.clecolor ] && . $HOME/.clecolor
 [ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
 
 #
@@ -205,6 +206,7 @@ function cle {
 		## cle color blue|green|red|marley|..etc  -- set prompt color
 		unset CLE_PS
 		CLE_COLOR="$2"
+		echo CLE_COLOR=$CLE_COLOR >$HOME/.clecolor
 		cle reload
 		;;
 	deploy_user)
@@ -233,19 +235,13 @@ function cle {
 		## cle edit            -- edit resource file
 		echo "CLE edit .... to be implemented later"
 		;;
-	save_)
-		## cle save            -- store setiings into .clerc_local
-		echo "Press ENTER to owerwrite .clerc_local or Ctrl-C to quit"
-		read
-		echo "CLE_COLOR=$CLE_COLOR >$HOME/.clerc_local"
-		;;
 	reload_)
 		## cle reload          -- reload CLE
 		unset CLE_DONE
 		. $CLE_RC
 		;;
-	show_)
-		## cle show            -- show CLE related variables
+	env_)
+		## cle env             -- show CLE related variables
 		( set -o posix; set |grep CLE_)
 		echo PID=$$
 		;;
