@@ -195,7 +195,7 @@ function ssg {
 function suu {
 	CLE_64=$(base64 -w 0 $CLE_RC)
 	#su -l -c "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; /bin/bash --rcfile .clerc-$LOGNAME" $1
-	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-'$LOGNAME'; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile $HOME/.clerc-'$LOGNAME
+	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-'$LOGNAME'; export CLE_RMTUSER='$LOGNAME'; exec bash --rcfile $HOME/.clerc-'$LOGNAME
 	unset CLE_64
 }
 
@@ -251,8 +251,9 @@ function cle {
 		( set -o posix; set |grep CLE_)
 		echo PID=$$
 		;;
-	diff_)
-		diff ~/.clerc $CLE_RC
+	ls_)
+		## cle ls              -- ls -l $HOME/.cle*
+		ls -l $HOME/.cle*
 		;;
 	help_*)
 		## cle help [cmd]      -- self documenting feature
@@ -278,6 +279,9 @@ shopt -s checkwinsize
 
 # path extensions - conditional to prevent the same item is there several times
 [ -d $HOME/bin ] && echo $PATH|grep -v $HOME/bin >/dev/null && PATH=$PATH:$HOME/bin
+
+# romove disturbing stuff
+unset SUDO_COMMAND
 
 CLE_DONE=ok
 fi # End of login shell setup
