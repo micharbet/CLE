@@ -52,7 +52,8 @@ account as .clerc-YOURNAME.
 ### CLE ToDo List:
 
 - bash completion
-- include mosh wrapper similar to ssh
+- create mosh wrapper similar to ssh
+- create su/sudo wrapper
 - cle deploy system
 - cle edit
 - man page
