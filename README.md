@@ -53,7 +53,7 @@ account as .clerc-YOURNAME.
 
 - bash completion
 - create mosh wrapper similar to ssh
-- create su/sudo wrapper
+- ~~create su/sudo wrapper~~ mention suu here
 - cle deploy system
 - cle edit
 - man page

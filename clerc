@@ -135,8 +135,6 @@ alias cx='cd $XPOINT'
 alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
-## suba    -- sudo bash
-alias suba='sudo bash'
 
 # load user defined aliases #1
 [ -f $HOME/.aliases ] && . $HOME/.aliases
@@ -177,7 +175,7 @@ function psg {
 }
 
 # You can replace 'ssg' with 'ssh' although this is not recommended
-## ssg [user@]hostname   -- login to remote system using this environment
+## ssg [user@]hostname   -- login to remote system running this environment
 function ssg {
 	# store the whole file into one string
 	CLE_64=$(base64 -w 0 $CLE_RC)
@@ -187,6 +185,14 @@ function ssg {
 	else
 		cle help ssg
 	fi
+	unset CLE_64
+}
+
+## suu [username]        -- sudo wrapper; root is the default account
+function suu {
+	CLE_64=$(base64 -w 0 $CLE_RC)
+	#su -l -c "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; /bin/bash --rcfile .clerc-$LOGNAME" $1
+	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-'$LOGNAME'; exec bash --rcfile $HOME/.clerc-'$LOGNAME
 	unset CLE_64
 }
 
