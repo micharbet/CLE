@@ -277,7 +277,7 @@ function cle {
 		;;
 	ls_)
 		## cle ls              -- ls -l $HOME/.cle*
-		ls -l $HOME/.cle*
+		ls -l $HOME/.aliases* $HOME/.cle*
 		;;
 	help_*)
 		## cle help [cmd]      -- self documenting feature
