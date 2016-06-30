@@ -51,10 +51,11 @@ CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
 # server time in prompt by default
 CLE_TIME='\A'
 
+# local setup
 # like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
-[ -f $HOME/.clecolor ] && . $HOME/.clecolor
-[ -f $HOME/.clecolor-$CLE_RMTUSER ] && . $HOME/.clecolor-$CLE_RMTUSER
 [ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
+[ -f $HOME/.cleprompt ] && . $HOME/.cleprompt
+[ -f $HOME/.cleprompt-$CLE_RMTUSER ] && . $HOME/.cleprompt-$CLE_RMTUSER
 
 #
 #	Colorized prompt with exit status
@@ -207,10 +208,10 @@ function cle {
 		## cle color blue|green|red|marley|..etc  -- set prompt color
 		unset CLE_PS
 		CLE_COLOR="$2"
-		if [ -z "$CLE_RMTUSER"]; then
-			echo CLE_COLOR=$CLE_COLOR >$HOME/.clecolor
+		if [ -z "$CLE_RMTUSER" ]; then
+			echo CLE_COLOR=$CLE_COLOR >$HOME/.cleprompt
 		else
-			echo CLE_COLOR=$CLE_COLOR >$HOME/.clecolor-$CLE_RMTUSER
+			echo CLE_COLOR=$CLE_COLOR >$HOME/.cleprompt-$CLE_RMTUSER
 		fi
 		cle reload
 		;;
