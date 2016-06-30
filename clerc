@@ -53,6 +53,7 @@ CLE_TIME='\A'
 
 # like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
 [ -f $HOME/.clecolor ] && . $HOME/.clecolor
+[ -f $HOME/.clecolor-$CLE_RMTUSER ] && . $HOME/.clecolor-$CLE_RMTUSER
 [ -f $HOME/.clerc_local ] && . $HOME/.clerc_local
 
 #
@@ -193,7 +194,7 @@ function ssg {
 function suu {
 	CLE_64=$(base64 -w 0 $CLE_RC)
 	#su -l -c "echo $CLE_64|base64 -d >.clerc-$LOGNAME; export CLE_RMTUSER=$LOGNAME; /bin/bash --rcfile .clerc-$LOGNAME" $1
-	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-'$LOGNAME'; exec bash --rcfile $HOME/.clerc-'$LOGNAME
+	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-'$LOGNAME'; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile $HOME/.clerc-'$LOGNAME
 	unset CLE_64
 }
 
@@ -206,7 +207,11 @@ function cle {
 		## cle color blue|green|red|marley|..etc  -- set prompt color
 		unset CLE_PS
 		CLE_COLOR="$2"
-		echo CLE_COLOR=$CLE_COLOR >$HOME/.clecolor
+		if [ -z "$CLE_RMTUSER"]; then
+			echo CLE_COLOR=$CLE_COLOR >$HOME/.clecolor
+		else
+			echo CLE_COLOR=$CLE_COLOR >$HOME/.clecolor-$CLE_RMTUSER
+		fi
 		cle reload
 		;;
 	deploy_user)
