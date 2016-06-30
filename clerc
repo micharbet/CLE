@@ -321,7 +321,8 @@ HISTTIMEFORMAT="%d%b %H:%M:%S  "
 # for better cmdline beahavior - checking widow size 
 shopt -s checkwinsize
 
-#path :$HOME/bin >/dev/null
+# enahance path with user's bin
+path :$HOME/bin >/dev/null
 
 # romove disturbing stuff
 unset SUDO_COMMAND
