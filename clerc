@@ -48,8 +48,9 @@ if [ -n "$CLE_LCLUSER" -a -z "$CLE_DONE" ]; then
 # tweaked hostname to remove some substrings (redhat and gss only)
 CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
 
-# server time in prompt by default
-CLE_TIME='\A'
+# default prompt
+CLE_TIME='\A '
+CLE_COLOR='marley'
 
 # local setup
 # like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
@@ -70,18 +71,18 @@ if [ -z "$CLE_PS" ]; then
 	cyan)	 COLOR="\[\e[0;36m\]"; COLBOLD="\[\e[1;36m\]" ;;
 	white)	 COLOR="\[\e[0;37m\]"; COLBOLD="\[\e[1;37m\]" ;;
 	bold)
-		CLE_PS="\[\e[1m\]\A \u@$CLE_HN: \w \\$"
+		CLE_PS="\[\e[1m\]$CLE_TIME\u@$CLE_HN: \w \\$"
 		PS2=" \[\e[1m\]...\\$\[\e[0m\] "
 		;;
 	grey|gray)
-		CLE_PS="\[\e[1;30m\]\A \u@$CLE_HN: \w \[\e[1;30m\]\\$"
+		CLE_PS="\[\e[1;30m\]$CLE_TIME\u@$CLE_HN: \w \[\e[1;30m\]\\$"
 		PS2=" \[\e[1;30m\]...\\$\[\e[0m\] "
 		;;
 	marley)
 		# if you have no idea, have a smoke and imagine...
 		# ... bobmarley style :-)
-		CLE_PS="\[\e[1;32m\]\A \[\e[1;31m\]\u \[\e[1;33m\]$CLE_HN \[\e[0;32m\]\w \\$"
-		PS2=" \[\e[1;31m\]...\\$\[\e[0m\] "
+		CLE_PS="\[\e[1;32m\]$CLE_TIME\[\e[1;31m\]\u \[\e[1;33m\]$CLE_HN \[\e[0;32m\]\w \\$"
+		PS2=" \[\e[1;31m\]>>>\\$\[\e[0m\] "
 		;;
 		# setup your own style here
 	*)
@@ -91,7 +92,7 @@ if [ -z "$CLE_PS" ]; then
 
 	# compose propmpts if they're still not set
 	if [ -z "$CLE_PS" ]; then
-		CLE_PS="$COLBOLD$CLE_TIME \u $CLE_HN $COLOR\w $COLBOLD\\$"
+		CLE_PS="$COLBOLD$CLE_TIME\u@$CLE_HN $COLOR\w $COLBOLD\\$"
 		PS2="$COLBOLD ...\\$\[\e[0m\] "
 	fi
 fi
@@ -199,6 +200,17 @@ function suu {
 	unset CLE_64
 }
 
+# internal helper functions
+function _clepromptsave {
+	if [ -z "$CLE_RMTUSER" ]; then
+		CLE_PROMPT=$HOME/.cleprompt
+	else
+		CLE_PROMPT=$HOME/.cleprompt-$CLE_RMTUSER
+	fi
+	echo CLE_COLOR=\'$CLE_COLOR\' >$CLE_PROMPT
+	echo CLE_TIME=\'$CLE_TIME\' >>$CLE_PROMPT
+}
+
 ##
 ## CLE command & control:
 ## ----------------------
@@ -208,11 +220,20 @@ function cle {
 		## cle color blue|green|red|marley|..etc  -- set prompt color
 		unset CLE_PS
 		CLE_COLOR="$2"
-		if [ -z "$CLE_RMTUSER" ]; then
-			echo CLE_COLOR=$CLE_COLOR >$HOME/.cleprompt
-		else
-			echo CLE_COLOR=$CLE_COLOR >$HOME/.cleprompt-$CLE_RMTUSER
-		fi
+		_clepromptsave
+		cle reload
+		;;
+	time_on)
+		## cle time on|off     -- turn server time in prompt on/off
+		unset CLE_PS
+		CLE_TIME='\A '
+		_clepromptsave
+		cle reload
+		;;
+	time_off)
+		unset CLE_PS
+		CLE_TIME=''
+		_clepromptsave
 		cle reload
 		;;
 	deploy_user)
