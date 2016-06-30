@@ -162,15 +162,13 @@ _clexe $CLE_ALIASES
 
 # default aliases - those are here not to be overridden by  .aliases file
 alias al=alias
-## alisa   -- save your set of aliases into local file
+## alisa     -- save your set of aliases into local file
 alias alisa='alias; echo "ENTER for save, Ctrl-C"; read ; alias >$CLE_ALIASES; echo Saved to file .$CLE_ALIASES'
-## alilo   -- load aliases from file
+## alilo     -- load aliases from file
 alias alilo=". $CLE_ALIASES"
-## alied   -- edit stored aliases
+## alied     -- edit stored aliases
 alias alied='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
 alias hh=history
-## path    -- show content of $PATH in more readable way
-alias path='echo $PATH|tr : \\n'
 
 # store basic alias set
 [ -f $CLE_ALIASES ] || alias >$CLE_ALIASES
@@ -178,6 +176,29 @@ alias path='echo $PATH|tr : \\n'
 #
 # functions
 #
+
+## path [:dir:] -- show or enhance $PATH
+function path {
+	PP=`echo "$1"| tr -d :`
+	case "_$1_" in
+	_:*_)	# Add to end
+		[ -d $PP ] && { echo $PATH |grep -v $PP >/dev/null && PATH=$PATH:$PP || echo $PP is already there ; } || echo no such dir $PP
+		;;
+	_*:_)	# add to the beginning
+		[ -d $PP ] && { echo $PATH |grep -v $PP >/dev/null && PATH=$PP:$PATH || echo $PP is already there ; } || echo no such dir $PP
+		;;
+	__)	# no parameters, print
+		echo $PATH|tr : \\n
+		;;
+	_-*_)
+		echo path -removedir not implemented yet
+		;;
+	*)
+		echo usage... \'path :dir\' or \'path dir:\' to add dir into \$PATH
+		;;
+	esac
+	#[ -d $HOME/bin ] && echo $PATH|grep -v $HOME/bin >/dev/null && PATH=$PATH:$HOME/bin
+}
 
 ## psg     -- ps filtered through grep
 function psg {
@@ -300,9 +321,7 @@ HISTTIMEFORMAT="%d%b %H:%M:%S  "
 # for better cmdline beahavior - checking widow size 
 shopt -s checkwinsize
 
-
-# path extensions - conditional to prevent the same item is there several times
-[ -d $HOME/bin ] && echo $PATH|grep -v $HOME/bin >/dev/null && PATH=$PATH:$HOME/bin
+#path :$HOME/bin >/dev/null
 
 # romove disturbing stuff
 unset SUDO_COMMAND
