@@ -127,19 +127,20 @@ PROMPT_COMMAND=statusprompt
 #
 ## CLE internal aliases and functions:
 ## -----------------------------------
-## ls commands aliases: l ll la lt llr lld
+## ls commands aliases: l ll la lt llr l.
 alias ls='ls --color=auto'
 alias ll='ls -l'
 alias l='ls -l'
-alias lt='ls -lt'
+alias lt='ls -ltr'
 alias la='ls -al'
 alias llr='ls -lR'
-alias lld='ls -ld *'
-## cd command aliases:  cd.. cd... cd-
-alias cd..='cd ..'
-alias cd...='cd ../..'
-alias cd-='cd -'
+alias l.='ls -ld .?*'
+## cd command aliases:  .. ... (up one or two levels); c- (cd to the recent dir)
+alias ..='cd ..'
+alias ...='cd ../..'
+alias c-='cd -'
 ## xx & cx -- directory bookmark
+# what about to define x1/c1, x2/c2, etc...
 alias xx='XPOINT=`pwd`; echo Directory boorkmark set here: $XPOINT'
 alias cx='cd $XPOINT'
 alias grep='grep --color=auto'
