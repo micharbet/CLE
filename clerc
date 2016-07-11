@@ -87,8 +87,8 @@ if [ -z "$CLE_PS" ]; then
 	marley)
 		# if you have no idea, have a smoke and imagine...
 		# ... bobmarley style :-)
-		CLE_PS="\[\e[1;32m\]$CLE_TIME\[\e[1;31m\]\u \[\e[1;33m\]$CLE_HN \[\e[0;32m\]\w \\$"
-		PS2=" \[\e[1;31m\]>>>\\$\[\e[0m\] "
+		CLE_PS="\[\e[0;37m\]$CLE_TIME\[\e[1;31m\]\u \[\e[1;33m\]$CLE_HN \[\e[0;32m\]\w \\$"
+		PS2=" \[\e[0;31m\]>>>\\$\[\e[0m\] "
 		;;
 		# setup your own style here
 	*)
@@ -98,7 +98,7 @@ if [ -z "$CLE_PS" ]; then
 
 	# compose propmpts if they're still not set
 	if [ -z "$CLE_PS" ]; then
-		CLE_PS="$COLBOLD$CLE_TIME\u@$CLE_HN $COLOR\w $COLBOLD\\$"
+		CLE_PS="\[\e[0;37m\]$CLE_TIME$COLBOLD\u@$CLE_HN $COLOR\w $COLBOLD\\$"
 		PS2="$COLBOLD >>>\\$\[\e[0m\] "
 	fi
 fi
