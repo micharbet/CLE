@@ -2,7 +2,7 @@
 ##
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3.1 June 2016
+## version: 3.1 July 2016
 ##
 #
 # bash tweaks
@@ -14,7 +14,7 @@
 # can be executed from .bashrc upon each regular login
 # or using script ssg (ssh workaround) seamlessly passed to the user environment
 
-# TODO: double $PWD
+# TODO: double $PWD sometimes appear. remove it
 CLE_RC=${BASH_SOURCE[0]}
 case $CLE_RC in
 /*)	;;
@@ -56,7 +56,7 @@ CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
 
 # default prompt
-CLE_TIME='\A '
+CLE_TIME='\A'
 CLE_COLOR='marley'
 
 # local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
@@ -77,18 +77,18 @@ if [ -z "$CLE_PS" ]; then
 	cyan)	 COLOR="\[\e[0;36m\]"; COLBOLD="\[\e[1;36m\]" ;;
 	white)	 COLOR="\[\e[0;37m\]"; COLBOLD="\[\e[1;37m\]" ;;
 	bold)
-		CLE_PS="\[\e[1m\]$CLE_TIME\u@$CLE_HN: \w \\$"
-		PS2=" \[\e[1m\]...\\$\[\e[0m\] "
+		CLE_PS="\[\e[1m\]\u@$CLE_HN: \w \\$"
+		PS2=" \[\e[1m\]>>> \\$\[\e[0m\] "
 		;;
 	grey|gray)
-		CLE_PS="\[\e[1;30m\]$CLE_TIME\u@$CLE_HN: \w \[\e[1;30m\]\\$"
-		PS2=" \[\e[1;30m\]...\\$\[\e[0m\] "
+		CLE_PS="\[\e[1;30m\]\u@$CLE_HN \w \[\e[1;30m\]\\$"
+		PS2=" \[\e[1;30m\]>>> \\$\[\e[0m\] "
 		;;
 	marley)
 		# if you have no idea, have a smoke and imagine...
 		# ... bobmarley style :-)
-		CLE_PS="\[\e[0;37m\]$CLE_TIME\[\e[1;31m\]\u \[\e[1;33m\]$CLE_HN \[\e[0;32m\]\w \\$"
-		PS2=" \[\e[0;31m\]>>>\\$\[\e[0m\] "
+		CLE_PS="\[\e[1;31m\]\u \[\e[1;33m\]$CLE_HN \[\e[1;32m\]\w \\$"
+		PS2=" \[\e[0;31m\]>>> \\$\[\e[0m\] "
 		;;
 		# setup your own style here
 	*)
@@ -98,7 +98,7 @@ if [ -z "$CLE_PS" ]; then
 
 	# compose propmpts if they're still not set
 	if [ -z "$CLE_PS" ]; then
-		CLE_PS="\[\e[0;37m\]$CLE_TIME$COLBOLD\u@$CLE_HN $COLOR\w $COLBOLD\\$"
+		CLE_PS="$COLBOLD\u@$CLE_HN $COLOR\w $COLBOLD\\$"
 		PS2="$COLBOLD >>>\\$\[\e[0m\] "
 	fi
 fi
@@ -112,7 +112,8 @@ function statusprompt {
 		EEPS="\[\e[41m\]\a[$EE]\[\e[m\]"
 	fi
 	# Final prompt composition
-	PS1="$EEPS $CLE_PS\[\e[m\] "
+	#\[\e[0;37m\]$CLE_TIME
+	PS1="$EEPS \[\e[0;37m\]$CLE_TIME $CLE_PS\[\e[m\] "
 	# change window title
 	echo -en "\e]0;$CLE_RMTUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
@@ -251,13 +252,19 @@ function cle {
 	time_on)
 		## cle time on|off     -- turn server time in prompt on/off
 		unset CLE_PS
-		CLE_TIME='\A '
+		CLE_TIME='\A'
 		_clepromptsave
 		cle reload
 		;;
 	time_off)
 		unset CLE_PS
 		CLE_TIME=''
+		_clepromptsave
+		cle reload
+		;;
+	time_*)
+		unset CLE_PS
+		CLE_TIME=$2
 		_clepromptsave
 		cle reload
 		;;
