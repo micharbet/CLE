@@ -3,16 +3,28 @@
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
 ## version: 3.1 July 2016
+## license: GNU GPL 3
+## https://gitlab.cee.redhat.com/marbet/cle
 ##
 #
 # bash tweaks
 # - colorized prompt with exit code highlight
-# - aliases and functions
+# - builtin aliases and function
 # - history tweaks (timestamps etc)
 # - shell options
+# - builtin self documentation feature
+# - command 'cle' to control the environment
 #
-# can be executed from .bashrc upon each regular login
-# or using script ssg (ssh workaround) seamlessly passed to the user environment
+# Execute this file within your shell session once and integrate
+# to your profile seamlessly with 'cle deploy local' command
+# 
+#        $ . clerc
+#        $ cle deploy user
+#
+# - use implemented 'ssg' (ssh workaround) and seamlessly pass
+#   this environment to remote machine without installation
+# - try 'suu' (sudo workaround) 
+# - change settings with implememted 'cle' command
 
 # TODO: double $PWD sometimes appear. remove it
 CLE_RC=${BASH_SOURCE[0]}
@@ -293,7 +305,7 @@ function cle {
 		;;
 	deploy_system)
 		## cle deploy system   -- hook CLE into /etc/profile.d
-		echo; echo " CLE is to be integrated into your system:"
+		echo; echo " CLE is to be integrated into your system!"
 		echo " Content of $CLE_RC will be copied to /etc/profile.d/cle.sh"
 		echo " The environment will be activated for all users."
 		echo " Only root can do that..."
@@ -301,9 +313,9 @@ function cle {
 		read
 		if [ "$REPLY" = 'y' ]; then
 			cp $CLE_RC /etc/profile.d/cle.sh
-			echo Done
+			echo " Done!"
 		else
-			echo "No change"
+			echo "No change."
 		fi
 		;;
 	edit_)
@@ -334,6 +346,18 @@ function cle {
 		echo check: cle help
 		;;
 	esac
+}
+
+# print banner
+function _clebanner {
+cat <<EOT
+
+   ___|  |      ____|    Command Live Environment activated
+  |      |      __|      ...bit of life to the command line
+  |      |      |           'cle help' to learn more 
+ \____| _____| _____|    or 'less $CLE_RC' to learn the magic
+                      
+EOT
 }
 
 # assorted enviroment variables
