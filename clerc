@@ -140,7 +140,7 @@ alias l.='ls -ld .?*'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias c-='cd -'
-## xx & cx -- directory bookmark
+## xx & cx       -- directory bookmark
 # what about to define x1/c1, x2/c2, etc...
 alias xx='XPOINT=`pwd`; echo Directory boorkmark set here: $XPOINT'
 alias cx='cd $XPOINT'
@@ -164,11 +164,11 @@ _clexe $CLE_ALIASES
 
 # default aliases - those are here not to be overridden by  .aliases file
 alias al=alias
-## alisa     -- save your set of aliases into local file
+## alisa         -- save your set of aliases into local file
 alias alisa='alias; echo "ENTER for save, Ctrl-C"; read ; alias >$CLE_ALIASES; echo Saved to file .$CLE_ALIASES'
-## alilo     -- load aliases from file
+## alilo         -- load aliases from file
 alias alilo=". $CLE_ALIASES"
-## alied     -- edit stored aliases
+## alied         -- edit stored aliases
 alias alied='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
 alias hh=history
 
@@ -179,7 +179,7 @@ alias hh=history
 # functions
 #
 
-## path [:dir:] -- show or enhance $PATH
+## path [:dir:]  -- show or enhance $PATH
 function path {
 	PP=`echo "$1"| tr -d :`
 	case "_$1_" in
@@ -202,13 +202,16 @@ function path {
 	#[ -d $HOME/bin ] && echo $PATH|grep -v $HOME/bin >/dev/null && PATH=$PATH:$HOME/bin
 }
 
-## psg     -- ps filtered through grep
+## psg           -- ps filtered through grep
 function psg {
  ps -ef |grep -i $1|grep -v grep
 }
 
+##
+## SSH & SUDO wrappers:
+## --------------------
+## ssg [user@]hostname  -- login to remote system running this environment
 # You can replace 'ssg' with 'ssh' although this is not recommended
-## ssg [user@]hostname   -- login to remote system running this environment
 function ssg {
 	CLE_64=$(base64 -w 0 $CLE_RC)
 	if [ -n "$1" ]; then
@@ -219,7 +222,7 @@ function ssg {
 	unset CLE_64
 }
 
-## suu [username]        -- sudo wrapper; root is the default account
+## suu [username]       -- sudo wrapper; root is the default account
 function suu {
 	CLE_64=$(base64 -w 0 $CLE_RC)
 	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-tmp-'$LOGNAME'; export CLE_RMTUSER='$LOGNAME'; exec bash --rcfile $HOME/.clerc-tmp-'$LOGNAME
@@ -263,8 +266,10 @@ function cle {
 		cle reload
 		;;
 	time_*)
+		## cle time STRING     -- set custom strings
 		unset CLE_PS
-		CLE_TIME=$2
+		shift
+		CLE_TIME="$*"
 		_clepromptsave
 		cle reload
 		;;
@@ -288,7 +293,18 @@ function cle {
 		;;
 	deploy_system)
 		## cle deploy system   -- hook CLE into /etc/profile.d
-		echo "cle deploy system ... to be done"
+		echo; echo " CLE is to be integrated into your system:"
+		echo " Content of $CLE_RC will be copied to /etc/profile.d/cle.sh"
+		echo " The environment will be activated for all users."
+		echo " Only root can do that..."
+		echo " Are you sure? (y/N)"
+		read
+		if [ "$REPLY" = 'y' ]; then
+			cp $CLE_RC /etc/profile.d/cle.sh
+			echo Done
+		else
+			echo "No change"
+		fi
 		;;
 	edit_)
 		## cle edit            -- edit resource file
@@ -332,7 +348,7 @@ shopt -s checkwinsize
 # enahance path with user's bin
 path :$HOME/bin >/dev/null
 
-# romove disturbing stuff
+# remove disturbing stuff
 unset SUDO_COMMAND
 
 fi # End of login shell setup
