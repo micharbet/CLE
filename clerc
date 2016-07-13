@@ -1,8 +1,7 @@
 #
-##
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3.1 July 2016
+## version: 3.1  12th July 2016
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -67,14 +66,26 @@ CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 # tweaked hostname to remove some substrings (redhat and gss only)
 CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
 
-# default prompt
+# default prompt and where it will be stored
 CLE_TIME='\A'
 CLE_COLOR='marley'
+if [ -z "$CLE_RMTUSER" ]; then
+	CLE_PROMPT=$HOME/.cleprompt
+else
+	CLE_PROMPT=$HOME/.cleprompt-$CLE_RMTUSER
+fi
+
+# default CLE settings can ge overridden later
+# assorted enviroment variables
+export EDITOR=vi
+export PAGER="less -s"
+HISTCONTROL=ignorespace:ignoredups:erasedups
+HISTTIMEFORMAT="%d%b %H:%M:%S  "
+shopt -s checkwinsize
 
 # local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
 _clexe $HOME/.clerc_local
-_clexe $HOME/.cleprompt
-_clexe $HOME/.cleprompt-$CLE_RMTUSER
+_clexe $CLE_PROMPT
 
 #
 #	Colorized prompt with exit status
@@ -116,7 +127,7 @@ if [ -z "$CLE_PS" ]; then
 fi
 
 # prompt function - called upon each new prompt line
-function statusprompt {
+function _cleprompt {
 	EE=$?  # store exit status code (it would disappear!)
 	if [ $EE -eq 0 ]; then
 		EEPS="\[\e[1m\][$EE]"
@@ -124,12 +135,11 @@ function statusprompt {
 		EEPS="\[\e[41m\]\a[$EE]\[\e[m\]"
 	fi
 	# Final prompt composition
-	#\[\e[0;37m\]$CLE_TIME
 	PS1="$EEPS \[\e[0;37m\]$CLE_TIME $CLE_PS\[\e[m\] "
 	# change window title
 	echo -en "\e]0;$CLE_RMTUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
-PROMPT_COMMAND=statusprompt
+PROMPT_COMMAND=_cleprompt
 
 
 #  
@@ -152,16 +162,13 @@ alias l.='ls -ld .?*'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias c-='cd -'
-## xx & cx       -- directory bookmark
+## xx & cx       -- directory bookmark; set it and 'cd' there
 # what about to define x1/c1, x2/c2, etc...
 alias xx='XPOINT=`pwd`; echo Directory boorkmark set here: $XPOINT'
 alias cx='cd $XPOINT'
 alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
-
-# load user defined aliases #1
-_clexe $HOME/.aliases
 
 # personalized aliases
 if [ -n "$CLE_RMTUSER" ]; then
@@ -170,8 +177,6 @@ if [ -n "$CLE_RMTUSER" ]; then
 else
 	CLE_ALIASES=$HOME/.aliases
 fi
-
-# load personalized aliases
 _clexe $CLE_ALIASES
 
 # default aliases - those are here not to be overridden by  .aliases file
@@ -184,34 +189,16 @@ alias alilo=". $CLE_ALIASES"
 alias alied='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
 alias hh=history
 
-# store basic alias set
+# store basic alias set if there is none
 [ -f $CLE_ALIASES ] || alias >$CLE_ALIASES
 
 #
 # functions
 #
 
-## path [:dir:]  -- show or enhance $PATH
+## path          -- show $PATH in readable way
 function path {
-	PP=`echo "$1"| tr -d :`
-	case "_$1_" in
-	_:*_)	# Add to end
-		[ -d $PP ] && { echo $PATH |grep -v $PP >/dev/null && PATH=$PATH:$PP || echo $PP is already there ; } || echo no such dir $PP
-		;;
-	_*:_)	# add to the beginning
-		[ -d $PP ] && { echo $PATH |grep -v $PP >/dev/null && PATH=$PP:$PATH || echo $PP is already there ; } || echo no such dir $PP
-		;;
-	__)	# no parameters, print
-		echo $PATH|tr : \\n
-		;;
-	_-*_)
-		echo path -removedir not implemented yet
-		;;
-	*)
-		echo usage... \'path :dir\' or \'path dir:\' to add dir into \$PATH
-		;;
-	esac
-	#[ -d $HOME/bin ] && echo $PATH|grep -v $HOME/bin >/dev/null && PATH=$PATH:$HOME/bin
+	echo $PATH|tr : \\n
 }
 
 ## psg           -- ps filtered through grep
@@ -243,11 +230,6 @@ function suu {
 
 # internal helper function - save prompt variables
 function _clepromptsave {
-	if [ -z "$CLE_RMTUSER" ]; then
-		CLE_PROMPT=$HOME/.cleprompt
-	else
-		CLE_PROMPT=$HOME/.cleprompt-$CLE_RMTUSER
-	fi
 	echo CLE_COLOR=\'$CLE_COLOR\' >$CLE_PROMPT
 	echo CLE_TIME=\'$CLE_TIME\' >>$CLE_PROMPT
 }
@@ -327,10 +309,20 @@ function cle {
 		unset CLE_EXE
 		. $CLE_RC
 		;;
+	clean_)
+		## cle clean           -- remove aliases, and local settings
+		echo "Cleaning CLE settings, are you sure? (y/N)"
+		read; if [ "$REPLY" == 'y' ]; then
+			unalias -a
+			rm $CLE_ALIASES
+			rm $CLE_PROMPT
+			rm ~/.clerc_local
+			cle reload
+		fi
+		;;
 	env_)
 		## cle env             -- show CLE related variables
-		( set -o posix; set |grep CLE_)
-		echo PID=$$
+		( set -o posix; set|grep CLE_)
 		;;
 	ls_)
 		## cle ls              -- ls -l $HOME/.cle*
@@ -339,6 +331,7 @@ function cle {
 	help_*)
 		## cle help [cmd]      -- self documenting feature
 		# double-hash denotes help content :-)
+		_clebanner
 		awk -F# "/## *$2/"' { print $3 }' $CLE_RC
 		;;
 	*)
@@ -360,20 +353,14 @@ cat <<EOT
 EOT
 }
 
-# assorted enviroment variables
-export EDITOR=vi
-export PAGER="less -s"
-HISTCONTROL=ignorespace:ignoredups:erasedups
-HISTTIMEFORMAT="%d%b %H:%M:%S  "
-
-# for better cmdline beahavior - checking widow size 
-shopt -s checkwinsize
-
-# enahance path with user's bin
-path :$HOME/bin >/dev/null
+# enhance path with user's own bin directory
+[ -d $HOME/bin ] && echo $PATH | grep -v $HOME/bin >&/dev/null && PATH=$PATH:$HOME/bin
 
 # remove disturbing stuff
 unset SUDO_COMMAND
+
+# indicate first run, show banner
+[ -f $CLE_PROMPT ] || _clebanner && _clepromptsave
 
 fi # End of login shell setup
 
