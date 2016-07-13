@@ -133,7 +133,7 @@ function _cleprompt {
 	if [ $EE -eq 0 ]; then
 		EEPS="\[\e[1m\][$EE]"
 	else
-		EEPS="\[\e[41m\]\a[$EE]\[\e[m\]"
+		EEPS="\[\e[41m\][$EE]\[\e[m\]"
 	fi
 	# Final prompt composition
 	PS1="$EEPS \[\e[0;37m\]$CLE_TIME $CLE_PS\[\e[m\] "
