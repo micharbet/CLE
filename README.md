@@ -7,7 +7,8 @@ CLE contains following bash tweaks:
  - **history** tweaks (personalized history for multi-admin environment, timestamps etc)
  - shell options
  - controlled with command `cle`
- - **ssg** - the ssh wrapper (read below)
+ - **ssg** - the ssh wrapper
+ - **suu** - the sudo wrapper
  - self contained **help** (check this out: `cle help`)
 
 
@@ -37,7 +38,13 @@ and also without altering current remote server environment. Run
 
 The content of clerc will be passed to the remote session and executed as a
 resource script instead of .bashrc. This resource is stored on the remote 
-account as .clerc-YOURNAME.
+account in file .clerc-tmp-YOURNAME.
+
+### suu utility (sudo wrapper)
+
+The 'suu' does the same job like ssg bout it transfers CLE over sudo command.
+You can run 'suu' alone or 'suu username'. Without username the root
+is chosen by deafult, obviously.
 
 ### Useful files
  .aliases .aliases-YOURNAME for storing your own set of aliases, manage those
@@ -45,18 +52,22 @@ account as .clerc-YOURNAME.
    and save it for future use using 'alisa' :-)
 
  .clerc_local file for small local tweaks only on the particular machine -
-    not transferred wit ssg
+    not transferred with ssg
 
+ .cleprompt or .cleprompt-YOURNAME - this file is created automatically and
+   stores current prompt settings
 
 
 ### CLE ToDo List:
 
-- bash completion
+- bash completion for ssg
 - create mosh wrapper similar to ssh
 - ~~create su/sudo wrapper~~ mention suu here
-- cle deploy system
+- ~~cle deploy system~~ done
 - cle edit
 - man page
+- find way to turn off cle on particular account when it is deployed systemwide
+- more prompt tweaks: e.g. 'cle retcode on/off' 'cle wintitle on/off'
 
 
 ### Why 'CLE' and where are previous versions?
@@ -79,16 +90,16 @@ name "Command Live Environment" was introduced as I considered it was bringing
 more live into plain command line. This version was developed in specific
 armed forces controlled environment and is not publicly available.
 
- In third version I solved issues with necessity of setup by ingenious way -
+ In third version I removed necessity to setup by ingenious way -
 passing resource file encoded with base64 through a shell variable to the
 remote system. Result is no setup, no other tweaks on remote site  and no harm
 to the current environment! Whoa! The only what you need is working CLE on
 your workstation that you are using to manage the world :-)
 You can always use the same and still customizable environment everywhere.
-Encoding `ssg` utility and `cle` managment script into the sinle file was just
-a nature evolution that enhanced word 'Live'. The `clerc` resource file now
-contains a mechanism of multiplication it's own DNA 1) This all with embeded
-self documentation and ways of customization.
+Encoding `ssg`, `suu` utilities and `cle` managment script into the sinle file
+was just a nature evolution that enhanced word 'Live'. The `clerc` resource
+file now contains a mechanism of multiplication it's own DNA 1) This all with
+embeded self documentation and ways of customization.
 
 
 1) CLE is not a virus :-) all the mutliplication is done in controlled way
