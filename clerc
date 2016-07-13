@@ -274,16 +274,17 @@ function cle {
 		cp $CLE_RC $HOME/.clerc
 		grep '# Command Live Environment' $HOME/.bashrc >&/dev/null
 		if [ $? != 0 ]; then
-			echo "Pres enter to add CLE into .bashrc or Ctrl-C to quit"
-			read
+			echo; echo " CLE is to be integrated to your login script."
+			read -p " Are you sure? (y/N)  "
+			[ "REPLY" != 'y' ] && return
 			echo >>$HOME/.bashrc
 			echo >>$HOME/.bashrc '# Command Live Environment'
 			echo >>$HOME/.bashrc '[ -f $HOME/.clerc ] && . $HOME/.clerc'
 			echo >>$HOME/.bashrc
-			echo '... added following to the end of .bashrc'
+			echo ' ... added following to the end of .bashrc :'
 			tail -3 $HOME/.bashrc
 		else
-			echo CLE is already hooked into .bashrc :
+			echo " CLE is already hooked into .bashrc :"
 			tail -3 $HOME/.bashrc
 		fi
 		;;
@@ -293,14 +294,10 @@ function cle {
 		echo " Content of $CLE_RC will be copied to /etc/profile.d/cle.sh"
 		echo " The environment will be activated for all users."
 		echo " Only root can do that..."
-		echo " Are you sure? (y/N)"
-		read
-		if [ "$REPLY" = 'y' ]; then
-			cp $CLE_RC /etc/profile.d/cle.sh
-			echo " Done!"
-		else
-			echo "No change."
-		fi
+		read -p " Are you sure? (y/N)  "
+		[ "$REPLY" != 'y' ] && return
+		cp $CLE_RC /etc/profile.d/cle.sh
+		echo " Done!"
 		;;
 	edit_)
 		## cle edit            -- edit resource file
@@ -314,12 +311,11 @@ function cle {
 		;;
 	clean_)
 		## cle clean           -- remove aliases, and local settings
-		echo "Cleaning CLE settings, are you sure? (y/N)"
-		read; if [ "$REPLY" == 'y' ]; then
-			unalias -a
-			rm -f $CLE_ALIASES $CLE_PROMPT ~/.clerc_local
-			cle reload
-		fi
+		read -p "Cleaning CLE settings, are you sure? (y/N)  "
+		[ "$REPLY" != 'y' ] && return
+		unalias -a
+		rm -f $CLE_ALIASES $CLE_PROMPT ~/.clerc_local
+		cle reload
 		;;
 	env_)
 		## cle env             -- show CLE related variables
