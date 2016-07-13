@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3.1  12th July 2016
+## version: 3.1  13th July 2016
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -85,6 +85,7 @@ shopt -s checkwinsize
 
 # local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
 _clexe $HOME/.clerc_local
+_clexe $HOME/.cleprompt
 _clexe $CLE_PROMPT
 
 #
@@ -177,6 +178,7 @@ if [ -n "$CLE_RMTUSER" ]; then
 else
 	CLE_ALIASES=$HOME/.aliases
 fi
+_clexe $HOME/.aliases
 _clexe $CLE_ALIASES
 
 # default aliases - those are here not to be overridden by  .aliases file
@@ -306,6 +308,7 @@ function cle {
 		;;
 	reload_)
 		## cle reload          -- reload CLE
+		unset CLE_PS
 		unset CLE_EXE
 		. $CLE_RC
 		;;
@@ -314,9 +317,7 @@ function cle {
 		echo "Cleaning CLE settings, are you sure? (y/N)"
 		read; if [ "$REPLY" == 'y' ]; then
 			unalias -a
-			rm $CLE_ALIASES
-			rm $CLE_PROMPT
-			rm ~/.clerc_local
+			rm -f $CLE_ALIASES $CLE_PROMPT ~/.clerc_local
 			cle reload
 		fi
 		;;
