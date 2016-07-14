@@ -62,6 +62,8 @@ function _clexe {
 }
 
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
+
+# where the CLE is growing... you may change with your own url
 CLE_SOURCE='https://gitlab.cee.redhat.com/marbet/cle/raw/master'
  
 # tweaked hostname to remove some substrings (redhat and gss only)
