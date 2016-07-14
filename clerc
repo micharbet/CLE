@@ -326,9 +326,17 @@ function cle {
 		## cle ls              -- ls -l $HOME/.cle*
 		ls -l $HOME/.aliases* $HOME/.cle*
 		;;
+	update_)
+		## cle update          -- download newest version of CLE
+		curl -k $CLE_SOURCE/clerc >$HOME/clerc-new
+		echo "New CLE is here: $HOME/clerc-new"
+		read -p "Press Enter to show diff or Ctrl-C to break"
+		diff $CLE_RC $HOME/clerc-new
+		# no setup for now, need to think more about it
+		;;
 	readme_)
 		## cle readme          -- download and show README file
-		curl $CLE_SOURCE/README.md |less
+		curl -k $CLE_SOURCE/README.md |less
 		;;
 	help_*)
 		## cle help [cmd]      -- self documenting feature
