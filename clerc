@@ -217,9 +217,13 @@ function psg {
 ## ssg [user@]hostname  -- login to remote system running this environment
 # You can replace 'ssg' with 'ssh' although this is not recommended
 function ssg {
-	CLE_64=$(base64 -w 0 $CLE_RC)
 	if [ -n "$1" ]; then
-		`which ssh` -t $1 "echo $CLE_64|base64 -d >.clerc-tmp-$LOGNAME; export CLE_RMTUSER=$LOGNAME; exec bash --rcfile .clerc-tmp-$LOGNAME"
+		cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
+		CLE_64=`cd; tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64 -w 0`
+		`which ssh` -t $1 "
+			echo $CLE_64|base64 -d |tar xzf -
+			export CLE_RMTUSER=$LOGNAME;
+			exec bash --rcfile .clerc-tmp-$LOGNAME"
 	else
 		cle help ssg
 	fi
@@ -343,12 +347,12 @@ function cle {
 	help_*)
 		## cle help [cmd]      -- self documenting feature
 		# double-hash denotes help content :-)
-		_clebanner
+		[ -z "$2" ] && _clebanner
 		awk -F# "/## *$2/"' { print $3 }' $CLE_RC
 		;;
 	*)
-		echo what? "cle $1 $2??"
-		echo check: cle help
+		echo " what??  'cle $1 $2'"
+		echo " check this: cle help"
 		;;
 	esac
 }
