@@ -217,9 +217,10 @@ function psg {
 ## ssg [user@]hostname  -- login to remote system running this environment
 # You can replace 'ssg' with 'ssh' although this is not recommended
 function ssg {
+	cd
 	if [ -n "$1" ]; then
 		cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
-		CLE_64=`cd; tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64 -w 0`
+		CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64 -w 0`
 		`which ssh` -t $1 "
 			echo $CLE_64|base64 -d |tar xzf -
 			export CLE_RMTUSER=$LOGNAME;
@@ -228,13 +229,20 @@ function ssg {
 		cle help ssg
 	fi
 	unset CLE_64
+	cd -
 }
 
 ## suu [username]       -- sudo wrapper; root is the default account
 function suu {
-	CLE_64=$(base64 -w 0 $CLE_RC)
-	sudo -i -u ${1:-root} /bin/bash  -c 'echo '$CLE_64'|base64 -d >$HOME/.clerc-tmp-'$LOGNAME'; export CLE_RMTUSER='$LOGNAME'; exec bash --rcfile $HOME/.clerc-tmp-'$LOGNAME
+	cd
+	cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
+	CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64 -w 0`
+	sudo -i -u ${1:-root} /bin/bash  -c \
+		"echo $CLE_64|base64 -d | tar xzf -;
+		 export CLE_RMTUSER=$LOGNAME;
+		 exec bash --rcfile .clerc-tmp-$LOGNAME"
 	unset CLE_64
+	cd -
 }
 
 # internal helper function - save prompt variables
