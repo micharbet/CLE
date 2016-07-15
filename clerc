@@ -54,10 +54,11 @@ fi
 CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
 if [ -n "$CLE_LCLUSER" -a -z "$CLE_EXE" ]; then 
 
-# internal helper function: execute associated script and
-# add the filename to CLE_EXE - useful as a debug log
+# internal helper function: execute associated script and add its filename
+# into CLE_EXE to keep track, also execute particular script only once
 CLE_EXE=$CLE_RC
 function _clexe {
+	echo $CLE_EXE|grep -q $1 && return
 	[ -f $1 ] && CLE_EXE=$CLE_EXE:$1 && . $1
 }
 
@@ -287,7 +288,7 @@ function cle {
 	deploy_user)
 		## cle deploy user     -- hook CLE into user's profile
 		cp $CLE_RC $HOME/.clerc
-		grep '# Command Live Environment' $HOME/.bashrc >&/dev/null
+		grep -q '# Command Live Environment' $HOME/.bashrc 
 		if [ $? != 0 ]; then
 			echo; echo " CLE is to be integrated to your login script."
 			read -p " Are you sure? (y/N)  "
@@ -378,7 +379,7 @@ EOT
 }
 
 # enhance path with user's own bin directory
-[ -d $HOME/bin ] && echo $PATH | grep -v $HOME/bin >&/dev/null && PATH=$PATH:$HOME/bin
+[ -d $HOME/bin ] && echo $PATH | grep -vq $HOME/bin && PATH=$PATH:$HOME/bin
 
 # remove disturbing stuff
 unset SUDO_COMMAND
