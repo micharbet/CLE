@@ -60,7 +60,7 @@ case $CLE_RC in
 *.clerc-tmp-*)	# old good .bashrc :-) but only from temporary environment
 	_clexe $HOME/.bashrc
 	;;
-*/clerc)	# this looks like initial run from source
+*/clerc)	# this looks like initial run from commandline
 	_clebanner
 	echo "If this is your first run, consider setting up in your profile."
 	echo "Issue following command to copy source script into $HOME/.clerc"
