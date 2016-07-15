@@ -11,8 +11,8 @@
 # - builtin aliases and function
 # - history tweaks (timestamps etc)
 # - shell options
-# - builtin self documentation feature
 # - command 'cle' to control the environment
+# - builtin self documentation feature (cle help & cle readme)
 #
 # Execute this file within your shell session once and integrate
 # to your profile seamlessly with 'cle deploy local' command
@@ -62,13 +62,19 @@ function _clexe {
 	[ -f $1 ] && CLE_EXE=$CLE_EXE:$1 && . $1
 }
 
+# old good .bashrc :-) but only from temporary environment
+case $CLE_RC in
+*.clerc-tmp-*) _clexe $HOME/.bashrc ;;
+esac
+
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
 # where the CLE is growing... you may change with your own url
 CLE_SOURCE='https://gitlab.cee.redhat.com/marbet/cle/raw/master'
  
 # tweaked hostname to remove some substrings (redhat and gss only)
-CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'` 
+CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
+# CLE_HN=`hostname`
 
 # default prompt and where it will be stored
 CLE_TIME='\A'
@@ -91,6 +97,11 @@ shopt -s checkwinsize
 _clexe $HOME/.clerc_local
 _clexe $HOME/.cleprompt
 _clexe $CLE_PROMPT
+
+# execute plugins from .cle folder
+for PLUG in $HOME/.cle/*; do
+	_clexe $PLUG
+done
 
 #
 #	Colorized prompt with exit status
