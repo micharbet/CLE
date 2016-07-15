@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3.2  14th July 2016
+## version: 3.2  15th July 2016
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -25,51 +25,55 @@
 # - try 'suu' (sudo workaround) 
 # - change settings with implememted 'cle' command
 
-# TODO: double $PWD sometimes appear. remove it
+# check if this is interactive session and if not, skip all the tweaks
+# this is required for scp compattibility if used within .bashrc
+CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
+if [ -n "$CLE_LCLUSER" -a -z "$CLE_EXE" ]; then 
+
 CLE_RC=${BASH_SOURCE[0]}
 case $CLE_RC in
 /*)	;;
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
 
-# check is we're running manually from source
-if [ `basename $CLE_RC` = 'clerc' ]; then
-	echo
-	echo "  *** Welcome to Command Live Environment - CLE ***"
-	echo
+# print banner
+function _clebanner {
+cat <<EOT
+
+   ___|  |      ____|    Command Live Environment activated
+  |      |      __|      ...bit of life to the command line
+  |      |      |           'cle help' to learn more 
+ \____| _____| _____|    or 'less $CLE_RC' to learn the magic
+                      
+EOT
+}
+
+# internal helper function: execute associated script and add its filename
+# into CLE_EXE to keep track, also execute particular script only once
+function _clexe {
+	echo $CLE_EXE|grep -q $1 && return
+	[ -f $1 ] && CLE_EXE=$CLE_EXE:$1 && . $1
+}
+
+CLE_EXE=$CLE_RC
+case $CLE_RC in
+*.clerc-tmp-*)	# old good .bashrc :-) but only from temporary environment
+	_clexe $HOME/.bashrc
+	;;
+*/clerc)	# this looks like initial run from source
+	_clebanner
 	echo "If this is your first run, consider setting up in your profile."
 	echo "Issue following command to copy source script into $HOME/.clerc"
 	echo "and activate the environment in $HOME/.bashrc"
 	echo
 	echo "     [1m cle deploy user [0m"
 	echo
-	CLE_EXE=""
-fi
-
-# check if this is interactive session and if not, skip all the tweaks
-# this is required for scp compattibility if used within .bashrc
-# note: LOGNAME contains user name even in scp session,
-#       whereas 'who am i' produces empty string - this is why CLE_LCUSER
-#
-CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
-if [ -n "$CLE_LCLUSER" -a -z "$CLE_EXE" ]; then 
-
-# internal helper function: execute associated script and add its filename
-# into CLE_EXE to keep track, also execute particular script only once
-CLE_EXE=$CLE_RC
-function _clexe {
-	echo $CLE_EXE|grep -q $1 && return
-	[ -f $1 ] && CLE_EXE=$CLE_EXE:$1 && . $1
-}
-
-# old good .bashrc :-) but only from temporary environment
-case $CLE_RC in
-*.clerc-tmp-*) _clexe $HOME/.bashrc ;;
+	;;
 esac
 
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
-# where the CLE is growing... you may change with your own url
+# where in the deep space is CLE growing... you may change with your own url
 CLE_SOURCE='https://gitlab.cee.redhat.com/marbet/cle/raw/master'
  
 # tweaked hostname to remove some substrings (redhat and gss only)
@@ -375,18 +379,6 @@ function cle {
 		echo " check this: cle help"
 		;;
 	esac
-}
-
-# print banner
-function _clebanner {
-cat <<EOT
-
-   ___|  |      ____|    Command Live Environment activated
-  |      |      __|      ...bit of life to the command line
-  |      |      |           'cle help' to learn more 
- \____| _____| _____|    or 'less $CLE_RC' to learn the magic
-                      
-EOT
 }
 
 # enhance path with user's own bin directory
