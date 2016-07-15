@@ -20,6 +20,7 @@ CLE contains following bash tweaks:
  - **ssg** - the ssh wrapper
  - **suu** - the sudo wrapper
  - self contained **help** (check this out: `cle help`)
+ - can show this file with `cle readme`
 
 
 ## CLE setup and usage
@@ -98,9 +99,13 @@ related files: `cle ls`
 - man page
 - find way to turn off cle on particular account when it is deployed systemwide
 - more prompt tweaks: e.g. 'cle retcode on/off' 'cle wintitle on/off'
-- allow passing local aliases further
-- custom defined functions in .functions file or custom .clerc-NAME
-- what about 'cle update' that would download fresh new version from GIT??
+- ~~allow passing local aliases further~~ `$CLE_MYFILES` variable for this and more
+- regarding CLE_MYFILES, consider 'cle command' to maintain this
+- ~~custom defined functions in .functions file~~ plugins in $HOME/.cle/ folder!
+- custom .clerc-NAME maybe instead of .clerc_local
+- what about 'cle update' that would download fresh new version from GIT?? (WIP)
+- cle backup might be nice
+- add 'Tweaks' section in this document
 
 
 ## Why 'CLE' and where are previous versions?
@@ -131,9 +136,9 @@ your workstation that you are using to manage the world :-)
 You can always use the same and still customizable environment everywhere.
 Encoding `ssg`, `suu` utilities and `cle` managment script into the sinle file
 was just a nature evolution that enhanced word 'Live'. The `clerc` resource
-file now contains a mechanism of multiplication it's own DNA 1) This all with
+file now contains a mechanism of multiplication it's own DNA [1] This all with
 embeded self documentation and ways of customization.
 
 
-1) CLE is not a virus :-) all the mutliplication is done in controlled way
+[1] CLE is not a virus :-) all the mutliplication is done in controlled way
 and you, the user is the one who know what you're doing.
