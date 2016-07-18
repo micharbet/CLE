@@ -36,6 +36,10 @@ case $CLE_RC in
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
 
+# determine effective user and custom script
+# CLE_EFUSER is passed to all consecutive sessions initiated with ssg/suu
+CLE_CUSTOMRC=$HOME/.cle-${CLE_EFUSER:=$CLE_LCLUSER}
+
 # print banner
 function _clebanner {
 cat <<EOT
@@ -83,11 +87,7 @@ CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
 # default prompt and where it will be stored
 CLE_TIME='\A'
 CLE_COLOR='marley'
-if [ -z "$CLE_RMTUSER" ]; then
-	CLE_PROMPT=$HOME/.cleprompt
-else
-	CLE_PROMPT=$HOME/.cleprompt-$CLE_RMTUSER
-fi
+CLE_PROMPT=$HOME/.cleprompt-$CLE_EFUSER
 
 # default CLE settings can ge overridden later
 # assorted enviroment variables
@@ -99,7 +99,6 @@ shopt -s checkwinsize
 
 # local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
 _clexe $HOME/.clerc_local
-_clexe $HOME/.cleprompt
 _clexe $CLE_PROMPT
 
 # execute plugins from .cle folder
@@ -157,7 +156,7 @@ function _cleprompt {
 	# Final prompt composition
 	PS1="$EEPS \[\e[0;37m\]$CLE_TIME $CLE_PS\[\e[m\] "
 	# change window title
-	echo -en "\e]0;$CLE_RMTUSER -> $LOGNAME@$CLE_HN: $PWD\007"
+	echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=_cleprompt
 
@@ -191,13 +190,8 @@ alias mv='mv -i'
 alias rm='rm -i'
 
 # personalized aliases
-if [ -n "$CLE_RMTUSER" ]; then
-	CLE_ALIASES=$HOME/.aliases-$CLE_RMTUSER
-	HISTFILE=$HOME/.bash_history_$CLE_RMTUSER  # private history files
-else
-	CLE_ALIASES=$HOME/.aliases
-fi
-_clexe $HOME/.aliases
+CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER
+HISTFILE=$HOME/.bash_history-$CLE_EFUSER  # private history files
 _clexe $CLE_ALIASES
 
 # default aliases - those are here not to be overridden by  .aliases file
@@ -239,7 +233,7 @@ function ssg {
 		CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64 -w 0`
 		`which ssh` -t $1 "
 			echo $CLE_64|base64 -d |tar xzf -
-			export CLE_RMTUSER=$LOGNAME;
+			export CLE_EFUSER=$CLE_EFUSER;
 			exec bash --rcfile .clerc-tmp-$LOGNAME"
 	else
 		cle help ssg
@@ -255,7 +249,7 @@ function suu {
 	CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64 -w 0`
 	sudo -i -u ${1:-root} /bin/bash  -c \
 		"echo $CLE_64|base64 -d | tar xzf -;
-		 export CLE_RMTUSER=$LOGNAME;
+		 export CLE_EFUSER=$CLE_EFUSER;
 		 exec bash --rcfile .clerc-tmp-$LOGNAME"
 	unset CLE_64
 	cd -
@@ -384,8 +378,9 @@ function cle {
 # enhance path with user's own bin directory
 [ -d $HOME/bin ] && echo $PATH | grep -vq $HOME/bin && PATH=$PATH:$HOME/bin
 
-# remove disturbing stuff
-unset SUDO_COMMAND
+unset SUDO_COMMAND    # remove disturbing stuff
+
+_clexe $CLE_CUSTOMRC  # run personal tweaks
 
 # indicate first run, show banner
 [ -f $CLE_PROMPT ] || _clebanner && _clepromptsave
