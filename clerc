@@ -189,23 +189,15 @@ alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
 
-# personalized aliases
-CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER
-HISTFILE=$HOME/.bash_history-$CLE_EFUSER  # private history files
-_clexe $CLE_ALIASES
-
-# default aliases - those are here not to be overridden by  .aliases file
-alias al=alias
-## alisa         -- save your set of aliases into local file
-alias alisa='alias; echo "ENTER for save, Ctrl-C"; read ; alias >$CLE_ALIASES; echo Saved to file .$CLE_ALIASES'
-## alilo         -- load aliases from file
-alias alilo=". $CLE_ALIASES"
-## alied         -- edit stored aliases
-alias alied='vi $CLE_ALIASES; echo; echo "ENTER to reload, Ctrl-C to break"; read; . $CLE_ALIASES'
 alias hh=history
 
 # store basic alias set if there is none
 [ -f $CLE_ALIASES ] || alias >$CLE_ALIASES
+
+# personalized aliases
+CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER
+HISTFILE=$HOME/.bash_history-$CLE_EFUSER  # private history files
+_clexe $CLE_ALIASES
 
 #
 # functions
@@ -219,6 +211,42 @@ function path {
 ## psg           -- ps filtered through grep
 function psg {
  ps -ef |grep -i $1|grep -v grep
+}
+
+##
+## alias management
+## ----------------
+function aa {
+	case "$1_$2" in
+	_)
+		## aa         -- show aliases
+		alias ;;
+	save_)
+		## aa save    -- save your set of aliases
+		alias
+		echo; read -p "ENTER for save, Ctrl-C"
+		alias >$CLE_ALIASES
+		echo Saved to file .$CLE_ALIASES
+		;;
+	load_)
+		## aa load    -- (re)load your set of aliases
+		unalias -a
+		. $CLE_ALIASES
+		;;
+	edit_)
+		## aa edit    -- edit and reload your aliases
+		local TALIAS=$HOME/.aiases-tmp-$CLE_EFUSER
+		alias >$TALIAS
+		vi $TALIAS
+		echo; read -p "ENTER to reload, Ctrl-C to break"
+		mv $TALIAS $CLE_ALIASES
+		aa load
+		;;
+	*)	
+                echo " what??  'aa $1 $2'"
+                echo " check this: cle help"
+                ;;
+	esac
 }
 
 ##
