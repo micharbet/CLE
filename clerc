@@ -188,7 +188,6 @@ alias cx='cd $XPOINT'
 alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
-
 alias hh=history
 
 # store basic alias set if there is none
