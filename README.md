@@ -68,24 +68,43 @@ The 'suu' does the same job like ssg bout it transfers CLE over sudo command.
 You can run `suu` alone or `suu username`. Without username the root
 is chosen by deafult, obviously.
 
-### Useful files
- `.aliases` `.aliases-YOURNAME` for storing your own set of aliases, manage those
+
+### Useful files - custom resources
+ `.aliases-YOURNAME` for storing your own set of aliases, manage those
    with commands al, alilo, alisav, alied. You can e.g. create new alias
    directly on the command line, test it, improve and when satisfied save it
    for future use using `alisa` :-)
 
- `.clerc_local` file for small local tweaks only on the particular machine -
-    this is not transferred with `ssg / suu`
-
- `.cleprompt` or `.cleprompt-YOURNAME` - this file is created automatically and
+ `.cleprompt-YOURNAME` - this file is created automatically and
    stores current prompt settings
 
+ `.cle-YOURNAME` file for your custom tweaks
+ 
+ `.cle/` folder to store another plugins with functions, local settings, etc.
+  
+The word 'YOURNAME' is replaced with your login name - this is evaluated on
+very first initialization of CLE and passed over all consecutive sessions
+invoked with ssg/suu. The value is stored in shell variable `$CLE_EFUSER
+(effective user in CLE context).
+
+E.g. you started on your workstation as 'joe', so CLE_EFUSER='joe' and when you
+open a remote session with 'ssg marvin@remote.box' the value 'joe' will become
+value of CLE_EFUSER again, so it wil not be 'marvin' even if this is the real
+login name on 'remote.box'. Thus it is easy to deteremine which custom
+resources will be applied. 
+
+Note, in case you use direct ssh instead of ssg wrapper, the CLE_EFUSER value
+cannot be tranferred to remote session. It will be initiated again so it will
+become value of 'marvin' in above example.
+
+ 
 ## CLE internals
 
 First, look at the script :-)
 However you can inspect variables. They are named with trailing `$CLE_` Check 
 all of them with command `cle env`. Another command shows you list of all
 related files: `cle ls`
+(TODO: describe more closely here)
 
 
 ## CLE ToDo List:
@@ -100,9 +119,10 @@ related files: `cle ls`
 - find way to turn off cle on particular account when it is deployed systemwide
 - more prompt tweaks: e.g. 'cle retcode on/off' 'cle wintitle on/off'
 - ~~allow passing local aliases further~~ `$CLE_MYFILES` variable for this and more
-- regarding CLE_MYFILES, consider 'cle command' to maintain this
+- regarding CLE_MYFILES, consider 'cle command' to maintain this, work on this feature!
+- backporting aliases (download and merge aliases from remote sessions)
 - ~~custom defined functions in .functions file~~ plugins in $HOME/.cle/ folder!
-- custom .clerc-NAME maybe instead of .clerc_local
+- ~~custom .cle-YOURNAME instead of .clerc_local~~
 - what about 'cle update' that would download fresh new version from GIT?? (WIP)
 - cle backup might be nice
 - add 'Tweaks' section in this document
