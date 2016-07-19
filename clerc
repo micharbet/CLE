@@ -259,7 +259,7 @@ function ssg {
 	cd
 	if [ -n "$1" ]; then
 		cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
-		CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64 -w 0`
+		CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64|tr -d '\n\r '`
 		`which ssh` -t $1 "
 			echo $CLE_64|base64 -d |tar xzf -
 			export CLE_EFUSER=$CLE_EFUSER;
@@ -275,7 +275,7 @@ function ssg {
 function suu {
 	cd
 	cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
-	CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64 -w 0`
+	CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64|tr -d '\n\r '`
 	sudo -i -u ${1:-root} /bin/bash  -c \
 		"echo $CLE_64|base64 -d | tar xzf -;
 		 export CLE_EFUSER=$CLE_EFUSER;
