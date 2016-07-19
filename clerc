@@ -1,11 +1,10 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3.2  18th July 2016
+## version: 3.2  19th July 2016
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
-#
 # bash tweaks
 # - colorized prompt with exit code highlight
 # - builtin aliases and function
@@ -35,6 +34,7 @@ case $CLE_RC in
 /*)	;;
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
+CLE_EXE=$CLE_RC
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
 # determine effective user and custom script
@@ -48,19 +48,20 @@ CLE_SOURCE='https://gitlab.cee.redhat.com/marbet/cle/raw/master'
 CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
 # CLE_HN=`hostname`
 
-# default prompt and where it will be stored
+# default prompt settings
 CLE_TIME='\A'
 CLE_COLOR='marley'
 CLE_PROMPT=$HOME/.cleprompt-$CLE_EFUSER
 
-# default CLE settings can ge overridden later
-# assorted enviroment variables
+# default shell settings can ge overridden later
 export EDITOR=vi
 export PAGER="less -s"
 HISTCONTROL=ignorespace:ignoredups:erasedups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 shopt -s checkwinsize
 
+# Internal helper functions
+#
 # print banner
 function _clebanner {
 cat <<EOT
@@ -73,36 +74,20 @@ cat <<EOT
 EOT
 }
 
-# internal helper function: execute associated script and add its filename
-# into CLE_EXE to keep track, also execute particular script only once
+# execute associated script and log its filename into CLE_EXE to keep track
+# also ensure the script will be executed only once
 function _clexe {
 	echo $CLE_EXE|grep -q $1 && return
 	[ -f $1 ] && CLE_EXE=$CLE_EXE:$1 && . $1
 }
 
-CLE_EXE=$CLE_RC
-case $CLE_RC in
-*.clerc-tmp-*)	# old good .bashrc :-) but only from temporary environment
-	_clexe $HOME/.bashrc
-	;;
-*/clerc)	# this looks like initial run from commandline
-	_clebanner
-	echo "If this is your first run, consider setting up in your profile."
-	echo "Issue following command to copy source script into $HOME/.clerc"
-	echo "and activate the environment in $HOME/.bashrc"
-	echo
-	echo "     [1m cle deploy user [0m"
-	echo
-	;;
-esac
-
-# internal helper function - save prompt related variables
+# save prompt related variables
 function _clepromptsave {
 	echo CLE_COLOR=\'$CLE_COLOR\' >$CLE_PROMPT
 	echo CLE_TIME=\'$CLE_TIME\' >>$CLE_PROMPT
 }
 
-# internal helper for colorize prompt
+# colorize prompt
 function _clecolor {
 	case "$1" in 
 	red)	 COLOR="\[\e[0;31m\]"; COLBOLD="\[\e[1;31m\]" ;;
@@ -155,6 +140,21 @@ function _cleprompt {
 	echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=_cleprompt
+
+case $CLE_RC in
+*.clerc-tmp-*)	# old good .bashrc :-) but only from temporary environment
+	_clexe $HOME/.bashrc
+	;;
+*/clerc)	# this looks like initial run from commandline
+	_clebanner
+	echo "If this is your first run, consider setting up in your profile."
+	echo "Issue following command to copy source script into $HOME/.clerc"
+	echo "and activate the environment in $HOME/.bashrc"
+	echo
+	echo "     [1m cle deploy user [0m"
+	echo
+	;;
+esac
 
 # local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
 _clexe $HOME/.clerc_local
