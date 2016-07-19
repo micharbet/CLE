@@ -35,10 +35,31 @@ case $CLE_RC in
 /*)	;;
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
+CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
 # determine effective user and custom script
 # CLE_EFUSER is passed to all consecutive sessions initiated with ssg/suu
 CLE_CUSTOMRC=$HOME/.cle-${CLE_EFUSER:=$CLE_LCLUSER}
+
+# where in the deep space is CLE growing... you may change with your own url
+CLE_SOURCE='https://gitlab.cee.redhat.com/marbet/cle/raw/master'
+ 
+# tweaked hostname to remove some substrings (redhat and gss only)
+CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
+# CLE_HN=`hostname`
+
+# default prompt and where it will be stored
+CLE_TIME='\A'
+CLE_COLOR='marley'
+CLE_PROMPT=$HOME/.cleprompt-$CLE_EFUSER
+
+# default CLE settings can ge overridden later
+# assorted enviroment variables
+export EDITOR=vi
+export PAGER="less -s"
+HISTCONTROL=ignorespace:ignoredups:erasedups
+HISTTIMEFORMAT="%d%b %H:%M:%S  "
+shopt -s checkwinsize
 
 # print banner
 function _clebanner {
@@ -75,42 +96,15 @@ case $CLE_RC in
 	;;
 esac
 
-CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
+# internal helper function - save prompt related variables
+function _clepromptsave {
+	echo CLE_COLOR=\'$CLE_COLOR\' >$CLE_PROMPT
+	echo CLE_TIME=\'$CLE_TIME\' >>$CLE_PROMPT
+}
 
-# where in the deep space is CLE growing... you may change with your own url
-CLE_SOURCE='https://gitlab.cee.redhat.com/marbet/cle/raw/master'
- 
-# tweaked hostname to remove some substrings (redhat and gss only)
-CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
-# CLE_HN=`hostname`
-
-# default prompt and where it will be stored
-CLE_TIME='\A'
-CLE_COLOR='marley'
-CLE_PROMPT=$HOME/.cleprompt-$CLE_EFUSER
-
-# default CLE settings can ge overridden later
-# assorted enviroment variables
-export EDITOR=vi
-export PAGER="less -s"
-HISTCONTROL=ignorespace:ignoredups:erasedups
-HISTTIMEFORMAT="%d%b %H:%M:%S  "
-shopt -s checkwinsize
-
-# local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
-_clexe $HOME/.clerc_local
-_clexe $CLE_PROMPT
-
-# execute plugins from .cle folder
-for PLUG in $HOME/.cle/*; do
-	_clexe $PLUG
-done
-
-#
-#	Colorized prompt with exit status
-#
-if [ -z "$CLE_PS" ]; then
-	case "$CLE_COLOR" in 
+# internal helper for colorize prompt
+function _clecolor {
+	case "$1" in 
 	red)	 COLOR="\[\e[0;31m\]"; COLBOLD="\[\e[1;31m\]" ;;
 	green)	 COLOR="\[\e[0;32m\]"; COLBOLD="\[\e[1;32m\]" ;;
 	yellow)	 COLOR="\[\e[0;33m\]"; COLBOLD="\[\e[1;33m\]" ;;
@@ -135,7 +129,8 @@ if [ -z "$CLE_PS" ]; then
 		# setup your own style here
 	*)
 		# something unknow was set but we want to work even with this...
-		CLE_PS="($CLE_COLOR)" ;;
+		echo " unknown color $1"
+		return 2
 	esac
 
 	# compose propmpts if they're still not set
@@ -143,7 +138,8 @@ if [ -z "$CLE_PS" ]; then
 		CLE_PS="$COLBOLD\u@$CLE_HN $COLOR\w $COLBOLD\\$"
 		PS2="$COLBOLD >>>\\$\[\e[0m\] "
 	fi
-fi
+	CLE_COLOR=$1
+}
 
 # prompt function - called upon each new prompt line
 function _cleprompt {
@@ -160,10 +156,16 @@ function _cleprompt {
 }
 PROMPT_COMMAND=_cleprompt
 
+# local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
+_clexe $HOME/.clerc_local
+_clexe $CLE_PROMPT
 
-#  
-#  ALIASES 
-#
+# execute plugins from .cle folder
+for PLUG in $HOME/.cle/*; do
+	_clexe $PLUG
+done
+
+_clecolor $CLE_COLOR
 
 # basic aliases - those might be overridden by .aliases file
 #
@@ -282,12 +284,6 @@ function suu {
 	cd -
 }
 
-# internal helper function - save prompt variables
-function _clepromptsave {
-	echo CLE_COLOR=\'$CLE_COLOR\' >$CLE_PROMPT
-	echo CLE_TIME=\'$CLE_TIME\' >>$CLE_PROMPT
-}
-
 ##
 ## CLE command & control:
 ## ----------------------
@@ -296,22 +292,17 @@ function cle {
 	color_*)
 		## cle color blue|green|red|marley|..etc  -- set prompt color
 		unset CLE_PS
-		CLE_COLOR="$2"
+		_clecolor $2
 		_clepromptsave
-		cle reload
 		;;
 	time_on)
 		## cle time on|off     -- turn server time in prompt on/off
-		unset CLE_PS
 		CLE_TIME='\A'
 		_clepromptsave
-		cle reload
 		;;
 	time_off)
-		unset CLE_PS
 		CLE_TIME=''
 		_clepromptsave
-		cle reload
 		;;
 	time_*)
 		## cle time STRING     -- set custom strings
@@ -319,7 +310,7 @@ function cle {
 		shift
 		CLE_TIME="$*"
 		_clepromptsave
-		cle reload
+		_clecolor
 		;;
 	deploy_user)
 		## cle deploy user     -- hook CLE into user's profile
