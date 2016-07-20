@@ -63,7 +63,7 @@ shopt -s checkwinsize
 # Internal helper functions
 #
 # print banner
-function _clebanner {
+_clebanner () {
 cat <<EOT
 
    ___|  |      ____|    Command Live Environment activated
@@ -76,19 +76,19 @@ EOT
 
 # execute associated script and log its filename into CLE_EXE to keep track
 # also ensure the script will be executed only once
-function _clexe {
+_clexe () {
 	echo $CLE_EXE|grep -q $1 && return
 	[ -f $1 ] && CLE_EXE=$CLE_EXE:$1 && . $1
 }
 
 # save prompt related variables
-function _clepromptsave {
+_clepromptsave () {
 	echo CLE_COLOR=\'$CLE_COLOR\' >$CLE_PROMPT
 	echo CLE_TIME=\'$CLE_TIME\' >>$CLE_PROMPT
 }
 
 # colorize prompt
-function _clecolor {
+_clecolor () {
 	case "$1" in 
 	red)	 COLOR="\[\e[0;31m\]"; COLBOLD="\[\e[1;31m\]" ;;
 	green)	 COLOR="\[\e[0;32m\]"; COLBOLD="\[\e[1;32m\]" ;;
@@ -127,7 +127,7 @@ function _clecolor {
 }
 
 # prompt function - called upon each new prompt line
-function _cleprompt {
+_cleprompt () {
 	EE=$?  # store exit status code (it would disappear!)
 	if [ $EE -eq 0 ]; then
 		EEPS="\[\e[1m\][$EE]"
@@ -205,19 +205,19 @@ _clexe $CLE_ALIASES
 #
 
 ## path          -- show $PATH in readable way
-function path {
+path () {
 	echo $PATH|tr : \\n
 }
 
 ## psg           -- ps filtered through grep
-function psg {
+psg () {
  ps -ef |grep -i $1|grep -v grep
 }
 
 ##
 ## alias management
 ## ----------------
-function aa {
+aa () {
 	case "$1_$2" in
 	_)
 		## aa         -- show aliases
@@ -255,7 +255,7 @@ function aa {
 ## --------------------
 ## ssg [user@]hostname  -- login to remote system running this environment
 # You can replace 'ssg' with 'ssh' although this is not recommended
-function ssg {
+ssg () {
 	cd
 	if [ -n "$1" ]; then
 		cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
@@ -272,7 +272,7 @@ function ssg {
 }
 
 ## suu [username]       -- sudo wrapper; root is the default account
-function suu {
+suu () {
 	cd
 	cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
 	CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64|tr -d '\n\r '`
@@ -287,7 +287,7 @@ function suu {
 ##
 ## CLE command & control:
 ## ----------------------
-function cle {
+cle () {
 	case "$1_$2" in
 	color_*)
 		## cle color blue|green|red|marley|..etc  -- set prompt color
