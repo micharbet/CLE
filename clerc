@@ -137,7 +137,7 @@ function _cleprompt {
 	# Final prompt composition
 	PS1="$EEPS \[\e[0;37m\]$CLE_TIME $CLE_PS\[\e[m\] "
 	# change window title
-	echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
+	# TERMPORARY DISABLED echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=_cleprompt
 
