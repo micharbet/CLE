@@ -27,6 +27,7 @@
 # check if this is interactive session and if not, skip all the tweaks
 # this is required for scp compattibility if used within .bashrc
 CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
+[ -n "$TMUX" ] && CLE_LCLUSER=`whoami` # tmux hack
 if [ -n "$CLE_LCLUSER" -a -z "$CLE_EXE" ]; then 
 
 CLE_RC=${BASH_SOURCE[0]}
@@ -89,55 +90,49 @@ _clepromptsave () {
 
 # colorize prompt
 _clecolor () {
+	local C1 C2 C3
 	case "$1" in 
-	red)	 COLOR="\[\e[0;31m\]"; COLBOLD="\[\e[1;31m\]" ;;
-	green)	 COLOR="\[\e[0;32m\]"; COLBOLD="\[\e[1;32m\]" ;;
-	yellow)	 COLOR="\[\e[0;33m\]"; COLBOLD="\[\e[1;33m\]" ;;
-	blue)	 COLOR="\[\e[0;34m\]"; COLBOLD="\[\e[1;34m\]" ;;
-	magenta) COLOR="\[\e[0;35m\]"; COLBOLD="\[\e[1;35m\]" ;;
-	cyan)	 COLOR="\[\e[0;36m\]"; COLBOLD="\[\e[1;36m\]" ;;
-	white)	 COLOR="\[\e[0;37m\]"; COLBOLD="\[\e[1;37m\]" ;;
-	bold)
-		CLE_PS="\[\e[1m\]\u@$CLE_HN: \w \\$"
-		PS2=" \[\e[1m\]>>> \\$\[\e[0m\] "
-		;;
-	grey|gray)
-		CLE_PS="\[\e[1;30m\]\u@$CLE_HN \w \[\e[1;30m\]\\$"
-		PS2=" \[\e[1;30m\]>>> \\$\[\e[0m\] "
-		;;
-	marley)
+	red)	 C1="\[\e[1;31m\]"; C3="\[\e[0;31m\]" ;;
+	green)	 C1="\[\e[1;32m\]"; C3="\[\e[0;32m\]" ;;
+	yellow)	 C1="\[\e[1;33m\]"; C3="\[\e[0;33m\]" ;;
+	blue)	 C1="\[\e[1;34m\]"; C3="\[\e[0;34m\]" ;;
+	magenta) C1="\[\e[1;35m\]"; C3="\[\e[0;35m\]" ;;
+	cyan)	 C1="\[\e[1;36m\]"; C3="\[\e[0;36m\]" ;;
+	white)	 C1="\[\e[1;37m\]"; C3="\[\e[0;37m\]" ;;
+	bold)    C1="\[\e[1m\]" ;;
+	grey|gray) C1="\[\e[1;30m\]" ;;
+	marley) # ... bobmarley style :-)
 		# if you have no idea, have a smoke and imagine...
-		# ... bobmarley style :-)
-		CLE_PS="\[\e[1;31m\]\u \[\e[1;33m\]$CLE_HN \[\e[1;32m\]\w \\$"
-		PS2=" \[\e[0;31m\]>>> \\$\[\e[0m\] "
+		C1="\[\e[1;31m\]"; C2="\[\e[1;33m\]"; C3="\[\e[1;32m\]"
 		;;
-		# setup your own style here
+	tricolora|rbw) # red-blue-white
+		C1="\[\e[1;31m\]"; C2="\[\e[1;34m\]"; C3="\[\e[1;37m\]"
+		;;
 	*)
-		# something unknow was set but we want to work even with this...
-		echo " unknown color $1"
+		# search available colors in the function
+		echo " unknown color $1, select one of those:"
+		set|sed -n '/_clecolor ()/,/^}/s/\(\<[a-z]*\)).*/\1/p'
 		return 2
 	esac
-
-	# compose propmpts if they're still not set
-	if [ -z "$CLE_PS" ]; then
-		CLE_PS="$COLBOLD\u@$CLE_HN $COLOR\w $COLBOLD\\$"
-		PS2="$COLBOLD >>>\\$\[\e[0m\] "
-	fi
+	# compose prompts
+	CLE_PS="$C1\u $C2$CLE_HN $C3\w \\$"
+	PS2="$C1 >>>\\$\[\e[0m\] "
 	CLE_COLOR=$1
 }
 
 # prompt function - called upon each new prompt line
 _cleprompt () {
-	EE=$?  # store exit status code (it would disappear!)
+	local EE=$?  # store exit status code (it would disappear!)
 	if [ $EE -eq 0 ]; then
-		EEPS="\[\e[1m\][$EE]"
+		EEPS="\[\e[1m\][$EE]\[\e[m\]"
 	else
-		EEPS="\[\e[41m\][$EE]\[\e[m\]"
+		EEPS="\[\e[1;41m\][$EE]\[\e[m\]"
 	fi
 	# Final prompt composition
-	PS1="$EEPS \[\e[0;37m\]$CLE_TIME $CLE_PS\[\e[m\] "
+	PS1="$EEPS $CLE_TIME $CLE_PS\[\e[m\] "
 	# change window title
-	# TERMPORARY DISABLED echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
+	# TERMPORARY DISABLED
+	# echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=_cleprompt
 
@@ -291,7 +286,6 @@ cle () {
 	case "$1_$2" in
 	color_*)
 		## cle color blue|green|red|marley|..etc  -- set prompt color
-		unset CLE_PS
 		_clecolor $2
 		_clepromptsave
 		;;
@@ -306,11 +300,9 @@ cle () {
 		;;
 	time_*)
 		## cle time STRING     -- set custom strings
-		unset CLE_PS
 		shift
 		CLE_TIME="$*"
 		_clepromptsave
-		_clecolor
 		;;
 	deploy_user)
 		## cle deploy user     -- hook CLE into user's profile
