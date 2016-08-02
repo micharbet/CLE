@@ -24,6 +24,8 @@
 # - try 'suu' (sudo workaround) 
 # - change settings with implememted 'cle' command
 
+#echo DEBUG: CLE starts ${BASH_SOURCE[0]}
+
 # check if this is interactive session and if not, skip all the tweaks
 # this is required for scp compattibility if used within .bashrc
 CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
@@ -311,7 +313,7 @@ cle () {
 		if [ $? != 0 ]; then
 			echo; echo " CLE is to be integrated to your login script."
 			read -p " Are you sure? (y/N)  "
-			[ "REPLY" != 'y' ] && return
+			[ "$REPLY" != 'y' ] && return
 			echo >>$HOME/.bashrc
 			echo >>$HOME/.bashrc '# Command Live Environment'
 			echo >>$HOME/.bashrc '[ -f $HOME/.clerc ] && . $HOME/.clerc'
@@ -340,7 +342,7 @@ cle () {
 		;;
 	reload_)
 		## cle reload          -- reload CLE
-		unset CLE_PS
+		#unset CLE_PS
 		unset CLE_EXE
 		. $CLE_RC
 		;;
