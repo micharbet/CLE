@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3.2  25th July 2016
+## version: 3.2  15 August 2016
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -27,10 +27,9 @@
 #echo DEBUG: CLE starts ${BASH_SOURCE[0]}
 
 # check if this is interactive session and if not, skip all the tweaks
-# this is required for scp compattibility if used within .bashrc
-CLE_LCLUSER=`who am i 2>/dev/null | cut -d' ' -f1`
-[ -n "$TMUX" ] && CLE_LCLUSER=`whoami` # tmux hack
-if [ -n "$CLE_LCLUSER" -a -z "$CLE_EXE" ]; then 
+# this is required for scp compattibility if initiated from .bashrc
+if [ -n "TERM" -a "$TERM"!="dumb" ]; then
+CLE_LCLUSER=`whoami`
 
 CLE_RC=${BASH_SOURCE[0]}
 case $CLE_RC in
@@ -102,14 +101,11 @@ _clecolor () {
 	cyan)	 C1="\[\e[1;36m\]"; C3="\[\e[0;36m\]" ;;
 	white)	 C1="\[\e[1;37m\]"; C3="\[\e[0;37m\]" ;;
 	bold)    C1="\[\e[1m\]" ;;
-	grey|gray) C1="\[\e[1;30m\]" ;;
-	marley) # ... bobmarley style :-)
-		# if you have no idea, have a smoke and imagine...
-		C1="\[\e[1;31m\]"; C2="\[\e[1;33m\]"; C3="\[\e[1;32m\]"
-		;;
-	tricolora|rbw) # red-blue-white
-		C1="\[\e[1;31m\]"; C2="\[\e[1;34m\]"; C3="\[\e[1;37m\]"
-		;;
+	grey|gray) C1="\[\e[0;37m\]"; C2="\[\e[0m\]"; C3="\[\e[1;37m\]" ;;
+	tricolora) C1="\[\e[1;31m\]"; C2="\[\e[1;34m\]"; C3="\[\e[1;37m\]" ;;
+	rgb)	 C1="\[\e[1;31m\]"; C2="\[\e[1;32m\]"; C3="\[\e[1;34m\]" ;;
+	marley) # ... bobmarley style :-) have a smoke and imagine...
+		C1="\[\e[1;31m\]"; C2="\[\e[1;33m\]"; C3="\[\e[1;32m\]" ;;
 	*)
 		# search available colors in the function
 		echo " unknown color $1, select one of those:"
@@ -118,7 +114,7 @@ _clecolor () {
 	esac
 	# compose prompts
 	CLE_PS="$C1\u $C2$CLE_HN $C3\w \\$"
-	PS2="$C1 >>>\\$\[\e[0m\] "
+	PS2="$C1 >>>\\$\[\e[m\] "
 	CLE_COLOR=$1
 }
 
@@ -126,12 +122,12 @@ _clecolor () {
 _cleprompt () {
 	local EE=$?  # store exit status code (it would disappear!)
 	if [ $EE -eq 0 ]; then
-		EEPS="\[\e[1m\][$EE]\[\e[m\]"
+		EEPS="\[\e[1;30m\][$EE] $CLE_TIME"
 	else
-		EEPS="\[\e[1;41m\][$EE]\[\e[m\]"
+		EEPS="\[\e[1;41m\][$EE]\[\e[m\e[1;30m\] $CLE_TIME"
 	fi
 	# Final prompt composition
-	PS1="$EEPS $CLE_TIME $CLE_PS\[\e[m\] "
+	PS1="$EEPS $CLE_PS\[\e[m\] "
 	# change window title
 	# TERMPORARY DISABLED
 	# echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
