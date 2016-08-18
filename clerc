@@ -68,6 +68,7 @@ export EDITOR=vi
 export PAGER="less -s"
 HISTCONTROL=ignorespace:ignoredups:erasedups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
+PROMPT_DIRTRIM=2
 shopt -s checkwinsize
 
 #
@@ -103,13 +104,13 @@ _clepromptsave () {
 _clecolor () {
 	local C1 C2 C3 I
 	case "$1" in 
-	red)	 C1=${CT[R]}; C3=${CT[r]} ;;
-	green)	 C1=${CT[G]}; C3=${CT[g]} ;;
-	yellow)	 C1=${CT[Y]}; C3=${CT[y]} ;;
-	blue)	 C1=${CT[B]}; C3=${CT[b]} ;;
-	magenta) C1=${CT[M]}; C3=${CT[m]} ;;
-	cyan)	 C1=${CT[C]}; C3=${CT[c]} ;;
-	white)	 C1=${CT[W]}; C3=${CT[w]} ;;
+	red)	 C1=${CT[r]}; C3=${CT[R]} ;;
+	green)	 C1=${CT[g]}; C3=${CT[G]} ;;
+	yellow)	 C1=${CT[y]}; C3=${CT[Y]} ;;
+	blue)	 C1=${CT[b]}; C3=${CT[B]} ;;
+	magenta) C1=${CT[m]}; C3=${CT[M]} ;;
+	cyan)	 C1=${CT[c]}; C3=${CT[C]} ;;
+	white)	 C1=${CT[w]}; C3=${CT[W]} ;;
 	bold)    C1=$CT_L ;;
 	grey|gray) C1=${CT[K]}; C2=${CT[w]}; C3=${CT[W]};;
 	tricolora) C1=${CT[R]}; C2=${CT[B]}; C3=${CT[W]};;
