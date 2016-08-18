@@ -110,19 +110,18 @@ _clecolor () {
 	blue)	 C1=${CT[b]}; C3=${CT[B]} ;;
 	magenta) C1=${CT[m]}; C3=${CT[M]} ;;
 	cyan)	 C1=${CT[c]}; C3=${CT[C]} ;;
-	white)	 C1=${CT[w]}; C3=${CT[W]} ;;
 	bold)    C1=$CT_L ;;
-	grey|gray) C1=${CT[K]}; C2=${CT[w]}; C3=${CT[W]};;
+	white|grey|gray) C1=${CT[K]}; C2=${CT[w]}; C3=${CT[W]};;
 	tricolora) C1=${CT[R]}; C2=${CT[B]}; C3=${CT[W]};;
-	marley) # ... bobmarley style :-) have a smoke and imagine...
+	marley) # ... Bob Marley style :-) have a smoke and imagine...
 		C1=${CT[R]}; C2=${CT[Y]}; C3=${CT[G]};;
 	???)	# ... any 3 colors
 		C1=${CT[${1:0:1}]}; C2=${CT[${1:1:1}]}; C3=${CT[${1:2:1}]} ;;
 	*)	# print help
 		echo " unknown color $1, select one of predefined:"
 		declare -f _clecolor|sed -n 's/\(\<[a-zA-Z]*\)).*/\1/p'
-		echo " or create your own 3-letter code from those:"
-		echo "  rgbcmykw and RGBCMYKW (e.g 'RyR')"
+		echo " or create your own 3-letter style using this:"
+		echo "  rgbcmykw and RGBCMYKW (e.g 'cle color GyY')"
 		return 2
 	esac
 	# compose prompts
