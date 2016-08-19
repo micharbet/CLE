@@ -1,30 +1,30 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3  17 August 2016
+## version: 3 2016-08-19
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
 # bash tweaks
-# - colorized prompt with exit code highlight
+# - colorized prompt incl exit code highlight
 # - builtin aliases and functions
 # - history tweaks (timestamps etc), shell options
-# - command 'cle' to control the environment
-# - builtin self documentation feature (cle help & cle readme)
 #
 # Execute this file within your shell session once and integrate
 # to your profile seamlessly with 'cle deploy local' command
 # 
-#        $ . clerc
-#        $ cle deploy user
+#	$ . clerc
+#	$ cle deploy user
 #
-# - use implemented 'ssg' (ssh workaround) and seamlessly pass
+# * use implemented 'ssg' (ssh workaround) and seamlessly pass
 #   this environment to remote machine without installation
-# - try 'suu' (sudo workaround) 
-# - change settings with implememted 'cle' command
+# * try 'suu' (sudo workaround) with similar effect
+# * change settings with implememted 'cle' command
+# * builtin self documentation feature ('cle help' & 'cle readme')
+# * manage your aliases using 'aa' function
 
 # check if this is interactive session and if not, skip all the tweaks
-# this is required for scp compattibility if initiated from .bashrc
+# this is required for scp compattibility
 if [ -n "TERM" -a "$TERM"!="dumb" ]; then
 CLE_LCLUSER=`whoami`
 
@@ -63,9 +63,10 @@ I=0; for CCODE in k r g y b m c w; do
 	((I++))
 done
 
-# default shell settings can ge overridden later
+# default shell settings
 export EDITOR=vi
 export PAGER="less -s"
+HISTFILE=$HOME/.bash_history-$CLE_EFUSER
 HISTCONTROL=ignorespace:ignoredups:erasedups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 PROMPT_DIRTRIM=2
@@ -145,12 +146,14 @@ _cleprompt () {
 	# echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=_cleprompt
+_clexe $CLE_PROMPT
+_clecolor $CLE_COLOR
 
 case $CLE_RC in
-*.clerc-tmp-*)	# old good .bashrc :-) but only from temporary environment
+*.clerc-tmp-*)	# run old good .bashrc :-)
 	_clexe $HOME/.bashrc
 	;;
-*/clerc)	# this looks like initial run from commandline
+*/clerc*)	# this looks like initial run from commandline
 	_clebanner
 	echo "If this is your first run, consider setting up in your profile."
 	echo "Issue following command to copy source script into $HOME/.clerc"
@@ -159,18 +162,15 @@ case $CLE_RC in
 	;;
 esac
 
-# local setup like e.g CLE_COLOR, CLE_PS, CLE_HN, CLE_TIME, anything...
-_clexe $HOME/.clerc_local
-_clexe $CLE_PROMPT
+# local tweaks
+_clexe $HOME/.clerc-local
 
 # execute plugins from .cle folder
 for PLUG in $HOME/.cle/*; do
 	_clexe $PLUG
 done
 
-_clecolor $CLE_COLOR
-
-# basic aliases - those might be overridden by .aliases file
+# basic aliases
 #
 ## CLE internal aliases and functions:
 ## -----------------------------------
@@ -195,31 +195,13 @@ alias mv='mv -i'
 alias rm='rm -i'
 alias hh=history
 
-# store basic alias set if there is none
-[ -f $CLE_ALIASES ] || alias >$CLE_ALIASES
-
-# personalized aliases
-CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER
-HISTFILE=$HOME/.bash_history-$CLE_EFUSER  # private history files
-_clexe $CLE_ALIASES
-
-#
-# functions
-#
-
-## path          -- show $PATH in readable way
-path () {
-	echo $PATH|tr : \\n
-}
-
-## psg           -- ps filtered through grep
-psg () {
- ps -ef |grep -i $1|grep -v grep
-}
-
 ##
 ## alias management
 ## ----------------
+CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER # personalized aliases
+[ -f $CLE_ALIASES ] || alias >$CLE_ALIASES # create basic alias set
+_clexe $CLE_ALIASES
+
 aa () {
 	case "$1" in
 	"") ## aa         -- show aliases
@@ -242,18 +224,29 @@ aa () {
 		mv $TALIAS $CLE_ALIASES
 		aa load
 		;;
+	merge) ## aa merge   -- merge local and remote aliases
+		echo aa merge ... not imlemented yet ;;
 	*)	
-                echo " what??  'aa $1 $2'"
-                echo " check this: cle help"
+		echo " unimplemented: aa $1 $2"
+		cle help aa
                 ;;
 	esac
+}
+
+## path          -- show $PATH in readable way
+path () {
+	echo $PATH|tr : \\n
+}
+
+## psg           -- ps filtered through grep
+psg () {
+ ps -ef |grep -i $1|grep -v grep
 }
 
 ##
 ## SSH & SUDO wrappers:
 ## --------------------
 ## ssg [user@]hostname  -- login to remote system running this environment
-# You can replace 'ssg' with 'ssh' although this is not recommended
 ssg () {
 	cd
 	if [ -n "$1" ]; then
