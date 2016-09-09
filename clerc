@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2016-08-24
+## version: 3 2016-08-31
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -41,7 +41,7 @@ CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 CLE_CUSTOMRC=$HOME/.cle-${CLE_EFUSER:=$CLE_LCLUSER}
 
 # where in the deep space is CLE growing... you may change with your own url
-CLE_ORIGIN='https://gitlab.cee.redhat.com/marbet/cle/raw/master'
+CLE_ORIGIN='https://raw.githubusercontent.com/micharbet/CLE/master/'
  
 # tweaked hostname - removing some substrings (redhat and gss)
 CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
@@ -53,15 +53,17 @@ CLE_COLOR='marley'
 CLE_PROMPT=$HOME/.cleprompt-$CLE_EFUSER
 
 # color table initializattion
-declare -A CT
 CT_N=`tput sgr0` # reset
 CT_L=`tput bold`
+CT=`tput setaf 0`; CT_k=$CT_N$CT; CT_K=$CT_L$CT
+CT=`tput setaf 1`; CT_r=$CT_N$CT; CT_R=$CT_L$CT
+CT=`tput setaf 2`; CT_g=$CT_N$CT; CT_G=$CT_L$CT
+CT=`tput setaf 3`; CT_y=$CT_N$CT; CT_Y=$CT_L$CT
+CT=`tput setaf 4`; CT_b=$CT_N$CT; CT_B=$CT_L$CT
+CT=`tput setaf 5`; CT_m=$CT_N$CT; CT_M=$CT_L$CT
+CT=`tput setaf 6`; CT_c=$CT_N$CT; CT_C=$CT_L$CT
+CT=`tput setaf 7`; CT_w=$CT_N$CT; CT_W=$CT_L$CT
 CT_E=`tput setab 1; tput setaf 7` # err highlight
-I=0; for CCODE in k r g y b m c w; do
-	CT[$CCODE]=$CT_N`tput setaf $I`
-	CT[${CCODE^}]=$CT_L`tput setaf $I`
-	((I++))
-done
 
 # default shell settings
 export EDITOR=vi
@@ -101,33 +103,37 @@ _clepromptsave () {
 	echo CLE_TIME=\'$CLE_TIME\' >>$CLE_PROMPT
 }
 
+
 # colorizer
-_clecolor () {
-	local C1 C2 C3 I
+_clesetpr () {
+	local C0 C1 C2 I II
 	case "$1" in 
-	red)	 C1=${CT[r]}; C3=${CT[R]} ;;
-	green)	 C1=${CT[g]}; C3=${CT[G]} ;;
-	yellow)	 C1=${CT[y]}; C3=${CT[Y]} ;;
-	blue)	 C1=${CT[b]}; C3=${CT[B]} ;;
-	magenta) C1=${CT[m]}; C3=${CT[M]} ;;
-	cyan)	 C1=${CT[c]}; C3=${CT[C]} ;;
-	bold)    C1=$CT_L ;;
-	white|grey|gray) C1=${CT[K]}; C2=${CT[w]}; C3=${CT[W]};;
-	tricolora) C1=${CT[R]}; C2=${CT[B]}; C3=${CT[W]};;
+	red)	 C0=$CT_r; C2=$CT_R;;
+	green)	 C0=$CT_g; C2=$CT_G;;
+	yellow)	 C0=$CT_y; C2=$CT_Y;;
+	blue)	 C0=$CT_b; C2=$CT_B;;
+	magenta) C0=$CT_m; C2=$CT_M;;
+	cyan)	 C0=$CT_c; C2=$CT_C;;
+	bold)    C0=$CT_L;;
+	white|grey|gray) C0=$CT_K; C1=$CT_w; C2=$CT_W;;
+	tricolora) C0=$CT_R; C1=$CT_B; C2=$CT_W;;
 	marley) # ... Bob Marley style :-) have a smoke and imagine...
-		C1=${CT[R]}; C2=${CT[Y]}; C3=${CT[G]};;
+		C0=$CT_R; C1=$CT_Y; C2=$CT_G;;
 	???)	# ... any 3 colors
-		C1=${CT[${1:0:1}]}; C2=${CT[${1:1:1}]}; C3=${CT[${1:2:1}]} ;;
+		for I in 0 1 2; do
+			II=CT_${1:$I:1}
+			declare C$I=${!II}
+		done;;
 	*)	# print help
 		echo " unknown color $1, select one of predefined:"
-		declare -f _clecolor|sed -n 's/\(\<[a-zA-Z]*\)).*/\1/p'
+		declare -f _clesetpr|sed -n 's/\(\<[a-zA-Z]*\)).*/\1/p'
 		echo " or create your own 3-letter style using this:"
 		echo "  rgbcmykw and RGBCMYKW (e.g 'cle color GyY')"
 		return 2
 	esac
 	# compose prompts
-	CLE_PS="\[$C1\]\u \[$C2\]$CLE_HN \[$C3\]\w \\$"
-	PS2="\[$C1\] \\$>>>\[$CT_N\] "
+	CLE_PS="\[$C0\]\u \[$C1\]$CLE_HN \[$C2\]\w \\$"
+	PS2="\[$C0\] \\$>>>\[$CT_N\] "
 	CLE_COLOR=$1
 	_clepromptsave
 }
@@ -136,18 +142,18 @@ _clecolor () {
 _cleprompt () {
 	local EEP EE=$?  # store exit status code (it would disappear!)
 	if [ $EE -eq 0 ]; then
-		EEP="\[${CT[K]}\][$EE]"
+		EEP="\[$CT_K\][$EE]"
 	else
-		EEP="\[$CT_E\][$EE]\[$CT_N${CT[K]}\]"
+		EEP="\[$CT_E\][$EE]\[$CT_K\]"
 	fi
 	# Final prompt composition
 	PS1="$EEP${CLE_TIME:+ $CLE_TIME} \[$CT_N\]$CLE_PS\[$CT_N\] "
 	# change window title TERMPORARY DISABLED
-	# echo -en "\e]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
+	echo -en "\033]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=_cleprompt
 _clexe $CLE_PROMPT
-_clecolor $CLE_COLOR
+_clesetpr $CLE_COLOR
 
 case $CLE_RC in
 *.clerc-tmp-*)	# run old good .bashrc :-)
@@ -253,7 +259,8 @@ ssg () {
 		cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
 		CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64|tr -d '\n\r '`
 		`/usr/bin/which ssh` -t $1 "
-			echo $CLE_64|base64 -d |tar xzf -
+			echo $CLE_64 >cle-64
+			echo $CLE_64|base64 --decode |tar xzf -
 			export CLE_EFUSER=$CLE_EFUSER;
 			exec bash --rcfile .clerc-tmp-$LOGNAME"
 	else
@@ -269,7 +276,7 @@ suu () {
 	cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
 	CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64|tr -d '\n\r '`
 	sudo -i -u ${1:-root} /bin/bash  -c \
-		"echo $CLE_64|base64 -d | tar xzf -;
+		"echo $CLE_64|base64 --decode| tar xzf -;
 		 export CLE_EFUSER=$CLE_EFUSER;
 		 exec bash --rcfile .clerc-tmp-$LOGNAME"
 	unset CLE_64
@@ -282,7 +289,7 @@ suu () {
 cle () {
 	case "$1_$2" in
 	color_*) ## cle color blue|green|red|marley|..etc  -- set prompt color
-		_clecolor $2 ;;
+		_clesetpr $2 ;;
 	time_on) ## cle time on|off     -- turn server time in prompt on/off
 		CLE_TIME='\A'
 		_clepromptsave ;;
@@ -325,6 +332,8 @@ cle () {
 	reload_) ## cle reload          -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC ;;
+	env_)	## cle env             -- print CLE_* variables
+		set | grep ^CLE_.*= ;;
 	update_) ## cle update          -- download newest version of CLE
 		curl -k $CLE_ORIGIN/clerc >$HOME/clerc-new
 		echo "New CLE has been stored here: $HOME/clerc-new"
