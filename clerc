@@ -341,11 +341,10 @@ cle () {
 		diff $CLE_RC $HOME/clerc-new
 		read -p "Do you want to install new version? (y/N) "
 		[ "$REPLY" != 'y' ] && return
-		cp $HOME/.clerc $HOME/clerc-orig
-		mv $HOME/clerc-new $HOME/.clerc
+		cp $CLE_RC $HOME/clerc-orig
+		mv $HOME/clerc-new $CLE_RC
 		cle reload
-		echo "New CLE has been installed, the previous version has been stored here: $HOME/.clerc-orig"
-		# no setup for now, need to think more about it
+		echo "New CLE has been installed, the previous version has been stored here: $HOME/clerc-orig"
 		;;
 	readme_) ## cle readme          -- download and show README file
 		curl -k $CLE_ORIGIN/README.md |less ;;
