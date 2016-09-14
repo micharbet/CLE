@@ -50,6 +50,7 @@ CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
 # default prompt settings
 CLE_TIME='\A'
 CLE_COLOR='marley'
+CLE_WTITLE=1
 CLE_PROMPT=$HOME/.cleprompt-$CLE_EFUSER
 
 # color table initializattion
