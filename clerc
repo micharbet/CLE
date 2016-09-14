@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2016-08-31
+## version: 3 2016-09-13
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -99,9 +99,9 @@ _clexe () {
 
 # save prompt related variables
 _clepromptsave () {
-	echo CLE_COLOR=\'$CLE_COLOR\' >$CLE_PROMPT
-	echo CLE_TIME=\'$CLE_TIME\' >>$CLE_PROMPT
-}
+	echo CLE_COLOR=\'$CLE_COLOR\'
+	echo CLE_TIME=\'$CLE_TIME\'
+} >$CLE_PROMPT
 
 
 # colorizer
@@ -144,12 +144,14 @@ _cleprompt () {
 	if [ $EE -eq 0 ]; then
 		EEP="\[$CT_K\][$EE]"
 	else
-		EEP="\[$CT_E\][$EE]\[$CT_K\]"
+		EEP="\[$CT_E\][$EE]\[$CT_N$CT_K\]"
 	fi
 	# Final prompt composition
 	PS1="$EEP${CLE_TIME:+ $CLE_TIME} \[$CT_N\]$CLE_PS\[$CT_N\] "
 	# change window title TERMPORARY DISABLED
-	echo -en "\033]0;$CLE_EFUSER -> $LOGNAME@$CLE_HN: $PWD\007"
+	[ -z "$CLE_WTITLE" ] && return
+	[ "$CLE_EFUSER" != "$LOGNAME" ] && WTU="$CLE_EFUSER ->"
+	echo -en "\033]0;$WTU $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=_cleprompt
 _clexe $CLE_PROMPT
@@ -300,6 +302,10 @@ cle () {
 		shift
 		CLE_TIME="$*"
 		_clepromptsave ;;
+	title_on) ## cle title on|off    -- turn on/off window title
+		CLE_WTITLE="1" ;;
+	title_off)
+		CLE_WTITLE="" ;;
 	deploy_user)
 		## cle deploy user     -- hook CLE into user's profile
 		local CLID='# Command Live Environment'
