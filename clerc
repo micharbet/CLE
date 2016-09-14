@@ -261,7 +261,6 @@ ssg () {
 		cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
 		CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64|tr -d '\n\r '`
 		`/usr/bin/which ssh` -t $1 "
-			echo $CLE_64 >cle-64
 			echo $CLE_64|base64 --decode |tar xzf -
 			export CLE_EFUSER=$CLE_EFUSER;
 			exec bash --rcfile .clerc-tmp-$LOGNAME"
