@@ -183,10 +183,9 @@ done
 #
 ## CLE internal aliases and functions:
 ## -----------------------------------
-## ls commands aliases: l ll la lt llr l.
+## ls commands aliases: ll la lt llr l.
 alias ls='ls --color=auto'
 alias ll='ls -l'
-alias l='ls -l'
 alias lt='ls -ltr'
 alias la='ls -al'
 alias llr='ls -lR'
