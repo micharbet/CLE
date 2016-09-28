@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2016-09-13
+## version: 3 2016-09-23
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -40,12 +40,11 @@ CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 # CLE_EFUSER is passed to all consecutive sessions initiated with ssg/suu
 CLE_CUSTOMRC=$HOME/.cle-${CLE_EFUSER:=$CLE_LCLUSER}
 
-# where in the deep space is CLE growing... you may change with your own url
-CLE_ORIGIN='https://raw.githubusercontent.com/micharbet/CLE/master/'
+# where in the deep space is CLE growing...
+CLE_ORIGIN=https://raw.githubusercontent.com/micharbet/CLE/master
  
-# tweaked hostname - removing some substrings (redhat and gss)
-CLE_HN=`hostname | sed -e 's/.redhat.com//' -e 's/.gsslab//'`
-# CLE_HN=`hostname`
+# hostname - cna be tweaked in e.g. ~/.clerd-local
+CLE_HN=`hostname`
 
 # default prompt settings
 CLE_TIME='\A'
@@ -79,14 +78,22 @@ shopt -s checkwinsize
 # Internal helper functions
 #
 
+echob () {
+	echo -e $CT_L$*$CT_N
+}
+
+ask () {
+	read -p "$CT_L$*$CT_N"
+}
+
 # print banner
 _clebanner () {
 cat <<EOT
 
    ___|  |      ____|    Command Live Environment activated
   |      |      __|      ...bit of life to the command line
-  |      |      |           'cle help'      to learn more 
- \____| _____| _____|    or 'less $CLE_RC'  to discover the magic
+  |      |      |          $CT_L cle help $CT_N      to learn more 
+ \____| _____| _____|    or$CT_L less $CLE_RC $CT_N  to discover the magic
  
 EOT
 }
@@ -107,7 +114,7 @@ _clepromptsave () {
 
 # colorizer
 _clesetpr () {
-	local C0 C1 C2 I II
+	local C0 C1 C2 I II PP
 	case "$1" in 
 	red)	 C0=$CT_r; C2=$CT_R;;
 	green)	 C0=$CT_g; C2=$CT_G;;
@@ -116,7 +123,7 @@ _clesetpr () {
 	magenta) C0=$CT_m; C2=$CT_M;;
 	cyan)	 C0=$CT_c; C2=$CT_C;;
 	bold)    C0=$CT_L;;
-	white|grey|gray) C0=$CT_K; C1=$CT_w; C2=$CT_W;;
+	white|grey|gray) C0=$CT_N; C1=$CT_w; C2=$CT_W;;
 	tricolora) C0=$CT_R; C1=$CT_B; C2=$CT_W;;
 	marley) # ... Bob Marley style :-) have a smoke and imagine...
 		C0=$CT_R; C1=$CT_Y; C2=$CT_G;;
@@ -133,8 +140,9 @@ _clesetpr () {
 		return 2
 	esac
 	# compose prompts
-	CLE_PS="\[$C0\]\u \[$C1\]$CLE_HN \[$C2\]\w \\$"
-	PS2="\[$C0\] \\$>>>\[$CT_N\] "
+	[ $UID == 0 ] && PP="#" || PP=">"
+	CLE_PS="\[$C0\]\u \[$C1\]$CLE_HN \[$C2\]\w $PP"
+	PS2="\[$C0\] >>>\[$CT_N\] "
 	CLE_COLOR=$1
 	_clepromptsave
 }
@@ -167,7 +175,7 @@ case $CLE_RC in
 	echo "If this is your first run, consider setting up in your profile."
 	echo "Issue following command to copy source script into $HOME/.clerc"
 	echo -e "and activate the environment in $HOME/.bashrc\n"
-	echo -e "     $CT_L cle deploy user $CT_N\n"
+	echob "     cle deploy user\n"
 	;;
 esac
 
@@ -216,7 +224,7 @@ aa () {
 		alias ;;
 	save) ## aa save    -- save your set of aliases
 		alias
-		echo; read -p "ENTER for save, Ctrl-C"
+		ask "ENTER for save, Ctrl-C to exit"
 		alias >$CLE_ALIASES
 		echo Saved to file .$CLE_ALIASES
 		;;
@@ -225,11 +233,10 @@ aa () {
 		. $CLE_ALIASES
 		;;
 	edit) ## aa edit    -- edit and reload your aliases
-		local TALIAS=$HOME/.aiases-tmp-$CLE_EFUSER
+		local TALIAS=$CLE_ALIASES-backup
 		alias >$TALIAS
 		vi $TALIAS
-		echo; read -p "ENTER to reload, Ctrl-C to break"
-		mv $TALIAS $CLE_ALIASES
+		cp $TALIAS $CLE_ALIASES
 		aa load
 		;;
 	merge) ## aa merge   -- merge local and remote aliases
@@ -313,7 +320,7 @@ cle () {
 		grep -q "$CLID" $BRC 
 		if [ $? != 0 ]; then
 			echo " CLE is to be integrated to your login script."
-			read -p " Are you sure? (y/N) "
+			ask " Are you sure? (y/N) "
 			[ "$REPLY" != 'y' ] && return
 			echo -e >>$BRC \\n$CLID
 			echo -e >>$BRC '[ -f $HOME/.clerc ] && . $HOME/.clerc\n'
@@ -329,7 +336,7 @@ cle () {
 		echo " Content of $CLE_RC will be copied to /etc/profile.d/cle.sh"
 		echo " The environment will be activated for all users."
 		echo " Only root can do that..."
-		read -p " Are you sure? (y/N) "
+		ask " Are you sure? (y/N) "
 		[ "$REPLY" != 'y' ] && return
 		cp $CLE_RC /etc/profile.d/cle.sh
 		echo " Done!"
@@ -342,9 +349,9 @@ cle () {
 	update_) ## cle update          -- download newest version of CLE
 		curl -k $CLE_ORIGIN/clerc >$HOME/clerc-new
 		echo "New CLE has been stored here: $HOME/clerc-new"
-		read -p "Press Enter to show diff or Ctrl-C to break"
+		ask "Press Enter to show diff or Ctrl-C to break"
 		diff $CLE_RC $HOME/clerc-new
-		read -p "Do you want to install new version? (y/N) "
+		ask "Do you want to install new version? (y/N) "
 		[ "$REPLY" != 'y' ] && return
 		cp $CLE_RC $HOME/clerc-orig
 		mv $HOME/clerc-new $CLE_RC
