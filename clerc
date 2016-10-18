@@ -1,8 +1,8 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2016-09-30
-## license: GNU GPL 3
+## version: 3 2016-10-16
+##license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
 # bash tweaks
@@ -202,14 +202,24 @@ alias l.='ls -ld .?*'
 alias ..='cd ..'
 alias ...='cd ../..'
 alias c-='cd -'
-## xx & cx       -- directory bookmark; set it and 'cd' there
+## xx & cx    -- directory bookmark; set it and 'cd' there
 # what about to define x1/c1, x2/c2, etc...
 alias xx='XPOINT=`pwd`; echo Directory boorkmark set here: $XPOINT'
 alias cx='cd $XPOINT'
 alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
-alias hh=history
+
+## path       -- show $PATH in readable way
+path () {
+	echo $PATH|tr : \\n
+}
+
+## psg        -- ps filtered through grep
+psg () {
+ ps -ef |grep -i $1|grep -v grep
+}
+
 
 ##
 ## alias management
@@ -248,14 +258,17 @@ aa () {
 	esac
 }
 
-## path          -- show $PATH in readable way
-path () {
-	echo $PATH|tr : \\n
-}
-
-## psg           -- ps filtered through grep
-psg () {
- ps -ef |grep -i $1|grep -v grep
+##
+## history management
+## ------------------
+hh () {
+	if [ $# -eq 0 ]; then
+## hh         -- just print history
+		history
+	else
+## hh string  -- search in history
+		history|grep $1
+	fi
 }
 
 ##
