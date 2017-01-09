@@ -130,10 +130,12 @@ _clesetpr () {
 	???)	# ... any 3 colors
 		for I in 0 1 2; do
 			II=CT_${1:$I:1}
+			[[ -z "${!II}" ]] && echo "bad color code '${1:$I:1}' in $1" && return 2
 			declare C$I=${!II}
 		done;;
 	*)	# print help
 		echo " unknown color $1, select one of predefined:"
+		# self documented again :)
 		declare -f _clesetpr|sed -n 's/\(\<[a-zA-Z]*\)).*/\1/p'
 		echo " or create your own 3-letter style using this:"
 		echo "  rgbcmykw and RGBCMYKW (e.g 'cle color GyY')"
