@@ -1,8 +1,8 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2016-10-16
-##license: GNU GPL 3
+## version: 3 2017-01-09
+## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
 # bash tweaks
@@ -16,15 +16,15 @@
 #	$ . clerc
 #	$ cle deploy user
 #
-# * use implemented 'ssg' (ssh workaround) and seamlessly pass
-#   this environment to remote machine without installation
-# * try 'suu' (sudo workaround) with similar effect
+# * use 'ssg' (ssh wrapper) and seamlessly pass this environment
+#   to remote machine without installation
+# * try 'suu' (sudo wrapper) with similar effect
 # * change settings with implememted 'cle' command
-# * builtin self documentation feature ('cle help' & 'cle readme')
+# * built-in self documentation feature ('cle help' & 'cle readme')
 # * manage your aliases using 'aa' function
 
-# check if this is interactive session and if not, skip all the tweaks
-# this is required for scp compattibility and uninteractive ssh sessions
+# check running in interactive session and if not, skip all the tweaks
+# required for scp compattibility and similar
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 CLE_LCLUSER=`whoami`
 
@@ -43,7 +43,8 @@ CLE_CUSTOMRC=$HOME/.cle-${CLE_EFUSER:=$CLE_LCLUSER}
 # where in the deep space is CLE growing...
 CLE_ORIGIN=https://raw.githubusercontent.com/micharbet/CLE/master
  
-# hostname - cna be tweaked in e.g. ~/.clerd-local
+# hostname tweak - remove unnecessary parts
+# can be altered in e.g. ~/.clerc-local
 CLE_HN=`hostname`
 
 # default prompt settings
@@ -77,9 +78,8 @@ shopt -s checkwinsize
 #
 # Internal helper functions
 #
-
-echob () {
-	echo -e $CT_L$*$CT_N
+printb () {
+	printf "$CT_L$*$CT_N\n"
 }
 
 ask () {
@@ -98,7 +98,7 @@ cat <<EOT
 EOT
 }
 
-# execute associated script and log its filename into CLE_EXE to keep track
+# execute script and log its filename into CLE_EXE to keep track
 # also ensure the script will be executed only once
 _clexe () {
 	echo $CLE_EXE|grep -q $1 && return
@@ -106,14 +106,14 @@ _clexe () {
 }
 
 # save prompt related variables
-_clepromptsave () {
+_saveprompt () {
 	echo CLE_COLOR=\'$CLE_COLOR\'
 	echo CLE_TIME=\'$CLE_TIME\'
 } >$CLE_PROMPT
 
 
 # colorizer
-_clesetpr () {
+_setcolor () {
 	local C0 C1 C2 I II PP
 	case "$1" in 
 	red)	 C0=$CT_r; C2=$CT_R;;
@@ -122,8 +122,8 @@ _clesetpr () {
 	blue)	 C0=$CT_b; C2=$CT_B;;
 	magenta) C0=$CT_m; C2=$CT_M;;
 	cyan)	 C0=$CT_c; C2=$CT_C;;
-	bold)    C0=$CT_L;;
 	white|grey|gray) C0=$CT_N; C1=$CT_w; C2=$CT_W;;
+	bold)    C0=$CT_L;;
 	tricolora) C0=$CT_R; C1=$CT_B; C2=$CT_W;;
 	marley) # ... Bob Marley style :-) have a smoke and imagine...
 		C0=$CT_R; C1=$CT_Y; C2=$CT_G;;
@@ -134,11 +134,11 @@ _clesetpr () {
 			declare C$I=${!II}
 		done;;
 	*)	# print help
-		echo " unknown color $1, select one of predefined:"
-		# self documented again :)
-		declare -f _clesetpr|sed -n 's/\(\<[a-zA-Z]*\)).*/\1/p'
-		echo " or create your own 3-letter style using this:"
-		echo "  rgbcmykw and RGBCMYKW (e.g 'cle color GyY')"
+		echo " Unknown color '$1', select one of predefined:"
+		# self documented function :)
+		declare -f _setcolor|sed -n -e 's/\ *\(\<[a-zA-Z |]*\)).*/ \1 /p' |tr '\n' '|'
+		printf "\n or create your own 3-letter style from:"
+		printf " rgbcmykw and RGBCMYKW \n e.g 'cle color GyY'\n"
 		return 2
 	esac
 	# compose prompts
@@ -146,7 +146,7 @@ _clesetpr () {
 	CLE_PS="\[$C0\]\u \[$C1\]$CLE_HN \[$C2\]\w $PP"
 	PS2="\[$C0\] >>>\[$CT_N\] "
 	CLE_COLOR=$1
-	_clepromptsave
+	_saveprompt
 }
 
 # prompt function - called upon each new prompt line
@@ -162,22 +162,25 @@ _cleprompt () {
 	# change window title TERMPORARY DISABLED
 	[ -z "$CLE_WTITLE" ] && return
 	[ "$CLE_EFUSER" != "$LOGNAME" ] && WTU="$CLE_EFUSER ->"
-	echo -en "\033]0;$WTU $LOGNAME@$CLE_HN: $PWD\007"
+	printf "\033]0;$WTU $LOGNAME@$CLE_HN: $PWD\007"
 }
 PROMPT_COMMAND=_cleprompt
-_clexe $CLE_PROMPT
-_clesetpr $CLE_COLOR
 
+# indicate first run, show banner
+[ -f $CLE_PROMPT ] || { _clebanner; _saveprompt; }
+_clexe $CLE_PROMPT
+_setcolor $CLE_COLOR
+
+# where the CLE was started?
 case $CLE_RC in
-*.clerc-tmp-*)	# run old good .bashrc :-)
+*.clerc-tmp-*)	# transferred through ssg/suu, run old good .bashrc :-)
 	_clexe $HOME/.bashrc
 	;;
-*/clerc*)	# this looks like initial run from commandline
-	_clebanner
-	echo "If this is your first run, consider setting up in your profile."
-	echo "Issue following command to copy source script into $HOME/.clerc"
-	echo -e "and activate the environment in $HOME/.bashrc\n"
-	echob "     cle deploy user\n"
+*/clerc*)	# initial run from commandline
+	printf "It seems you started CLE from command line by issuing '. $CLE_RC'\n"
+	printf "Since this is your first run, consider setting up in your profile.\n"
+	printf "Following command will hook CLE in your $HOME/.bashrc\n\n"
+	printb "  cle deploy user\n"
 	;;
 esac
 
@@ -189,48 +192,37 @@ for PLUG in $HOME/.cle/*; do
 	_clexe $PLUG
 done
 
-# basic aliases
-#
-## CLE internal aliases and functions:
-## -----------------------------------
-## ls commands aliases: ll la lt llr l.
-alias ls='ls --color=auto'
-alias ll='ls -l'
-alias lt='ls -ltr'
-alias la='ls -al'
-alias llr='ls -lR'
-alias l.='ls -ld .?*'
-## cd command aliases:  .. ... (up one or two levels); c- (cd to the recent dir)
-alias ..='cd ..'
-alias ...='cd ../..'
-alias c-='cd -'
-## xx & cx    -- directory bookmark; set it and 'cd' there
-# what about to define x1/c1, x2/c2, etc...
-alias xx='XPOINT=`pwd`; echo Directory boorkmark set here: $XPOINT'
-alias cx='cd $XPOINT'
-alias grep='grep --color=auto'
-alias mv='mv -i'
-alias rm='rm -i'
-
-## path       -- show $PATH in readable way
-path () {
-	echo $PATH|tr : \\n
+## CLE default aliases and functions:
+## ----------------------------------
+aadef () {
+	## ls commands aliases: l ll la lt llr l.
+	alias ls='ls --color=auto'
+	alias l='ls -l' ll='ls -l' lt='ls -ltr' la='ls -al' llr='ls -lR'
+	alias l.='ls -ld .?*'
+	## cd command aliases:
+	## .. ...     -- up one or two levels
+	## cd-        -- cd to recent dir
+	## -  (dash)  -- cd to recent dir
+	alias ..='cd ..' ...='cd ../..' cd-='cd -'
+	## xx & cx    -- path bookmark; set and 'cd' later, stored in $XX
+	alias xx='XX=`pwd`; echo path boorkmark set here: $XX'
+	alias cx='cd $XX'
+	alias grep='grep --color=auto'
+	alias mv='mv -i' rm='rm -i'
 }
 
-## psg        -- ps filtered through grep
-psg () {
- ps -ef |grep -i $1|grep -v grep
-}
-
+# '-' must be function, alias was troublesome
+- () { cd -; }
 
 ##
 ## alias management
 ## ----------------
 CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER # personalized aliases
-[ -f $CLE_ALIASES ] || alias >$CLE_ALIASES # create basic alias set
+[ -f $CLE_ALIASES ] || { aadef; alias >$CLE_ALIASES; } # create basic alias set
 _clexe $CLE_ALIASES
 
 aa () {
+	local ALIASBAK=$CLE_ALIASES.back
 	case "$1" in
 	"") ## aa         -- show aliases
 		alias ;;
@@ -238,21 +230,33 @@ aa () {
 		alias
 		ask "ENTER for save, Ctrl-C to exit"
 		alias >$CLE_ALIASES
-		echo Saved to file .$CLE_ALIASES
+		echo Saved to file: $CLE_ALIASES
 		;;
 	load) ## aa load    -- (re)load your set of aliases
 		unalias -a
 		. $CLE_ALIASES
 		;;
 	edit) ## aa edit    -- edit and reload your aliases
-		local TALIAS=$CLE_ALIASES-backup
-		alias >$TALIAS
+		local TALIAS=$CLE_ALIASES.edit
+		alias >$ALIASBAK
+		cp $ALIASBAK $TALIAS
 		vi $TALIAS
-		cp $TALIAS $CLE_ALIASES
+		mv $TALIAS $CLE_ALIASES
 		aa load
+		echo "Previous set: $ALIASBAK"
 		;;
-	merge) ## aa merge   -- merge local and remote aliases
-		echo aa merge ... not imlemented yet ;;
+	merge)  # aa merge   -- merge local and remote aliases
+		#placeholder
+		echo aa merge ... not imlemented yet
+		;;
+	reset)	## aa reset   -- reset default aliases
+		## aa reset full -- also remove custom aliases
+		alias >$ALIASBAK
+		[[ "$2" == full ]] && unalias -a
+		aadef
+		aa save
+		echo "Previous set:  $ALIASBAK"
+		;;
 	*)	
 		echo " unimplemented: aa $1 $2"
 		cle help aa
@@ -270,6 +274,41 @@ hh () {
 	else
 ## hh string  -- search in history
 		history|grep $1
+	fi
+}
+
+##
+## various functions
+## -----------------
+## path       -- show $PATH in readable way
+path () {
+	echo $PATH|tr : \\n
+}
+
+## psg        -- ps filtered through grep
+psg () {
+ ps -ef |grep -i $1|grep -v grep
+}
+
+## dfh        -- disk free wrapper
+dfh () {
+	df -h
+}
+
+## dush, dusk -- du wrappers
+dush () {
+	if [ $# -eq 0 ]; then
+		du -sh * | sort -h
+	else
+		du -sh $* | sort -h
+	fi
+}
+
+dusk () {
+	if [ $# -eq 0 ]; then
+		du -sk * | sort -n
+	else
+		du -sk $* | sortn -n
 	fi
 }
 
@@ -312,17 +351,17 @@ suu () {
 cle () {
 	case "$1_$2" in
 	color_*) ## cle color blue|green|red|marley|..etc  -- set prompt color
-		_clesetpr $2 ;;
+		_setcolor $2 ;;
 	time_on) ## cle time on|off     -- turn server time in prompt on/off
 		CLE_TIME='\A'
-		_clepromptsave ;;
+		_saveprompt ;;
 	time_off)
 		CLE_TIME=''
-		_clepromptsave ;;
+		_saveprompt ;;
 	time_*) ## cle time STRING     -- set custom strings
 		shift
 		CLE_TIME="$*"
-		_clepromptsave ;;
+		_saveprompt ;;
 	title_on) ## cle title on|off    -- turn on/off window title
 		CLE_WTITLE="1" ;;
 	title_off)
@@ -339,7 +378,7 @@ cle () {
 			[ "$REPLY" != 'y' ] && return
 			echo -e >>$BRC \\n$CLID
 			echo -e >>$BRC '[ -f $HOME/.clerc ] && . $HOME/.clerc\n'
-			echo -e '\n ... added following to the end of .bashrc :'
+			printf '\n ... added following to the end of .bashrc :\n'
 			tail -4 $BRC
 		else
 			echo " CLE is already hooked into .bashrc :"
@@ -371,7 +410,7 @@ cle () {
 		cp $CLE_RC $HOME/clerc-orig
 		mv $HOME/clerc-new $CLE_RC
 		cle reload
-		echo "New CLE has been installed, the previous version has been stored here: $HOME/clerc-orig"
+		echo "New CLE has been installed, previous version stored here: $HOME/clerc-orig"
 		;;
 	readme_) ## cle readme          -- download and show README file
 		curl -k $CLE_ORIGIN/README.md |less ;;
@@ -383,8 +422,8 @@ cle () {
 	*)
 		_cle_$1 $2
 		if [ $? -eq 127 ]; then 
-			echo " 'cle $1' not implemeted"
-			echo " check this: cle help"
+			echo " cle $1 not implemeted"
+			echo " check cle help"
 		fi ;;
 	esac
 }
@@ -397,9 +436,6 @@ unset SUDO_COMMAND
 
 # run personal tweaks
 _clexe $CLE_CUSTOMRC
-
-# indicate first run, show banner
-[ -f $CLE_PROMPT ] || _clebanner && _clepromptsave
 
 fi # End of login shell setup
 # and that's all the magic :-)
