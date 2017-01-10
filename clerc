@@ -45,7 +45,7 @@ CLE_ORIGIN=https://raw.githubusercontent.com/micharbet/CLE/master
  
 # hostname tweak - remove unnecessary parts
 # can be altered in e.g. ~/.clerc-local
-CLE_HN=`hostname`
+CLE_HN=`hostname` # |sed s/.mydomain.com//
 
 # default prompt settings
 CLE_TIME='\A'
@@ -101,8 +101,8 @@ EOT
 # execute script and log its filename into CLE_EXE to keep track
 # also ensure the script will be executed only once
 _clexe () {
-	echo $CLE_EXE|grep -q $1 && return
-	[ -f $1 ] && CLE_EXE=$CLE_EXE:$1 && . $1
+	echo $CLE_EXE|grep -q $1: && return
+	[ -f $1 ] && { CLE_EXE=$CLE_EXE$1:; . $1; }
 }
 
 # save prompt related variables
@@ -194,7 +194,7 @@ done
 
 ## CLE default aliases and functions:
 ## ----------------------------------
-aadef () {
+_defalias () {
 	## ls commands aliases: l ll la lt llr l.
 	alias ls='ls --color=auto'
 	alias l='ls -l' ll='ls -l' lt='ls -ltr' la='ls -al' llr='ls -lR'
@@ -218,7 +218,7 @@ aadef () {
 ## alias management
 ## ----------------
 CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER # personalized aliases
-[ -f $CLE_ALIASES ] || { aadef; alias >$CLE_ALIASES; } # create basic alias set
+[ -f $CLE_ALIASES ] || { _defalias; alias >$CLE_ALIASES; } # create basic alias set
 _clexe $CLE_ALIASES
 
 aa () {
@@ -229,8 +229,10 @@ aa () {
 	save) ## aa save    -- save your set of aliases
 		alias
 		ask "ENTER for save, Ctrl-C to exit"
+		cp $CLE_ALIASES $ALIASBAK
 		alias >$CLE_ALIASES
 		echo Saved to file: $CLE_ALIASES
+		echo Backup in: $ALIASBAK
 		;;
 	load) ## aa load    -- (re)load your set of aliases
 		unalias -a
@@ -243,7 +245,7 @@ aa () {
 		vi $TALIAS
 		mv $TALIAS $CLE_ALIASES
 		aa load
-		echo "Previous set: $ALIASBAK"
+		echo Backup in: $ALIASBAK
 		;;
 	merge)  # aa merge   -- merge local and remote aliases
 		#placeholder
@@ -253,9 +255,9 @@ aa () {
 		## aa reset full -- also remove custom aliases
 		alias >$ALIASBAK
 		[[ "$2" == full ]] && unalias -a
-		aadef
+		_defalias
 		aa save
-		echo "Previous set:  $ALIASBAK"
+		echo Backup in:  $ALIASBAK
 		;;
 	*)	
 		echo " unimplemented: aa $1 $2"
@@ -350,24 +352,24 @@ suu () {
 ## ----------------------
 cle () {
 	case "$1_$2" in
-	color_*) ## cle color blue|green|red|marley|..etc  -- set prompt color
+	color_*) ## cle color COLOR    -- set prompt color
 		_setcolor $2 ;;
-	time_on) ## cle time on|off     -- turn server time in prompt on/off
+	time_on) ## cle time on|off    -- toggle server time in prompt
 		CLE_TIME='\A'
 		_saveprompt ;;
 	time_off)
 		CLE_TIME=''
 		_saveprompt ;;
-	time_*) ## cle time STRING     -- set custom strings
+	time_*) ## cle time STRING    -- set custom strings
 		shift
 		CLE_TIME="$*"
 		_saveprompt ;;
-	title_on) ## cle title on|off    -- turn on/off window title
+	title_on) ## cle title on|off   -- toggle window title
 		CLE_WTITLE="1" ;;
 	title_off)
 		CLE_WTITLE="" ;;
 	deploy_user)
-		## cle deploy user     -- hook CLE into user's profile
+		## cle deploy user    -- hook CLE into user's profile
 		local CLID='# Command Live Environment'
 		local BRC=$HOME/.bashrc
 		cp $CLE_RC $HOME/.clerc
@@ -385,7 +387,7 @@ cle () {
 			grep -A2 "$CLID" $BRC
 		fi ;;
 	deploy_system)
-		## cle deploy system   -- hook CLE into /etc/profile.d
+		## cle deploy system  -- hook CLE into /etc/profile.d
 		echo " CLE is to be integrated into your system!"
 		echo " Content of $CLE_RC will be copied to /etc/profile.d/cle.sh"
 		echo " The environment will be activated for all users."
@@ -395,12 +397,12 @@ cle () {
 		cp $CLE_RC /etc/profile.d/cle.sh
 		echo " Done!"
 		;;
-	reload_) ## cle reload          -- reload CLE
+	reload_) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC ;;
-	env_)	## cle env             -- print CLE_* variables
+	env_)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
-	update_) ## cle update          -- download newest version of CLE
+	update_) ## cle update         -- download newest version of CLE
 		curl -k $CLE_ORIGIN/clerc >$HOME/clerc-new
 		echo "New CLE has been stored here: $HOME/clerc-new"
 		ask "Press Enter to show diff or Ctrl-C to break"
@@ -412,9 +414,9 @@ cle () {
 		cle reload
 		echo "New CLE has been installed, previous version stored here: $HOME/clerc-orig"
 		;;
-	readme_) ## cle readme          -- download and show README file
+	readme_) ## cle readme         -- download and show README file
 		curl -k $CLE_ORIGIN/README.md |less ;;
-	help_*) ## cle help [cmd]      -- self documenting feature
+	help_*) ## cle help [cmd]     -- self documenting feature
 		# double-hash denotes help content :-)
 		[ -z "$2" ] && _clebanner
 		awk -F# "/## *$2/"' { print $3 }' $CLE_RC
@@ -431,11 +433,11 @@ cle () {
 # enhance path with user's own bin directory
 [ -d $HOME/bin ] && echo $PATH | grep -vq $HOME/bin && PATH=$PATH:$HOME/bin
 
-# remove disturbing stuff
-unset SUDO_COMMAND
-
 # run personal tweaks
 _clexe $CLE_CUSTOMRC
+
+# remove disturbing stuff
+unset SUDO_COMMAND
 
 fi # End of login shell setup
 # and that's all the magic :-)
