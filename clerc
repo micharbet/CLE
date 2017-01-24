@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2017-01-09
+## version: 3 2017-01-23
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -397,11 +397,6 @@ cle () {
 		cp $CLE_RC /etc/profile.d/cle.sh
 		echo " Done!"
 		;;
-	reload_) ## cle reload         -- reload CLE
-		unset CLE_EXE
-		. $CLE_RC ;;
-	env_)	## cle env            -- print CLE_* variables
-		set | grep ^CLE_.*= ;;
 	update_) ## cle update         -- download newest version of CLE
 		curl -k $CLE_ORIGIN/clerc >$HOME/clerc-new
 		echo "New CLE has been stored here: $HOME/clerc-new"
@@ -414,6 +409,11 @@ cle () {
 		cle reload
 		echo "New CLE has been installed, previous version stored here: $HOME/clerc-orig"
 		;;
+	reload_) ## cle reload         -- reload CLE
+		unset CLE_EXE
+		. $CLE_RC ;;
+	env_)	## cle env            -- print CLE_* variables
+		set | grep ^CLE_.*= ;;
 	readme_) ## cle readme         -- download and show README file
 		curl -k $CLE_ORIGIN/README.md |less ;;
 	help_*) ## cle help [cmd]     -- self documenting feature
@@ -421,9 +421,11 @@ cle () {
 		[ -z "$2" ] && _clebanner
 		awk -F# "/## *$2/"' { print $3 }' $CLE_RC
 		;;
+	_)	_clebanner ;;
 	*)
-		_cle_$1 $2
-		if [ $? -eq 127 ]; then 
+		if declare -f _cle_$1 >/dev/null; then
+			_cle_$1 $2
+		else
 			echo " cle $1 not implemeted"
 			echo " check cle help"
 		fi ;;
