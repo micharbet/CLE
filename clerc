@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2017-01-23
+## version: 3 2017-01-25
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -33,7 +33,7 @@ case $CLE_RC in
 /*)	;;
 *)	CLE_RC=$PWD/$CLE_RC ;;
 esac
-CLE_EXE=$CLE_RC
+CLE_EXE=$CLE_RC:
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
 # determine effective user and custom script
@@ -102,7 +102,7 @@ EOT
 # also ensure the script will be executed only once
 _clexe () {
 	echo $CLE_EXE|grep -q $1: && return
-	[ -f $1 ] && { CLE_EXE=$CLE_EXE$1:; . $1; }
+	[ -f $1 ] && { CLE_EXE=$CLE_EXE$1: ; . $1; }
 }
 
 # save prompt related variables
