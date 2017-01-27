@@ -197,18 +197,25 @@ done
 _defalias () {
 	## ls commands aliases: l ll la lt llr l.
 	alias ls='ls --color=auto'
-	alias l='ls -l' ll='ls -l' lt='ls -ltr' la='ls -al' llr='ls -lR'
+	alias l='ls -l'
+	alias ll='ls -l'
+	alias lt='ls -ltr'
+	alias la='ls -al'
+	alias llr='ls -lR'
 	alias l.='ls -ld .?*'
 	## cd command aliases:
 	## .. ...     -- up one or two levels
 	## cd-        -- cd to recent dir
 	## -  (dash)  -- cd to recent dir
-	alias ..='cd ..' ...='cd ../..' cd-='cd -'
+	alias ..='cd ..'
+	alias ...='cd ../..'
+	alias cd-='cd -'
 	## xx & cx    -- path bookmark; set and 'cd' later, stored in $XX
 	alias xx='XX=`pwd`; echo path boorkmark set here: $XX'
 	alias cx='cd $XX'
 	alias grep='grep --color=auto'
-	alias mv='mv -i' rm='rm -i'
+	alias mv='mv -i'
+	alias rm='rm -i'
 }
 
 # '-' must be function, alias was troublesome
@@ -218,8 +225,8 @@ _defalias () {
 ## alias management
 ## ----------------
 CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER # personalized aliases
-[ -f $CLE_ALIASES ] || { _defalias; alias >$CLE_ALIASES; } # create basic alias set
 _clexe $CLE_ALIASES
+_defalias
 
 aa () {
 	local ALIASBAK=$CLE_ALIASES.back
