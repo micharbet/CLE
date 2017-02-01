@@ -1,7 +1,7 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2017-01-25
+## version: 3 2017-02-01
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
@@ -173,7 +173,7 @@ _setcolor $CLE_COLOR
 
 # where the CLE was started?
 case $CLE_RC in
-*.clerc-tmp-*)	# transferred through ssg/suu, run old good .bashrc :-)
+*.clerc-remote-*)	# transferred through ssg/suu, run old good .bashrc :-)
 	_clexe $HOME/.bashrc
 	;;
 */clerc*)	# initial run from commandline
@@ -326,32 +326,34 @@ dusk () {
 ## --------------------
 ## ssg [user@]hostname  -- login to remote system running this environment
 ssg () {
-	cd
+	pushd $HOME >/dev/null
+	CLE_RMTRC=.clerc-remote-$CLE_EFUSER
 	if [ -n "$1" ]; then
-		cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
-		CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64|tr -d '\n\r '`
+		cp $CLE_RC $CLE_RMTRC 2>/dev/null
+		CLE_64=`tar czf - $CLE_RMTRC |base64|tr -d '\n\r '`
 		`/usr/bin/which ssh` -t $1 "
 			echo $CLE_64|base64 --decode |tar xzf -
 			export CLE_EFUSER=$CLE_EFUSER;
-			exec bash --rcfile .clerc-tmp-$LOGNAME"
+			exec bash --rcfile $CLE_RMTRC"
 	else
 		cle help ssg
 	fi
 	unset CLE_64
-	cd - >/dev/null
+	popd >/dev/null
 }
 
 ## suu [username]       -- sudo wrapper; root is the default account
 suu () {
-	cd
-	cp $CLE_RC .clerc-tmp-$LOGNAME 2>/dev/null
-	CLE_64=`tar czf - .clerc-tmp-$LOGNAME $CLE_MYFILES|base64|tr -d '\n\r '`
+	pushd $HOME >/dev/null
+	CLE_RMTRC=.clerc-remote-$CLE_EFUSER
+	cp $CLE_RC $CLE_RMTRC 2>/dev/null
+	CLE_64=`tar czf - $CLE_RMTRC |base64|tr -d '\n\r '`
 	sudo -i -u ${1:-root} /bin/bash  -c \
 		"echo $CLE_64|base64 --decode| tar xzf -;
 		 export CLE_EFUSER=$CLE_EFUSER;
-		 exec bash --rcfile .clerc-tmp-$LOGNAME"
+		 exec bash --rcfile $CLE_RMTRC"
 	unset CLE_64
-	cd - >/dev/null
+	popd >/dev/null
 }
 
 ##
