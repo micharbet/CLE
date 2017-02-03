@@ -70,7 +70,7 @@ CT_E=`tput setab 1; tput setaf 7` # err highlight
 export EDITOR=vi
 export PAGER="less -s"
 HISTFILE=$HOME/.bash_history-$CLE_EFUSER
-HISTCONTROL=ignorespace:ignoredups:erasedups
+HISTCONTROL=ignorespace:ignoredups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
@@ -258,6 +258,9 @@ aa () {
 		#placeholder
 		echo aa merge ... not imlemented yet
 		;;
+#	fwd)	# aa fwd    -- forward local aliases to remote system with 'ssg'
+#		ln -s $CLE_ALIASES ~/.aliases-remote-$CLE_EFUSER
+#		;;
 	reset)	## aa reset   -- reset default aliases
 		## aa reset full -- also remove custom aliases
 		alias >$ALIASBAK
@@ -277,13 +280,24 @@ aa () {
 ## history management
 ## ------------------
 hh () {
-	if [ $# -eq 0 ]; then
-## hh         -- just print history
+	case $1 in
+	"")	## hh         -- just print history
 		history
-	else
-## hh string  -- search in history
-		history|grep $1
-	fi
+		;;
+	s)	## hh s       -- save current history in $HISTFILE
+		history -a
+		;;
+	l)	## hh l       -- load history, use save & load to share history
+		history -n
+		;;
+	[0-9]*)	## hh number  -- print last N entries
+		history $1
+		;;
+	*)
+		## hh string  -- search in history
+		history | grep $1
+		;;
+	esac
 }
 
 ##
@@ -299,7 +313,7 @@ psg () {
  ps -ef |grep -i $1|grep -v grep
 }
 
-## dfh        -- disk free wrapper
+## dfh        -- df -h wrapper
 dfh () {
 	df -h
 }
@@ -327,10 +341,12 @@ dusk () {
 ## ssg [user@]hostname  -- login to remote system running this environment
 ssg () {
 	pushd $HOME >/dev/null
-	CLE_RMTRC=.clerc-remote-$CLE_EFUSER
+	local CLE_RMTRC=.clerc-remote-$CLE_EFUSER
 	if [ -n "$1" ]; then
 		cp $CLE_RC $CLE_RMTRC 2>/dev/null
-		CLE_64=`tar czf - $CLE_RMTRC |base64|tr -d '\n\r '`
+		local SSGFILES=$CLE_RMTRC
+#		[ -f .aliases-remote-$CLE_EFUSER ] && SSGFILES="$SSGFILES .aliases-remote-$CLE_EFUSER"
+		local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
 		`/usr/bin/which ssh` -t $1 "
 			echo $CLE_64|base64 --decode |tar xzf -
 			export CLE_EFUSER=$CLE_EFUSER;
@@ -338,21 +354,19 @@ ssg () {
 	else
 		cle help ssg
 	fi
-	unset CLE_64
 	popd >/dev/null
 }
 
 ## suu [username]       -- sudo wrapper; root is the default account
 suu () {
 	pushd $HOME >/dev/null
-	CLE_RMTRC=.clerc-remote-$CLE_EFUSER
+	local CLE_RMTRC=.clerc-remote-$CLE_EFUSER
 	cp $CLE_RC $CLE_RMTRC 2>/dev/null
-	CLE_64=`tar czf - $CLE_RMTRC |base64|tr -d '\n\r '`
+	local CLE_64=`tar czf - $CLE_RMTRC |base64|tr -d '\n\r '`
 	sudo -i -u ${1:-root} /bin/bash  -c \
 		"echo $CLE_64|base64 --decode| tar xzf -;
 		 export CLE_EFUSER=$CLE_EFUSER;
 		 exec bash --rcfile $CLE_RMTRC"
-	unset CLE_64
 	popd >/dev/null
 }
 
