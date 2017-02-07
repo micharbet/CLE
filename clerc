@@ -1,14 +1,15 @@
 #
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: 3 2017-02-01
+## version: v3 2017-02-07
 ## license: GNU GPL 3
 ## https://gitlab.cee.redhat.com/marbet/cle
 ##
-# bash tweaks
+# Command line tweaks:
 # - colorized prompt incl exit code highlight
 # - builtin aliases and functions
-# - history tweaks (timestamps etc), shell options
+# - history tweaks (timestamps etc)
+# - personalized history for multi-admin environment
 #
 # Execute this file within your shell session once and integrate
 # to your profile seamlessly with 'cle deploy local' command
@@ -16,42 +17,45 @@
 #	$ . clerc
 #	$ cle deploy user
 #
-# * use 'ssg' (ssh wrapper) and seamlessly pass this environment
-#   to remote machine without installation
+# * use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
+#   transferred without installation
 # * try 'suu' (sudo wrapper) with similar effect
 # * change settings with implememted 'cle' command
 # * built-in self documentation feature ('cle help' & 'cle readme')
 # * manage your aliases using 'aa' function
+# * use 'hh' function to ease history management
+# * two deploymenty options
+# * self update from GIT source
 
 # check running in interactive session and if not, skip all the tweaks
-# required for scp compattibility and similar
+# required for scp compattibility
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
-CLE_LCLUSER=`whoami`
+CLE_LCUSER=`whoami`
 
 CLE_RC=${BASH_SOURCE[0]}
 case $CLE_RC in
 /*)	;;
-*)	CLE_RC=$PWD/$CLE_RC ;;
+*)	CLE_RC=$PWD/$CLE_RC
 esac
 CLE_EXE=$CLE_RC:
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
 # determine effective user and custom script
 # CLE_EFUSER is passed to all consecutive sessions initiated with ssg/suu
-CLE_CUSTOMRC=$HOME/.cle-${CLE_EFUSER:=$CLE_LCLUSER}
+CLE_CUSTOMRC=$HOME/.cleusr-${CLE_EFUSER:=$CLE_LCUSER}
 
 # where in the deep space is CLE growing...
 CLE_ORIGIN=https://raw.githubusercontent.com/micharbet/CLE/master
  
-# hostname tweak - remove unnecessary parts
-# can be altered in e.g. ~/.clerc-local
-CLE_HN=`hostname` # |sed s/.mydomain.com//
+# tweaked hostname, can be altered in .clerc-local or .clecust-$CLE_EFUSER
+CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
+CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
 
-# default prompt settings
-CLE_TIME='\A'
-CLE_COLOR='marley'
-CLE_WTITLE=1
-CLE_PROMPT=$HOME/.cleprompt-$CLE_EFUSER
+# default settings
+CLE_PTIME='\A'
+CLE_PHN='%h'
+CLE_PCOLOR='marley'
+CLE_CF=$HOME/.clecf-$CLE_EFUSER
 
 # color table initializattion
 CT_N=`tput sgr0` # reset
@@ -78,22 +82,17 @@ shopt -s checkwinsize
 #
 # Internal helper functions
 #
-printb () {
-	printf "$CT_L$*$CT_N\n"
-}
-
-ask () {
-	read -p "$CT_L$*$CT_N"
-}
+printb () { printf "$CT_L$*$CT_N\n"; }
+ask () { read -p "$CT_L$*$CT_N"; }
 
 # print banner
 _clebanner () {
 cat <<EOT
 
-   ___|  |      ____|    Command Live Environment activated
-  |      |      __|      ...bit of life to the command line
-  |      |      |          $CT_L cle help $CT_N      to learn more 
- \____| _____| _____|    or$CT_L less $CLE_RC $CT_N  to discover the magic
+   ___|  |      ____|  Command Live Environment activated
+  |      |      __|    ...bit of life to the command line
+  |      |      |     $CT_L cle help $CT_N to learn more 
+ \____| _____| _____| $CT_L less $CLE_RC$CT_N to discover the magic
  
 EOT
 }
@@ -105,16 +104,17 @@ _clexe () {
 	[ -f $1 ] && { CLE_EXE=$CLE_EXE$1: ; . $1; }
 }
 
-# save prompt related variables
-_saveprompt () {
-	echo CLE_COLOR=\'$CLE_COLOR\'
-	echo CLE_TIME=\'$CLE_TIME\'
-} >$CLE_PROMPT
+# save configuration
+_savecf () {
+	echo CLE_PCOLOR=\'$CLE_PCOLOR\'
+	echo CLE_PTIME=\'$CLE_PTIME\'
+	echo CLE_PHN=\'$CLE_PHN\'
+} >$CLE_CF
 
 
-# colorizer
-_setcolor () {
-	local C0 C1 C2 I II PP
+# prompt composer
+_setpr () {
+	local C0 C1 C2 I II PP 
 	case "$1" in 
 	red)	 C0=$CT_r; C2=$CT_R;;
 	green)	 C0=$CT_g; C2=$CT_G;;
@@ -134,63 +134,75 @@ _setcolor () {
 			declare C$I=${!II}
 		done;;
 	*)	# print help
-		echo " Unknown color '$1', select one of predefined:"
+		echo "Unknown color '$1' Select one of predefined:"
 		# self documented function :)
-		declare -f _setcolor|sed -n -e 's/\ *\(\<[a-zA-Z |]*\)).*/ \1 /p' |tr '\n' '|'
-		printf "\n or create your own 3-letter style from:"
-		printf " rgbcmykw and RGBCMYKW \n e.g 'cle color GyY'\n"
-		return 2
+		declare -f _setpr|sed -n -e 's/\ *\(\<[a-zA-Z |]*\)).*/ \1 /p' 
+		cat <<-EOT
+		Or create your own 3-letter style using: rgbcmykw and RGBCMYKW
+		 e.g. 'cle color rgB'
+		EOT
+		return 2 
 	esac
-	# compose prompts
-	[ $UID == 0 ] && PP="#" || PP=">"
-	CLE_PS="\[$C0\]\u \[$C1\]$CLE_HN \[$C2\]\w $PP"
+	# prepare prompt string
+	[ $UID == 0 ] && PP="#" || PP=">" # I hate $ in prompt
+	# hostname expansions: %i -ip address, %h -tweaked hostname
+	local HN=`echo $CLE_PHN|sed -e "s/%i/$CLE_IP/" -e "s/%h/$CLE_THN/"`
+	CLE_PS="\[$C0\]\u \[$C1\]$HN \[$C2\]\w $PP"
 	PS2="\[$C0\] >>>\[$CT_N\] "
-	CLE_COLOR=$1
-	_saveprompt
+	CLE_PCOLOR=$1
+	_savecf
 }
 
 # prompt function - called upon each new prompt line
-_cleprompt () {
+_clepr () {
 	local EEP EE=$?  # store exit status code (it would disappear!)
 	if [ $EE -eq 0 ]; then
 		EEP="\[$CT_K\][$EE]"
 	else
 		EEP="\[$CT_E\][$EE]\[$CT_N$CT_K\]"
 	fi
-	# Final prompt composition
-	PS1="$EEP${CLE_TIME:+ $CLE_TIME} \[$CT_N\]$CLE_PS\[$CT_N\] "
-	# change window title TERMPORARY DISABLED
-	[ -z "$CLE_WTITLE" ] && return
-	[ "$CLE_EFUSER" != "$LOGNAME" ] && WTU="$CLE_EFUSER ->"
-	printf "\033]0;$WTU $LOGNAME@$CLE_HN: $PWD\007"
+	# final prompt composition
+	PS1="$EEP${CLE_PTIME:+ $CLE_PTIME} \[$CT_N\]$CLE_PS\[$CT_N\] "
+	# change window title
+	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 }
-PROMPT_COMMAND=_cleprompt
+PROMPT_COMMAND=_clepr
+
+# default window title
+_setwt () {
+	CLE_WT=''
+	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_EFUSER -> "
+	CLE_WT="$CLE_WT$CLE_LCUSER@$CLE_THN:"
+}
 
 # indicate first run, show banner
-[ -f $CLE_PROMPT ] || { _clebanner; _saveprompt; }
-_clexe $CLE_PROMPT
-_setcolor $CLE_COLOR
+[ -f $CLE_CF ] || { _clebanner; _savecf; }
 
 # where the CLE was started?
 case $CLE_RC in
 *.clerc-remote-*)	# transferred through ssg/suu, run old good .bashrc :-)
-	_clexe $HOME/.bashrc
-	;;
+	_clexe $HOME/.bashrc ;;
 */clerc*)	# initial run from commandline
-	printf "It seems you started CLE from command line by issuing '. $CLE_RC'\n"
-	printf "Since this is your first run, consider setting up in your profile.\n"
-	printf "Following command will hook CLE in your $HOME/.bashrc\n\n"
-	printb "  cle deploy user\n"
-	;;
+	cat <<-EOT
+	 It seems you started CLE from command line issuing '. $CLE_RC'
+	 Since this is your first run, consider setting up in your profile.
+	 Following command will hook CLE in your $HOME/.bashrc
+	$CT_L  cle deploy user$CT_N
+	EOT
 esac
 
-# local tweaks
-_clexe $HOME/.clerc-local
-
-# execute plugins from .cle folder
-for PLUG in $HOME/.cle/*; do
-	_clexe $PLUG
+# load modules from .cle folder
+for MOD in $HOME/.cle/mod-*; do
+	_clexe $MOD
 done
+unset MOD
+
+# load config and custom tweaks
+_clexe $CLE_CF
+_clexe $HOME/.clerc-local
+_clexe $CLE_CUSTOMRC
+_setwt
+_setpr $CLE_PCOLOR
 
 ## CLE default aliases and functions:
 ## ----------------------------------
@@ -231,48 +243,29 @@ _defalias
 aa () {
 	local ALIASBAK=$CLE_ALIASES.back
 	case "$1" in
-	"") ## aa         -- show aliases
+	"")	## aa         -- show aliases
 		alias ;;
-	save) ## aa save    -- save your set of aliases
+	s)	## aa s       -- save your set of aliases
 		alias
 		ask "ENTER for save, Ctrl-C to exit"
 		cp $CLE_ALIASES $ALIASBAK
 		alias >$CLE_ALIASES
 		echo Saved to file: $CLE_ALIASES
-		echo Backup in: $ALIASBAK
-		;;
-	load) ## aa load    -- (re)load your set of aliases
+		echo Backup in: $ALIASBAK ;;
+	l)	## aa l       -- (re)load your set of aliases
 		unalias -a
-		. $CLE_ALIASES
-		;;
-	edit) ## aa edit    -- edit and reload your aliases
+		. $CLE_ALIASES ;;
+	ed)	## aa ed      -- edit and reload your aliases
 		local TALIAS=$CLE_ALIASES.edit
 		alias >$ALIASBAK
 		cp $ALIASBAK $TALIAS
 		vi $TALIAS
 		mv $TALIAS $CLE_ALIASES
-		aa load
-		echo Backup in: $ALIASBAK
-		;;
-	merge)  # aa merge   -- merge local and remote aliases
-		#placeholder
-		echo aa merge ... not imlemented yet
-		;;
-#	fwd)	# aa fwd    -- forward local aliases to remote system with 'ssg'
-#		ln -s $CLE_ALIASES ~/.aliases-remote-$CLE_EFUSER
-#		;;
-	reset)	## aa reset   -- reset default aliases
-		## aa reset full -- also remove custom aliases
-		alias >$ALIASBAK
-		[[ "$2" == full ]] && unalias -a
-		_defalias
-		aa save
-		echo Backup in:  $ALIASBAK
-		;;
+		aa l
+		echo Backup in: $ALIASBAK ;;
 	*)	
 		echo " unimplemented: aa $1 $2"
 		cle help aa
-                ;;
 	esac
 }
 
@@ -282,21 +275,16 @@ aa () {
 hh () {
 	case $1 in
 	"")	## hh         -- just print history
-		history
-		;;
+		history ;;
 	s)	## hh s       -- save current history in $HISTFILE
-		history -a
-		;;
+		history -a ;;
 	l)	## hh l       -- load history, use save & load to share history
-		history -n
-		;;
-	[0-9]*)	## hh number  -- print last N entries
-		history $1
-		;;
-	*)
-		## hh string  -- search in history
-		history | grep $1
-		;;
+		history -n ;;
+	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
+		## hh number  -- print last N entries
+		history $1 ;;
+	*)	## hh string  -- search in history
+		history | grep -i $1
 	esac
 }
 
@@ -304,19 +292,13 @@ hh () {
 ## various functions
 ## -----------------
 ## path       -- show $PATH in readable way
-path () {
-	echo $PATH|tr : \\n
-}
+path () { echo $PATH|tr : \\n; }
 
 ## psg        -- ps filtered through grep
-psg () {
- ps -ef |grep -i $1|grep -v grep
-}
+psg () { ps -ef |grep -i $1|grep -v grep; }
 
 ## dfh        -- df -h wrapper
-dfh () {
-	df -h
-}
+dfh () { df -h; }
 
 ## dush, dusk -- du wrappers
 dush () {
@@ -345,10 +327,10 @@ ssg () {
 	if [ -n "$1" ]; then
 		cp $CLE_RC $CLE_RMTRC 2>/dev/null
 		local SSGFILES=$CLE_RMTRC
-#		[ -f .aliases-remote-$CLE_EFUSER ] && SSGFILES="$SSGFILES .aliases-remote-$CLE_EFUSER"
+		[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
 		local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
 		`/usr/bin/which ssh` -t $1 "
-			echo $CLE_64|base64 --decode |tar xzf -
+			echo $CLE_64|base64 --decode |tar xzf -;
 			export CLE_EFUSER=$CLE_EFUSER;
 			exec bash --rcfile $CLE_RMTRC"
 	else
@@ -362,7 +344,9 @@ suu () {
 	pushd $HOME >/dev/null
 	local CLE_RMTRC=.clerc-remote-$CLE_EFUSER
 	cp $CLE_RC $CLE_RMTRC 2>/dev/null
-	local CLE_64=`tar czf - $CLE_RMTRC |base64|tr -d '\n\r '`
+	local SSGFILES=$CLE_RMTRC
+	[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
+	local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
 	sudo -i -u ${1:-root} /bin/bash  -c \
 		"echo $CLE_64|base64 --decode| tar xzf -;
 		 export CLE_EFUSER=$CLE_EFUSER;
@@ -376,21 +360,21 @@ suu () {
 cle () {
 	case "$1_$2" in
 	color_*) ## cle color COLOR    -- set prompt color
-		_setcolor $2 ;;
-	time_on) ## cle time on|off    -- toggle server time in prompt
-		CLE_TIME='\A'
-		_saveprompt ;;
-	time_off)
-		CLE_TIME=''
-		_saveprompt ;;
-	time_*) ## cle time STRING    -- set custom strings
+		_setpr $2 ;;
+	hn_*)	 ## cle hn [string]    -- set hostname part in prompt
 		shift
-		CLE_TIME="$*"
-		_saveprompt ;;
+		CLE_PHN=${*-%h}
+		_setpr $CLE_PCOLOR ;;
+	time_on) ## cle time on|off    -- toggle server time in prompt
+		CLE_PTIME='\A'
+		_savecf ;;
+	time_off)
+		CLE_PTIME=''
+		_savecf ;;
 	title_on) ## cle title on|off   -- toggle window title
-		CLE_WTITLE="1" ;;
+		_setwt ;;
 	title_off)
-		CLE_WTITLE="" ;;
+		CLE_WT="" ;;
 	deploy_user)
 		## cle deploy user    -- hook CLE into user's profile
 		local CLID='# Command Live Environment'
@@ -398,7 +382,7 @@ cle () {
 		cp $CLE_RC $HOME/.clerc
 		grep -q "$CLID" $BRC 
 		if [ $? != 0 ]; then
-			echo " CLE is to be integrated to your login script."
+			printb "CLE is to be integrated to your login script."
 			ask " Are you sure? (y/N) "
 			[ "$REPLY" != 'y' ] && return
 			echo -e >>$BRC \\n$CLID
@@ -406,32 +390,42 @@ cle () {
 			printf '\n ... added following to the end of .bashrc :\n'
 			tail -4 $BRC
 		else
-			echo " CLE is already hooked into .bashrc :"
+			echo "CLE is already hooked into .bashrc :"
 			grep -A2 "$CLID" $BRC
 		fi ;;
 	deploy_system)
 		## cle deploy system  -- hook CLE into /etc/profile.d
-		echo " CLE is to be integrated into your system!"
-		echo " Content of $CLE_RC will be copied to /etc/profile.d/cle.sh"
-		echo " The environment will be activated for all users."
-		echo " Only root can do that..."
-		ask " Are you sure? (y/N) "
+		cat <<-EOT
+		 CLE is to be integrated into this host $CT_R$(hostname)$CT_N
+		 File $CLE_RC will be copied to $CT_L/etc/profile.d/cle.sh$CT_N
+		 So the environment will be activated for all users.
+		 Only root can do that...
+		EOT
+		ask "Are you sure? (y/N) "
 		[ "$REPLY" != 'y' ] && return
 		cp $CLE_RC /etc/profile.d/cle.sh
-		echo " Done!"
-		;;
+		echo " Done!" ;;
 	update_) ## cle update         -- download newest version of CLE
-		curl -k $CLE_ORIGIN/clerc >$HOME/clerc-new
-		echo "New CLE has been stored here: $HOME/clerc-new"
-		ask "Press Enter to show diff or Ctrl-C to break"
-		diff $CLE_RC $HOME/clerc-new
+		if [[ $CLE_RC =~ remote ]]; then
+			cat <<-EOT
+			 CLE is running through remote session.
+			 Update is pointless.
+			EOT
+			return 2
+		fi
+		local NCLE=$HOME/clerc-new
+		curl -k $CLE_ORIGIN/clerc >$NCLE
+		printb "New CLE here: $NCLE"
+		echo "current: $CLE_VERSION"
+		echo "new:     `sed -n '/#\sversion/s/.\+:\s//p' $NCLE`"
+		ask "Do you want to see diff? (y/N)"
+		[ "$REPLY" == "y" ] && diff $CLE_RC $NCLE
 		ask "Do you want to install new version? (y/N) "
 		[ "$REPLY" != 'y' ] && return
 		cp $CLE_RC $HOME/clerc-orig
-		mv $HOME/clerc-new $CLE_RC
+		mv $NCLE $CLE_RC
 		cle reload
-		echo "New CLE has been installed, previous version stored here: $HOME/clerc-orig"
-		;;
+		printb "New CLE has been installed, previous version saved here: $HOME/clerc-orig" ;;
 	reload_) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC ;;
@@ -442,24 +436,24 @@ cle () {
 	help_*) ## cle help [cmd]     -- self documenting feature
 		# double-hash denotes help content :-)
 		[ -z "$2" ] && _clebanner
-		awk -F# "/## *$2/"' { print $3 }' $CLE_RC
-		;;
+		awk -F# "/## *$2/"' { print $3 }' $CLE_RC ;;
 	_)	_clebanner ;;
-	*)
-		if declare -f _cle_$1 >/dev/null; then
-			_cle_$1 $2
+	*)	# run any _cle_* function
+		# those might be defined in custom files
+		# or as modules in .cle/mod-*
+		local CLEF=$1
+		if declare -f _cle_$CLEF >/dev/null; then
+			shift
+			_cle_$CLEF $*
 		else
-			echo " cle $1 not implemeted"
+			echo " 'cle $1' not implemeted"
 			echo " check cle help"
-		fi ;;
+		fi
 	esac
 }
 
 # enhance path with user's own bin directory
 [ -d $HOME/bin ] && echo $PATH | grep -vq $HOME/bin && PATH=$PATH:$HOME/bin
-
-# run personal tweaks
-_clexe $CLE_CUSTOMRC
 
 # remove disturbing stuff
 unset SUDO_COMMAND
