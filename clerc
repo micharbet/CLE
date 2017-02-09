@@ -197,7 +197,7 @@ _defpr () {
 # indicate first run, show banner, create default conf
 [ -f $CLE_CF ] || { _clebanner; _defpr; _savecf; }
 
-# where the CLE was started?
+# how the CLE was started?
 case $CLE_RC in
 *.clerc-remote-*)
 	# transferred through ssg/suu, run also old good .bashrc :-)
@@ -227,6 +227,9 @@ for MOD in $HOME/.cle/mod-*; do
 	_clexe $MOD
 done
 unset MOD
+
+# enhance path with user's own bin directory
+[ -d $HOME/bin ] && echo $PATH | grep -vq $HOME/bin && PATH=$PATH:$HOME/bin
 
 ##
 ## CLE default aliases and functions:
@@ -481,9 +484,6 @@ cle () {
 		fi
 	esac
 }
-
-# enhance path with user's own bin directory
-[ -d $HOME/bin ] && echo $PATH | grep -vq $HOME/bin && PATH=$PATH:$HOME/bin
 
 # remove disturbing stuff
 unset SUDO_COMMAND
