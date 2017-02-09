@@ -193,14 +193,16 @@ _defpr () {
 	CLE_P3='\w %>'
 }
 
-# indicate first run, show banner
-[ -f $CLE_CF ] || { _clebanner; _savecf; }
+# indicate first run, show banner, create default conf
+[ -f $CLE_CF ] || { _clebanner; _defpr; _savecf; }
 
 # where the CLE was started?
 case $CLE_RC in
-*.clerc-remote-*)	# transferred through ssg/suu, run old good .bashrc :-)
+*.clerc-remote-*)
+	# transferred through ssg/suu, run also old good .bashrc :-)
 	_clexe $HOME/.bashrc ;;
-*/clerc*)	# initial run from commandline
+*/clerc*)
+	# initial run from commandline
 	cat <<-EOT
 	 It seems you started CLE from command line issuing '. $CLE_RC'
 	 Since this is your first run, consider setting up in your profile.
@@ -209,22 +211,21 @@ case $CLE_RC in
 	EOT
 esac
 
-# load modules from .cle folder
-for MOD in $HOME/.cle/mod-*; do
-	_clexe $MOD
-done
-unset MOD
-
 # load config and custom tweaks
 _clexe $CLE_CF
-
-# transition to CLE_Px remove this later
+# transition to CLE_Px; remove this later
 grep -q CLE_P1 $CLE_CF || { _defpr; _savecf; }
 
 _clexe $HOME/.clerc-local
 _clexe $CLE_CUSTOMRC
 _defwt
 _setpr $CLE_PCOLOR
+
+# load modules from .cle folder
+for MOD in $HOME/.cle/mod-*; do
+	_clexe $MOD
+done
+unset MOD
 
 ##
 ## CLE default aliases and functions:
@@ -246,7 +247,7 @@ _defalias () {
 	alias ...='cd ../..'
 	alias cd-='cd -'
 	## xx & cx    -- path bookmark; set and 'cd' later, stored in $XX
-	alias xx='XX=`pwd`; echo path boorkmark set here: $XX'
+	alias xx='XX=`pwd`; echo path boorkmark set here: XX=$XX'
 	alias cx='cd $XX'
 	alias grep='grep --color=auto'
 	alias mv='mv -i'
