@@ -1,10 +1,16 @@
 #
+## Copyright (C) 2016-2017 by Michael Arbet 
+##
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: v3 2017-02-07
-## license: GNU GPL 3
-## https://gitlab.cee.redhat.com/marbet/cle
-##
+## version: v3 2017-02-09
+## origin: https://raw.githubusercontent.com/micharbet/CLE/master
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
 # Command line tweaks:
 # - colorized prompt incl exit code highlight
 # - builtin aliases and functions
@@ -38,22 +44,21 @@ case $CLE_RC in
 *)	CLE_RC=$PWD/$CLE_RC
 esac
 CLE_EXE=$CLE_RC:
+
+# where in the deep space is CLE growing and which version...
+CLE_ORIGIN=`grep -m1 "# origin:" $CLE_RC |cut -d' ' -f3`
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
 # determine effective user and custom script
 # CLE_EFUSER is passed to all consecutive sessions initiated with ssg/suu
 CLE_CUSTOMRC=$HOME/.cleusr-${CLE_EFUSER:=$CLE_LCUSER}
 
-# where in the deep space is CLE growing...
-CLE_ORIGIN=https://raw.githubusercontent.com/micharbet/CLE/master
- 
 # tweaked hostname, can be altered in .clerc-local or .clecust-$CLE_EFUSER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
 CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
 
 # default settings
 CLE_PTIME='\A'
-CLE_PHN='%h'
 CLE_PCOLOR='marley'
 CLE_CF=$HOME/.clecf-$CLE_EFUSER
 
@@ -91,7 +96,7 @@ cat <<EOT
 
    ___|  |      ____|  Command Live Environment activated
   |      |      __|    ...bit of life to the command line
-  |      |      |     $CT_L cle help $CT_N to learn more 
+  |      |      |      Learn more:$CT_L cle help $CT_N
  \____| _____| _____| $CT_L less $CLE_RC$CT_N to discover the magic
  
 EOT
@@ -107,10 +112,22 @@ _clexe () {
 # save configuration
 _savecf () {
 	echo CLE_PCOLOR=\'$CLE_PCOLOR\'
+	echo CLE_P1=\'$CLE_P1\'
+	echo CLE_P2=\'$CLE_P2\'
+	echo CLE_P3=\'$CLE_P3\'
 	echo CLE_PTIME=\'$CLE_PTIME\'
-	echo CLE_PHN=\'$CLE_PHN\'
 } >$CLE_CF
 
+# prepare prompt string
+_pstr () {
+	local PP=">" # I hate $ in prompt
+	[ $UID == 0 ] && PP="#"
+	echo $*|sed \
+	 -e "s/%i/$CLE_IP/" \
+	 -e "s/%h/$CLE_THN/" \
+	 -e "s/%e/$CLE_EFUSER/" \
+	 -e "s/%>/$PP/"
+}
 
 # prompt composer
 _setpr () {
@@ -130,31 +147,25 @@ _setpr () {
 	???)	# ... any 3 colors
 		for I in 0 1 2; do
 			II=CT_${1:$I:1}
-			[[ -z "${!II}" ]] && echo "bad color code '${1:$I:1}' in $1" && return 2
+			[[ -z "${!II}" ]] && echo "wrong color code '${1:$I:1}' in $1" && return 2
 			declare C$I=${!II}
 		done;;
-	*)	# print help
+	*)	# print help self documented function :)
 		echo "Unknown color '$1' Select one of predefined:"
-		# self documented function :)
 		declare -f _setpr|sed -n -e 's/\ *\(\<[a-zA-Z |]*\)).*/ \1 /p' 
-		cat <<-EOT
-		Or create your own 3-letter style using: rgbcmykw and RGBCMYKW
-		 e.g. 'cle color rgB'
-		EOT
+		echo "Or create your own 3-letter style using: rgbcmykw / RGBCMYKW"
+		echo " e.g. 'cle color rgB'"
 		return 2 
 	esac
-	# prepare prompt string
-	[ $UID == 0 ] && PP="#" || PP=">" # I hate $ in prompt
-	# hostname expansions: %i -ip address, %h -tweaked hostname
-	local HN=`echo $CLE_PHN|sed -e "s/%i/$CLE_IP/" -e "s/%h/$CLE_THN/"`
-	CLE_PS="\[$C0\]\u \[$C1\]$HN \[$C2\]\w $PP"
+	# prepare prompt strings
+	CLE_PS="\[$C0\]`_pstr $CLE_P1` \[$C1\]`_pstr $CLE_P2` \[$C2\]`_pstr $CLE_P3`"
 	PS2="\[$C0\] >>>\[$CT_N\] "
 	CLE_PCOLOR=$1
 	_savecf
 }
 
 # prompt function - called upon each new prompt line
-_clepr () {
+_cleprof () {
 	local EEP EE=$?  # store exit status code (it would disappear!)
 	if [ $EE -eq 0 ]; then
 		EEP="\[$CT_K\][$EE]"
@@ -162,17 +173,24 @@ _clepr () {
 		EEP="\[$CT_E\][$EE]\[$CT_N$CT_K\]"
 	fi
 	# final prompt composition
-	PS1="$EEP${CLE_PTIME:+ $CLE_PTIME} \[$CT_N\]$CLE_PS\[$CT_N\] "
+	PS1="$EEP${CLE_PTIME:+ $CLE_PTIME} $CLE_PS\[$CT_N\] "
 	# change window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 }
-PROMPT_COMMAND=_clepr
+PROMPT_COMMAND=_cleprof
 
 # default window title
-_setwt () {
+_defwt () {
 	CLE_WT=''
 	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_EFUSER -> "
 	CLE_WT="$CLE_WT$CLE_LCUSER@$CLE_THN:"
+}
+
+# default prompt
+_defpr () {
+	CLE_P1='\u'
+	CLE_P2='%h'
+	CLE_P3='\w %>'
 }
 
 # indicate first run, show banner
@@ -199,9 +217,13 @@ unset MOD
 
 # load config and custom tweaks
 _clexe $CLE_CF
+
+# transition to CLE_Px remove this later
+grep -q CLE_P1 $CLE_CF || { _defpr; _savecf; }
+
 _clexe $HOME/.clerc-local
 _clexe $CLE_CUSTOMRC
-_setwt
+_defwt
 _setpr $CLE_PCOLOR
 
 ## CLE default aliases and functions:
@@ -320,7 +342,7 @@ dusk () {
 ##
 ## SSH & SUDO wrappers:
 ## --------------------
-## ssg [user@]hostname  -- login to remote system running this environment
+## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () {
 	pushd $HOME >/dev/null
 	local CLE_RMTRC=.clerc-remote-$CLE_EFUSER
@@ -361,9 +383,14 @@ cle () {
 	case "$1_$2" in
 	color_*) ## cle color COLOR    -- set prompt color
 		_setpr $2 ;;
-	hn_*)	 ## cle hn [string]    -- set hostname part in prompt
-		shift
-		CLE_PHN=${*-%h}
+	p[1-3]_*)	## cle p1-3 string    -- define prompt part 1-3
+		shift ;;& #initialization
+	p1_*)	CLE_P1="${*:-\\u}" ;;&
+	p2_*)	CLE_P2="${*:-%h}" ;;&
+	p3_*)	CLE_P3="${*:-\\w %>}" ;;&
+	px_)	## cle px             -- reset prompting to default
+		_defpr ;&
+	p[1-3]_*) # common part
 		_setpr $CLE_PCOLOR ;;
 	time_on) ## cle time on|off    -- toggle server time in prompt
 		CLE_PTIME='\A'
@@ -372,7 +399,7 @@ cle () {
 		CLE_PTIME=''
 		_savecf ;;
 	title_on) ## cle title on|off   -- toggle window title
-		_setwt ;;
+		_defwt ;;
 	title_off)
 		CLE_WT="" ;;
 	deploy_user)
@@ -447,7 +474,7 @@ cle () {
 			_cle_$CLEF $*
 		else
 			echo " 'cle $1' not implemeted"
-			echo " check cle help"
+			echo "  check cle help"
 		fi
 	esac
 }
