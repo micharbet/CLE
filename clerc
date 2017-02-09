@@ -182,6 +182,7 @@ PROMPT_COMMAND=_cleprof
 # default window title
 _defwt () {
 	CLE_WT=''
+	[[ $TERm =~ 'linux' ]] && return # no tits on console
 	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_EFUSER -> "
 	CLE_WT="$CLE_WT$CLE_LCUSER@$CLE_THN:"
 }
