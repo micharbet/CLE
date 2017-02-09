@@ -4,7 +4,7 @@
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
 ## version: v3 2017-02-09
-## origin: https://raw.githubusercontent.com/micharbet/CLE/master
+## home: https://github.com/micharbet/CLE
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@ esac
 CLE_EXE=$CLE_RC:
 
 # where in the deep space is CLE growing and which version...
-CLE_ORIGIN=`grep -m1 "# origin:" $CLE_RC |cut -d' ' -f3`
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
 # determine effective user and custom script
@@ -226,6 +226,7 @@ _clexe $CLE_CUSTOMRC
 _defwt
 _setpr $CLE_PCOLOR
 
+##
 ## CLE default aliases and functions:
 ## ----------------------------------
 _defalias () {
@@ -441,7 +442,7 @@ cle () {
 			return 2
 		fi
 		local NCLE=$HOME/clerc-new
-		curl -k $CLE_ORIGIN/clerc >$NCLE
+		curl -k $CLE_SRC/clerc >$NCLE
 		printb "New CLE here: $NCLE"
 		echo "current: $CLE_VERSION"
 		echo "new:     `sed -n '/#\sversion/s/.\+:\s//p' $NCLE`"
@@ -459,7 +460,7 @@ cle () {
 	env_)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
 	readme_) ## cle readme         -- download and show README file
-		curl -k $CLE_ORIGIN/README.md |less ;;
+		curl -k $CLE_SRC/README.md |less ;;
 	help_*) ## cle help [cmd]     -- self documenting feature
 		# double-hash denotes help content :-)
 		[ -z "$2" ] && _clebanner
