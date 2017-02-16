@@ -1,0 +1,28 @@
+#
+# CLE module
+# filesystem and processess utilities
+#
+
+## psg        -- ps filtered through grep
+psg () { ps -ef |grep -i $1|grep -v grep; }
+
+## dfh        -- df -h wrapper
+dfh () { df -h; }
+
+## dush, dusk -- du wrappers
+dush () {
+	if [ $# -eq 0 ]; then
+		du -sh * | sort -h
+	else
+		du -sh $* | sort -h
+	fi
+}
+
+dusk () {
+	if [ $# -eq 0 ]; then
+		du -sk * | sort -n
+	else
+		du -sk $* | sortn -n
+	fi
+}
+

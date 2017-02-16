@@ -1,0 +1,33 @@
+#
+# git functions/ shorcuts
+# those might be written as aliases mostly but I wanted them not to 
+# affect already defined set of aliases
+#
+
+function gipul {
+	git pull
+}
+
+function gipus {
+	git push -u origin master
+}
+
+function gicom {
+	if [ $# -eq 0 ]; then
+		git commit -a
+	else
+		git commit -a -m "$*"
+	fi
+}
+
+function gista {
+	git status
+}
+
+function gilog {
+	git log
+}
+
+function gidif {
+	git diff
+}
