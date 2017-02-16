@@ -129,6 +129,13 @@ _pstr () {
 	 -e "s/%>/$PP/"
 }
 
+_cle_e () {
+	[ "$1" != e ] && return
+	printf "$CT_C\nH ${CT_c}CL${CT_C}E $CT_W  .-*$CT_R)$CT_W\`\`-. $CT_C\n"
+	printf "a   a $CT_W /  $CT_R(($CT_b*$CT_W   '.$CT_C\np   s$CT_W |  $CT_b*$CT_R))$CT_W     #:"
+	printf "$CT_C\np   t $CT_W \\  $CT_R(($CT_b*$CT_W   .'$CT_C\ny   er $CT_W '-.$CT_R)${CT_W}_.-'\n\n$CT_N"
+}
+
 # prompt composer
 _setpr () {
 	local C0 C1 C2 I II PP 
