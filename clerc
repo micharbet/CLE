@@ -382,14 +382,14 @@ cle () {
 	p3_*)
 		CLE_P3="${*:-\\w %>}"
 		_setpr ;;
-	pt_*)
-		CLE_PTIME="$*"
-		_savecf ;;
 	time_on) ## cle time on|off    -- toggle server time in prompt
 		CLE_PTIME='\A'
 		_savecf ;;
 	time_off)
 		CLE_PTIME=''
+		_savecf ;;
+	pt_*)	## cle pt string      -- set "time" part to string
+		CLE_PTIME="$*"
 		_savecf ;;
 	title_on) ## cle title on|off   -- toggle window title
 		_defwt ;;
@@ -447,9 +447,10 @@ cle () {
 		cle reload
 		printb "New CLE has been installed, previous version saved here: $HOME/clerc-orig" ;;
 	reset_)	## cle reset          -- reset configuration
-		echo removing $CLE_CF
 		rm -f $CLE_CF
-		cle reload ;;
+		cle reload
+		printb config file $CLE_CF:
+		cat $CLE_CF ;;
 	reload_) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC ;;
@@ -466,7 +467,6 @@ cle () {
 		# those might be defined in custom files
 		# or as modules in .cle/mod-*
 		if declare -f _cle_$CCMD >/dev/null; then
-			shift
 			_cle_$CCMD $*
 		else
 			echo " 'cle $CCMD' not implemeted"
