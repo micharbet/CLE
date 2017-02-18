@@ -3,7 +3,7 @@
 ##
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: v3 2017-02-09
+## version: v3 2017-02-17
 ## home: https://github.com/micharbet/CLE
 #
 # This program is free software; you can redistribute it and/or
@@ -49,18 +49,14 @@ CLE_EXE=$CLE_RC:
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
-# determine effective user and custom script
+# determine effective user and custom configuration files
 # CLE_EFUSER is passed to all consecutive sessions initiated with ssg/suu
 CLE_CUSTOMRC=$HOME/.cleusr-${CLE_EFUSER:=$CLE_LCUSER}
+CLE_CF=$HOME/.clecf-$CLE_EFUSER
 
 # tweaked hostname, can be altered in .clerc-local or .clecust-$CLE_EFUSER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
 CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
-
-# default settings
-CLE_PTIME='\A'
-CLE_PCOLOR='marley'
-CLE_CF=$HOME/.clecf-$CLE_EFUSER
 
 # color table initializattion
 CT_N=`tput sgr0` # reset
@@ -139,7 +135,7 @@ _cle_e () {
 # prompt composer
 _setpr () {
 	local C0 C1 C2 I II PP 
-	case "$1" in 
+	case "$CLE_PCOLOR" in 
 	red)	 C0=$CT_r; C2=$CT_R;;
 	green)	 C0=$CT_g; C2=$CT_G;;
 	yellow)	 C0=$CT_y; C2=$CT_Y;;
@@ -153,12 +149,12 @@ _setpr () {
 		C0=$CT_R; C1=$CT_Y; C2=$CT_G;;
 	???)	# ... any 3 colors
 		for I in 0 1 2; do
-			II=CT_${1:$I:1}
-			[[ -z "${!II}" ]] && echo "wrong color code '${1:$I:1}' in $1" && return 2
+			II=CT_${CLE_PCOLOR:$I:1}
+			[[ -z "${!II}" ]] && echo "wrong color code '${CLE_PCOLOR:$I:1}' in $CLE_PCOLOR" && return 2
 			declare C$I=${!II}
 		done;;
 	*)	# print help self documented function :)
-		echo "Unknown color '$1' Select one of predefined:"
+		echo "Unknown color '$CLE_PCOLOR' Select one of predefined:"
 		declare -f _setpr|sed -n -e 's/\ *\(\<[a-zA-Z |]*\)).*/ \1 /p' 
 		echo "Or create your own 3-letter style using: rgbcmykw / RGBCMYKW"
 		echo " e.g. 'cle color rgB'"
@@ -167,7 +163,6 @@ _setpr () {
 	# prepare prompt strings
 	CLE_PS="\[$C0\]`_pstr $CLE_P1` \[$C1\]`_pstr $CLE_P2` \[$C2\]`_pstr $CLE_P3`"
 	PS2="\[$C0\] >>>\[$CT_N\] "
-	CLE_PCOLOR=$1
 	_savecf
 }
 
@@ -199,6 +194,8 @@ _defpr () {
 	CLE_P1='\u'
 	CLE_P2='%h'
 	CLE_P3='\w %>'
+	CLE_PTIME='\A'
+	CLE_PCOLOR='marley'
 }
 
 # indicate first run, show banner, create default conf
@@ -370,18 +367,24 @@ suu () {
 ## CLE command & control:
 ## ----------------------
 cle () {
-	case "$1_$2" in
+	local CCMD=$1; shift
+	case "${CCMD}_$1" in
 	color_*) ## cle color COLOR    -- set prompt color
-		_setpr $2 ;;
-	p[1-3]_*)	## cle p1-3 string    -- define prompt part 1-3
-		shift ;;& #initialization
-	p1_*)	CLE_P1="${*:-\\u}" ;;&
-	p2_*)	CLE_P2="${*:-%h}" ;;&
-	p3_*)	CLE_P3="${*:-\\w %>}" ;;&
-	px_)	## cle px             -- reset prompting to default
-		_defpr ;&
-	p[1-3]_*) # common part
-		_setpr $CLE_PCOLOR ;;
+		local CPC=$CLE_PCOLOR
+		CLE_PCOLOR=$1
+		_setpr || CLE_PCOLOR=$CPC ;;
+	p1_*)	## cle p1-3 string    -- define prompt part 1-3
+		CLE_P1="${*:-\\u}"
+		_setpr ;;
+	p2_*)
+		CLE_P2="${*:-%h}"
+		_setpr ;;
+	p3_*)
+		CLE_P3="${*:-\\w %>}"
+		_setpr ;;
+	pt_*)
+		CLE_PTIME="$*"
+		_savecf ;;
 	time_on) ## cle time on|off    -- toggle server time in prompt
 		CLE_PTIME='\A'
 		_savecf ;;
@@ -443,6 +446,10 @@ cle () {
 		mv $NCLE $CLE_RC
 		cle reload
 		printb "New CLE has been installed, previous version saved here: $HOME/clerc-orig" ;;
+	reset_)	## cle reset          -- reset configuration
+		echo removing $CLE_CF
+		rm -f $CLE_CF
+		cle reload ;;
 	reload_) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC ;;
@@ -458,12 +465,11 @@ cle () {
 	*)	# run any _cle_* function
 		# those might be defined in custom files
 		# or as modules in .cle/mod-*
-		local CLEF=$1
-		if declare -f _cle_$CLEF >/dev/null; then
+		if declare -f _cle_$CCMD >/dev/null; then
 			shift
-			_cle_$CLEF $*
+			_cle_$CCMD $*
 		else
-			echo " 'cle $1' not implemeted"
+			echo " 'cle $CCMD' not implemeted"
 			echo "  check cle help"
 		fi
 	esac
