@@ -3,7 +3,7 @@
 ##
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: v3 2017-02-17
+## version: v3 2017-02-20
 ## home: https://github.com/micharbet/CLE
 #
 # This program is free software; you can redistribute it and/or
@@ -36,7 +36,6 @@
 # check running in interactive session and if not, skip all the tweaks
 # required for scp compattibility
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
-CLE_LCUSER=`whoami`
 
 CLE_RC=${BASH_SOURCE[0]}
 case $CLE_RC in
@@ -50,11 +49,11 @@ CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
 
 # determine effective user and custom configuration files
-# CLE_EFUSER is passed to all consecutive sessions initiated with ssg/suu
-CLE_CUSTOMRC=$HOME/.cleusr-${CLE_EFUSER:=$CLE_LCUSER}
-CLE_CF=$HOME/.clecf-$CLE_EFUSER
+# CLE_USER is passed to all consecutive sessions initiated with ssg/suu
+CLE_CUSTOMRC=$HOME/.cleusr-${CLE_USER:=$USER}
+CLE_CF=$HOME/.clecf-$CLE_USER
 
-# tweaked hostname, can be altered in .clerc-local or .clecust-$CLE_EFUSER
+# tweaked hostname, can be altered in .clerc-local or .clecust-$CLE_USER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
 CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
 
@@ -74,7 +73,7 @@ CT_E=`tput setab 1; tput setaf 7` # err highlight
 # default shell settings
 export EDITOR=vi
 export PAGER="less -s"
-HISTFILE=$HOME/.bash_history-$CLE_EFUSER
+HISTFILE=$HOME/.bash_history-$CLE_USER
 HISTCONTROL=ignorespace:ignoredups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 PROMPT_DIRTRIM=2
@@ -121,7 +120,7 @@ _pstr () {
 	echo $*|sed \
 	 -e "s/%i/$CLE_IP/" \
 	 -e "s/%h/$CLE_THN/" \
-	 -e "s/%e/$CLE_EFUSER/" \
+	 -e "s/%e/$CLE_USER/" \
 	 -e "s/%>/$PP/"
 }
 
@@ -185,8 +184,8 @@ PROMPT_COMMAND=_cleprof
 _defwt () {
 	CLE_WT=''
 	[[ $TERm =~ 'linux' ]] && return # no tits on console
-	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_EFUSER -> "
-	CLE_WT="$CLE_WT$CLE_LCUSER@$CLE_THN:"
+	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_USER -> "
+	CLE_WT="$CLE_WT$USER@$CLE_THN:"
 }
 
 # default prompt
@@ -268,7 +267,7 @@ _defalias () {
 ##
 ## alias management
 ## ----------------
-CLE_ALIASES=$HOME/.aliases-$CLE_EFUSER # personalized aliases
+CLE_ALIASES=$HOME/.aliases-$CLE_USER # personalized aliases
 _clexe $CLE_ALIASES
 _defalias
 
@@ -332,7 +331,7 @@ path () { echo $PATH|tr : \\n; }
 ## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () {
 	pushd $HOME >/dev/null
-	local CLE_RMTRC=.clerc-remote-$CLE_EFUSER
+	local CLE_RMTRC=.clerc-remote-$CLE_USER
 	if [ -n "$1" ]; then
 		cp $CLE_RC $CLE_RMTRC 2>/dev/null
 		local SSGFILES=$CLE_RMTRC
@@ -340,7 +339,7 @@ ssg () {
 		local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
 		`/usr/bin/which ssh` -t $1 "
 			echo $CLE_64|base64 --decode |tar xzf -;
-			export CLE_EFUSER=$CLE_EFUSER;
+			export CLE_USER=$CLE_USER;
 			exec bash --rcfile $CLE_RMTRC"
 	else
 		cle help ssg
@@ -351,14 +350,14 @@ ssg () {
 ## suu [username]       -- sudo wrapper; root is the default account
 suu () {
 	pushd $HOME >/dev/null
-	local CLE_RMTRC=.clerc-remote-$CLE_EFUSER
+	local CLE_RMTRC=.clerc-remote-$CLE_USER
 	cp $CLE_RC $CLE_RMTRC 2>/dev/null
 	local SSGFILES=$CLE_RMTRC
 	[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
 	local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
 	sudo -i -u ${1:-root} /bin/bash  -c \
 		"echo $CLE_64|base64 --decode| tar xzf -;
-		 export CLE_EFUSER=$CLE_EFUSER;
+		 export CLE_USER=$CLE_USER;
 		 exec bash --rcfile $CLE_RMTRC"
 	popd >/dev/null
 }
