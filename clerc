@@ -3,7 +3,7 @@
 ##
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: v3 2017-02-20
+## version: v3 2017-02-22
 ## home: https://github.com/micharbet/CLE
 #
 # This program is free software; you can redistribute it and/or
@@ -219,7 +219,7 @@ esac
 # load config and custom tweaks
 _clexe $CLE_CF
 # transition to CLE_Px; remove this later
-grep -q CLE_P1 $CLE_CF || { _defpr; _savecf; }
+grep -q CLE_P0 $CLE_CF || { CLE_P0=$CLE_PTIME; _savecf; }
 
 _clexe $HOME/.clerc-local
 _clexe $CLE_CUSTOMRC
