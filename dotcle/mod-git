@@ -24,6 +24,10 @@ function gista {
 	git status
 }
 
+function gilog {
+	git log
+}
+
 function gidif {
 	git diff
 }

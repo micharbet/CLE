@@ -1,0 +1,82 @@
+#
+# functions to assist CLE development process
+#
+
+# basically enhancement of 'cle' command - things not needed regularly
+## cle ed    - edit $CLERC file
+_cle_ed () {
+	cp $CLE_RC $CLE_RC-backup
+	vi $CLE_RC
+}
+
+## cle ls    - list CLE related files
+_cle_ls () {
+	ls -l $HOME/.aliases* $HOME/.cle*
+}
+
+## cle exe   - show list of all files executed during CLE startup
+_cle_exe () {
+	echo $CLE_EXE|tr : \\n
+}
+
+## cle func  - list all current bash functions
+_cle_func () {
+	declare -f |sed -n '/.\+\s()/p'
+}
+
+## cle clean - clean up home folder from all cle settings
+_cle_clean () {
+	read -p "Cleaning CLE settings, are you sure? (y/N)  "
+	[ "$REPLY" != 'y' ] && return
+	unalias -a
+	rm -f $CLE_ALIASES $CLE_CF ~/.clerc-local
+	cle reload
+}
+
+## cle debug [on|off]  - debug mode ($CLE_DEBUG variable)
+_cle_debug () {
+	case "$1" in
+	on) CLE_DEBUG=1 ;;
+	off) CLE_DEBUG="" ;;
+	esac
+	echo CLE_DEBUG=$CLE_DEBUG
+}
+
+## cdc      - shortcut into $HOME/d/cle
+cdc () { cd ~/d/cle; }
+cdg () { cd ~/d/cle-ghub; }
+
+toghub () {
+	CLERC_ORG=~/d/cle/clerc
+	CLERC_DST=~/d/cle-ghub/clerc-gh
+	HOME_GH='https:\/\/github.com\/micharbet\/CLE'
+	SRC_GH='https:\/\/raw.githubusercontent.com\/micharbet\/CLE\/master'
+
+	SED1="/^##\shome:/s/: .*/: $HOME_GH/"
+	SED2="/^CLE_SRC=/s/=.*/=$SRC_GH/"
+
+	echo creating $CLERC_DST
+	sed -e "$SED1" -e "$SED2" $CLERC_ORG >$CLERC_DST
+	echo check \'diff $CLERC_ORG $CLERC_DST\'
+	echo --- diff start ---
+	diff $CLERC_ORG $CLERC_DST
+	echo ---- diff end ----
+}
+
+toglab () {
+	CLERC_ORG=~/d/cle-ghub/clerc
+	CLERC_DST=~/d/cle/clerc-gl
+	HOME_GL='https:\/\/gitlab.cee.redhat.com\/marbet\/cle'
+	SRC_GL='https:\/\/gitlab.cee.redhat.com\/marbet\/cle\/raw\/master'
+
+	SED1="/^##\shome:/s/: .*/: $HOME_GL/"
+	SED2="/^CLE_SRC=/s/=.*/=$SRC_GL/"
+
+	echo creating $CLERC_DST
+	sed -e "$SED1" -e "$SED2" $CLERC_ORG >$CLERC_DST
+	echo check \'diff $CLERC_ORG $CLERC_DST\'
+	echo --- diff start ---
+	diff $CLERC_ORG $CLERC_DST
+	echo ---- diff end ----
+}
+
