@@ -240,7 +240,14 @@ unset MOD
 ## ----------------------------------
 _defalias () {
 	## ls commands aliases: l ll la lt llr l.
-	alias ls='ls --color=auto'
+	if [[ "$OSTYPE" == "linux-gnu" ]]; then
+                alias ls='ls --color=auto'
+        elif [[ "$OSTYPE" == "darwin"* ]]; then
+                export CLICOLOR=1
+                export LSCOLORS="ExGxBxDxCxEgEdxbxgxcxd"
+        elif [[ "$OSTYPE" == "freebsd"* ]]; then
+                alias ls='ls -G'
+        fi
 	alias l='ls -l'
 	alias ll='ls -l'
 	alias lt='ls -ltr'
