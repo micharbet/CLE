@@ -3,7 +3,7 @@
 ##
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: v3 2017-02-22
+## version: v3 2017-03-08
 ## home: https://github.com/micharbet/CLE
 #
 # This program is free software; you can redistribute it and/or
@@ -73,7 +73,7 @@ CT_E=`tput setab 1; tput setaf 7` # err highlight
 # default shell settings
 export EDITOR=vi
 export PAGER="less -s"
-HISTFILE=$HOME/.bash_history-$CLE_USER
+HISTFILE=$HOME/.history-$CLE_USER
 HISTCONTROL=ignorespace:ignoredups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 PROMPT_DIRTRIM=2
@@ -106,6 +106,7 @@ _clexe () {
 
 # save configuration
 _savecf () {
+	echo "# CLE version $CLE_VERSION"
 	echo CLE_PCOLOR=\'$CLE_PCOLOR\'
 	echo CLE_P0=\'$CLE_P0\'
 	echo CLE_P1=\'$CLE_P1\'
@@ -121,6 +122,7 @@ _pstr () {
 	 -e "s/%i/$CLE_IP/" \
 	 -e "s/%h/$CLE_THN/" \
 	 -e "s/%u/$CLE_USER/" \
+	 -e "s/%e/\\\$_E/" \
 	 -e "s/%>/$PP/"
 }
 
@@ -160,26 +162,28 @@ _setpr () {
 		return 2 
 	esac
 	# prepare prompt strings
-	P0=`_pstr $CLE_P0`; P0=${P0:+$P0 } # add space if necessary
-	CLE_PS="$P0\[$C0\]`_pstr $CLE_P1` \[$C1\]`_pstr $CLE_P2` \[$C2\]`_pstr $CLE_P3`"
+	_PS1="\[$C0\]`_pstr $CLE_P1` \[$C1\]`_pstr $CLE_P2` \[$C2\]`_pstr $CLE_P3`"
+	_PS0=`_pstr $CLE_P0`
 	PS2="\[$C0\] >>>\[$CT_N\] "
 	_savecf
 }
 
 # prompt function - called upon each new prompt line
-_cleprof () {
-	local EEP EE=$?  # store exit status code (it would disappear!)
-	if [ $EE -eq 0 ]; then
-		EEP="\[$CT_K\][$EE]"
+_cleprf () {
+	_E=$? # save last return code
+	local EE
+	# highilighted error code only in P0
+	if [ $_E -eq 0 ]; then
+		EE="[0]"
 	else
-		EEP="\[$CT_E\][$EE]\[$CT_N$CT_K\]"
+		EE="\[$CT_E\][$_E]\[$CT_N$CT_K\]"
 	fi
 	# final prompt composition
-	PS1="$EEP $CLE_PS \[$CT_N\]"
+	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
 	# change window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 }
-PROMPT_COMMAND=_cleprof
+PROMPT_COMMAND=_cleprf
 
 # default window title
 _defwt () {
@@ -192,7 +196,7 @@ _defwt () {
 # default prompt
 _defpr () {
 	CLE_PCOLOR='marley'
-	CLE_P0='\A'
+	CLE_P0='%e \A'
 	CLE_P1='\u'
 	CLE_P2='%h'
 	CLE_P3='\w %>'
@@ -247,6 +251,8 @@ _defalias () {
                 export LSCOLORS="ExGxBxDxCxEgEdxbxgxcxd"
         elif [[ "$OSTYPE" == "freebsd"* ]]; then
                 alias ls='ls -G'
+	else
+		alias ls='ls -F' # at least some file type indication
         fi
 	alias l='ls -l'
 	alias ll='ls -l'
@@ -328,12 +334,6 @@ hh () {
 }
 
 ##
-## various functions
-## -----------------
-## path       -- show $PATH in readable way
-path () { echo $PATH|tr : \\n; }
-
-##
 ## SSH & SUDO wrappers:
 ## --------------------
 ## ssg [user@]hostname  -- access remote system and take CLE along
@@ -380,8 +380,8 @@ cle () {
 		local CPC=$CLE_PCOLOR
 		CLE_PCOLOR=$1
 		_setpr || CLE_PCOLOR=$CPC ;;
-	p0_*)		## cle p0-3 string    -- define prompt part 0-3
-		CLE_P0="$*"
+	p0_*)		## cle p0-p3 [string] -- define prompt part 0-3
+		CLE_P0="${*:-%e \A}"
 		_setpr ;;
 	p1_*)
 		CLE_P1="${*:-\\u}"
@@ -393,10 +393,10 @@ cle () {
 		CLE_P3="${*:-\\w %>}"
 		_setpr ;;
 	time_on) ## cle time on|off    -- toggle server time in prompt
-		CLE_P0='\A'
+		CLE_P0='%e \A'
 		_setpr ;;
 	time_off)
-		CLE_P0=''
+		CLE_P0='%e'
 		_setpr ;;
 	title_on) ## cle title on|off   -- toggle window title
 		_defwt ;;
