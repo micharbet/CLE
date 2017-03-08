@@ -444,7 +444,7 @@ cle () {
 		curl -k $CLE_SRC/clerc >$NCLE
 		printb "New CLE here: $NCLE"
 		echo "current: $CLE_VERSION"
-		echo "new:     `sed -n '/#\sversion/s/.\+:\s//p' $NCLE`"
+		echo "new:     `sed -n 's/## version: //p' $NCLE`"
 		ask "Do you want to see diff? (y/N)"
 		[ "$REPLY" == "y" ] && diff $CLE_RC $NCLE
 		ask "Do you want to install new version? (y/N) "
