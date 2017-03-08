@@ -3,9 +3,10 @@
 ## Run and Deploy
 Issue following commands to first run and hook the environment into bash
 startup resource scripts.
-1. `. clerc`
-2. `cle deploy user` or `cle deploy system`
-
+```
+. clerc
+cle deploy user` or `cle deploy system
+```
 
 ## Prompting
 
@@ -194,7 +195,8 @@ e.g color table ($CT_*). Those variables can be inspected using command
  `cle env`
 
 - CLE_RC       the CLE resource script itself
-- CLE_USER     original user who first initiated the environment. This value is inherited over sessions.
+- CLE_USER     original user who first initiated the environment. This value
+               is inherited over sessions. The most important variable here
 - CLE_CF       configuration file name, typically $HOME/.clecf-$CLE_USER
 - CLE_EXE      log and list of all files executed upon environment startup
 - CLE_VERSION  self descriptive
