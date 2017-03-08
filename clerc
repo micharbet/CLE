@@ -60,6 +60,9 @@ CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
 # color table initializattion
 CT_N=`tput sgr0` # reset
 CT_L=`tput bold`
+CT_U=`tput smul`; CT_UE=`tput rmul`
+CT_D=`tput dim`
+CT_RV=`tput rev`
 CT=`tput setaf 0`; CT_k=$CT_N$CT; CT_K=$CT_L$CT
 CT=`tput setaf 1`; CT_r=$CT_N$CT; CT_R=$CT_L$CT
 CT=`tput setaf 2`; CT_g=$CT_N$CT; CT_G=$CT_L$CT
@@ -200,6 +203,16 @@ _defpr () {
 	CLE_P1='\u'
 	CLE_P2='%h'
 	CLE_P3='\w %>'
+}
+
+# filter to markdown files
+mdfilter () {
+	sed -e "s/^###\(.\+\)/$CT_L\1$CT_N/" \
+	 -e "s/^##\(\s*\)\(.\+\)/\1$CT_U$CT_L\2$CT_N/" \
+	 -e "s/^#\(\s*\)\(.\+\)/\1$CT_L$CT_RV\2$CT_N/" \
+	 -e "s/\*\*\(.\+\)\*\*/$CT_L\1$CT_N/" \
+	 -e "s/\<_\(.\+\)_\>/$CT_U\1$CT_UE/g" \
+	 -e "s/\`\([^\`]\+\)\`/$CT_RV\1$CT_N/g"
 }
 
 # indicate first run, show banner, create default conf
@@ -464,7 +477,9 @@ cle () {
 	env_)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
 	readme_) ## cle readme         -- download and show README file
-		curl -k $CLE_SRC/README.md |less ;;
+		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
+	howto_|man_) ## cle howto|man      -- download and show HOWTO file
+		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
 	help_*) ## cle help [cmd]     -- self documenting feature
 		# double-hash denotes help content :-)
 		[ -z "$2" ] && _clebanner
