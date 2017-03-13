@@ -17,12 +17,12 @@ All the mentioned functionality is encoded into __single file__ and no other
 executables are needed. Run this file in the current shell context using
 trailing dot:
 
-    `. clerc`
+    . clerc
 
 The CLE is activated now and you can setup this environment as persistent with
 command:
 
-    `cle deploy user`
+    cle deploy user
 
 CLE copies itself to `$HOME/.clerc` and adds two lines into your `.bashrc`
 si it will be started upon each login. Note this is the *only* one
@@ -41,7 +41,7 @@ The CLE is able to pass itself over ssh. Use 'ssg' wrapper instead of regular
 'ssh' for login into remote account and CLE will be copied over and started
 seamlessly:
 
-    `ssg username@remote.host`
+    ssg username@remote.host
 
 
 ### suu utility (sudo wrapper)
