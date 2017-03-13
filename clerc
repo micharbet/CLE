@@ -473,9 +473,7 @@ cle () {
 		printb "New CLE has been installed, previous version saved here: $HOME/clerc-orig" ;;
 	reset_)	## cle reset          -- reset configuration
 		rm -f $CLE_CF
-		cle reload
-		printb config file $CLE_CF:
-		cat $CLE_CF ;;
+		cle reload ;;
 	reload_) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		CLE_VERB=1
