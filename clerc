@@ -463,6 +463,9 @@ cle () {
 		printb "New CLE here: $NCLE"
 		echo "current: $CLE_VERSION"
 		echo "new:     `sed -n 's/^## version: //p' $NCLE`"
+		local SUM1=`md5sum $CLE_RC| cut -d' ' -f1`
+		local SUM2=`md5sum $NCLE| cut -d' ' -f1`
+		[[ $SUM1 == $SUM2 ]] && { echo No difference; return 1; }
 		ask "Do you want to see diff? (y/N)"
 		[ "$REPLY" == "y" ] && diff $CLE_RC $NCLE
 		ask "Do you want to install new version? (y/N) "
