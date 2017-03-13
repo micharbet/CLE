@@ -43,6 +43,7 @@ case $CLE_RC in
 *)	CLE_RC=$PWD/$CLE_RC
 esac
 CLE_EXE=$CLE_RC:
+[[ -n "$CLE_VERB" ]] && echo CLE startup: $CLE_RC
 
 # where in the deep space is CLE growing and which version...
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
@@ -238,8 +239,9 @@ case $CLE_RC in
 esac
 
 # load config and custom tweaks
+[[ -n "$CLE_VERB" ]] && echo -n "CLE config:  "
 _clexe $CLE_CF
-[[ -n "$CLE_VERB" ]] && cat $CLE_CF
+[[ -n "$CLE_VERB" ]] && { cat $CLE_CF; echo; }
 
 _clexe $HOME/.clerc-local
 _clexe $CLE_CUSTOMRC
