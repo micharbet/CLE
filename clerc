@@ -3,7 +3,7 @@
 ##
 ## CLE :: Command Live Environment
 ## author: Michael Arbet (marbet@redhat.com)
-## version: v3 2017-03-08
+## version: v3 2017-03-13
 ## home: https://github.com/micharbet/CLE
 #
 # This program is free software; you can redistribute it and/or
@@ -104,7 +104,11 @@ EOT
 # also ensure the script will be executed only once
 _clexe () {
 	echo $CLE_EXE|grep -q $1: && return
-	[ -f $1 ] && { CLE_EXE=$CLE_EXE$1: ; . $1; }
+	if [[ -f $1 ]]; then
+		CLE_EXE=$CLE_EXE$1:
+		[[ -n "$CLE_VERB" ]] &&  echo $1
+		. $1
+	fi
 }
 
 # save configuration
@@ -235,8 +239,7 @@ esac
 
 # load config and custom tweaks
 _clexe $CLE_CF
-# transition to CLE_Px; remove this later
-grep -q CLE_P0 $CLE_CF || { CLE_P0=$CLE_PTIME; _savecf; }
+[[ -n "$CLE_VERB" ]] && cat $CLE_CF
 
 _clexe $HOME/.clerc-local
 _clexe $CLE_CUSTOMRC
@@ -457,7 +460,7 @@ cle () {
 		curl -k $CLE_SRC/clerc >$NCLE
 		printb "New CLE here: $NCLE"
 		echo "current: $CLE_VERSION"
-		echo "new:     `sed -n 's/## version: //p' $NCLE`"
+		echo "new:     `sed -n 's/^## version: //p' $NCLE`"
 		ask "Do you want to see diff? (y/N)"
 		[ "$REPLY" == "y" ] && diff $CLE_RC $NCLE
 		ask "Do you want to install new version? (y/N) "
@@ -473,6 +476,7 @@ cle () {
 		cat $CLE_CF ;;
 	reload_) ## cle reload         -- reload CLE
 		unset CLE_EXE
+		CLE_VERB=1
 		. $CLE_RC ;;
 	env_)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
@@ -484,7 +488,7 @@ cle () {
 		# double-hash denotes help content :-)
 		[ -z "$2" ] && _clebanner
 		awk -F# "/## *$2/"' { print $3 }' $CLE_RC ;;
-	_)	_clebanner ;;
+	_)	_clebanner; echo $CLE_VERSION ;;
 	*)	# run any _cle_* function
 		# those might be defined in custom files
 		# or as modules in .cle/mod-*
@@ -498,7 +502,7 @@ cle () {
 }
 
 # remove disturbing stuff
-unset SUDO_COMMAND
+unset SUDO_COMMAND CLE_VERB
 
 fi # End of login shell setup
 # and that's all the magic :-)
