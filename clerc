@@ -47,7 +47,7 @@ CLE_EXE=$CLE_RC:
 
 # where in the deep space is CLE growing and which version...
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
-CLE_VERSION=`grep -m1 "# version:" $CLE_RC | cut -d' ' -f3-`
+CLE_VERSION=`sed -n 's/^.# version: //p' $CLE_RC`
 
 # determine effective user and custom configuration files
 # CLE_USER is passed to all consecutive sessions initiated with ssg/suu
@@ -462,7 +462,7 @@ cle () {
 		curl -k $CLE_SRC/clerc >$NCLE
 		printb "New CLE here: $NCLE"
 		echo "current: $CLE_VERSION"
-		echo "new:     `sed -n 's/^## version: //p' $NCLE`"
+		echo "new:     `sed -n 's/^.# version: //p' $NCLE`"
 		local SUM1=`md5sum $CLE_RC| cut -d' ' -f1`
 		local SUM2=`md5sum $NCLE| cut -d' ' -f1`
 		[[ $SUM1 == $SUM2 ]] && { echo No difference; return 1; }
@@ -485,7 +485,7 @@ cle () {
 		set | grep ^CLE_.*= ;;
 	readme_) ## cle readme         -- download and show README file
 		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
-	howto_|man_) ## cle howto|man      -- download and show HOWTO file
+	man_)   ## cle howto|man      -- download and show HOWTO file
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
 	help_*) ## cle help [cmd]     -- self documenting feature
 		# double-hash denotes help content :-)
