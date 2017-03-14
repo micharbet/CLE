@@ -1,10 +1,12 @@
 #
-## Copyright (C) 2016-2017 by Michael Arbet 
+# CLE : Command Live Environment
+#
+## authors: Michael Arbet (marbet@redhat.com)
+##          Jakub Arbet (arbetjakub@gmail.com)
+## home:    https://github.com/micharbet/CLE
+## version: v3 2017-03-14
 ##
-## CLE :: Command Live Environment
-## author: Michael Arbet (marbet@redhat.com)
-## version: v3 2017-03-13
-## home: https://github.com/micharbet/CLE
+## Copyright (C) 2016-2017 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -114,7 +116,7 @@ _clexe () {
 
 # save configuration
 _savecf () {
-	echo "# CLE version $CLE_VERSION"
+	echo "# CLE $CLE_VERSION"
 	echo CLE_PCOLOR=\'$CLE_PCOLOR\'
 	echo CLE_P0=\'$CLE_P0\'
 	echo CLE_P1=\'$CLE_P1\'
@@ -210,7 +212,7 @@ _defpr () {
 	CLE_P3='\w %>'
 }
 
-# filter to markdown files
+# filter for markdown files
 mdfilter () {
 	sed -e "s/^###\(.\+\)/$CT_L\1$CT_N/" \
 	 -e "s/^##\(\s*\)\(.\+\)/\1$CT_U$CT_L\2$CT_N/" \
@@ -489,8 +491,8 @@ cle () {
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
 	help_*) ## cle help [cmd]     -- self documenting feature
 		# double-hash denotes help content :-)
-		[ -z "$2" ] && _clebanner
-		awk -F# "/## *$2/"' { print $3 }' $CLE_RC ;;
+		[ -z "$1" ] && _clebanner
+		awk -F# "/\s##|^## *$1/"' { print $3 }' $CLE_RC ;;
 	_)	_clebanner; echo $CLE_VERSION ;;
 	*)	# run any _cle_* function
 		# those might be defined in custom files
