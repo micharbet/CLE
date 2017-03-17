@@ -4,7 +4,7 @@
 ## authors: Michael Arbet (marbet@redhat.com)
 ##          Jakub Arbet (arbetjakub@gmail.com)
 ## home:    https://github.com/micharbet/CLE
-## version: v3 2017-03-14
+## version: v3 2017-03-17
 ##
 ## Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -483,6 +483,18 @@ cle () {
 		unset CLE_EXE
 		CLE_VERB=1
 		. $CLE_RC ;;
+	mod_)   ## cle mod            -- cle module management
+		if declare -f _cle_mod >/dev/null; then
+			_cle_mod $*
+		else
+			ask "Activate CLE modules? y/N"
+			[ "$REPLY" != 'y' ] && return
+			mkdir $HOME/.cle
+			curl -k $CLE_SRC/dotcle/mod-mod >$HOME/.cle/mod-mod
+			_clexe $HOME/.cle/mod-mod
+			cle mod avail
+		fi
+		;;
 	env_)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
 	readme_) ## cle readme         -- download and show README file
