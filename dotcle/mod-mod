@@ -1,14 +1,34 @@
 #
-# CLE module management
+## mod-mod: CLE module management
 #
 
 _cle_mod () {
 	case "$1" in
 	list)
-		ls -l $HOME/.cle/mod-*
+		local M MM
+		printb Modules installed in $HOME/.cle
+		for M in $HOME/.cle/mod-*; do
+			MM=`basename $M`
+			local DESC=`grep "## $MM:" $M | sed "s/^## $MM:\s*//"`
+			echo $MM: $DESC
+		done
 		;;
 	avail*)
-		curl -k $CLE_SRC/modlist
+		printb Modules available in repository
+		printb CLE_SRC= $CLE_SRC
+		curl -k $CLE_SRC/dotcle/modlist
+		;;
+	get)
+		local MODLIST=$HOME/.cle/modlist
+		curl -k $CLE_SRC/dotcle/modlist >$MODLIST
+		PS3="$CT_L choose module $CT_N"
+		select MM in `cat $MODLIST`; do
+			echo downloading $MM
+			curl -k $CLE_SRC/dotcle/$MM >$HOME/.cle/$MM
+			echo executing module
+			_clexe $HOME/.cle/$MM
+			break
+		done
 		;;
 	*)
 		printb "cle mod $1: unimplemented"
