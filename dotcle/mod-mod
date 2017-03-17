@@ -1,0 +1,18 @@
+#
+# CLE module management
+#
+
+_cle_mod () {
+	case "$1" in
+	list)
+		ls -l $HOME/.cle/mod-*
+		;;
+	avail*)
+		curl -k $CLE_SRC/modlist
+		;;
+	*)
+		printb "cle mod $1: unimplemented"
+		return 1
+		;;
+	esac
+}

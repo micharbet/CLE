@@ -43,8 +43,7 @@ _cle_debug () {
 }
 
 ## cdc      - shortcut into $HOME/d/cle
-cdc () { cd ~/d/cle; }
-cdg () { cd ~/d/cle-ghub; }
+cdc () { cd $HOME/d/CLE; }
 
 toghub () {
 	CLERC_ORG=~/d/cle/clerc
@@ -66,7 +65,7 @@ toghub () {
 toglab () {
 	CLERC_ORG=~/d/cle-ghub/clerc
 	CLERC_DST=~/d/cle/clerc-gl
-	HOME_GL='https:\/\/gitlab.cee.redhat.com\/marbet\/cle'
+	HOME_GL='https:\/\/github.com\/micharbet\/CLE'
 	SRC_GL='https:\/\/gitlab.cee.redhat.com\/marbet\/cle\/raw\/master'
 
 	SED1="/^##\shome:/s/: .*/: $HOME_GL/"
