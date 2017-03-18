@@ -44,10 +44,39 @@ _cle_debug () {
 
 ## cdc      - shortcut into $HOME/d/cle
 cdc () {
-	local RC=`readlink $CLE_RC` || return 1
-	cd $HOME/`dirname $RC`
+	local RC=`readlink $CLE_RC`
+	if [ -z "$RC" ]; then
+		echo "No CLE development here, initialize with 'cle devel'"
+		return 1
+	fi
+	cd `dirname $RC`
 }
 	
+_cle_devel () {
+	P=`pwd`
+	ask "Are you ready to prepare CLE development in $P? (y/N) "
+	[ "$REPLY" != "y" ] return 1
+
+	printb "Cloning from git home..."
+	CLE_HOME=`sed -n 's/^## home: *\(.*\)/\1/p' $CLE_RC`
+	git clone $CLE_HOME
+
+	printb "replacing .clerc and module directory..."
+	mv $CLE_RC $HOME/clerc-orig
+	ln -s $P/CLE/clerc $CLE_RC
+	mkdir $HOME/dotcle-orig
+	cd $HOME/.cle
+	for MOD in mod-*; do
+		if [ -f $P/CLE/dotcle/$MOD ]; then
+			mv $MOD $HOME/dotcle-orig/
+			ln -s $P/CLE/dotcle/$MOD $HOME/.cle/
+		fi
+	done
+	ln -s CLE/clerc .clerc
+	cle reload
+	printb CLE development kit ready!
+}
+
 modgen () {
 	local DOTCLE=$HOME/.cle
 	for M in $DOTCLE/mod-*; do
