@@ -4,7 +4,7 @@
 ## authors: Michael Arbet (marbet@redhat.com)
 ##          Jakub Arbet (arbetjakub@gmail.com)
 ## home:    https://github.com/micharbet/CLE
-## version: v3 2017-03-17
+## version: v3 2017-03-19
 ##
 ## Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -103,6 +103,15 @@ cat <<EOT
 EOT
 }
 
+_hlp () {
+	if [ -f $1 ]; then
+		awk -F# "/\s##|^##/ { print \$3 }" $1
+	else
+		local HF=`echo $CLE_EXE | tr : '\n' |grep -m 1 $1`
+		[ -n "$HF" ] && _hlp $HF || echo ...there is no help
+	fi
+}
+
 # execute script and log its filename into CLE_EXE to keep track
 # also ensure the script will be executed only once
 _clexe () {
@@ -124,7 +133,7 @@ _savecf () {
 	echo CLE_P3=\'$CLE_P3\'
 } >$CLE_CF
 
-# prepare prompt string
+# prompt enhancements
 _pstr () {
 	local PP=">" # I hate $ in prompt
 	[ $UID == 0 ] && PP="#"
@@ -133,6 +142,7 @@ _pstr () {
 	 -e "s/%h/$CLE_THN/" \
 	 -e "s/%u/$CLE_USER/" \
 	 -e "s/%e/\\\$_E/" \
+	 -e "s/%v\([[:alnum:]]*\)/\\\${\1:+\1=\$\1}/" \
 	 -e "s/%>/$PP/"
 }
 
@@ -395,6 +405,13 @@ suu () {
 ## ----------------------
 cle () {
 	local CCMD=$1; shift
+	if declare -f _cle_$CCMD >/dev/null; then
+		# run any _cle_* function
+		# those might be defined e.g. in modules .cle/mod-*
+		_cle_$CCMD $*
+		return $?
+	fi
+
 	case "${CCMD}_$1" in
 	color_*) ## cle color COLOR    -- set prompt color
 		local CPC=$CLE_PCOLOR
@@ -484,37 +501,28 @@ cle () {
 		CLE_VERB=1
 		. $CLE_RC ;;
 	mod_)   ## cle mod            -- cle module management
-		if declare -f _cle_mod >/dev/null; then
-			_cle_mod $*
-		else
-			ask "Activate CLE modules? y/N"
-			[ "$REPLY" != 'y' ] && return
-			mkdir $HOME/.cle
-			curl -k $CLE_SRC/dotcle/mod-mod >$HOME/.cle/mod-mod
-			_clexe $HOME/.cle/mod-mod
-			cle mod avail
-		fi
+		# this is just fallback to initialize module functionality
+		# downloaded mod-mod overrides this part 
+		ask "Activate CLE modules? y/N "
+		[ "$REPLY" != 'y' ] && return
+		mkdir $HOME/.cle
+		curl -k $CLE_SRC/dotcle/mod-mod >$HOME/.cle/mod-mod
+		_clexe $HOME/.cle/mod-mod
+		cle mod avail
 		;;
 	env_)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
 	readme_) ## cle readme         -- download and show README file
 		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
-	man_)   ## cle howto|man      -- download and show HOWTO file
+	man_)   ## cle man            -- download and show HOWTO file
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
 	help_*) ## cle help [cmd]     -- self documenting feature
 		# double-hash denotes help content :-)
 		[ -z "$1" ] && _clebanner
-		awk -F# "/\s##|^## *$1/"' { print $3 }' $CLE_RC ;;
+		_hlp ${1:-$CLE_RC} ;;
 	_)	_clebanner; echo $CLE_VERSION ;;
-	*)	# run any _cle_* function
-		# those might be defined in custom files
-		# or as modules in .cle/mod-*
-		if declare -f _cle_$CCMD >/dev/null; then
-			_cle_$CCMD $*
-		else
-			echo " 'cle $CCMD' not implemeted"
-			echo "  check cle help"
-		fi
+	*)	echo " 'cle $CCMD' not implemeted"
+		echo "  check cle help"
 	esac
 }
 

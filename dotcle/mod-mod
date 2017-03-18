@@ -1,10 +1,10 @@
-#
+##
 ## mod-mod: CLE module management
-#
+## ------------------------------
 
 _cle_mod () {
 	case "$1" in
-	list)
+	list)	## cle mod list    -- list installed modules
 		local M MM
 		printb Modules installed in $HOME/.cle
 		for M in $HOME/.cle/mod-*; do
@@ -13,12 +13,12 @@ _cle_mod () {
 			echo $MM: $DESC
 		done
 		;;
-	avail*)
+	avail*) ## cle mod avail   -- list modules available in repository
 		printb Modules available in repository
 		printb CLE_SRC= $CLE_SRC
 		curl -k $CLE_SRC/dotcle/modlist
 		;;
-	get)
+	get)	## cle mod get     -- install module from repository
 		local MODLIST=$HOME/.cle/modlist
 		curl -k $CLE_SRC/dotcle/modlist >$MODLIST
 		PS3="$CT_L choose module $CT_N"
@@ -30,8 +30,11 @@ _cle_mod () {
 			break
 		done
 		;;
+	help)
+		_hlp ${BASH_SOURCE[0]}
+		;;
 	*)
-		printb "cle mod $1: unimplemented"
+		printb "cle mod $1: nothing to do..."
 		return 1
 		;;
 	esac
