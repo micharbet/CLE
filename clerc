@@ -214,12 +214,12 @@ _defpr () {
 
 # filter for markdown files
 mdfilter () {
-	sed -e "s/^###\(.\+\)/$CT_L\1$CT_N/" \
-	 -e "s/^##\(\s*\)\(.\+\)/\1$CT_U$CT_L\2$CT_N/" \
-	 -e "s/^#\(\s*\)\(.\+\)/\1$CT_L$CT_RV\2$CT_N/" \
-	 -e "s/\*\*\(.\+\)\*\*/$CT_L\1$CT_N/" \
-	 -e "s/\<_\(.\+\)_\>/$CT_U\1$CT_UE/g" \
-	 -e "s/\`\([^\`]\+\)\`/$CT_RV\1$CT_N/g"
+	sed -e "s/^###\(.*\)/$CT_L\1$CT_N/" \
+	 -e "s/^##\(\s*\)\(.*\)/\1$CT_U$CT_L\2$CT_N/" \
+	 -e "s/^#\(\s*\)\(.*\)/\1$CT_L$CT_RV\2$CT_N/" \
+	 -e "s/\*\*\(.*\)\*\*/$CT_L\1$CT_N/" \
+	 -e "s/\<_\(.*\)_\>/$CT_U\1$CT_UE/g" \
+	 -e "s/\`\([^\`]*\)\`/$CT_w\1$CT_N/g"
 }
 
 # indicate first run, show banner, create default conf
