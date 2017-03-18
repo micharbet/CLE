@@ -107,8 +107,8 @@ _hlp () {
 	if [ -f $1 ]; then
 		awk -F# "/\s##|^##/ { print \$3 }" $1
 	else
-		local HF=`echo $CLE_EXE | tr : '\n' |grep -m 1 $1`
-		[ -n "$HF" ] && _hlp $HF || echo ...there is no help
+		local HF=`echo $CLE_EXE | tr : '\n' |grep -m 1 mod-.\*$1`
+		[ -n "$HF" ] && _hlp $HF || echo ...there is no help to you
 	fi
 }
 
@@ -516,7 +516,7 @@ cle () {
 		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
 	man_)   ## cle man            -- download and show HOWTO file
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
-	help_*) ## cle help [cmd]     -- self documenting feature
+	help_*) ## cle help [module]  -- self documenting feature
 		# double-hash denotes help content :-)
 		[ -z "$1" ] && _clebanner
 		_hlp ${1:-$CLE_RC} ;;
