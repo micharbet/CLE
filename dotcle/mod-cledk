@@ -50,10 +50,18 @@ cdc () {
 		return 1
 	fi
 	cd `dirname $RC`
+	echo CLE development kit: $PWD
 }
-	
+
+## cle dk init   -- initialize development kit for CLE
 _cle_dk () {
 	[ "$1" != "init" ] && { echo "'cle dk init' works!"; return 1; }
+	if [ `basname $CLE_RC` != ".clerc" ]; then
+		printb "CLE development kit should be set up on CLE workstation."
+		printb "This is remote session: CLE_RC=$CLE_RC"
+		return 1
+	fi
+
 	P=`pwd`
 	ask "Are you ready to prepare CLE development in $P? (y/N) "
 	[ "$REPLY" != "y" ] && return 1
@@ -124,4 +132,7 @@ modgen () {
 #	diff $CLERC_ORG $CLERC_DST
 #	echo ---- diff end ----
 #}
-#
+
+# Development kit initialization
+readlink $CLE_RC || _cle_dk init
+
