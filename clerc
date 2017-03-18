@@ -103,9 +103,10 @@ cat <<EOT
 EOT
 }
 
+# self documentation extractor
 _hlp () {
 	if [ -f $1 ]; then
-		awk -F# "/\s##|^##/ { print \$3 }" $1
+		awk -F# "/[\t ]##|^##/ { print \$3 }" $1
 	else
 		local HF=`echo $CLE_EXE | tr : '\n' |grep -m 1 mod-.\*$1`
 		[ -n "$HF" ] && _hlp $HF || echo ...there is no help to you
