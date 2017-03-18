@@ -52,10 +52,11 @@ cdc () {
 	cd `dirname $RC`
 }
 	
-_cle_devel () {
+_cle_dk () {
+	[ "$1" != "init" ] && { echo "'cle dk init' works!"; return 1; }
 	P=`pwd`
 	ask "Are you ready to prepare CLE development in $P? (y/N) "
-	[ "$REPLY" != "y" ] return 1
+	[ "$REPLY" != "y" ] && return 1
 
 	printb "Cloning from git home..."
 	CLE_HOME=`sed -n 's/^## home: *\(.*\)/\1/p' $CLE_RC`
