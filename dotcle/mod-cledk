@@ -56,7 +56,7 @@ cdc () {
 ## cle dk init   -- initialize development kit for CLE
 _cle_dk () {
 	[ "$1" != "init" ] && { echo "'cle dk init' works!"; return 1; }
-	if [ `basname $CLE_RC` != ".clerc" ]; then
+	if [ `basename $CLE_RC` != ".clerc" ]; then
 		printb "CLE development kit should be set up on CLE workstation."
 		printb "This is remote session: CLE_RC=$CLE_RC"
 		return 1
