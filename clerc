@@ -104,11 +104,12 @@ EOT
 }
 
 # self documentation extractor
+# double-hash denotes printable notes
 _hlp () {
 	if [ -f $1 ]; then
-		awk -F# "/[\t ]##|^##/ { print \$3 }" $1
+		echo $* |xargs -n 1 awk -F# "/[\t ]##|^##/ { print \$3 }"
 	else
-		local HF=`echo $CLE_EXE | tr : '\n' |grep -m 1 mod-.\*$1`
+		local HF=`echo $CLE_EXE | tr : '\n' |grep mod-.\*$1`
 		[ -n "$HF" ] && _hlp $HF || echo ...there is no help to you
 	fi
 }
@@ -458,18 +459,6 @@ cle () {
 			echo "CLE is already hooked into .bashrc :"
 			grep -A2 "$CLID" $BRC
 		fi ;;
-	deploy_system)
-		## cle deploy system  -- hook CLE into /etc/profile.d
-		cat <<-EOT
-		 CLE is to be integrated into this host $CT_R$(hostname)$CT_N
-		 File $CLE_RC will be copied to $CT_L/etc/profile.d/cle.sh$CT_N
-		 So the environment will be activated for all users.
-		 Only root can do that...
-		EOT
-		ask "Are you sure? (y/N) "
-		[ "$REPLY" != 'y' ] && return
-		cp $CLE_RC /etc/profile.d/cle.sh
-		echo " Done!" ;;
 	update_) ## cle update         -- download newest version of CLE
 		if [[ $CLE_RC =~ remote ]]; then
 			cat <<-EOT
@@ -518,8 +507,6 @@ cle () {
 	man_)   ## cle man            -- download and show HOWTO file
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
 	help_*) ## cle help [module]  -- self documenting feature
-		# double-hash denotes help content :-)
-		[ -z "$1" ] && _clebanner
 		_hlp ${1:-$CLE_RC} ;;
 	_)	_clebanner; echo $CLE_VERSION ;;
 	*)	echo " 'cle $CCMD' not implemeted"
