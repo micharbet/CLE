@@ -4,7 +4,7 @@
 ## authors: Michael Arbet (marbet@redhat.com)
 ##          Jakub Arbet (arbetjakub@gmail.com)
 ## home:    https://github.com/micharbet/CLE
-## version: v3 2017-03-19
+## version: v3 2017-03-21 (Spring)
 ## license: GNU GPL v2
 ##
 ## Copyright (C) 2016-2017 by Michael Arbet 
@@ -145,7 +145,8 @@ _pstr () {
 	 -e "s/%h/$CLE_THN/" \
 	 -e "s/%u/$CLE_USER/" \
 	 -e "s/%e/\\\$_E/" \
-	 -e "s/%v\([[:alnum:]]*\)/\\\${\1:+\1=\$\1}/" \
+	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g" \
+	 -e "s/%v\([[:alnum:]]*\)/\\\${\1:+\1=\$\1}/g" \
 	 -e "s/%>/$PP/"
 }
 
