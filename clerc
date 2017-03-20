@@ -5,6 +5,7 @@
 ##          Jakub Arbet (arbetjakub@gmail.com)
 ## home:    https://github.com/micharbet/CLE
 ## version: v3 2017-03-19
+## license: GNU GPL v2
 ##
 ## Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -88,7 +89,7 @@ shopt -s checkwinsize
 #
 # Internal helper functions
 #
-printb () { printf "$CT_L$*$CT_N\n"; }
+printb () { printf "$CT_w$*$CT_N\n"; }
 ask () { read -p "$CT_L$*$CT_N"; }
 
 # print banner
@@ -110,7 +111,7 @@ _hlp () {
 		echo $* |xargs -n 1 awk -F# "/[\t ]##|^##/ { print \$3 }"
 	else
 		local HF=`echo $CLE_EXE | tr : '\n' |grep mod-.\*$1`
-		[ -n "$HF" ] && _hlp $HF || echo ...there is no help to you
+		[ -n "$HF" ] && _hlp $HF || echo ...there is no help for you
 	fi
 }
 
@@ -508,7 +509,8 @@ cle () {
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
 	help_*) ## cle help [module]  -- self documenting feature
 		_hlp ${1:-$CLE_RC} ;;
-	_)	_clebanner; echo $CLE_VERSION ;;
+	_)	_clebanner
+		head $CLE_RC | sed -n 's/^##\(.*\)/\1/p' ;;
 	*)	echo " 'cle $CCMD' not implemeted"
 		echo "  check cle help"
 	esac
