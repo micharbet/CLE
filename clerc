@@ -1,13 +1,13 @@
 #
 # CLE : Command Live Environment
 #
-## authors: Michael Arbet (marbet@redhat.com)
-##          Jakub Arbet (arbetjakub@gmail.com)
-## home:    https://github.com/micharbet/CLE
-## version: v3 2017-03-21 (Spring)
-## license: GNU GPL v2
-##
-## Copyright (C) 2016-2017 by Michael Arbet 
+#* authors: Michael Arbet (marbet@redhat.com)
+#*          Jakub Arbet (arbetjakub@gmail.com)
+#* home:    https://github.com/micharbet/CLE
+#* version: v3 2017-03-21 (Spring)
+#* license: GNU GPL v2
+#*
+#* Copyright (C) 2016-2017 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -75,7 +75,7 @@ esac
 
 # where in the deep space is CLE growing and which version...
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
-CLE_VERSION=`sed -n 's/^.# version: //p' $CLE_RC`
+CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # path to custom configuration files
 CLE_CF=$CLE_DIR/.clecf-$CLE_USER
@@ -417,7 +417,7 @@ cle () {
 	fi
 
 	case "${CMD}" in
-	color) ## cle color COLOR    -- set prompt color
+	color)	## cle color COLOR    -- set prompt color
 		local CPC=$CLE_PCOLOR
 		CLE_PCOLOR=$1
 		_setpr || CLE_PCOLOR=$CPC ;;
@@ -490,7 +490,7 @@ cle () {
 		unset CLE_EXE
 		CLE_VERB=1
 		. $CLE_RC ;;
-	mod)   ## cle mod            -- cle module management
+	mod)	## cle mod            -- cle module management
 		# this is just fallback to initialize module functionality
 		# downloaded mod-mod overrides this part 
 		ask "Activate CLE modules? y/N "
@@ -504,12 +504,12 @@ cle () {
 		set | grep ^CLE_.*= ;;
 	readme) ## cle readme         -- download and show README file
 		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
-	man)   ## cle man            -- download and show HOWTO file
+	man)	## cle man            -- download and show HOWTO file
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
-	help) ## cle help [module]  -- self documenting feature
+	help)	## cle help [module]  -- self documenting feature
 		_hlp ${1:-$CLE_RC} ;;
 	"")	_clebanner
-		head $CLE_RC | sed -n 's/^##\(.*\)/\1/p'
+		head $CLE_RC | sed -n 's/^#\*\(.*\)/\1/p'
 		echo ;;
 	*)	echo " 'cle $CMD' not implemeted"
 		echo "  check cle help"
