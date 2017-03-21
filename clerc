@@ -54,8 +54,8 @@ CLE_VERSION=`sed -n 's/^.# version: //p' $CLE_RC`
 
 # determine effective user and custom configuration files
 # CLE_USER is passed to all consecutive sessions initiated with ssg/suu
-CLE_CUSTOMRC=$HOME/.cleusr-${CLE_USER:=$USER}
-CLE_CF=$HOME/.clecf-$CLE_USER
+CLE_CF=${CLE_DIR:=$HOME}/.clecf-$CLE_USER
+CLE_CUSTOMRC=$CLE_DIR/.cleusr-${CLE_USER:=$USER}
 
 # tweaked hostname, can be altered in .clerc-local or .cleusr-$CLE_USER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
@@ -80,7 +80,7 @@ CT_E=`tput setab 1; tput setaf 7` # err highlight
 # default shell settings
 export EDITOR=vi
 export PAGER="less -s"
-HISTFILE=$HOME/.history-$CLE_USER
+HISTFILE=$CLE_DIR/.history-$CLE_USER
 HISTCONTROL=ignorespace:ignoredups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 PROMPT_DIRTRIM=2
@@ -259,13 +259,13 @@ esac
 _clexe $CLE_CF
 [[ -n "$CLE_VERB" ]] && { cat $CLE_CF; echo; }
 
-_clexe $HOME/.clerc-local
+_clexe $CLE_DIR/.clerc-local
 _clexe $CLE_CUSTOMRC
 _defwt
 _setpr $CLE_PCOLOR
 
 # load modules from .cle folder
-for MOD in $HOME/.cle/mod-*; do
+for MOD in $CLE_DIR/.cle/mod-*; do
 	_clexe $MOD
 done
 unset MOD
@@ -315,7 +315,7 @@ _defalias () {
 ##
 ## alias management
 ## ----------------
-CLE_ALIASES=$HOME/.aliases-$CLE_USER # personalized aliases
+CLE_ALIASES=$CLE_DIR/.aliases-$CLE_USER # personalized aliases
 _clexe $CLE_ALIASES
 _defalias
 
@@ -372,7 +372,7 @@ hh () {
 ## --------------------
 ## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () {
-	pushd $HOME >/dev/null
+	pushd $CLE_DIR >/dev/null
 	local CLE_RMTRC=.clerc-remote-$CLE_USER
 	if [ -n "$1" ]; then
 		cp $CLE_RC $CLE_RMTRC 2>/dev/null
@@ -391,7 +391,7 @@ ssg () {
 
 ## suu [username]       -- sudo wrapper; root is the default account
 suu () {
-	pushd $HOME >/dev/null
+	pushd $CLE_DIR >/dev/null
 	local CLE_RMTRC=.clerc-remote-$CLE_USER
 	cp $CLE_RC $CLE_RMTRC 2>/dev/null
 	local SSGFILES=$CLE_RMTRC
@@ -443,18 +443,18 @@ cle () {
 		_defwt ;;
 	title_off)
 		CLE_WT="" ;;
-	deploy_user)
-		## cle deploy user    -- hook CLE into user's profile
+	deploy_*)
+		## cle deploy         -- hook CLE into user's profile
 		local CLID='# Command Live Environment'
 		local BRC=$HOME/.bashrc
-		cp $CLE_RC $HOME/.clerc
+		cp $CLE_RC $CLE_DIR/.clerc
 		grep -q "$CLID" $BRC 
 		if [ $? != 0 ]; then
 			printb "CLE is to be integrated to your login script."
 			ask " Are you sure? (y/N) "
 			[ "$REPLY" != 'y' ] && return
 			echo -e >>$BRC \\n$CLID
-			echo -e >>$BRC '[ -f $HOME/.clerc ] && . $HOME/.clerc\n'
+			echo -e >>$BRC "[ -f $CLE_DIR/.clerc ] && . $CLE_DIR/.clerc\n"
 			printf '\n ... added following to the end of .bashrc :\n'
 			tail -4 $BRC
 		else
@@ -469,7 +469,7 @@ cle () {
 			EOT
 			return 2
 		fi
-		local NCLE=$HOME/clerc-new
+		local NCLE=$CLE_DIR/clerc-new
 		curl -k $CLE_SRC/clerc >$NCLE
 		printb "New CLE here: $NCLE"
 		echo "current: $CLE_VERSION"
@@ -481,10 +481,10 @@ cle () {
 		[ "$REPLY" == "y" ] && diff $CLE_RC $NCLE
 		ask "Do you want to install new version? (y/N) "
 		[ "$REPLY" != 'y' ] && return
-		cp $CLE_RC $HOME/clerc-orig
+		cp $CLE_RC $CLE_DIR/clerc-orig
 		mv $NCLE $CLE_RC
 		cle reload
-		printb "New CLE has been installed, previous version saved here: $HOME/clerc-orig" ;;
+		printb "New CLE has been installed, previous version saved here: $CLE_DIR/clerc-orig" ;;
 	reset_)	## cle reset          -- reset configuration
 		rm -f $CLE_CF
 		cle reload ;;
@@ -497,9 +497,9 @@ cle () {
 		# downloaded mod-mod overrides this part 
 		ask "Activate CLE modules? y/N "
 		[ "$REPLY" != 'y' ] && return
-		mkdir $HOME/.cle
-		curl -k $CLE_SRC/dotcle/mod-mod >$HOME/.cle/mod-mod
-		_clexe $HOME/.cle/mod-mod
+		mkdir $CLE_DIR/.cle
+		curl -k $CLE_SRC/dotcle/mod-mod >$CLE_DIR/.cle/mod-mod
+		_clexe $CLE_DIR/.cle/mod-mod
 		cle mod avail
 		;;
 	env_)	## cle env            -- print CLE_* variables
@@ -511,7 +511,8 @@ cle () {
 	help_*) ## cle help [module]  -- self documenting feature
 		_hlp ${1:-$CLE_RC} ;;
 	_)	_clebanner
-		head $CLE_RC | sed -n 's/^##\(.*\)/\1/p' ;;
+		head $CLE_RC | sed -n 's/^##\(.*\)/\1/p'
+		echo ;;
 	*)	echo " 'cle $CCMD' not implemeted"
 		echo "  check cle help"
 	esac
