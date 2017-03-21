@@ -509,7 +509,7 @@ cle () {
 	help)	## cle help [module]  -- self documenting feature
 		_hlp ${1:-$CLE_RC} ;;
 	"")	_clebanner
-		head $CLE_RC | sed -n 's/^#\*\(.*\)/\1/p'
+		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
 		echo ;;
 	*)	echo " 'cle $CMD' not implemeted"
 		echo "  check cle help"
