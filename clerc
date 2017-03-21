@@ -33,28 +33,52 @@
 # * built-in self documentation feature ('cle help' & 'cle readme')
 # * manage your aliases using 'aa' function
 # * use 'hh' function to ease history management
-# * two deploymenty options
 # * self update from GIT source
 
 # check running in interactive session and if not, skip all the tweaks
 # required for scp compattibility
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 
+# execute script and log its filename into CLE_EXE to keep track
+# ensure the script will be executed only once
+_clexe () {
+	echo $CLE_EXE|grep -q $1: && return
+	if [[ -f $1 ]]; then
+		CLE_EXE=$CLE_EXE$1:
+		[[ -n "$CLE_VERB" ]] &&  echo clexe: $1
+		. $1
+	fi
+}
+
+# where I'm running?
 CLE_RC=${BASH_SOURCE[0]}
-case $CLE_RC in
-/*)	;;
-*)	CLE_RC=$PWD/$CLE_RC
-esac
+[[ $CLE_RC =~ ^/ ]] || CLE_RC=$PWD/$CLE_RC
 CLE_EXE=$CLE_RC:
 [[ -n "$CLE_VERB" ]] && echo CLE startup: $CLE_RC
+
+# how the CLE was started?
+case $CLE_RC in
+*.clerc-remote-*) # transferred through ssg/suu, run also old good .bashrc :-)
+	_clexe $HOME/.bashrc
+	CLE_DIR=`dirname $CLE_RC` ;;
+*/clerc*) # initial run from commandline
+	cat <<-EOT
+	 It seems you started CLE from command line issuing '. $CLE_RC'
+	 Since this is your first run, consider setting up in your profile.
+	 Following command will hook CLE in your $HOME/.bashrc
+	$CT_L  cle deploy user$CT_N
+	EOT
+	CLE_DIR=$HOME ;;
+*)	# locally deployed
+	CLE_DIR=$HOME
+esac
 
 # where in the deep space is CLE growing and which version...
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VERSION=`sed -n 's/^.# version: //p' $CLE_RC`
 
-# determine effective user and custom configuration files
-# CLE_USER is passed to all consecutive sessions initiated with ssg/suu
-CLE_CF=${CLE_DIR:=$HOME}/.clecf-$CLE_USER
+# path to custom configuration files
+CLE_CF=$CLE_DIR/.clecf-$CLE_USER
 CLE_CUSTOMRC=$CLE_DIR/.cleusr-${CLE_USER:=$USER}
 
 # tweaked hostname, can be altered in .clerc-local or .cleusr-$CLE_USER
@@ -112,17 +136,6 @@ _hlp () {
 	else
 		local HF=`echo $CLE_EXE | tr : '\n' |grep mod-.\*$1`
 		[ -n "$HF" ] && _hlp $HF || echo ...there is no help for you
-	fi
-}
-
-# execute script and log its filename into CLE_EXE to keep track
-# also ensure the script will be executed only once
-_clexe () {
-	echo $CLE_EXE|grep -q $1: && return
-	if [[ -f $1 ]]; then
-		CLE_EXE=$CLE_EXE$1:
-		[[ -n "$CLE_VERB" ]] &&  echo $1
-		. $1
 	fi
 }
 
@@ -238,21 +251,6 @@ mdfilter () {
 
 # indicate first run, show banner, create default conf
 [ -f $CLE_CF ] || { _clebanner; _defpr; _savecf; }
-
-# how the CLE was started?
-case $CLE_RC in
-*.clerc-remote-*)
-	# transferred through ssg/suu, run also old good .bashrc :-)
-	_clexe $HOME/.bashrc ;;
-*/clerc*)
-	# initial run from commandline
-	cat <<-EOT
-	 It seems you started CLE from command line issuing '. $CLE_RC'
-	 Since this is your first run, consider setting up in your profile.
-	 Following command will hook CLE in your $HOME/.bashrc
-	$CT_L  cle deploy user$CT_N
-	EOT
-esac
 
 # load config and custom tweaks
 [[ -n "$CLE_VERB" ]] && echo -n "CLE config:  "
@@ -379,13 +377,15 @@ ssg () {
 		local SSGFILES=$CLE_RMTRC
 		[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
 		local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
-		`/usr/bin/which ssh` -t $1 "
+		`/usr/bin/which ssh` -t $* "
+			${CLE_TODIR:+mkdir $CLE_TODIR; cd $CLE_TODIR;}
 			echo $CLE_64|base64 --decode |tar xzf -;
 			export CLE_USER=$CLE_USER;
 			exec bash --rcfile $CLE_RMTRC"
 	else
 		cle help ssg
 	fi
+	unset $CLE_TODIR	# one-time use
 	popd >/dev/null
 }
 
@@ -408,42 +408,40 @@ suu () {
 ## CLE command & control:
 ## ----------------------
 cle () {
-	local CCMD=$1; shift
-	if declare -f _cle_$CCMD >/dev/null; then
+	local CMD=$1; shift
+	if declare -f _cle_$CMD >/dev/null; then
 		# run any _cle_* function
 		# those might be defined e.g. in modules .cle/mod-*
-		_cle_$CCMD $*
+		_cle_$CMD $*
 		return $?
 	fi
 
-	case "${CCMD}_$1" in
-	color_*) ## cle color COLOR    -- set prompt color
+	case "${CMD}" in
+	color) ## cle color COLOR    -- set prompt color
 		local CPC=$CLE_PCOLOR
 		CLE_PCOLOR=$1
 		_setpr || CLE_PCOLOR=$CPC ;;
-	p0_*)		## cle p0-p3 [string] -- define prompt part 0-3
+	p0)	## cle p0-p3 [string] -- define prompt part 0-3
 		CLE_P0="${*:-%e \A}"
 		_setpr ;;
-	p1_*)
+	p1)
 		CLE_P1="${*:-\\u}"
 		_setpr ;;
-	p2_*)
+	p2)
 		CLE_P2="${*:-%h}"
 		_setpr ;;
-	p3_*)
+	p3)
 		CLE_P3="${*:-\\w %>}"
 		_setpr ;;
-	time_on) ## cle time on|off    -- toggle server time in prompt
-		CLE_P0='%e \A'
+	time)	## cle time [off]     -- toggle server time in prompt
+		[ "$1" == "off" ] && CLE_P0='%e'
+		[ -z "$1" ] && CLE_P0='%e \A'
 		_setpr ;;
-	time_off)
-		CLE_P0='%e'
-		_setpr ;;
-	title_on) ## cle title on|off   -- toggle window title
-		_defwt ;;
-	title_off)
-		CLE_WT="" ;;
-	deploy_*)
+	title)	## cle title [off]    -- toggle window title
+		[ "$1" == "off" ] && CLE_WT=''
+		[ -z "$1" ] && _defwt 
+		;;
+	deploy)
 		## cle deploy         -- hook CLE into user's profile
 		local CLID='# Command Live Environment'
 		local BRC=$HOME/.bashrc
@@ -461,7 +459,7 @@ cle () {
 			echo "CLE is already hooked into .bashrc :"
 			grep -A2 "$CLID" $BRC
 		fi ;;
-	update_) ## cle update         -- download newest version of CLE
+	update) ## cle update         -- download newest version of CLE
 		if [[ $CLE_RC =~ remote ]]; then
 			cat <<-EOT
 			 CLE is running through remote session.
@@ -485,14 +483,14 @@ cle () {
 		mv $NCLE $CLE_RC
 		cle reload
 		printb "New CLE has been installed, previous version saved here: $CLE_DIR/clerc-orig" ;;
-	reset_)	## cle reset          -- reset configuration
+	reset)	## cle reset          -- reset configuration
 		rm -f $CLE_CF
 		cle reload ;;
-	reload_) ## cle reload         -- reload CLE
+	reload) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		CLE_VERB=1
 		. $CLE_RC ;;
-	mod_)   ## cle mod            -- cle module management
+	mod)   ## cle mod            -- cle module management
 		# this is just fallback to initialize module functionality
 		# downloaded mod-mod overrides this part 
 		ask "Activate CLE modules? y/N "
@@ -502,18 +500,18 @@ cle () {
 		_clexe $CLE_DIR/.cle/mod-mod
 		cle mod avail
 		;;
-	env_)	## cle env            -- print CLE_* variables
+	env)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
-	readme_) ## cle readme         -- download and show README file
+	readme) ## cle readme         -- download and show README file
 		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
-	man_)   ## cle man            -- download and show HOWTO file
+	man)   ## cle man            -- download and show HOWTO file
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r ;;
-	help_*) ## cle help [module]  -- self documenting feature
+	help) ## cle help [module]  -- self documenting feature
 		_hlp ${1:-$CLE_RC} ;;
-	_)	_clebanner
+	"")	_clebanner
 		head $CLE_RC | sed -n 's/^##\(.*\)/\1/p'
 		echo ;;
-	*)	echo " 'cle $CCMD' not implemeted"
+	*)	echo " 'cle $CMD' not implemeted"
 		echo "  check cle help"
 	esac
 }
