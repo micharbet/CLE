@@ -16,7 +16,7 @@ _cle_mod () {
 	local M MM
 	case "$1" in
 	list)	## cle mod list         -- list installed modules
-		printb Modules installed in $MODIR
+		printb Modules installed in $MODIR:
 		for M in $MODIR/mod-*; do
 			MM=`basename $M`
 			local DESC=`grep "## $MM:" $M | sed "s/^## $MM:\s*//"`
@@ -24,8 +24,8 @@ _cle_mod () {
 		done
 		;;
 	avail) ## cle mod avail        -- list modules available in repository
-		printb Modules available in repository
 		printb CLE_SRC= $CLE_SRC
+		printb Modules available in repository:
 		curl -k $CLE_SRC/dotcle/modlist
 		;;
 	get)	## cle mod get [module] -- install module from repository
@@ -41,7 +41,7 @@ _cle_mod () {
 		printb "Downloading $MM"
 		curl -k $CLE_SRC/dotcle/$MM >$MODIR/$MM || return
 		echo
-		if grep "##\s\+$MM:" $MM; then
+		if grep "##\s\+$MM:" $MODIR/$MM; then
 			printb Executing module $MODIR/$MM
 			_clexe $MODIR/$MM
 		else
@@ -53,10 +53,11 @@ _cle_mod () {
 		fi
 		;;
 	help)
-		_hlp ${BASH_SOURCE[0]}
+		cle help ${BASH_SOURCE[0]}
 		;;
 	*)
 		printb "cle mod $1: nothing to do..."
+		echo "Try 'cle help mod'"
 		return 1
 		;;
 	esac
