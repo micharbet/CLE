@@ -16,7 +16,7 @@ _cle_mod () {
 	local M MM
 	case "$1" in
 	list)	## cle mod list         -- list installed modules
-		printb Modules installed in $HOME/.cle
+		printb Modules installed in $MODIR
 		for M in $MODIR/mod-*; do
 			MM=`basename $M`
 			local DESC=`grep "## $MM:" $M | sed "s/^## $MM:\s*//"`
@@ -41,7 +41,7 @@ _cle_mod () {
 		printb "Downloading $MM"
 		curl -k $CLE_SRC/dotcle/$MM >$MODIR/$MM || return
 		echo
-		if grep "##\s+$MM:" $MM; then
+		if grep "##\s\+$MM:" $MM; then
 			printb Executing module $MODIR/$MM
 			_clexe $MODIR/$MM
 		else
