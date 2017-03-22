@@ -1,5 +1,7 @@
+##
+## mod-git: git functions / shorcuts
+## ---------------------------------
 #
-# git functions/ shorcuts
 # those might be written as aliases mostly but I wanted them not to 
 # affect already defined set of aliases
 #

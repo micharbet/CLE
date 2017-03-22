@@ -1,7 +1,7 @@
 ##
 ## mod-mod: CLE module management
 ## ------------------------------
-
+#
 # Copyright (C) 2017 by Michael Arbet
 #
 # This program is free software; you can redistribute it and/or
@@ -11,32 +11,46 @@
 
 
 _cle_mod () {
+	local MODIR=$CLE_DIR/.cle
+	local MODLIST=$MODIR/modlist
+	local M MM
 	case "$1" in
-	list)	## cle mod list    -- list installed modules
-		local M MM
+	list)	## cle mod list         -- list installed modules
 		printb Modules installed in $HOME/.cle
-		for M in $HOME/.cle/mod-*; do
+		for M in $MODIR/mod-*; do
 			MM=`basename $M`
 			local DESC=`grep "## $MM:" $M | sed "s/^## $MM:\s*//"`
 			echo $MM: $DESC
 		done
 		;;
-	avail*) ## cle mod avail   -- list modules available in repository
+	avail) ## cle mod avail        -- list modules available in repository
 		printb Modules available in repository
 		printb CLE_SRC= $CLE_SRC
 		curl -k $CLE_SRC/dotcle/modlist
 		;;
-	get)	## cle mod get     -- install module from repository
-		local MODLIST=$HOME/.cle/modlist
-		curl -k $CLE_SRC/dotcle/modlist >$MODLIST
-		PS3="$CT_L choose module $CT_N"
-		select MM in `cat $MODLIST`; do
-			echo downloading $MM
-			curl -k $CLE_SRC/dotcle/$MM >$HOME/.cle/$MM
-			echo executing module
-			_clexe $HOME/.cle/$MM
-			break
-		done
+	get)	## cle mod get [module] -- install module from repository
+		if [ -z "$2" ]; then
+			curl -k $CLE_SRC/dotcle/modlist >$MODLIST
+			PS3="$CT_L choose module $CT_N"
+			select MM in `cat $MODLIST`; do
+				[ -n "$MM" ] && break
+			done
+		else
+			MM=mod-$2
+		fi
+		printb "Downloading $MM"
+		curl -k $CLE_SRC/dotcle/$MM >$MODIR/$MM || return
+		echo
+		if grep "##\s+$MM:" $MM; then
+			printb Executing module $MODIR/$MM
+			_clexe $MODIR/$MM
+		else
+			printb No module header found, see:
+			head $MODIR/$MM
+			echo
+			echo Removing that file...
+			rm -f $MODIR/$MM
+		fi
 		;;
 	help)
 		_hlp ${BASH_SOURCE[0]}

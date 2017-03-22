@@ -1,7 +1,6 @@
-#
-# CLE module
-# filesystem and processess utilities
-#
+##
+## mod-fsps: filesystem and processess utilities
+## ---------------------------------------------
 
 ## psg        -- ps filtered through grep
 psg () { ps -ef |grep -i $1|grep -v grep; }
