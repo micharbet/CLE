@@ -91,6 +91,7 @@ _cle_dk () {
 
 ## cdc      - shortcut into $HOME/d/cle
 cdc () {
+	cd
 	local RC=`readlink $CLE_RC`
 	if [ -z "$RC" ]; then
 		echo "No CLE development here, initialize with 'cle devel'"

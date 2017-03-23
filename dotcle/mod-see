@@ -1,0 +1,77 @@
+##
+## mod-see: Stdout highlighter
+##
+## usage: see [-nt] word1 [word2] [word3]
+##
+##   parses the text through regular expressions (sed)
+##   and highlights selected up to three selected words
+##   -n suppress unmatched lines
+##   -t print red timestamps, once per minute
+#
+# (c) 2013-2017 Michael Arbet
+
+see () {
+	# defaults
+	local SUPPRESS=""
+	local TSTAMP=0
+	local READER="cat"
+	local OPTIND # local scope is necessary in function
+	             # this variable is used in getopts
+	local RE1 RE2 RE3
+
+	echo $*
+	#
+	# process switches
+	while getopts ":ntf:" OPT
+	do
+		echo $OPT:$OPTARG
+		case $OPT in
+		n) SUPPRESS=-n ;;	# suppress unmatched lines
+		t) TSTAMP=1 ;;		# print minute timestamp
+		f) READER="tail -f $OPTARG" ;;
+		*) cle help ${BASH_SOURCE[0]}; return 1 ;;
+		esac
+	done
+	shift $((OPTIND-1))
+	echo $*
+	echo $READER
+
+	#
+	# distinguish number of words for searching
+	#
+	case $# in
+	1)	RE1="-e s/\\($1\\)/$CT_G\\1$CT_N/"
+		[ "$SUPPRESS" ] && RE1=${REXP}p
+		;;
+	2)	RE2="-e /$1/s/\\($1\\)/$CT_G\\1$CT_N/"
+		RE1="-e /$2/s/\\($2\\)/$CT_Y\\1$CT_N/"
+		[ "$SUPPRESS" ] && RE2=${RE2}p
+		;;
+	3)	RE3="-e /$1/s/\\($1\\)/$CT_G\\1$CT_N/"
+		RE2="-e /$1/s/\\($2\\)/$CT_Y\\1$CT_N/"
+		RE1="-e /$1/s/\\($3\\)/$CT_C\\1$CT_N/"
+		[ "$SUPPRESS" ] && RE3=${RE3}p
+		;;
+	*)
+		cle help ${BASH_SOURCE[0]}; return 1 ;;
+	esac
+
+	$READER|sed $SUPPRESS $RE1 $RE2 $RE3 &
+	
+	echo LAST PID=$!
+
+	echo $$
+	trap "echo SIGUSR1" USR1
+
+	#
+	# waiting loop
+	# coloring runs in background, this loop can print timestamps
+	#
+	if [ $TSTAMP -eq 1 ]; then
+		while true; do date "+$CT_R[%d-%m-%Y %T]$CT_N"; sleep 60; done
+	else
+		wait
+	fi
+	echo killing $!
+	kill $!
+}
