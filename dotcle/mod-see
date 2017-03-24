@@ -1,14 +1,7 @@
 #
-## mod-see: Stdout highlighter
 ##
-## usage: see [-nt] word1 [word2] [word3]
-##
-##   parses the text through regular expressions (sed)
-##   and highlights selected up to three selected words
-##   -n        suppress unmatched lines
-##   -t nsec   print red timestamps, default 60 seconds
-##   -f file   open filename instead of stdin
-##
+## mod-see: Text flow highlighter
+## ------------------------------
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,6 +10,19 @@
 #
 # (c) 2013-2017 Michael Arbet
 
+##
+## usage: see [-n] [-t nsec] [-f filename]  word1 [word2] [word3]
+##
+## Parses the text through regular expressions (sed) and highlights
+## up to three selected words. It filters either stdin or file
+## on command line. As an addition red timestamps are printed every 
+## minute, they can be turned off by setting the interval to zero.
+## 
+## Options:
+##   -n        suppress unmatched lines
+##   -t nsec   print red timestamps, default 60 seconds
+##   -f file   open filename instead of stdin
+##
 see () {
 	# defaults
 	local SUPPRESS=""
