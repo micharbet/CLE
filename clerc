@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: v3 2017-03-21 (Spring)
+#* version: v3 2017-04-05 (Spring)
 #* license: GNU GPL v2
 #*
 #* Copyright (C) 2016-2017 by Michael Arbet 
@@ -59,6 +59,7 @@ CLE_EXE=$CLE_RC:
 # how the CLE was started?
 case $CLE_RC in
 *.clerc-remote-*) # transferred through ssg/suu, run also old good .bashrc :-)
+	_clexe /etc/profile
 	_clexe $HOME/.bashrc
 	CLE_DIR=`dirname $CLE_RC` ;;
 */clerc*) # initial run from commandline
@@ -134,7 +135,7 @@ EOT
 
 # save configuration
 _savecf () {
-	echo "# CLE $CLE_VERSION"
+	echo "# $CLE_USER $CLE_VERSION"
 	echo CLE_PCOLOR=\'$CLE_PCOLOR\'
 	echo CLE_P0=\'$CLE_P0\'
 	echo CLE_P1=\'$CLE_P1\'
