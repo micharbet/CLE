@@ -47,6 +47,12 @@ Prompt string has following parts and default values:
    %e ... return code from recent command, in P0 it isenclosed in brackets
           and changing color
 
+   %cX .. set color. Replace X with some of rgbcmykw or respective capitals
+          this is an addition to previously set colors
+
+   %vVARIABLE
+      ... place any VARIABLE into prompt string
+
   Issuing command `cle p0` (or p1 .. p3 respectively) without string resets
   the default value of give prompt part.
 
@@ -159,8 +165,8 @@ remote sessions it has just temporary effect.
 -`cle readme`
   Downloads docs from CLE source.
 
--`cle howto` or `cle man`
-  Downloads and shows this file on command line
+-`cle man`
+  Downloads and shows this file.
 
 ## Files
 - .clerc or .clerc-remote-$CLE_USER
@@ -208,4 +214,13 @@ e.g color table ($CT_*). Those variables can be inspected using command
                file exists
 - CLE_WTITLE   string to be terminal window title
 - CLE_SRC      web store of CLE for updates and documentation downloads
+- CLE_DIR      where are current cle files, usually its $HOME
+- CLE_TODIR    if this value is set before remote ssg session starts, it causes
+               the environment will be placed to other path than $HOME. This is
+               useful on systems without home directories.
+- CLE_IP       contains IP address in case of remote session
 
+
+## CLE modules
+
+...to be documented

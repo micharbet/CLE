@@ -13,22 +13,30 @@
 _cle_mod () {
 	local MODIR=$CLE_DIR/.cle
 	local MODLIST=$MODIR/modlist
-	local M MM
+	local M MM MDESC MSRC
 	case "$1" in
 	list)	## cle mod list         -- list installed modules
 		printb Modules installed in $MODIR:
 		for M in $MODIR/mod-*; do
 			MM=`basename $M`
-			local DESC=`grep "## $MM:" $M | sed "s/^## $MM:\s*//"`
-			echo $MM: $DESC
+			MDESC=`_modesc $M`
+			MSRC=`_modsource $M`
+			printf "$CT_W%-15s $CT_w[%-10s] $CT_N%s\n" $MM "$MSRC" "$MDESC"
 		done
 		;;
-	avail) ## cle mod avail        -- list modules available in repository
-		printb CLE_SRC= $CLE_SRC
-		printb Modules available in repository:
+	avail)	## cle mod avail        -- list modules available in repo or dev kit
+		printb Modules available in repository: $CLE_SRC
 		curl -k $CLE_SRC/dotcle/modlist
+		if [ -n "$CLE_DK" ]; then
+			printb Modules available in development kit: $CLE_DK
+			for M in $CLE_DK/dotcle/mod-*; do
+				MM=`basename $M`
+				MDESC=`_modesc $M`
+				printf "$CT_W%-15s $CT_N%s\n" $MM "$MDESC"
+			done
+		fi
 		;;
-	get)	## cle mod get [module] -- install module from repository
+	get)	## cle mod get [module] -- install/upgrade module from repository
 		if [ -z "$2" ]; then
 			curl -k $CLE_SRC/dotcle/modlist >$MODLIST
 			PS3="$CT_L choose module $CT_N"
@@ -38,27 +46,59 @@ _cle_mod () {
 		else
 			MM=mod-$2
 		fi
+		# download module into temporary file
+		# this doesn't destroy one that is already installed
 		printb "Downloading $MM"
-		curl -k $CLE_SRC/dotcle/$MM >$MODIR/$MM || return
+		curl -k $CLE_SRC/dotcle/$MM >$MODIR/$MM-dload || return
 		echo
-		if grep "##\s\+$MM:" $MODIR/$MM; then
+		if grep "##\s\+$MM:" $MODIR/$MM-dload; then
+			mv $MODIR/$MM-dload $MODIR/$MM
 			printb Executing module $MODIR/$MM
 			_clexe $MODIR/$MM
 		else
 			printb No module header found, see:
-			head $MODIR/$MM
+			head $MODIR/$MM-dload
 			echo
-			echo Removing that file...
-			rm -f $MODIR/$MM
+			echo Removing temporary file...
+			rm -f $MODIR/$MM-dload
 		fi
 		;;
 	help)
 		cle help ${BASH_SOURCE[0]}
 		;;
 	*)
-		printb "cle mod $1: nothing to do..."
+		echo "'cle mod $1' not implemented"
 		echo "Try 'cle help mod'"
 		return 1
 		;;
 	esac
 }
+
+
+#
+# mod-mod helper functions
+#
+# check installed module - where it came from
+_modsource () {
+	local MODIR=$CLE_DIR/.cle
+	local MODLIST=$MODIR/modlist
+	local LINK=`readlink $1`
+	local MM=`basename $1`
+	local MSRC="symlink"
+	if [ -z "$LINK" ]; then
+		if grep $MM $MODLIST >/dev/null; then
+			MSRC="downloaded"
+		else
+			echo "custom"
+			return 2	# return code indicates module not to be deleted!
+		fi
+	fi
+	echo $MSRC
+}
+
+# extract module description 
+_modesc () {
+	local MM=`basename $1`
+	grep "## $MM:" $1 | sed "s/^## $MM:\s*//"
+}
+

@@ -94,5 +94,5 @@ sinle file was just a nature evolution that enhanced word 'Live': the `clerc`
 resourcefile now contains a mechanism of multiplication it's own DNA [1]
 
 
-[1] CLE is not a virus :-) all the mutliplication is done in controlled way
-and you, the user is the one who know what you're doing.
+[1] CLE is not a virus :-) Everything, all the spreading is done in controlled
+way and you, the user is the one who know what you're doing.

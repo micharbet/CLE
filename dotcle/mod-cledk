@@ -9,6 +9,53 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
+_cle_dk () {
+	case "$1" in
+	"")	## cle dk        -- development kit status
+		if [ -z "$CLE_DK" ]; then
+			echo "Development kit not initialized, use 'cle dk init'"
+			return 1
+		fi
+		echo "CLE development kit here: $CLE_DK"
+		;;
+	init)	## cle dk init   -- initialize development kit for CLE
+		if [ `basename $CLE_RC` != ".clerc" ]; then
+			printb "CLE development kit should be set up on CLE workstation."
+			printb "This is remote session: CLE_RC=$CLE_RC"
+			return 1
+		fi
+
+		P=`pwd`
+		ask "Are you ready to prepare CLE development in $P? (y/N) "
+		[ "$REPLY" != "y" ] && return 1
+
+		printb "Cloning from git home..."
+		CLE_HOME=`sed -n 's/^## home: *\(.*\)/\1/p' $CLE_RC`
+		git clone $CLE_HOME
+
+		printb "replacing .clerc and module directory..."
+		mv $CLE_RC $HOME/clerc-orig
+		ln -s $P/CLE/clerc $CLE_RC
+		mkdir $HOME/dotcle-orig
+		cd $HOME/.cle
+		for MOD in mod-*; do
+			if [ -f $P/CLE/dotcle/$MOD ]; then
+				mv $MOD $HOME/dotcle-orig/
+				ln -s $P/CLE/dotcle/$MOD $HOME/.cle/
+			fi
+		done
+		ln -s CLE/clerc .clerc
+		cle reload
+		printb CLE development kit ready!
+		;;
+	help)	## cle dk help   -- print help
+		cle help ${BASH_SOURCE[0]}
+		;;
+	*)
+		echo "'cle dk $1' not implemented"; return 1;;
+	esac
+}
+
 ## cle ed    - edit $CLERC file
 _cle_ed () {
 	cp $CLE_RC $CLE_RC-backup
@@ -48,62 +95,20 @@ _cle_debug () {
 	echo CLE_DEBUG=$CLE_DEBUG
 }
 
-## cle dk init   -- initialize development kit for CLE
-_cle_dk () {
-	case "$1" in
-	init)
-		if [ `basename $CLE_RC` != ".clerc" ]; then
-			printb "CLE development kit should be set up on CLE workstation."
-			printb "This is remote session: CLE_RC=$CLE_RC"
-			return 1
-		fi
-
-		P=`pwd`
-		ask "Are you ready to prepare CLE development in $P? (y/N) "
-		[ "$REPLY" != "y" ] && return 1
-
-		printb "Cloning from git home..."
-		CLE_HOME=`sed -n 's/^## home: *\(.*\)/\1/p' $CLE_RC`
-		git clone $CLE_HOME
-
-		printb "replacing .clerc and module directory..."
-		mv $CLE_RC $HOME/clerc-orig
-		ln -s $P/CLE/clerc $CLE_RC
-		mkdir $HOME/dotcle-orig
-		cd $HOME/.cle
-		for MOD in mod-*; do
-			if [ -f $P/CLE/dotcle/$MOD ]; then
-				mv $MOD $HOME/dotcle-orig/
-				ln -s $P/CLE/dotcle/$MOD $HOME/.cle/
-			fi
-		done
-		ln -s CLE/clerc .clerc
-		cle reload
-		printb CLE development kit ready!
-		;;
-	help)
-		_hlp ${BASH_SOURCE[0]}
-		;;
-	*)
-		echo "'cle dk init' works!"; return 1;;
-	esac
-}
-
 ## cdc      - shortcut into $HOME/d/cle
 cdc () {
-	cd
-	local RC=`readlink $CLE_RC`
-	if [ -z "$RC" ]; then
-		echo "No CLE development here, initialize with 'cle devel'"
+	if [ -z "$CLE_DK" ]; then
+		echo "No CLE development here, initialize with 'cle dk init'"
 		return 1
 	fi
-	cd `dirname $RC`
+	cd $CLE_DK
 	echo CLE development kit: $PWD
 }
 
 modgen () {
 	local DOTCLE=$HOME/.cle
 	for M in $DOTCLE/mod-*; do
+		local MM=`basename $M`
 		local DESC=`grep "## $MM:" $M | sed "s/^## $MM:\s*//"`
 		echo $MM: $DESC
 	done
@@ -148,6 +153,13 @@ modgen () {
 #	echo ---- diff end ----
 #}
 
-# Development kit initialization
-readlink $CLE_RC || _cle_dk init
+# Check if devlopment kit is initialized
+# indication: .clerc is symlink
+CLE_DK=`readlink $CLE_RC`
+if [ -n "$CLE_DK" ]; then
+	CLE_DK=$HOME/`dirname $CLE_DK`
+else
+	# CLE is running from regular file, no development kit
+	unset CLE_DK
+fi
 
