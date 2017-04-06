@@ -39,26 +39,28 @@ _cle_dk () {
 		local P=`pwd`
 		ask "Are you ready to prepare CLE development in $P?" || return 1
 		printb "Cloning from git home..."
+		
+		# extract URL from script
 		local CLE_GIT=`sed -n 's/^#\* home: *\(.*\)/\1/p' $CLE_RC`
-		git clone $CLE_GIT
+		git clone $CLE_GIT || return $?
 
 		# symlink .clerc-devel 
 		ln -sf $P/CLE/clerc $CLE_DIR/.clerc-devel
 
-		# rework on modules
-		mkdir $CLE_DIR/dotcle-backup # this will be backup
+		# work on modules
+		mkdir $CLE_DIR/dotcle-backup
 		cd $CLE_DIR/.cle
 		local MOD
 		# backup custom modules and symlink existing ones from devkit
 		for MOD in mod-*; do
 			if [ -f $P/CLE/dotcle/$MOD ]; then
-				mv $MOD $CLE_DIR/dotcle-backup/
+				mv -f $MOD $CLE_DIR/dotcle-backup/
 				ln -s $P/CLE/dotcle/$MOD $CLE_DIR/.cle/
 			else
 				cp $MOD $CLE_DIR/dotcle-backup/
 			fi
 		done
-		cle reload
+		cle dk run
 		printb CLE development kit ready!
 		cd $P
 		;;
@@ -141,7 +143,12 @@ modgen () {
 # indication: .clerc-devel is symlink
 if [ -L $CLE_DIR/.clerc-devel ]; then
 	CLE_DK=`readlink -f $CLE_DIR/.clerc-devel`
-	CLE_DK=`dirname $CLE_DK`
+	if [ -z "$CLE_DK" ]; then
+		rm $CLE_DIR/.clerc-devel # broken symlink, 
+		unset CLE_DK
+	else
+		CLE_DK=`dirname $CLE_DK`
+	fi
 else
 	unset CLE_DK
 fi
