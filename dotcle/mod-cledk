@@ -13,40 +13,40 @@ _cle_dk () {
 	case "$1" in
 	"")	## cle dk        -- development kit status
 		if [ -z "$CLE_DK" ]; then
-			echo "Development kit not initialized, use 'cle dk init'"
+			printb "Development kit not initialized, use 'cle dk init'"
 			return 1
 		fi
-		echo "CLE development kit here: $CLE_DK"
+		printb "CLE development kit here: $CLE_DK"
+		pushd $CLE_DK >/dev/null
+		git status
+		popd >/dev/null
 		;;
 	init)	## cle dk init   -- initialize development kit for CLE
-		if [ `basename $CLE_RC` != ".clerc" ]; then
-			printb "CLE development kit should be set up on CLE workstation."
-			printb "This is remote session: CLE_RC=$CLE_RC"
-			return 1
-		fi
-
-		P=`pwd`
-		ask "Are you ready to prepare CLE development in $P? (y/N) "
-		[ "$REPLY" != "y" ] && return 1
-
+		local P=`pwd`
+		ask "Are you ready to prepare CLE development in $P?" || return 1
 		printb "Cloning from git home..."
-		CLE_HOME=`sed -n 's/^## home: *\(.*\)/\1/p' $CLE_RC`
-		git clone $CLE_HOME
+		local CLE_GIT=`sed -n 's/^#\* home: *\(.*\)/\1/p' $CLE_RC`
+		git clone $CLE_GIT
 
-		printb "replacing .clerc and module directory..."
-		mv $CLE_RC $HOME/clerc-orig
-		ln -s $P/CLE/clerc $CLE_RC
-		mkdir $HOME/dotcle-orig
-		cd $HOME/.cle
+		# symlink .clerc-devel 
+		ln -sf $P/CLE/clerc $CLE_DIR/.clerc-devel
+
+		# rework on modules
+		mkdir $CLE_DIR/dotcle-backup # this will be backup
+		cd $CLE_DIR/.cle
+		local MOD
+		# backup custom modules and symlink existing ones from devkit
 		for MOD in mod-*; do
 			if [ -f $P/CLE/dotcle/$MOD ]; then
-				mv $MOD $HOME/dotcle-orig/
-				ln -s $P/CLE/dotcle/$MOD $HOME/.cle/
+				mv $MOD $CLE_DIR/dotcle-backup/
+				ln -s $P/CLE/dotcle/$MOD $CLE_DIR/.cle/
+			else
+				cp $MOD $CLE_DIR/dotcle-backup/
 			fi
 		done
-		ln -s CLE/clerc .clerc
 		cle reload
 		printb CLE development kit ready!
+		cd $P
 		;;
 	help)	## cle dk help   -- print help
 		cle help ${BASH_SOURCE[0]}
@@ -58,8 +58,8 @@ _cle_dk () {
 
 ## cle ed    - edit $CLERC file
 _cle_ed () {
-	cp $CLE_RC $CLE_RC-backup
-	vi $CLE_RC
+	cp $CLE_DK/clerc $CLE_DK/clerc-backup
+	vi $CLE_DK/clerc
 }
 
 ## cle ls    - list CLE related files
@@ -116,51 +116,14 @@ modgen () {
 
 }
 
-# There will be only one CLE!
-# toghub() and toglab() are to be removed very probably
-# ...or, maybe replaced by generic function to maintain own CLE repository
-
-#toghub () {
-#	CLERC_ORG=~/d/cle/clerc
-#	CLERC_DST=~/d/cle-ghub/clerc-gh
-#	HOME_GH='https:\/\/github.com\/micharbet\/CLE'
-#	SRC_GH='https:\/\/raw.githubusercontent.com\/micharbet\/CLE\/master'
-#
-#	SED1="/^##\shome:/s/: .*/: $HOME_GH/"
-#	SED2="/^CLE_SRC=/s/=.*/=$SRC_GH/"
-#
-#	echo creating $CLERC_DST
-#	sed -e "$SED1" -e "$SED2" $CLERC_ORG >$CLERC_DST
-#	echo check \'diff $CLERC_ORG $CLERC_DST\'
-#	echo --- diff start ---
-#	diff $CLERC_ORG $CLERC_DST
-#	echo ---- diff end ----
-#}
-#
-#toglab () {
-#	CLERC_ORG=~/d/cle-ghub/clerc
-#	CLERC_DST=~/d/cle/clerc-gl
-#	HOME_GL='https:\/\/github.com\/micharbet\/CLE'
-#	SRC_GL='https:\/\/gitlab.cee.redhat.com\/marbet\/cle\/raw\/master'
-#
-#	SED1="/^##\shome:/s/: .*/: $HOME_GL/"
-#	SED2="/^CLE_SRC=/s/=.*/=$SRC_GL/"
-#
-#	echo creating $CLERC_DST
-#	sed -e "$SED1" -e "$SED2" $CLERC_ORG >$CLERC_DST
-#	echo check \'diff $CLERC_ORG $CLERC_DST\'
-#	echo --- diff start ---
-#	diff $CLERC_ORG $CLERC_DST
-#	echo ---- diff end ----
-#}
+# Following part is runing on each CLE startup/reload
 
 # Check if devlopment kit is initialized
-# indication: .clerc is symlink
-CLE_DK=`readlink $CLE_RC`
-if [ -n "$CLE_DK" ]; then
-	CLE_DK=$HOME/`dirname $CLE_DK`
+# indication: .clerc-devel is symlink
+if [ -L $CLE_DIR/.clerc-devel ]; then
+	CLE_DK=`readlink -f $CLE_DIR/.clerc-devel`
+	CLE_DK=`dirname $CLE_DK`
 else
-	# CLE is running from regular file, no development kit
 	unset CLE_DK
 fi
 
