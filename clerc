@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: v3 2017-04-05 (Spring)
+#* version: v3 2017-04-07 (Easter)
 #* license: GNU GPL v2
 #*
 #* Copyright (C) 2016-2017 by Michael Arbet 
@@ -43,9 +43,9 @@ if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 # ensure the script will be executed only once
 _clexe () {
 	echo $CLE_EXE|grep -q $1: && return
-	if [[ -f $1 ]]; then
+	if [ -f $1 ]; then
 		CLE_EXE=$CLE_EXE$1:
-		[[ -n "$CLE_VERB" ]] &&  echo clexe: $1
+		[ -n "$CLE_VERB" ] &&  echo ${CT_w}clexe: $CT_N $1
 		. $1
 	fi
 }
@@ -54,7 +54,6 @@ _clexe () {
 CLE_RC=${BASH_SOURCE[0]}
 [[ $CLE_RC =~ ^/ ]] || CLE_RC=$PWD/$CLE_RC
 CLE_EXE=$CLE_RC:
-[[ -n "$CLE_VERB" ]] && echo CLE startup: $CLE_RC
 
 # how the CLE was started?
 case $CLE_RC in
@@ -183,7 +182,7 @@ _setpr () {
 	???)	# ... any 3 colors
 		for I in 0 1 2; do
 			II=CT_${CLE_PCOLOR:$I:1}
-			[[ -z "${!II}" ]] && echo "wrong color code '${CLE_PCOLOR:$I:1}' in $CLE_PCOLOR" && return 2
+			[ -z "${!II}" ] && echo "wrong color code '${CLE_PCOLOR:$I:1}' in $CLE_PCOLOR" && return 2
 			declare C$I=${!II}
 		done;;
 	*)	# print help - whoa! self documented function :)
@@ -248,9 +247,8 @@ mdfilter () {
 [ -f $CLE_CF ] || { _clebanner; _defpr; _savecf; }
 
 # load config and custom tweaks
-[[ -n "$CLE_VERB" ]] && echo -n "CLE config:  "
 _clexe $CLE_CF
-[[ -n "$CLE_VERB" ]] && { cat $CLE_CF; echo; }
+[ -n "$CLE_VERB" ] && { echo CLE config:; cat $CLE_CF; echo; }
 
 _clexe $CLE_DIR/.clerc-local
 _clexe $CLE_CUSTOMRC
@@ -271,7 +269,7 @@ unset MOD
 ## ----------------------------------
 _defalias () {
 	## ls commands aliases: l ll la lt llr l.
-	if [[ "$OSTYPE" == "linux-gnu" ]]; then
+	if [ "$OSTYPE" == "linux-gnu" ]; then
                 alias ls='ls --color=auto'
         elif [[ "$OSTYPE" == "darwin"* ]]; then
                 export CLICOLOR=1
@@ -468,7 +466,7 @@ cle () {
 		echo "new:     `sed -n 's/^#\* version: //p' $NCLE`"
 		local SUM1=`md5sum $CLE_RC| cut -d' ' -f1`
 		local SUM2=`md5sum $NCLE| cut -d' ' -f1`
-		[[ $SUM1 == $SUM2 ]] && { echo No difference; return 1; }
+		[ $SUM1 == $SUM2 ] && { echo No difference; return 1; }
 		ask "Do you want to see diff?" && diff $CLE_RC $NCLE
 		ask "Do you want to install new version?" || return
 		cp $CLE_RC $CLE_DIR/clerc-orig
@@ -480,7 +478,7 @@ cle () {
 		cle reload ;;
 	reload) ## cle reload         -- reload CLE
 		unset CLE_EXE
-		CLE_VERB=1
+		printb Reloading CLE from $CLE_RC
 		. $CLE_RC ;;
 	mod)	## cle mod            -- cle module management
 		# this is just fallback to initialize module functionality

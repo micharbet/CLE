@@ -9,6 +9,7 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
+# This is another 'cle something' enhancement :-)
 _cle_dk () {
 	case "$1" in
 	"")	## cle dk        -- development kit status
@@ -20,6 +21,19 @@ _cle_dk () {
 		pushd $CLE_DK >/dev/null
 		git status
 		popd >/dev/null
+		echo
+		ls -l $CLE_DIR/.clerc*
+		;;
+	run)	## cle dk run    -- restart CLE from development version
+		local DEVRC=$CLE_DIR/.clerc-devel
+		if [ -f $DEVRC ]; then
+			CLE_RC=$DEVRC
+			CLE_VERB=1
+			cle reload
+		else
+			echo "no $DEVRC, no fun!"
+			return 1
+		fi
 		;;
 	init)	## cle dk init   -- initialize development kit for CLE
 		local P=`pwd`
@@ -67,22 +81,22 @@ _cle_ed () {
 	vi $F
 }
 
-## cle ls    - list CLE related files
+## cle ls        -- list CLE related files
 _cle_ls () {
 	ls -l $HOME/.aliases* $HOME/.cle*
 }
 
-## cle exe   - show list of all files executed during CLE startup
+## cle exe       -- show list of all files executed during CLE startup
 _cle_exe () {
 	echo $CLE_EXE|tr : \\n
 }
 
-## cle func  - list all current bash functions
+## cle func      -- list all current bash functions
 _cle_func () {
 	declare -f |sed -n '/.\+\s()/p'
 }
 
-## cle clean - clean up home folder from all cle settings
+## cle clean     -- clean up home folder from all cle settings
 _cle_clean () {
 	read -p "Cleaning CLE settings, are you sure? (y/N)  "
 	[ "$REPLY" != 'y' ] && return
