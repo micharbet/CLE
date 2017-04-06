@@ -56,10 +56,15 @@ _cle_dk () {
 	esac
 }
 
-## cle ed    - edit $CLERC file
+## cle ed [mod]  -- edit clerc file ev. specified module
 _cle_ed () {
-	cp $CLE_DK/clerc $CLE_DK/clerc-backup
-	vi $CLE_DK/clerc
+	local F=$CLE_DK/clerc
+	[ -n "$1" ] && F=$CLE_DK/dotcle/mod-$1
+	if [ ! -f $F ]; then
+		echo no such file: $F
+		return 1
+	fi
+	vi $F
 }
 
 ## cle ls    - list CLE related files
