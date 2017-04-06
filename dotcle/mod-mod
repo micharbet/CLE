@@ -15,7 +15,7 @@ _cle_mod () {
 	local MODLIST=$MODIR/modlist
 	local M MM MDESC MSRC
 	case "$1" in
-	list)	## cle mod list         -- list installed modules
+	'')	## cle mod              -- list installed modules
 		printb Modules installed in $MODIR:
 		for M in $MODIR/mod-*; do
 			MM=`basename $M`
@@ -26,7 +26,7 @@ _cle_mod () {
 		;;
 	avail)	## cle mod avail        -- list modules available in repo or dev kit
 		printb Modules available in repository: $CLE_SRC
-		curl -ksS $CLE_SRC/dotcle/modlistt >$MODLIST
+		curl -ksS $CLE_SRC/dotcle/modlist >$MODLIST
 		cat $MODLIST
 		if [ -n "$CLE_DK" ]; then
 			printb Modules available in development kit: $CLE_DK
