@@ -486,9 +486,11 @@ cle () {
 		# this is just fallback to initialize module functionality
 		# downloaded mod-mod overrides this part 
 		ask "Activate CLE modules?" || return
+		local MM=$CLE_DIR/.cle/mod-mod
 		mkdir $CLE_DIR/.cle
-		curl -k $CLE_SRC/dotcle/mod-mod >$CLE_DIR/.cle/mod-mod
-		_clexe $CLE_DIR/.cle/mod-mod
+		curl -k $CLE_SRC/dotcle/mod-mod >$MM
+		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1; }
+		_clexe $MM
 		cle mod avail
 		;;
 	env)	## cle env            -- print CLE_* variables

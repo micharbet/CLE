@@ -26,7 +26,8 @@ _cle_mod () {
 		;;
 	avail)	## cle mod avail        -- list modules available in repo or dev kit
 		printb Modules available in repository: $CLE_SRC
-		curl -k $CLE_SRC/dotcle/modlist
+		curl -ksS $CLE_SRC/dotcle/modlistt >$MODLIST
+		cat $MODLIST
 		if [ -n "$CLE_DK" ]; then
 			printb Modules available in development kit: $CLE_DK
 			for M in $CLE_DK/dotcle/mod-*; do
@@ -38,7 +39,7 @@ _cle_mod () {
 		;;
 	get)	## cle mod get [module] -- install/upgrade module from repository
 		if [ -z "$2" ]; then
-			curl -k $CLE_SRC/dotcle/modlist >$MODLIST
+			curl -ksS $CLE_SRC/dotcle/modlist >$MODLIST
 			PS3="$CT_L choose module $CT_N"
 			select MM in `cat $MODLIST`; do
 				[ -n "$MM" ] && break
