@@ -27,6 +27,11 @@ _cle_dk () {
 	run)	## cle dk run    -- restart CLE from development version
 		local DEVRC=$CLE_DIR/.clerc-devel
 		if [ -f $DEVRC ]; then
+			printb "Restarting CLE with development resources"
+			CLE_CF=$CLE_DIR/.clecf-$CLE_USER-devel
+			_clexe  $CLE_CF
+			CLE_P0='%e %crDEVEL'
+			_setpr
 			CLE_RC=$DEVRC
 			CLE_VERB=1
 			cle reload
@@ -43,23 +48,27 @@ _cle_dk () {
 		# extract URL from script
 		local CLE_GIT=`sed -n 's/^#\* home: *\(.*\)/\1/p' $CLE_RC`
 		git clone $CLE_GIT || return $?
+		echo
 
 		# symlink .clerc-devel 
 		ln -sf $P/CLE/clerc $CLE_DIR/.clerc-devel
 
-		# work on modules
+		printb "Preparing modules to development:"
 		mkdir $CLE_DIR/dotcle-backup
 		cd $CLE_DIR/.cle
 		local MOD
 		# backup custom modules and symlink existing ones from devkit
 		for MOD in mod-*; do
 			if [ -f $P/CLE/dotcle/$MOD ]; then
+				echo "module $MOD - symlink to $P/CLE/dotcle"
 				mv -f $MOD $CLE_DIR/dotcle-backup/
 				ln -s $P/CLE/dotcle/$MOD $CLE_DIR/.cle/
 			else
+				echo "module $MOD - copy to $CLE_DIR/dotcle-backup"
 				cp $MOD $CLE_DIR/dotcle-backup/
 			fi
 		done
+		echo
 		cle dk run
 		printb CLE development kit ready!
 		cd $P

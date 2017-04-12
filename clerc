@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: v3 2017-04-07 (Easter)
+#* version: v3 2017-04-12 (Easter)
 #* license: GNU GPL v2
 #*
 #* Copyright (C) 2016-2017 by Michael Arbet 
@@ -78,8 +78,8 @@ CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # path to custom configuration files
-CLE_CF=$CLE_DIR/.clecf-${CLE_USER:=$USER}
-CLE_CUSTOMRC=$CLE_DIR/.cleusr-$CLE_USER
+CLE_CUSTOMRC=$CLE_DIR/.cleusr-${CLE_USER:=$USER}
+CLE_CF=${CLE_CF:-$CLE_DIR/.clecf-$CLE_USER}
 
 # tweaked hostname, can be altered in .clerc-local or .cleusr-$CLE_USER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
