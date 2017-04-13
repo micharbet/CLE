@@ -11,7 +11,7 @@
 # (c) 2013-2017 Michael Arbet
 
 ##
-## usage: see [-n] [-t nsec] [-f filename]  word1 [word2] [word3]
+## usage: see [-n] [-t nsec] [-f filename] [-a] word1 [word2] [word3]
 ##
 ## Parses the text through regular expressions (sed) and highlights
 ## up to three selected words. It filters either stdin or file

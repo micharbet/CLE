@@ -175,7 +175,7 @@ remote sessions it has just temporary effect.
 - .clerc-local
   Local tweak file, executed upon each CLE startup
 
-- .cleuser-$CLE_USER
+- .cleusr-$CLE_USER
   User's own tweak, executed upon CLE startup and also transferred along
   with ssg/suu
 

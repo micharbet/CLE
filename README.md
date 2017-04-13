@@ -63,6 +63,29 @@ remote session and executed as a resource script instead of '.bashrc.'
       of the environment
 
 
+## Compatibility
+
+CLE has been tested on various systems containing bash version 3.x and 4.x
+and different flavors of basic utilities (GNU vs. BSD)
+Those includes following:
+- Linux Mint
+- Fedora 23+
+- RHEL 5 (bash v3)
+- RHEL 6
+- RHEL 7
+- NetBSD
+- OS X (bash v3 and BSD utilities)
+- Android (some terminal software requires different tweaks, WIP) 
+
+It also works well with at least following terminal emulators:
+- Terminator
+- Gnome Terminal
+- xterm
+- rxvt
+- screen
+- tmux
+
+
 ## Why 'CLE' and bit of history
 
  CLE was developed over years of work in command line, where I always tried
