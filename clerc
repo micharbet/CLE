@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: v3 2017-04-12 (Easter)
+#* version: v3 2017-04-18 (Easter)
 #* license: GNU GPL v2
 #*
 #* Copyright (C) 2016-2017 by Michael Arbet 
@@ -51,7 +51,7 @@ _clexe () {
 }
 
 # where I'm running?
-CLE_RC=${BASH_SOURCE[0]}
+CLE_RC=`realpath ${BASH_SOURCE[0]}`
 [[ $CLE_RC =~ ^/ ]] || CLE_RC=$PWD/$CLE_RC
 CLE_EXE=$CLE_RC:
 
@@ -62,12 +62,6 @@ case $CLE_RC in
 	_clexe $HOME/.bashrc
 	CLE_DIR=`dirname $CLE_RC` ;;
 */clerc*) # initial run from commandline
-	cat <<-EOT
-	 It seems you started CLE from command line issuing '. $CLE_RC'
-	 Since this is your first run, consider setting up in your profile.
-	 Following command will hook CLE in your $HOME/.bashrc
-	$CT_L  cle deploy user$CT_N
-	EOT
 	CLE_DIR=$HOME ;;
 *)	# locally deployed
 	CLE_DIR=$HOME
@@ -213,6 +207,8 @@ _cleprf () {
 	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
 	# change window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
+	# shared history
+	history -a; history -c; history -r
 }
 PROMPT_COMMAND=_cleprf
 
@@ -245,6 +241,12 @@ mdfilter () {
 
 # indicate first run, show banner, create default conf
 [ -f $CLE_CF ] || { _clebanner; _defpr; _savecf; }
+[[ $CLE_RC =~ /clerc ]] && cat <<-EOT
+$CT_w It seems you started CLE from command line issuing '. $CLE_RC'
+ Since this is your first run, consider setting up in your profile.
+ Following command will hook CLE in your $HOME/.bashrc
+$CT_L    cle deploy$CT_N
+EOT
 
 # load config and custom tweaks
 _clexe $CLE_CF
@@ -346,10 +348,6 @@ hh () {
 	case $1 in
 	"")	## hh         -- just print history
 		history ;;
-	s)	## hh s       -- save current history in $HISTFILE
-		history -a ;;
-	l)	## hh l       -- load history, use save & load to share history
-		history -n ;;
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		## hh number  -- print last N entries
 		history $1 ;;
