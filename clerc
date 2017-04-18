@@ -51,8 +51,7 @@ _clexe () {
 }
 
 # where I'm running?
-CLE_RC=`realpath ${BASH_SOURCE[0]}`
-[[ $CLE_RC =~ ^/ ]] || CLE_RC=$PWD/$CLE_RC
+CLE_RC=`readlink -f ${BASH_SOURCE[0]}`
 CLE_EXE=$CLE_RC:
 
 # how the CLE was started?
