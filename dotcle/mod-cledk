@@ -106,18 +106,19 @@ cdc () {
 	# Check if devlopment kit is initialized
 	# - indication: .clerc-devel is symlink
 	if [ -z "$CLE_DK" ]; then
-		if [ -L $CLE_DIR/.clerc-devel ]; then
-			CLE_DK=`readlink -f $CLE_DIR/.clerc-devel`
+		local CLE_DRC=$CLE_DIR/.clerc-devel
+		if [ -L $CLE_DRC ]; then
+			CLE_DK=`readlink $CLE_DIR/.clerc-devel`
 			if [ -z "$CLE_DK" ]; then
 				echo "Broken symlink, removing:"
-				ls -l $CLE_DIR/.clerc-devel
-				rm $CLE_DIR/.clerc-devel
-				unset CLE_DK
+				ls -l $CLE_DRC
+				rm $CLE_DRC
+				unset CLE_DRC
 				return 1
 			else
 				# first run of cdc
 				printb "Restarting CLE with development resources"
-				CLE_RC=$CLE_DK
+				CLE_RC=$CLE_DRC
 				CLE_CF=$CLE_DIR/.clecf-$CLE_USER-devel
 				# _clexe  $CLE_CF
 				CLE_VERB=1

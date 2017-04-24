@@ -6,7 +6,6 @@
 #* home:    https://github.com/micharbet/CLE
 #* version: 2017-04-19 (MayDay)
 #* license: GNU GPL v2
-#*
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
@@ -42,17 +41,18 @@ if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 # execute script and log its filename into CLE_EXE to keep track
 # ensure the script will be executed only once
 _clexe () {
-	echo $CLE_EXE|grep -q $1: && return
-	if [ -f $1 ]; then
-		CLE_EXE=$CLE_EXE$1:
-		[ -n "$CLE_VERB" ] &&  echo ${CT_w}clexe: $CT_N $1
-		. $1
+	local EXE=`readlink -e $1`
+	if [ -n "$EXE" ]; then
+		echo $CLE_EXE|grep -q :$EXE && return
+		CLE_EXE=$CLE_EXE:$EXE
+		[ -n "$CLE_VERB" ] &&  echo ${CT_w}clexe: $CT_N $EXE
+		. $EXE
 	fi
 }
 
 # where I'm running?
 CLE_RC=`readlink -f ${BASH_SOURCE[0]}`
-CLE_EXE=$CLE_RC:
+CLE_EXE=$CLE_RC
 
 # how the CLE was started?
 case $CLE_RC in
@@ -60,7 +60,8 @@ case $CLE_RC in
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
 	CLE_DIR=`dirname $CLE_RC` ;;
-*/clerc*) # initial run from commandline
+*/clerc*) # first run from commandline
+	[ -z "$CLE_DK" ] && CLE_FIRST=1
 	CLE_DIR=$HOME ;;
 *)	# locally deployed
 	CLE_DIR=$HOME
@@ -240,7 +241,7 @@ mdfilter () {
 
 # indicate first run, show banner, create default conf
 [ -f $CLE_CF ] || { _clebanner; _defpr; _savecf; }
-[[ $CLE_RC =~ /clerc ]] && cat <<-EOT
+[[ -n "$CLE_FIRST" ]] && cat <<-EOT
 $CT_w It seems you started CLE from command line issuing '. $CLE_RC'
  Since this is your first run, consider setting up in your profile.
  Following command will hook CLE in your $HOME/.bashrc
@@ -490,6 +491,9 @@ cle () {
 		;;
 	env)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
+	cf)	## cle cf             -- show configuration
+		printb Config: $CLE_CF
+		cat $CLE_CF ;;
 	readme) ## cle readme         -- download and show README file
 		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
 	man)	## cle man            -- download and show HOWTO file
