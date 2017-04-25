@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-04-19 (MayDay)
+#* version: 2017-04-25 (MayDay)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -54,26 +54,31 @@ _clexe () {
 CLE_RC=`readlink -f ${BASH_SOURCE[0]}`
 CLE_EXE=$CLE_RC
 
-# how the CLE was started?
+# who I'm
+CLE_USER=${CLE_USER:-$USER}
+
 case $CLE_RC in
 *.clerc-remote-*) # transferred through ssg/suu, run also old good .bashrc :-)
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
-	CLE_DIR=`dirname $CLE_RC` ;;
+	CLED=`dirname $CLE_RC` ;;
 */clerc*) # first run from commandline
 	[ -z "$CLE_DK" ] && CLE_FIRST=1
-	CLE_DIR=$HOME ;;
+	CLED=$HOME ;;
 *)	# locally deployed
-	CLE_DIR=$HOME
+	CLED=$HOME
 esac
+CLE_DIR=${CLE_DIR:-$CLED}
+unset CLED
+CLE_CF=${CLE_CF:-$CLE_DIR/.clecf-$CLE_USER}
 
 # where in the deep space is CLE growing and which version...
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 
-# path to custom configuration files
-CLE_CUSTOMRC=$CLE_DIR/.cleusr-${CLE_USER:=$USER}
-CLE_CF=${CLE_CF:-$CLE_DIR/.clecf-$CLE_USER}
+# in case the CLE_RC is anywhere else than in HOME
+CLE_CUSTOMRC=`dirname $CLE_RC`/cleusr-$CLE_USER
+[ -f $CLE_DIR/.cleusr-$CLE_USER ] && CLE_CUSTOMRC=$CLE_DIR/.cleusr-$CLE_SUER
 
 # tweaked hostname, can be altered in .clerc-local or .cleusr-$CLE_USER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
@@ -208,7 +213,7 @@ _cleprf () {
 	# change window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# shared history
-	history -a; history -c; history -r
+#	history -a; history -c; history -r
 }
 PROMPT_COMMAND=_cleprf
 
@@ -255,7 +260,7 @@ _clexe $CLE_CF
 _clexe $CLE_DIR/.clerc-local
 _clexe $CLE_CUSTOMRC
 _defwt
-_setpr $CLE_PCOLOR
+_setpr
 
 # load modules from .cle folder
 for MOD in $CLE_DIR/.cle/mod-*; do
@@ -359,9 +364,22 @@ hh () {
 ##
 ## SSH & SUDO wrappers:
 ## --------------------
+
+# environment wrapper
+clewrap () {
+	pushd $CLE_DIR >/dev/null # do popd afterwards
+	CLE_RMTRC=.clerc-remote-$CLE_USER
+	cp $CLE_RC $CLE_RMTRC 2>/dev/null
+	local SSGFILES=$CLE_RMTRC
+	[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
+	[ -f .clemods ] && SSGFILES="$SSGFILES .clemods"
+	tar chzf - $SSGFILES |base64|tr -d '\n\r '
+
+}
+
 ## ssg [user@]hostname  -- access remote system and take CLE along
-ssg () {
-	pushd $CLE_DIR >/dev/null
+ssg () (
+	cd $CLE_DIR
 	local CLE_RMTRC=.clerc-remote-$CLE_USER
 	if [ -n "$1" ]; then
 		cp $CLE_RC $CLE_RMTRC 2>/dev/null
@@ -377,22 +395,27 @@ ssg () {
 		cle help ssg
 	fi
 	unset CLE_TODIR	# one-time use
-	popd >/dev/null
+)
+
+## ssgt [user@]hostname -- remote session, with environment in /tmp
+ssgt () {
+	CLE_TODIR=/tmp/$CLE_USER
+	ssg $*
 }
 
-## suu [username]       -- sudo wrapper; root is the default account
+## sudd [username]      -- sudo wrapper; root is the default account
+sudd () {
+	sudo -i -u ${1:-root} CLE_USER=$CLE_USER exec /bin/bash --rcfile $CLE_RC
+}
+
+## suu [username ]      -- su wrapper
 suu () {
-	pushd $CLE_DIR >/dev/null
-	local CLE_RMTRC=.clerc-remote-$CLE_USER
-	cp $CLE_RC $CLE_RMTRC 2>/dev/null
-	local SSGFILES=$CLE_RMTRC
-	[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
-	local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
-	sudo -i -u ${1:-root} /bin/bash  -c \
-		"echo $CLE_64|base64 --decode| tar xzf -;
-		 export CLE_USER=$CLE_USER;
-		 exec bash --rcfile $CLE_RMTRC"
-	popd >/dev/null
+	su -s /bin/bash -c "CLE_DIR=~${1:-root} /bin/bash --rcfile $CLE_RC" ${1:-root}
+}
+
+## kksu                 -- ksu wrapper
+kksu () {
+	ksu ${1:-root} -a -c "CLE_DIR=~${1:-root} /bin/bash --rcfile $CLE_RC"
 }
 
 ##
@@ -477,7 +500,8 @@ cle () {
 	reload) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		printb Reloading CLE from $CLE_RC
-		. $CLE_RC ;;
+		. $CLE_RC
+		echo CLE $CLE_VERSION ;;
 	mod)	## cle mod            -- cle module management
 		# this is just fallback to initialize module functionality
 		# downloaded mod-mod overrides this part 
