@@ -67,6 +67,9 @@ _cle_ed () {
 	vi $F
 }
 
+## cle cp        -- copy development version of clerc into .clerc
+_cle_cp() { cp ~/.clerc-devel ~/.clerc; }
+
 ## cle ls        -- list CLE related files
 _cle_ls () {
 	ls -l $HOME/.aliases* $HOME/.cle*

@@ -77,8 +77,8 @@ CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # in case the CLE_RC is anywhere else than in HOME
-CLE_CUSTOMRC=`dirname $CLE_RC`/cleusr-$CLE_USER
-[ -f $CLE_DIR/.cleusr-$CLE_USER ] && CLE_CUSTOMRC=$CLE_DIR/.cleusr-$CLE_SUER
+CLE_CUSTOMRC=`dirname $CLE_RC`/.cleusr-$CLE_USER
+[ -f $CLE_DIR/.cleusr-$CLE_USER ] && CLE_CUSTOMRC=$CLE_DIR/.cleusr-$CLE_USER
 
 # tweaked hostname, can be altered in .clerc-local or .cleusr-$CLE_USER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
@@ -365,58 +365,52 @@ hh () {
 ## SSH & SUDO wrappers:
 ## --------------------
 
-# environment wrapper
-clewrap () {
-	pushd $CLE_DIR >/dev/null # do popd afterwards
-	CLE_RMTRC=.clerc-remote-$CLE_USER
-	cp $CLE_RC $CLE_RMTRC 2>/dev/null
-	local SSGFILES=$CLE_RMTRC
-	[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
-	[ -f .clemods ] && SSGFILES="$SSGFILES .clemods"
-	tar chzf - $SSGFILES |base64|tr -d '\n\r '
-
-}
+# environment packer
+_clepak () (
+	cd $CLE_DIR
+	CLES=.clerc-remote-$CLE_USER
+	cp $CLE_RC $CLES 2>/dev/null
+	[ -f $CLE_CUSTOMRC ] && CLES="$CLES $(basename $CLE_CUSTOMRC)"
+	TARC="tar chzf - $CLES"
+	[ "$1" = "64" ] && TARC=$TARC"| base64 | tr -d '\n\r '"
+	eval "$TARC"
+)
 
 ## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () (
-	cd $CLE_DIR
-	local CLE_RMTRC=.clerc-remote-$CLE_USER
 	if [ -n "$1" ]; then
-		cp $CLE_RC $CLE_RMTRC 2>/dev/null
-		local SSGFILES=$CLE_RMTRC
-		[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
-		local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
+		CLE_64=`_clepak 64`
 		`/usr/bin/which ssh` -t $* "
 			${CLE_TODIR:+mkdir $CLE_TODIR; cd $CLE_TODIR;}
 			echo $CLE_64|base64 --decode |tar xzf -;
 			export CLE_USER=$CLE_USER;
 			exec bash --rcfile $CLE_RMTRC"
-	else
+	else 
 		cle help ssg
 	fi
-	unset CLE_TODIR	# one-time use
 )
 
+
 ## ssgt [user@]hostname -- remote session, with environment in /tmp
-ssgt () {
+ssgt () (
 	CLE_TODIR=/tmp/$CLE_USER
 	ssg $*
-}
+)
 
 ## sudd [username]      -- sudo wrapper; root is the default account
-sudd () {
+sudd () (
 	sudo -i -u ${1:-root} CLE_USER=$CLE_USER exec /bin/bash --rcfile $CLE_RC
-}
+)
 
 ## suu [username ]      -- su wrapper
-suu () {
+suu () (
 	su -s /bin/bash -c "CLE_DIR=~${1:-root} /bin/bash --rcfile $CLE_RC" ${1:-root}
-}
+)
 
 ## kksu                 -- ksu wrapper
-kksu () {
+kksu () (
 	ksu ${1:-root} -a -c "CLE_DIR=~${1:-root} /bin/bash --rcfile $CLE_RC"
-}
+)
 
 ##
 ## CLE command & control:
