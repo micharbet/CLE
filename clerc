@@ -39,7 +39,7 @@
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 
 # execute script and log its filename into CLE_EXE to keep track
-# ensure the script will be executed only once
+# also ensure the script will be executed only once
 _clexe () {
 	local EXE=`readlink -f $1`
 	if [ -f "$1" ]; then
@@ -56,9 +56,10 @@ CLE_EXE=$CLE_RC
 
 # who I'm
 CLE_USER=${CLE_USER:-$USER}
+CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 case $CLE_RC in
-*.clerc-remote-*) # transferred through ssg/suu, run also old good .bashrc :-)
+*.clerc-remote-*) # ssg/suu session, run also regular startup scripts
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
 	CLED=`dirname $CLE_RC` ;;
@@ -72,11 +73,11 @@ CLE_DIR=${CLE_DIR:-$CLED}
 unset CLED
 CLE_CF=${CLE_CF:-$CLE_DIR/.clecf-$CLE_USER}
 
-# where in the deep space is CLE growing and which version...
+# where in the deep space is CLE growing
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
-CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 
-# in case the CLE_RC is anywhere else than in HOME
+# find CLE_CUSTOMRC
+# either in HOME or alongside with CLE_RC
 CLE_CUSTOMRC=`dirname $CLE_RC`/.cleusr-$CLE_USER
 [ -f $CLE_DIR/.cleusr-$CLE_USER ] && CLE_CUSTOMRC=$CLE_DIR/.cleusr-$CLE_USER
 
@@ -112,14 +113,18 @@ shopt -s checkwinsize
 #
 # Internal helper functions
 #
+
+# boldprint
 printb () { printf "$CT_w$*$CT_N\n"; }
+
+# simple question
 ask () {
 	read -p "$CT_L$* (y/N) $CT_N" -n 1 -s
 	echo ${REPLY:=n}
 	[ "$REPLY" == "y" ]
 }
 
-# print banner
+# banner
 _clebanner () {
 cat <<EOT
 
@@ -213,7 +218,7 @@ _cleprf () {
 	# change window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# shared history
-#	history -a; history -c; history -r
+	history -a; history -c; history -r
 }
 PROMPT_COMMAND=_cleprf
 
@@ -390,8 +395,7 @@ ssg () (
 	fi
 )
 
-
-## ssgt [user@]hostname -- remote session, with environment in /tmp
+## ssgt [user@]hostname -- remote session, with environment in /tmp/username
 ssgt () (
 	CLE_TODIR=/tmp/$CLE_USER
 	ssg $*
@@ -542,6 +546,6 @@ cle () {
 # remove disturbing stuff
 unset SUDO_COMMAND CLE_VERB
 
-fi # End of login shell setup
+fi
 # and that's all the magic :-)
 

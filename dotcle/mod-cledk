@@ -68,7 +68,12 @@ _cle_ed () {
 }
 
 ## cle cp        -- copy development version of clerc into .clerc
-_cle_cp() { cp ~/.clerc-devel ~/.clerc; }
+_cle_cp() {
+	local CLERS="~/.clerc-devel ~/.clerc"
+	eval diff $CLERS
+	eval ls -lL $CLERS
+	ask "replace .clerc?" && eval cp $CLERS && cle reload
+}
 
 ## cle ls        -- list CLE related files
 _cle_ls () {
