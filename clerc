@@ -41,8 +41,8 @@ if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 # execute script and log its filename into CLE_EXE to keep track
 # ensure the script will be executed only once
 _clexe () {
-	local EXE=`readlink -e $1`
-	if [ -n "$EXE" ]; then
+	local EXE=`readlink -f $1`
+	if [ -f "$1" ]; then
 		echo $CLE_EXE|grep -q :$EXE && return
 		CLE_EXE=$CLE_EXE:$EXE
 		[ -n "$CLE_VERB" ] &&  echo ${CT_w}clexe: $CT_N $EXE
@@ -381,10 +381,10 @@ ssg () (
 	if [ -n "$1" ]; then
 		CLE_64=`_clepak 64`
 		`/usr/bin/which ssh` -t $* "
-			${CLE_TODIR:+mkdir $CLE_TODIR; cd $CLE_TODIR;}
-			echo $CLE_64|base64 --decode |tar xzf -;
+			${CLE_TODIR:+"mkdir $CLE_TODIR 2>/dev/null; cd $CLE_TODIR;"}
+			echo -n $CLE_64|base64 --decode |tar xzf -;
 			export CLE_USER=$CLE_USER;
-			exec bash --rcfile $CLE_RMTRC"
+			exec bash --rcfile .clerc-remote-$CLE_USER"
 	else 
 		cle help ssg
 	fi
