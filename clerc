@@ -39,6 +39,7 @@
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 
 # a little bit complicated way to find absolute paths
+# OMG... not compatible with OSX due to readlink issue
 CLE_RC=${BASH_SOURCE[0]}
 CLE_DRC=$(readlink -f `dirname $CLE_RC`)
 CLE_RC=$CLE_DRC/`basename $CLE_RC`
@@ -285,12 +286,12 @@ unset MOD
 ## ----------------------------------
 _defalias () {
 	## ls commands aliases: l ll la lt llr l.
-	if [ "$OSTYPE" == "linux-gnu" ]; then
+	if [[ "$OSTYPE" =~ "linux" ]]; then
                 alias ls='ls --color=auto'
-        elif [[ "$OSTYPE" == "darwin"* ]]; then
+        elif [[ "$OSTYPE" =~ "darwin" ]]; then
                 export CLICOLOR=1
                 export LSCOLORS="ExGxBxDxCxEgEdxbxgxcxd"
-        elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        elif [[ "$OSTYPE" =~ "freebsd" ]]; then
                 alias ls='ls -G'
 	else
 		alias ls='ls -F' # at least some file type indication
@@ -414,8 +415,12 @@ sudd () (
 
 ## suu [username ]      -- su wrapper
 suu () (
-	# not compatible with BSD!
-	su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER
+	if [[ $OSTYPE =~ bsd ]]; then
+		su -l ${1:-root} $CLE_RC $CLE_USER
+	else
+		# enforcing bash
+		su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER
+	fi
 )
 
 ## kksu                 -- ksu wrapper
@@ -471,19 +476,16 @@ cle () {
 			ask " Are you sure?" || return
 			echo -e >>$BRC \\n$CLID
 			echo -e >>$BRC "[ -f $CLE_DIR/.clerc ] && . $CLE_DIR/.clerc\n"
-			printf '\n ... added following to the end of .bashrc :\n'
-			tail -4 $BRC
+			printb '\n ...lines added to your .bashrc :'
+			tail -2 $BRC
 		else
-			echo "CLE is already hooked into .bashrc :"
-			grep -A2 "$CLID" $BRC
+			printb "CLE is already hooked into .bashrc :"
+			command grep -A2 "$CLID" $BRC
 		fi ;;
-	update) ## cle update         -- download newest version of CLE
+	update) ## cle update         -- install fresh version of CLE
 		if [[ $CLE_RC =~ remote ]]; then
-			cat <<-EOT
-			 CLE is running through remote session.
-			 Update is pointless.
-			EOT
-			return 2
+			printb CLE in remote session, update is pointless.
+			return 1
 		fi
 		local NCLE=$CLE_DIR/clerc-new
 		curl -k $CLE_SRC/clerc >$NCLE
@@ -508,8 +510,8 @@ cle () {
 		. $CLE_RC
 		echo CLE $CLE_VERSION ;;
 	mod)	## cle mod            -- cle module management
-		# this is just fallback to initialize module functionality
-		# downloaded mod-mod overrides this part 
+		# this is just a  fallback to initializing functionality
+		# downloaded mod-mod overrides this code 
 		ask "Activate CLE modules?" || return
 		local MM=$CLE_DIR/.cle/mod-mod
 		mkdir $CLE_DIR/.cle
