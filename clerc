@@ -161,8 +161,7 @@ _pstr () {
 	 -e "s/%u/$CLE_USER/" \
 	 -e "s/%e/\\\$_E/" \
 	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g" \
-	 -e "s/%v\([[:alnum:]]*\)/\$\1/g" \
-	 -e "s/%V\([[:alnum:]]*\)/\1=\$\1/g" \
+	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g" \
 	 -e "s/%>/$PP/"
 }
 
@@ -501,9 +500,6 @@ cle () {
 		mv $NCLE $CLE_RC
 		cle reload
 		printb "New CLE has been installed, previous version saved here: $CLE_DIR/clerc-orig" ;;
-	reset)	## cle reset          -- reset configuration
-		rm -f $CLE_CF
-		cle reload ;;
 	reload) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		printb Reloading CLE from $CLE_RC
@@ -525,6 +521,9 @@ cle () {
 	cf)	## cle cf             -- show configuration
 		printb Config: $CLE_CF
 		cat $CLE_CF ;;
+	reset)	## cle reset          -- reset configuration
+		rm -f $CLE_CF
+		cle reload ;;
 	readme) ## cle readme         -- download and show README file
 		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
 	man)	## cle man            -- download and show HOWTO file
