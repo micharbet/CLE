@@ -72,7 +72,7 @@ _cle_cp() {
 	local CLERS="~/.clerc-devel ~/.clerc"
 	eval diff $CLERS
 	eval ls -lL $CLERS
-	ask "replace .clerc?" && eval cp $CLERS && cle reload
+	ask "replace .clerc?" && { cp ~/.clerc ~/clerc-recent; eval cp $CLERS; cle reload; }
 }
 
 ## cle ls        -- list CLE related files
