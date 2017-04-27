@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-04-25 (MayDay)
+#* version: 2017-04-27 (MayDay)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -38,6 +38,24 @@
 # required for scp compattibility
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 
+# a little bit complicated way to find absolute paths
+CLE_RC=${BASH_SOURCE[0]}
+CLE_DRC=$(readlink -f `dirname $CLE_RC`)
+CLE_RC=$CLE_DRC/`basename $CLE_RC`
+
+# who I'm
+export CLE_USER=${CLE_USER:-$USER}
+
+# new session startup for su*
+if [ -n "$1" ]; then
+	CLE_USER=$1
+	exec `command which bash` --rcfile $CLE_RC
+fi
+
+# where in the deep space is CLE growing
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
+CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
+
 # execute script and log its filename into CLE_EXE to keep track
 # also ensure the script will be executed only once
 _clexe () {
@@ -49,37 +67,23 @@ _clexe () {
 		. $EXE
 	fi
 }
-
-# where I'm running?
-CLE_RC=`readlink -f ${BASH_SOURCE[0]}`
 CLE_EXE=$CLE_RC
 
-# who I'm
-CLE_USER=${CLE_USER:-$USER}
-CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
-
 case $CLE_RC in
-*.clerc-remote-*) # ssg/suu session, run also regular startup scripts
+*.clerc-remote-*) # remote session
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
-	CLED=`dirname $CLE_RC` ;;
+	[ -w $HOME ] && CLE_DT=$HOME || CLE_DT=`dirname $CLE_RC` ;;
 */clerc*) # first run from commandline
 	[ -z "$CLE_DK" ] && CLE_FIRST=1
-	CLED=$HOME ;;
+	CLE_DT=$HOME ;;
 *)	# locally deployed
-	CLED=$HOME
+	CLE_DT=$HOME
 esac
-CLE_DIR=${CLE_DIR:-$CLED}
-unset CLED
+CLE_DIR=${CLE_DIR:-$CLE_DT}
+
 CLE_CF=${CLE_CF:-$CLE_DIR/.clecf-$CLE_USER}
-
-# where in the deep space is CLE growing
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
-
-# find CLE_CUSTOMRC
-# either in HOME or alongside with CLE_RC
-CLE_CUSTOMRC=`dirname $CLE_RC`/.cleusr-$CLE_USER
-[ -f $CLE_DIR/.cleusr-$CLE_USER ] && CLE_CUSTOMRC=$CLE_DIR/.cleusr-$CLE_USER
+CLE_RCU=$CLE_DRC/.cleusr-$CLE_USER
 
 # tweaked hostname, can be altered in .clerc-local or .cleusr-$CLE_USER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
@@ -218,7 +222,7 @@ _cleprf () {
 	# change window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# shared history
-	history -a; history -c; history -r
+	[ "$CLE_HSH" != 0 ] && { history -a; history -c; history -r; }
 }
 PROMPT_COMMAND=_cleprf
 
@@ -263,7 +267,7 @@ _clexe $CLE_CF
 [ -n "$CLE_VERB" ] && { echo CLE config:; cat $CLE_CF; echo; }
 
 _clexe $CLE_DIR/.clerc-local
-_clexe $CLE_CUSTOMRC
+_clexe $CLE_RCU
 _defwt
 _setpr
 
@@ -361,6 +365,8 @@ hh () {
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		## hh number  -- print last N entries
 		history $1 ;;
+	shoff)  ## hh shoff   -- turn off sharing history between terminals
+		CLE_HSH=0 ;;
 	*)	## hh string  -- search in history
 		history | grep -i $1
 	esac
@@ -372,10 +378,10 @@ hh () {
 
 # environment packer
 _clepak () (
-	cd $CLE_DIR
+	cd $CLE_DRC
 	CLES=.clerc-remote-$CLE_USER
-	cp $CLE_RC $CLES 2>/dev/null
-	[ -f $CLE_CUSTOMRC ] && CLES="$CLES $(basename $CLE_CUSTOMRC)"
+	[[ $CLE_RC =~ $CLES ]] || cp $CLE_RC $CLES
+	[ -f $CLE_RCU ] && CLES="$CLES `basename $CLE_RCU`"
 	TARC="tar chzf - $CLES"
 	[ "$1" = "64" ] && TARC=$TARC"| base64 | tr -d '\n\r '"
 	eval "$TARC"
@@ -385,7 +391,7 @@ _clepak () (
 ssg () (
 	if [ -n "$1" ]; then
 		CLE_64=`_clepak 64`
-		`/usr/bin/which ssh` -t $* "
+		`command which ssh` -t $* "
 			${CLE_TODIR:+"mkdir $CLE_TODIR 2>/dev/null; cd $CLE_TODIR;"}
 			echo -n $CLE_64|base64 --decode |tar xzf -;
 			export CLE_USER=$CLE_USER;
@@ -403,17 +409,18 @@ ssgt () (
 
 ## sudd [username]      -- sudo wrapper; root is the default account
 sudd () (
-	sudo -i -u ${1:-root} CLE_USER=$CLE_USER exec /bin/bash --rcfile $CLE_RC
+	sudo -i -u ${1:-root} $BASH $CLE_RC $CLE_USER
 )
 
 ## suu [username ]      -- su wrapper
 suu () (
-	su -s /bin/bash -c "CLE_DIR=~${1:-root} /bin/bash --rcfile $CLE_RC" ${1:-root}
+	# not compatible with BSD!
+	su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER
 )
 
 ## kksu                 -- ksu wrapper
 kksu () (
-	ksu ${1:-root} -a -c "CLE_DIR=~${1:-root} /bin/bash --rcfile $CLE_RC"
+	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
 )
 
 ##
@@ -544,7 +551,7 @@ cle () {
 }
 
 # remove disturbing stuff
-unset SUDO_COMMAND CLE_VERB
+unset SUDO_COMMAND CLE_VERB CLE_DT
 
 fi
 # and that's all the magic :-)
