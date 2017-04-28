@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-04-27 (MayDay)
+#* version: 2017-04-28 (MayDay)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -39,10 +39,13 @@
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 
 # a little bit complicated way to find absolute paths
-# OMG... not compatible with OSX due to readlink issue
 CLE_RC=${BASH_SOURCE[0]}
-CLE_DRC=$(readlink -f `dirname $CLE_RC`)
-CLE_RC=$CLE_DRC/`basename $CLE_RC`
+if [[ "$OSTYPE" =~ "darwin" ]]; then
+	CLE_DRC=`dirname CLE_RC`
+else
+	CLE_DRC=$(readlink -f `dirname $CLE_RC`)
+	CLE_RC=$CLE_DRC/`basename $CLE_RC`
+fi
 
 # who I'm
 export CLE_USER=${CLE_USER:-$USER}
@@ -60,7 +63,7 @@ CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 # execute script and log its filename into CLE_EXE to keep track
 # also ensure the script will be executed only once
 _clexe () {
-	local EXE=`readlink -f $1`
+	local EXE=$1 # EXE=`readlink -f $1` -not OSX compatible
 	if [ -f "$1" ]; then
 		echo $CLE_EXE|grep -q :$EXE && return
 		CLE_EXE=$CLE_EXE:$EXE
