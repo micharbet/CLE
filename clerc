@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-04-28 (MayDay)
+#* version: 2017-05-01 (MayDay)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -27,10 +27,10 @@
 #
 # * use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
 #   transferred without installation
-# * try 'suu' (sudo wrapper) with similar effect
+# * try suu/sudd (su/sudo wrappers) with same effect
 # * change settings with implememted 'cle' command
-# * built-in self documentation feature ('cle help' & 'cle readme')
-# * manage your aliases using 'aa' function
+# * built-in self documentation feature ('cle help' 'cle readme' 'cle man')
+# * store and manage your aliases using 'aa' function
 # * use 'hh' function to ease history management
 # * self update from GIT source
 
@@ -40,12 +40,8 @@ if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 
 # a little bit complicated way to find absolute paths
 CLE_RC=${BASH_SOURCE[0]}
-if [[ "$OSTYPE" =~ "darwin" ]]; then
-	CLE_DRC=`dirname CLE_RC`
-else
-	CLE_DRC=$(readlink -f `dirname $CLE_RC`)
-	CLE_RC=$CLE_DRC/`basename $CLE_RC`
-fi
+CLE_DRC=$(cd `dirname CLE_RC`; pwd;)
+CLE_RC=$CLE_DRC/`basename $CLE_RC`
 
 # who I'm
 export CLE_USER=${CLE_USER:-$USER}
