@@ -13,32 +13,7 @@
 _cle_dk () {
 	case "$1" in
 	"")	## cle dk        -- development kit status
-		if [ -z "$CLE_DK" ]; then
-			printb "Development kit not initialized, use 'cle dk init'"
-			return 1
-		fi
-		printb "CLE development kit here: $CLE_DK"
-		pushd $CLE_DK >/dev/null
-		git status
-		popd >/dev/null
-		echo
-		ls -l $CLE_DIR/.clerc*
-		;;
-	run)	## cle dk run    -- restart CLE from development version
-		local DEVRC=$CLE_DIR/.clerc-devel
-		if [ -f $DEVRC ]; then
-			printb "Restarting CLE with development resources"
-			CLE_CF=$CLE_DIR/.clecf-$CLE_USER-devel
-			_clexe  $CLE_CF
-			CLE_P0='%e %crDEVEL'
-			_setpr
-			CLE_RC=$DEVRC
-			CLE_VERB=1
-			cle reload
-		else
-			echo "no $DEVRC, no fun!"
-			return 1
-		fi
+		ls -l $CLE_DIR/.clerc-devel
 		;;
 	init)	## cle dk init   -- initialize development kit for CLE
 		local P=`pwd`
@@ -92,6 +67,14 @@ _cle_ed () {
 	vi $F
 }
 
+## cle cp        -- copy development version of clerc into .clerc
+_cle_cp() {
+	local CLERS="~/.clerc-devel ~/.clerc"
+	eval diff $CLERS
+	eval ls -lL $CLERS
+	ask "replace .clerc?" && { cp ~/.clerc ~/clerc-recent; eval cp $CLERS; cle reload; }
+}
+
 ## cle ls        -- list CLE related files
 _cle_ls () {
 	ls -l $HOME/.aliases* $HOME/.cle*
@@ -126,11 +109,39 @@ _cle_debug () {
 }
 
 ## cdc      - shortcut into $HOME/d/cle
+# yes... this is a little bit complicated shortcut :-)
 cdc () {
+	# Check if devlopment kit is initialized
+	# - indication: .clerc-devel is symlink
 	if [ -z "$CLE_DK" ]; then
-		echo "No CLE development here, initialize with 'cle dk init'"
-		return 1
+		local CLE_DRC=$CLE_DIR/.clerc-devel
+		if [ -L $CLE_DRC ]; then
+			CLE_DK=`readlink $CLE_DIR/.clerc-devel`
+			if [ -z "$CLE_DK" ]; then
+				echo "Broken symlink, removing:"
+				ls -l $CLE_DRC
+				rm $CLE_DRC
+				unset CLE_DRC
+				return 1
+			else
+				# first run of cdc
+				printb "Restarting CLE with development resources"
+				CLE_RC=$CLE_DRC
+				CLE_CF=$CLE_DIR/.clecf-$CLE_USER-devel
+				# _clexe  $CLE_CF
+				CLE_VERB=1
+				cle reload
+				cle p3 '\w%cr:$(git symbolic-ref --short HEAD) %cW%>'
+				CLE_DK=`dirname $CLE_DK`
+			fi
+		else
+			# source files are not downloaded from git
+			echo "No CLE development here, initialize with 'cle dk init'"
+			return 1
+		fi
 	fi
+
+	# now CLE_DK contains path to development kit
 	cd $CLE_DK
 	printb CLE development kit: $PWD
 	git status
@@ -145,20 +156,4 @@ modgen () {
 	done
 
 }
-
-# Following part is runing on each CLE startup/reload
-
-# Check if devlopment kit is initialized
-# indication: .clerc-devel is symlink
-if [ -L $CLE_DIR/.clerc-devel ]; then
-	CLE_DK=`readlink -f $CLE_DIR/.clerc-devel`
-	if [ -z "$CLE_DK" ]; then
-		rm $CLE_DIR/.clerc-devel # broken symlink, 
-		unset CLE_DK
-	else
-		CLE_DK=`dirname $CLE_DK`
-	fi
-else
-	unset CLE_DK
-fi
 

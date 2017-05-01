@@ -4,9 +4,8 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: v3 2017-04-18 (Easter)
+#* version: 2017-05-01 (MayDay)
 #* license: GNU GPL v2
-#*
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
@@ -28,10 +27,10 @@
 #
 # * use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
 #   transferred without installation
-# * try 'suu' (sudo wrapper) with similar effect
+# * try suu/sudd (su/sudo wrappers) with same effect
 # * change settings with implememted 'cle' command
-# * built-in self documentation feature ('cle help' & 'cle readme')
-# * manage your aliases using 'aa' function
+# * built-in self documentation feature ('cle help' 'cle readme' 'cle man')
+# * store and manage your aliases using 'aa' function
 # * use 'hh' function to ease history management
 # * self update from GIT source
 
@@ -39,40 +38,52 @@
 # required for scp compattibility
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 
-# execute script and log its filename into CLE_EXE to keep track
-# ensure the script will be executed only once
-_clexe () {
-	echo $CLE_EXE|grep -q $1: && return
-	if [ -f $1 ]; then
-		CLE_EXE=$CLE_EXE$1:
-		[ -n "$CLE_VERB" ] &&  echo ${CT_w}clexe: $CT_N $1
-		. $1
-	fi
-}
+# a little bit complicated way to find absolute paths
+CLE_RC=${BASH_SOURCE[0]}
+CLE_DRC=$(cd `dirname CLE_RC`; pwd;)
+CLE_RC=$CLE_DRC/`basename $CLE_RC`
 
-# where I'm running?
-CLE_RC=`readlink -f ${BASH_SOURCE[0]}`
-CLE_EXE=$CLE_RC:
+# who I'm
+export CLE_USER=${CLE_USER:-$USER}
 
-# how the CLE was started?
-case $CLE_RC in
-*.clerc-remote-*) # transferred through ssg/suu, run also old good .bashrc :-)
-	_clexe /etc/profile
-	_clexe $HOME/.bashrc
-	CLE_DIR=`dirname $CLE_RC` ;;
-*/clerc*) # initial run from commandline
-	CLE_DIR=$HOME ;;
-*)	# locally deployed
-	CLE_DIR=$HOME
-esac
+# new session startup for su*
+if [ -n "$1" ]; then
+	CLE_USER=$1
+	exec `command which bash` --rcfile $CLE_RC
+fi
 
-# where in the deep space is CLE growing and which version...
+# where in the deep space is CLE growing
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 
-# path to custom configuration files
-CLE_CUSTOMRC=$CLE_DIR/.cleusr-${CLE_USER:=$USER}
+# execute script and log its filename into CLE_EXE to keep track
+# also ensure the script will be executed only once
+_clexe () {
+	local EXE=$1 # EXE=`readlink -f $1` -not OSX compatible
+	if [ -f "$1" ]; then
+		echo $CLE_EXE|grep -q :$EXE && return
+		CLE_EXE=$CLE_EXE:$EXE
+		[ -n "$CLE_VERB" ] &&  echo ${CT_w}clexe: $CT_N $EXE
+		. $EXE
+	fi
+}
+CLE_EXE=$CLE_RC
+
+case $CLE_RC in
+*.clerc-remote-*) # remote session
+	_clexe /etc/profile
+	_clexe $HOME/.bashrc
+	[ -w $HOME ] && CLE_DT=$HOME || CLE_DT=`dirname $CLE_RC` ;;
+*/clerc*) # first run from commandline
+	[ -z "$CLE_DK" ] && CLE_FIRST=1
+	CLE_DT=$HOME ;;
+*)	# locally deployed
+	CLE_DT=$HOME
+esac
+CLE_DIR=${CLE_DIR:-$CLE_DT}
+
 CLE_CF=${CLE_CF:-$CLE_DIR/.clecf-$CLE_USER}
+CLE_RCU=$CLE_DRC/.cleusr-$CLE_USER
 
 # tweaked hostname, can be altered in .clerc-local or .cleusr-$CLE_USER
 CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
@@ -106,14 +117,18 @@ shopt -s checkwinsize
 #
 # Internal helper functions
 #
+
+# boldprint
 printb () { printf "$CT_w$*$CT_N\n"; }
+
+# simple question
 ask () {
 	read -p "$CT_L$* (y/N) $CT_N" -n 1 -s
 	echo ${REPLY:=n}
 	[ "$REPLY" == "y" ]
 }
 
-# print banner
+# banner
 _clebanner () {
 cat <<EOT
 
@@ -145,8 +160,7 @@ _pstr () {
 	 -e "s/%u/$CLE_USER/" \
 	 -e "s/%e/\\\$_E/" \
 	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g" \
-	 -e "s/%v\([[:alnum:]]*\)/\$\1/g" \
-	 -e "s/%V\([[:alnum:]]*\)/\1=\$\1/g" \
+	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g" \
 	 -e "s/%>/$PP/"
 }
 
@@ -207,7 +221,7 @@ _cleprf () {
 	# change window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# shared history
-	history -a; history -c; history -r
+	[ "$CLE_HSH" != 0 ] && { history -a; history -c; history -r; }
 }
 PROMPT_COMMAND=_cleprf
 
@@ -240,7 +254,7 @@ mdfilter () {
 
 # indicate first run, show banner, create default conf
 [ -f $CLE_CF ] || { _clebanner; _defpr; _savecf; }
-[[ $CLE_RC =~ /clerc ]] && cat <<-EOT
+[[ -n "$CLE_FIRST" ]] && cat <<-EOT
 $CT_w It seems you started CLE from command line issuing '. $CLE_RC'
  Since this is your first run, consider setting up in your profile.
  Following command will hook CLE in your $HOME/.bashrc
@@ -252,9 +266,9 @@ _clexe $CLE_CF
 [ -n "$CLE_VERB" ] && { echo CLE config:; cat $CLE_CF; echo; }
 
 _clexe $CLE_DIR/.clerc-local
-_clexe $CLE_CUSTOMRC
+_clexe $CLE_RCU
 _defwt
-_setpr $CLE_PCOLOR
+_setpr
 
 # load modules from .cle folder
 for MOD in $CLE_DIR/.cle/mod-*; do
@@ -270,12 +284,12 @@ unset MOD
 ## ----------------------------------
 _defalias () {
 	## ls commands aliases: l ll la lt llr l.
-	if [ "$OSTYPE" == "linux-gnu" ]; then
+	if [[ "$OSTYPE" =~ "linux" ]]; then
                 alias ls='ls --color=auto'
-        elif [[ "$OSTYPE" == "darwin"* ]]; then
+        elif [[ "$OSTYPE" =~ "darwin" ]]; then
                 export CLICOLOR=1
                 export LSCOLORS="ExGxBxDxCxEgEdxbxgxcxd"
-        elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        elif [[ "$OSTYPE" =~ "freebsd" ]]; then
                 alias ls='ls -G'
 	else
 		alias ls='ls -F' # at least some file type indication
@@ -350,6 +364,8 @@ hh () {
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		## hh number  -- print last N entries
 		history $1 ;;
+	shoff)  ## hh shoff   -- turn off sharing history between terminals
+		CLE_HSH=0 ;;
 	*)	## hh string  -- search in history
 		history | grep -i $1
 	esac
@@ -358,41 +374,57 @@ hh () {
 ##
 ## SSH & SUDO wrappers:
 ## --------------------
+
+# environment packer
+_clepak () (
+	cd $CLE_DRC
+	CLES=.clerc-remote-$CLE_USER
+	[[ $CLE_RC =~ $CLES ]] || cp $CLE_RC $CLES
+	[ -f $CLE_RCU ] && CLES="$CLES `basename $CLE_RCU`"
+	TARC="tar chzf - $CLES"
+	[ "$1" = "64" ] && TARC=$TARC"| base64 | tr -d '\n\r '"
+	eval "$TARC"
+)
+
 ## ssg [user@]hostname  -- access remote system and take CLE along
-ssg () {
-	pushd $CLE_DIR >/dev/null
-	local CLE_RMTRC=.clerc-remote-$CLE_USER
+ssg () (
 	if [ -n "$1" ]; then
-		cp $CLE_RC $CLE_RMTRC 2>/dev/null
-		local SSGFILES=$CLE_RMTRC
-		[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
-		local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
-		`/usr/bin/which ssh` -t $* "
-			${CLE_TODIR:+mkdir $CLE_TODIR; cd $CLE_TODIR;}
-			echo $CLE_64|base64 --decode |tar xzf -;
+		CLE_64=`_clepak 64`
+		`command which ssh` -t $* "
+			${CLE_TODIR:+"mkdir $CLE_TODIR 2>/dev/null; cd $CLE_TODIR;"}
+			echo -n $CLE_64|base64 --decode |tar xzf -;
 			export CLE_USER=$CLE_USER;
-			exec bash --rcfile $CLE_RMTRC"
-	else
+			exec bash --rcfile .clerc-remote-$CLE_USER"
+	else 
 		cle help ssg
 	fi
-	unset CLE_TODIR	# one-time use
-	popd >/dev/null
-}
+)
 
-## suu [username]       -- sudo wrapper; root is the default account
-suu () {
-	pushd $CLE_DIR >/dev/null
-	local CLE_RMTRC=.clerc-remote-$CLE_USER
-	cp $CLE_RC $CLE_RMTRC 2>/dev/null
-	local SSGFILES=$CLE_RMTRC
-	[ -f $CLE_CUSTOMRC ] && SSGFILES="$SSGFILES $(basename $CLE_CUSTOMRC)"
-	local CLE_64=`tar chzf - $SSGFILES |base64|tr -d '\n\r '`
-	sudo -i -u ${1:-root} /bin/bash  -c \
-		"echo $CLE_64|base64 --decode| tar xzf -;
-		 export CLE_USER=$CLE_USER;
-		 exec bash --rcfile $CLE_RMTRC"
-	popd >/dev/null
-}
+## ssgt [user@]hostname -- remote session, with environment in /tmp/username
+ssgt () (
+	CLE_TODIR=/tmp/$CLE_USER
+	ssg $*
+)
+
+## sudd [username]      -- sudo wrapper; root is the default account
+sudd () (
+	sudo -i -u ${1:-root} $BASH $CLE_RC $CLE_USER
+)
+
+## suu [username ]      -- su wrapper
+suu () (
+	if [[ $OSTYPE =~ bsd ]]; then
+		su -l ${1:-root} $CLE_RC $CLE_USER
+	else
+		# enforcing bash
+		su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER
+	fi
+)
+
+## kksu                 -- ksu wrapper
+kksu () (
+	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
+)
 
 ##
 ## CLE command & control:
@@ -442,19 +474,16 @@ cle () {
 			ask " Are you sure?" || return
 			echo -e >>$BRC \\n$CLID
 			echo -e >>$BRC "[ -f $CLE_DIR/.clerc ] && . $CLE_DIR/.clerc\n"
-			printf '\n ... added following to the end of .bashrc :\n'
-			tail -4 $BRC
+			printb '\n ...lines added to your .bashrc :'
+			tail -2 $BRC
 		else
-			echo "CLE is already hooked into .bashrc :"
-			grep -A2 "$CLID" $BRC
+			printb "CLE is already hooked into .bashrc :"
+			command grep -A2 "$CLID" $BRC
 		fi ;;
-	update) ## cle update         -- download newest version of CLE
+	update) ## cle update         -- install fresh version of CLE
 		if [[ $CLE_RC =~ remote ]]; then
-			cat <<-EOT
-			 CLE is running through remote session.
-			 Update is pointless.
-			EOT
-			return 2
+			printb CLE in remote session, update is pointless.
+			return 1
 		fi
 		local NCLE=$CLE_DIR/clerc-new
 		curl -k $CLE_SRC/clerc >$NCLE
@@ -470,16 +499,14 @@ cle () {
 		mv $NCLE $CLE_RC
 		cle reload
 		printb "New CLE has been installed, previous version saved here: $CLE_DIR/clerc-orig" ;;
-	reset)	## cle reset          -- reset configuration
-		rm -f $CLE_CF
-		cle reload ;;
 	reload) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		printb Reloading CLE from $CLE_RC
-		. $CLE_RC ;;
+		. $CLE_RC
+		echo CLE $CLE_VERSION ;;
 	mod)	## cle mod            -- cle module management
-		# this is just fallback to initialize module functionality
-		# downloaded mod-mod overrides this part 
+		# this is just a  fallback to initializing functionality
+		# downloaded mod-mod overrides this code 
 		ask "Activate CLE modules?" || return
 		local MM=$CLE_DIR/.cle/mod-mod
 		mkdir $CLE_DIR/.cle
@@ -490,6 +517,12 @@ cle () {
 		;;
 	env)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*= ;;
+	cf)	## cle cf             -- show configuration
+		printb Config: $CLE_CF
+		cat $CLE_CF ;;
+	reset)	## cle reset          -- reset configuration
+		rm -f $CLE_CF
+		cle reload ;;
 	readme) ## cle readme         -- download and show README file
 		curl -k $CLE_SRC/README.md | mdfilter |less -r ;;
 	man)	## cle man            -- download and show HOWTO file
@@ -518,8 +551,8 @@ cle () {
 }
 
 # remove disturbing stuff
-unset SUDO_COMMAND CLE_VERB
+unset SUDO_COMMAND CLE_VERB CLE_DT
 
-fi # End of login shell setup
+fi
 # and that's all the magic :-)
 
