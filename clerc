@@ -30,7 +30,7 @@
 # * try suu/sudd (su/sudo wrappers) with same effect
 # * change settings with implememted 'cle' command
 # * built-in self documentation feature ('cle help' 'cle readme' 'cle man')
-# * store and manage your aliases using 'aa' function
+# * store and manage your aliases with 'aa' function
 # * use 'hh' function to ease history management
 # * self update from GIT source
 
@@ -38,9 +38,9 @@
 # required for scp compattibility
 if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
 
-# a little bit complicated way to find absolute paths
+# a little bit complicated way to find absolute path
 CLE_RC=${BASH_SOURCE[0]}
-CLE_DRC=$(cd `dirname CLE_RC`; pwd;)
+CLE_DRC=$(cd `dirname $CLE_RC`; pwd;)
 CLE_RC=$CLE_DRC/`basename $CLE_RC`
 
 # who I'm
@@ -547,6 +547,7 @@ cle () {
 		;;
 	*)	echo "'cle $CMD' not implemeted"
 		echo "check cle help"
+		return 1
 	esac
 }
 
