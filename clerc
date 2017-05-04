@@ -20,19 +20,19 @@
 # - personalized history for multi-admin environment
 #
 # Execute this file within your shell session once and integrate
-# to your profile seamlessly with 'cle deploy local' command
+# to your profile seamlessly with 'cle deploy' command
 # 
 #	$ . clerc
 #	$ cle deploy user
 #
-# * use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
-#   transferred without installation
-# * try suu/sudd (su/sudo wrappers) with same effect
-# * change settings with implememted 'cle' command
-# * built-in self documentation feature ('cle help' 'cle readme' 'cle man')
-# * store and manage your aliases with 'aa' function
-# * use 'hh' function to ease history management
-# * self update from GIT source
+# - use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
+#   started without installation
+# - try suu/sudd (su/sudo wrappers) with same effect
+# - change settings using 'cle' command
+# - built-in self documentation feature ('cle help' 'cle readme' 'cle man')
+# - store and manage your aliases with 'aa' function
+# - use 'hh' function to ease history management
+# - self update from GIT source
 
 # check running in interactive session and if not, skip all the tweaks
 # required for scp compattibility
@@ -59,7 +59,7 @@ CLE_VERSION=`sed -n 's/^#\* version: //p' $CLE_RC`
 # execute script and log its filename into CLE_EXE to keep track
 # also ensure the script will be executed only once
 _clexe () {
-	local EXE=$1 # EXE=`readlink -f $1` -not OSX compatible
+	local EXE=$1 # readlink -f $1 -not OSX compatible
 	if [ -f "$1" ]; then
 		echo $CLE_EXE|grep -q :$EXE && return
 		CLE_EXE=$CLE_EXE:$EXE
@@ -108,11 +108,13 @@ CT_E=`tput setab 1; tput setaf 7` # err highlight
 # default shell settings
 export EDITOR=vi
 export PAGER="less -s"
-HISTFILE=$CLE_DIR/.history-$CLE_USER
-HISTCONTROL=ignorespace:ignoredups
-HISTTIMEFORMAT="%d%b %H:%M:%S  "
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
+HISTFILE=$CLE_DIR/.history-$CLE_USER
+# history file must not be empty!
+[ -f $HISTFILE ] || { cp $HOME/.bash_history $HISTFILE 2>/dev/null || echo ls >$HISTFILE; }
+HISTCONTROL=ignoredups
+HISTTIMEFORMAT="%d%b %H:%M:%S  "
 
 #
 # Internal helper functions
@@ -299,6 +301,7 @@ _defalias () {
 	alias lt='ls -ltr'
 	alias la='ls -al'
 	alias llr='ls -lR'
+	alias lld='ls -ld'
 	alias l.='ls -ld .?*'
 	## cd command aliases:
 	## .. ...     -- up one or two levels
@@ -437,7 +440,6 @@ cle () {
 		_cle_$CMD $*
 		return $?
 	fi
-
 	case "${CMD}" in
 	color)	## cle color COLOR    -- set prompt color
 		local CPC=$CLE_PCOLOR
