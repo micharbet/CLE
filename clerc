@@ -223,7 +223,7 @@ _cleprf () {
 	# change window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# shared history
-	[ "$CLE_HSH" != 0 ] && { history -a; history -c; history -r; }
+	[ -n "$CLE_HSH" ] && { history -a; history -c; history -r; }
 }
 PROMPT_COMMAND=_cleprf
 
@@ -367,8 +367,8 @@ hh () {
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		## hh number  -- print last N entries
 		history $1 ;;
-	shoff)  ## hh shoff   -- turn off sharing history between terminals
-		CLE_HSH=0 ;;
+	shon)	## hh shon    -- turn on sharing history between terminals
+		CLE_HSH=1 ;;
 	*)	## hh string  -- search in history
 		history | grep -i $1
 	esac
