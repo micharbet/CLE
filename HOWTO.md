@@ -51,7 +51,9 @@ Prompt string has following parts and default values:
           this is an addition to previously set colors
 
    %vVARIABLE
-      ... place any VARIABLE into prompt string
+      ... place any VARIABLE into prompt string. This will result in following
+          string: `VARIABLE=its_value`, so showing also the name which may be
+          convenient. Note that the value alone can be placed by simple $VAR.
 
   Issuing command `cle p0` (or p1 .. p3 respectively) without string resets
   the default value of give prompt part.
@@ -91,9 +93,16 @@ to remote host and runs bash session with transferred environment. The
 environment resource file is in home directory named .clerc-remote-$CLE_USER
 where CLE_USER is first CLE username, typically logname from workstation.
 
+- `ssgt[account@]remote.host`
+This dous almost the same thing like ssg but places resource files into /tmp.
+You might find systems without your $HOME. however, you can run CLE anyway!
+
 - `suu [account]`
-This command has similar functionality than `ssg` but it is sudo wrapper for
-local sessions
+- `sudd [account]`
+- `kksu [account]`
+Those are wrappers to su/sudo/ksu commands. Use appropriate one to switch user
+context for your particular purpose. CLE is not transferred but the current
+.clerc-YOURNAME is re-used for switched session.
 
 Remember, what is transferred from workstation is '.clerc' file. Configuration
 remains stored locally on machine and in separated file for each user. This
@@ -121,7 +130,7 @@ startups. The second alias 'removethis' is deleted.
 
 
 ### Edit alias set
-`aa edit` function runs editor on current working alias set allowing more
+`aa ed` function runs editor on current working alias set allowing more
 complex changes. Note that recent alias set is backed up.
 
 
@@ -143,11 +152,11 @@ command `history`. Other functionalities in this version:
 
 ### Sharing history between sessions
 
--`hh s`         immeditely appends current history into file
--`hh l`         loads history from file.
-
-Use `hh s` in one session and `hh l` in another to history share. This doesn't
-work over different remote sessions, of course.
+-`hh shon`      turns on this feature, must bue issued on all terminals
+                If you want to share command line history by default,
+                place following line into .cleusr-YOURUSERNAME :
+                      `CLE_HSH=1`
+                Sharing doesn't work over different remote sessions, of course.
 
 
 ## Updating
@@ -188,10 +197,6 @@ remote sessions it has just temporary effect.
 - .cle/mod-*
   Modules enhancing CLE functionality.
 
-- .cle/host-*
-  Host related tweaks - transferred along with ssg and executed on particular
-  host. This functionality in not implemented yet.
-
 
 ## Variables
 
@@ -210,11 +215,14 @@ e.g color table ($CT_*). Those variables can be inspected using command
 - CLE_PCOLOR   prompt color
 - CLE_P0 .. CLE_P3
                prompt parts strings defined with `cle p0 .. cle p3` command
-- CLE_CUSTOMRC custom tweak file, typically $HOME/.cleusr-$CLE_USER if that
+- CLE_RCU      custom tweak file, typically $HOME/.cleusr-$CLE_USER if that
                file exists
 - CLE_WTITLE   string to be terminal window title
 - CLE_SRC      web store of CLE for updates and documentation downloads
-- CLE_DIR      where are current cle files, usually its $HOME
+- CLE_DIR      directory with configuration files
+- CLE_DRC      directory containing resource files
+               Note, DIR and DRC are usually $HOME but not necesarily. they may
+               differ in case $HOME does't exist and/or on local 'su' sessions
 - CLE_TODIR    if this value is set before remote ssg session starts, it causes
                the environment will be placed to other path than $HOME. This is
                useful on systems without home directories.

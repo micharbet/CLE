@@ -22,17 +22,12 @@ trailing dot:
 The CLE is activated now and you can setup this environment as persistent with
 command:
 
-    cle deploy user
+    cle deploy
 
 CLE copies itself to `$HOME/.clerc` and adds two lines into your `.bashrc`
 si it will be started upon each login. Note this is the *only* one
 installation step you need to perform. Typically you'd do it on your account
 on your workstation.
-
-There is also possibility to setup CLE systemwide. Issue command
-`cle deploy system` and content of active resource file will be copied
-into `/etc/profile.d/cle.sh` thus activated for all users on that particular
-machine. This step is however not required.
 
 
 ### ssg utility (ssh wrapper)
@@ -44,14 +39,10 @@ seamlessly:
     ssg username@remote.host
 
 
-### suu utility (sudo wrapper)
+### suu, sudd, kksu utilities (su/sudo/ksu wrappers)
 
-The 'suu' does the same job like ssg bout it transfers CLE over sudo command.
-You can run `suu` alone or `suu username`. Without username the root
-is chosen by deafult, obviously.
-
-In both cases ('ssg' and  'suu') the content of '.clerc' is passed to the
-remote session and executed as a resource script instead of '.bashrc.'
+Those wrappers starts CLE in different user's context.
+Without username the root is chosen by deafult, obviously.
 
 
 ### other utilities
