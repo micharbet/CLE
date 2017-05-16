@@ -6,14 +6,19 @@
 # affect already defined set of aliases
 #
 
+## gipul            -- just git pull
 function gipul {
 	git pull
 }
 
+## gipus            -- git push into origin / current working branch
 function gipus {
-	git push -u origin master
+	BRANCH=`git symbolic-ref --short HEAD`
+	printb git push -u origin $BRANCH 
+	git push -u origin $BRANCH 
 }
 
+## gicom [message]  -- git commit, if message not specified, opens editor
 function gicom {
 	if [ $# -eq 0 ]; then
 		git commit -a
@@ -22,14 +27,18 @@ function gicom {
 	fi
 }
 
+## gista            -- git status
 function gista {
 	git status
 }
 
+## gilog            -- git log
 function gilog {
 	git log
 }
 
+## gidif            -- git diff
 function gidif {
 	git diff
 }
+

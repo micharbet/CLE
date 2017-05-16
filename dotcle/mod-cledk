@@ -131,7 +131,8 @@ cdc () {
 				# _clexe  $CLE_CF
 				CLE_VERB=1
 				cle reload
-				cle p3 '\w%cr:$(git symbolic-ref --short HEAD) %cW%>'
+				# add current branch name into prompt
+				cle p3 '\w%cR:$([ -d .git -o -d ../.git ] && git symbolic-ref --short HEAD) %cW%>'
 				CLE_DK=`dirname $CLE_DK`
 			fi
 		else
