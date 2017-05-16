@@ -282,10 +282,10 @@ unset MOD
 [ -d $HOME/bin ] && echo $PATH | grep -vq $HOME/bin && PATH=$PATH:$HOME/bin
 
 ##
-## CLE default aliases and functions:
-## ----------------------------------
+## Default aliases and functions:
+## ------------------------------
 _defalias () {
-	## ls commands aliases: l ll la lt llr l.
+	## ls commands aliases: l ll la lt llr l. lld
 	if [[ "$OSTYPE" =~ "linux" ]]; then
                 alias ls='ls --color=auto'
         elif [[ "$OSTYPE" =~ "darwin" ]]; then
@@ -322,7 +322,7 @@ _defalias () {
 - () { cd -; }
 
 ##
-## alias management
+## Alias management
 ## ----------------
 CLE_ALIASES=$CLE_DIR/.aliases-$CLE_USER # personalized aliases
 _clexe $CLE_ALIASES
@@ -358,7 +358,7 @@ aa () {
 }
 
 ##
-## history management
+## History management
 ## ------------------
 hh () {
 	case $1 in
@@ -375,8 +375,8 @@ hh () {
 }
 
 ##
-## SSH & SUDO wrappers:
-## --------------------
+## Session wrappers:
+## -----------------
 
 # environment packer
 _clepak () (
@@ -394,7 +394,7 @@ ssg () (
 	if [ -n "$1" ]; then
 		CLE_64=`_clepak 64`
 		`command which ssh` -t $* "
-			${CLE_TODIR:+"mkdir $CLE_TODIR 2>/dev/null; cd $CLE_TODIR;"}
+			[ -w $HOME ] || { mkdir /tmp/$CLE_USER 2>/dev/null; cd /tmp/$CLE_USER;}
 			echo -n $CLE_64|base64 --decode |tar xzf -;
 			export CLE_USER=$CLE_USER;
 			exec bash --rcfile .clerc-remote-$CLE_USER"
@@ -403,18 +403,12 @@ ssg () (
 	fi
 )
 
-## ssgt [user@]hostname -- remote session, with environment in /tmp/username
-ssgt () (
-	CLE_TODIR=/tmp/$CLE_USER
-	ssg $*
-)
-
 ## sudd [username]      -- sudo wrapper; root is the default account
 sudd () (
 	sudo -i -u ${1:-root} $BASH $CLE_RC $CLE_USER
 )
 
-## suu [username ]      -- su wrapper
+## suu [username]       -- su wrapper
 suu () (
 	if [[ $OSTYPE =~ bsd ]]; then
 		su -l ${1:-root} $CLE_RC $CLE_USER
@@ -424,7 +418,7 @@ suu () (
 	fi
 )
 
-## kksu                 -- ksu wrapper
+## kksu [username]      -- ksu wrapper
 kksu () (
 	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
 )
