@@ -14,29 +14,29 @@
 # of the License, or (at your option) any later version.
 #
 # Command line tweaks:
-# - colorized prompt incl exit code highlight
+# - colorized prompt incl hihglighted exit code
 # - builtin aliases and functions
 # - history tweaks (timestamps etc)
-# - personalized history for multi-admin environment
+# - history personalized for multi-admin environment
 #
 # Execute this file within your shell session once and integrate
-# to your profile seamlessly with 'cle deploy' command
+# into your profile with 'cle deploy' command
 # 
 #	$ . clerc
-#	$ cle deploy user
+#	$ cle deploy
 #
 # - use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
 #   started without installation
 # - try suu/sudd (su/sudo wrappers) with same effect
-# - change settings using 'cle' command
-# - built-in self documentation feature ('cle help' 'cle readme' 'cle man')
+# - alter settings using 'cle' command
+# - built-in self documenting feature ('cle help')
 # - store and manage your aliases with 'aa' function
 # - use 'hh' function to ease history management
 # - self update from GIT source
 
 # check running in interactive session and if not, skip all the tweaks
 # required for scp compattibility
-if [ -n "TERM" -a "$TERM" != "dumb" -a -z "$CLE_EXE" ]; then
+if [ -t 0 -a -z "$CLE_EXE" ]; then
 
 # a little bit complicated way to find absolute path
 CLE_RC=${BASH_SOURCE[0]}
@@ -89,7 +89,7 @@ CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'` # remove domain, leave subdomains
 CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
 
 # color table initializattion
-CT_N=`tput sgr0` # reset
+CT_N=`tput sgr0`
 CT_L=`tput bold`
 CT_U=`tput smul`; CT_UE=`tput rmul`
 CT_D=`tput dim`
@@ -138,7 +138,7 @@ _defwt () {
 	CLE_WT="$CLE_WT$USER@$CLE_THN:"
 }
 
-# default prompt
+# default config
 _defcf () {
 	CLE_PCOLOR='marley'
 	CLE_P0='%e \A'
@@ -191,9 +191,9 @@ _setp () {
 	white|grey|gray) C0=$CT_N; C1=$CT_w; C2=$CT_W;;
 	bold)	C0=$CT_L;;
 	tricolora) C0=$CT_R; C1=$CT_B; C2=$CT_W;;
-	marley) # ... Bob Marley style :-) have a smoke and imagine...
+	marley) # Bob Marley style :-) have a smoke and imagine...
 		C0=$CT_R; C1=$CT_Y; C2=$CT_G;;
-	???)	# ... any 3 colors
+	???)	# any 3 colors
 		for I in 0 1 2; do
 			II=CT_${CLE_PCOLOR:$I:1}
 			[ -z "${!II}" ] && echo "wrong color code '${CLE_PCOLOR:$I:1}' in $CLE_PCOLOR" && return 2
@@ -215,17 +215,13 @@ _setp () {
 
 # prompt function - called upon each new prompt line
 _clepmt () {
-	_E=$? # save last return code
+	_E=$? # save return code
 	local EE
-	# highilighted error code only in P0
-	if [ $_E -eq 0 ]; then
-		EE="[0]"
-	else
-		EE="\[$CT_E\][$_E]\[$CT_N$CT_K\]"
-	fi
+	# highlight error code only in P0
+	[ $_E -eq 0 ] && EE="[0]" || EE="\[$CT_E\][$_E]\[$CT_N$CT_K\]"
 	# final prompt composition
 	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
-	# change window title
+	# window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# shared history
 	[ -n "$CLE_HSH" ] && { history -a; history -c; history -r; }
@@ -272,7 +268,7 @@ _defalias () {
 	alias ...='cd ../..'
 	alias cd-='cd -'
 	## xx & cx    -- path bookmark; set and 'cd' later, stored in $XX
-	alias xx='XX=`pwd`; echo path boorkmark set here: XX=$XX'
+	alias xx='XX=`pwd`; echo path bookmark: XX=$XX'
 	alias cx='cd $XX'
 	alias grep='grep --color=auto'
 	alias mv='mv -i'
@@ -299,8 +295,8 @@ aa () {
 		ask "Save aliases?" || return
 		cp $CLE_ALIASES $ABAK
 		alias >$CLE_ALIASES
-		echo Saved to file: $CLE_ALIASES
-		echo Backup in: $ABAK ;;
+		printb Saved to file: $CLE_ALIASES
+		printb Backup in: $ABAK ;;
 	l)	## aa l       -- (re)load your set of aliases
 		unalias -a
 		. $CLE_ALIASES ;;
@@ -311,7 +307,7 @@ aa () {
 		vi $TALIAS
 		mv $TALIAS $CLE_ALIASES
 		aa l
-		echo Backup in: $ABAK ;;
+		printb Backup in: $ABAK ;;
 	*)	
 		echo " unimplemented: aa $1 $2"
 		cle help aa
@@ -325,11 +321,11 @@ hh () {
 	case $1 in
 	"")	## hh         -- just print history
 		history ;;
+	shon)	## hh shon    -- turn on sharing history between terminals
+		CLE_HSH=1 ;;
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		## hh number  -- print last N entries
 		history $1 ;;
-	shon)	## hh shon    -- turn on sharing history between terminals
-		CLE_HSH=1 ;;
 	*)	## hh string  -- search in history
 		history | grep -i $1
 	esac
@@ -395,16 +391,16 @@ HISTTIMEFORMAT="%d%b %H:%M:%S  "
 
 # load config and custom tweaks
 _clexe $CLE_CF
-[ -n "$CLE_VERB" ] && { echo CLE config:; cat $CLE_CF; echo; }
+[ -n "$CLE_VERB" ] && cat $CLE_CF
 _clexe $CLE_DIR/.clerc-local
 _clexe $CLE_RCU
 
 # indicate first run, show banner, create default conf
 [ -f $CLE_CF ] || { _clebanner; _defcf; _savecf; }
-[[ -n "$CLE_FIRST" ]] && cat <<-EOT
+[ -n "$CLE_FIRST" ] && cat <<-EOT
 $CT_w It seems you started CLE from command line issuing '. $CLE_RC'
- Since this is your first run, consider setting up in your profile.
- Following command will hook CLE in your $HOME/.bashrc
+ Since this is the first run, consider setup in your profile.
+ Following command will hook CLE in $HOME/.bashrc
 $CT_L    cle deploy$CT_N
 EOT
 
@@ -427,7 +423,7 @@ cle () {
 	local CMD=$1; shift
 	if declare -f _cle_$CMD >/dev/null; then
 		# run any _cle_* function
-		# those might be defined e.g. in modules .cle/mod-*
+		# those can be defined in modules and user tweaks
 		_cle_$CMD $*
 		return $?
 	fi
