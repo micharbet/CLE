@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-05-17 (HAlpha)
+#* version: 2017-05-18 (HAlpha)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -345,15 +345,13 @@ _clepak () (
 	CLES=.clerc-remote-$CLE_USER
 	[[ $CLE_RC =~ $CLES ]] || cp $CLE_RC $CLES
 	[ -f $CLE_RCU ] && CLES="$CLES `basename $CLE_RCU`"
-	TARC="tar chzf - $CLES"
-	[ "$1" = "64" ] && TARC=$TARC"| base64 | tr -d '\n\r '"
-	eval "$TARC"
+	tar chzf - $CLES | base64 | tr -d '\n\r '
 )
 
 ## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () (
 	if [ -n "$1" ]; then
-		CLE_64=`_clepak 64`
+		CLE_64=`_clepak`
 		`command which ssh` -t $* "
 			[ -w $HOME ] || { mkdir /tmp/$CLE_USER 2>/dev/null; cd /tmp/$CLE_USER;}
 			echo -n $CLE_64|base64 --decode |tar xzf -;
@@ -420,7 +418,7 @@ _defwt
 _setp
 
 # enhance path with user's own bin directory
-[ -d $HOME/bin ] && echo $PATH | grep -vq $HOME/bin && PATH=$PATH:$HOME/bin
+[[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 ##
 ## CLE command & control:
