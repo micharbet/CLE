@@ -115,7 +115,7 @@ printb () { printf "$CT_w$*$CT_N\n"; }
 ask () {
 	read -p "$CT_L$* (y/N) $CT_N" -n 1 -s
 	echo ${REPLY:=n}
-	[ "$REPLY" == "y" ]
+	[ "$REPLY" = "y" ]
 }
 
 # banner
@@ -160,7 +160,7 @@ _savecf () {
 # prompt enhancements
 _pesc () {
 	local PP=">" # I hate $ in prompt
-	[ $UID == 0 ] && PP="#"
+	[ $UID = 0 ] && PP="#"
 	echo $*|sed \
 	 -e "s/%i/$CLE_IP/" \
 	 -e "s/%h/$CLE_THN/" \
@@ -445,11 +445,11 @@ cle () {
 		CLE_P3="${*:-\\w %>}"
 		_setp ;;
 	time)	## cle time [off]     -- toggle server time in prompt
-		[ "$1" == "off" ] && CLE_P0='%e'
+		[ "$1" = "off" ] && CLE_P0='%e'
 		[ -z "$1" ] && CLE_P0='%e \A'
 		_setp ;;
 	title)	## cle title [off]    -- toggle window title
-		[ "$1" == "off" ] && CLE_WT=''
+		[ "$1" = "off" ] && CLE_WT=''
 		[ -z "$1" ] && _defwt 
 		;;
 	deploy)
@@ -481,7 +481,7 @@ cle () {
 		echo "new:     `sed -n 's/^#\* version: //p' $NCLE`"
 		local SUM1=`md5sum $CLE_RC| cut -d' ' -f1`
 		local SUM2=`md5sum $NCLE| cut -d' ' -f1`
-		[ $SUM1 == $SUM2 ] && { echo No difference; return 1; }
+		[ $SUM1 = $SUM2 ] && { echo No difference; return 1; }
 		ask "Do you want to see diff?" && diff $CLE_RC $NCLE
 		ask "Do you want to install new version?" || return
 		cp $CLE_RC $CLE_DIR/clerc-back
