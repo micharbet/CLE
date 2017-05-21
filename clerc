@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-05-20 (HAlpha)
+#* version: 2017-05-21 (HAlpha)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -14,7 +14,7 @@
 # of the License, or (at your option) any later version.
 #
 # Command line tweaks:
-# - colorful prompt incl hihglighted exit code
+# - colorful prompt with hihglighted exit code
 # - builtin aliases and functions
 # - history tweaks (timestamps etc)
 #
