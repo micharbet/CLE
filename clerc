@@ -95,8 +95,8 @@ CT_D=`tput dim`
 CT_RV=`tput rev`
 CI=0; for CN in k r g y b m c w; do
         CL=`tput setaf $CI`
-        declare CT_$CN=$CT_N$CL #dim
-        declare CT_${CN^}=$CT_L$CL #bold
+        declare CT_$CN=$CT_N$CL
+        declare CT_$(echo $CN|tr a-z A-Z)=$CT_L$CL #bold
         (( CI += 1 ))
 done
 unset CI CN CL
