@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-05-21 (HAlpha)
+#* version: 2017-05-25 (HAlpha)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -223,8 +223,6 @@ _clepmt () {
 	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
 	# window title
 	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
-	# shared history
-	[ -n "$CLE_HSH" ] && { history -a; history -c; history -r; }
 }
 PROMPT_COMMAND=_clepmt
 
@@ -321,8 +319,6 @@ hh () {
 	case $1 in
 	"")	## hh         -- just print history
 		history;;
-	shon)	## hh shon    -- turn on sharing history between terminals
-		CLE_HSH=1;;
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		## hh number  -- print last N entries
 		history $1;;
