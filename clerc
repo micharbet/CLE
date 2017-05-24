@@ -38,7 +38,7 @@
 if [ -t 0 -a -z "$CLE_EXE" ]; then
 
 # a little bit complicated way to find absolute path
-CLE_RC=${BASH_SOURCE[0]}
+export CLE_RC=${BASH_SOURCE[0]}
 CLE_DRC=$(cd `dirname $CLE_RC`; pwd;)
 CLE_RC=$CLE_DRC/`basename $CLE_RC`
 
@@ -61,7 +61,7 @@ _clexe () {
 	if [ -f "$1" ]; then
 		[[ $CLE_EXE =~ :$1 ]] && return
 		CLE_EXE=$CLE_EXE:$1
-		[ -n "$CLE_VERB" ] &&  echo ${CT_w}clexe: $CT_N $1
+		[ -n "$CLE_DBG" ] &&  echo ${CT_w}clexe: $CT_N $1
 		. $1
 	fi
 }
@@ -71,7 +71,8 @@ case $CLE_RC in
 *.clerc-remote-*) # remote session
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
-	[ -w $HOME ] && CLE_DT=$HOME || CLE_DT=`dirname $CLE_RC`;;
+	[ -w $HOME ] && CLE_DT=$HOME || CLE_DT=`dirname $CLE_RC`
+	cd $CLE_DT;;
 */clerc*) # first run from commandline
 	[ -z "$CLE_DK" ] && CLE_FIRST=1
 	CLE_DT=$HOME;;
@@ -390,7 +391,7 @@ HISTTIMEFORMAT="%d%b %H:%M:%S  "
 
 # load config and custom tweaks
 _clexe $CLE_CF
-[ -n "$CLE_VERB" ] && cat $CLE_CF
+[ -n "$CLE_DBG" ] && cat $CLE_CF
 _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
 
@@ -538,7 +539,7 @@ cle () {
 }
 
 # remove disturbing stuff
-unset SUDO_COMMAND CLE_VERB CLE_DT
+unset SUDO_COMMAND CLE_DBG CLE_DT
 
 fi
 # and that's all the magic :-)
