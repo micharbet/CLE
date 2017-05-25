@@ -414,32 +414,32 @@ _setp
 ## CLE command & control:
 ## ----------------------
 cle () {
-	local I S1 S2 MM
+	local C I S1 S2 MM BRC NCLE
 	# find & run enhancement _cle_* function
-	if declare -f _cle_$1 >/dev/null; then
-		I=$1; shift
-		_cle_$I $*
+	C=$1; shift
+	if declare -f _cle_$C >/dev/null; then
+		_cle_$C $*
 		return $?
 	fi
-	case "$1" in
+	case "$C" in
 	color)	## cle color COLOR    -- set prompt color
 		I=$CLE_PCOLOR
-		CLE_PCOLOR=$2
+		CLE_PCOLOR=$1
 		_setp || CLE_PCOLOR=$I;;
 	p?)	## cle p0-p3 [string] -- show/define prompt parts
-		I=CLE_P${1:1:1}; shift
+		I=CLE_P${C:1:1}
 		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
 		_setp;;
 	time)	## cle time [off]     -- toggle server time in prompt
-		[ "$2" = off ] && CLE_P0=%e
-		[ -z "$2" ] && CLE_P0='%e \A'
+		[ "$1" = off ] && CLE_P0=%e
+		[ -z "$1" ] && CLE_P0='%e \A'
 		_setp;;
 	title)	## cle title [off]    -- toggle window title
-		[ "$2" = off ] && CLE_WT='' || _defwt;;
+		[ "$1" = off ] && CLE_WT='' || _defwt;;
 	deploy)
 		## cle deploy         -- hook CLE into user's profile
 		I='# Command Live Environment'
-		local BRC=$HOME/.bashrc
+		BRC=$HOME/.bashrc
 		cp $CLE_RC $CLE_D/.clerc
 		if grep -q "$I" $BRC; then
 			printb CLE is already hooked into .bashrc :
@@ -457,7 +457,7 @@ cle () {
 			printb CLE in remote session, update is pointless.
 			return 1
 		fi
-		local NCLE=$CLE_D/clerc-new
+		NCLE=$CLE_D/clerc-new
 		curl -k $CLE_SRC/clerc >$NCLE
 		printb New CLE here: $NCLE
 		echo current: $CLE_VER
@@ -472,7 +472,7 @@ cle () {
 		cle reload
 		printb New CLE activated, previous saved here: $CLE_D/clerc-back;;
 	reload) ## cle reload         -- reload CLE
-		unset CLE_EXE; shift
+		unset CLE_EXE
 		printb Reloading CLE from $CLE_RC
 		. $CLE_RC
 		echo CLE $CLE_VER;;
@@ -498,18 +498,18 @@ cle () {
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r;;
 	help)	## cle help [fnc|mod] -- show help for fuction or module
 		# double hash denotes help content
-		if [ -z "$2" ]; then
+		if [ -z "$1" ]; then
 			# overview
 			awk -F# "/[\t ]##|^##/ { print \$3 }" $CLE_RC
-		elif declare -f $2 >/dev/null; then
+		elif declare -f $1 >/dev/null; then
 			# extract one cle function
-			awk -F# "/[\t ]## *$2|^## *$2/ { print \$3 }" $CLE_RC
-		elif [ -f $2 ]; then
+			awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC
+		elif [ -f $1 ]; then
 			# extract from given files
 			awk -F# "/[\t ]##|^##/ { print \$3 }" $*
 		else # search in modules
-			local HF=`echo $CLE_EXE | tr : '\n' |grep mod-$2`
-			[ -n "$HF" ] && cle help $HF || echo ...no help for you
+			MM=`echo $CLE_EXE | tr : '\n' |grep mod-$1`
+			[ -n "$MM" ] && cle help $MM || echo ...no help for you
 		fi;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC # header
