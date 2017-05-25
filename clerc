@@ -61,7 +61,6 @@ _clexe () {
 	if [ -f "$1" ]; then
 		[[ $CLE_EXE =~ :$1 ]] && return
 		CLE_EXE=$CLE_EXE:$1
-		[ -n "$CLE_DBG" ] &&  echo ${CT_w}clexe: $CT_N $1
 		. $1
 	fi
 }
@@ -387,7 +386,6 @@ HISTTIMEFORMAT="%d%b %H:%M:%S  "
 
 # load config and custom tweaks
 _clexe $CLE_CF
-[ -n "$CLE_DBG" ] && cat $CLE_CF
 _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
 
@@ -523,7 +521,6 @@ cle () {
 }
 
 # remove disturbing stuff
-unset SUDO_COMMAND CLE_DBG CLE_DT
 
 fi
 # and that's all the magic :-)
