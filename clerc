@@ -157,8 +157,8 @@ _savecf () {
 } >$CLE_CF
 
 # prompt enhancements
-_pesc () {
-	local PP=">" # I hate $ in prompt
+_pesc () (
+	PP=">" # I hate $ in prompt
 	[ $UID = 0 ] && PP="#"
 	echo $*|sed \
 	 -e "s/%i/$CLE_IP/" \
@@ -168,7 +168,7 @@ _pesc () {
 	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g" \
 	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g" \
 	 -e "s/%>/$PP/"
-}
+)
 
 _cle_e () {
 	[ "$1" != e ] && return
@@ -283,28 +283,28 @@ _clexe $CLE_ALIASES
 _defalias
 
 aa () {
-	local ABAK=$CLE_ALIASES.back
+	local ABK=$CLE_ALIASES.back
 	case "$1" in
 	"")	## aa         -- show aliases
 		alias;;
-	s)	## aa s       -- save your set of aliases
+	s)	## aa s       -- save current aliases
 		alias
 		ask Save aliases? || return
-		cp $CLE_ALIASES $ABAK
+		cp $CLE_ALIASES $ABK
 		alias >$CLE_ALIASES
 		printb Saved to file: $CLE_ALIASES
-		printb Backup in: $ABAK;;
-	l)	## aa l       -- (re)load your set of aliases
+		printb Backup in: $ABK;;
+	l)	## aa l       -- reload aliases
 		unalias -a
 		. $CLE_ALIASES;;
 	ed)	## aa ed      -- edit and reload your aliases
-		local TALIAS=$CLE_ALIASES.edit
-		alias >$ABAK
-		cp $ABAK $TALIAS
-		vi $TALIAS
-		mv $TALIAS $CLE_ALIASES
+		local TAL=$CLE_ALIASES.edit
+		alias >$ABK
+		cp $ABK $TAL
+		vi $TAL
+		mv $TAL $CLE_ALIASES
 		aa l
-		printb Backup in: $ABAK;;
+		printb Backup in: $ABK;;
 	*)	
 		echo unimplemented: aa $1 $2
 		cle help aa
@@ -333,19 +333,19 @@ hh () {
 # environment packer
 _clepak () (
 	cd $CLE_DRC
-	CLES=.clerc-remote-$CLE_USER
-	[[ $CLE_RC =~ $CLES ]] || cp $CLE_RC $CLES
-	touch $CLE_RCU; CLES="$CLES `basename $CLE_RCU`"
-	tar chzf - $CLES | base64 | tr -d '\n\r '
+	RCS=.clerc-remote-$CLE_USER
+	[[ $CLE_RC =~ $RCS ]] || cp $CLE_RC $RCS
+	touch $CLE_RCU; RCS="$RCS `basename $CLE_RCU`"
+	tar chzf - $RCS | base64 | tr -d '\n\r '
 )
 
 ## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () (
 	if [ -n "$1" ]; then
-		CLE_64=`_clepak`
+		C64=`_clepak`
 		`command which ssh` -t $* "
 			[ -w $HOME ] || { mkdir /tmp/$CLE_USER 2>/dev/null; cd /tmp/$CLE_USER;}
-			echo -n $CLE_64|base64 --decode |tar xzf -;
+			echo -n $C64|base64 --decode |tar xzf -;
 			export CLE_USER=$CLE_USER;
 			exec bash --rcfile .clerc-remote-$CLE_USER"
 	else 
@@ -379,8 +379,7 @@ export PAGER="less -s"
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
 HISTFILE=$CLE_D/.history-$CLE_USER
-# history file must not be empty!
-[ -f $HISTFILE ] || { cp $HOME/.bash_history $HISTFILE 2>/dev/null || echo ls >$HISTFILE; }
+[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 
@@ -414,7 +413,7 @@ _setp
 ## CLE command & control:
 ## ----------------------
 cle () {
-	local C I S1 S2 MM BRC NCLE
+	local C I S1 S2 MM BRC NC
 	# find & run enhancement _cle_* function
 	C=$1; shift
 	if declare -f _cle_$C >/dev/null; then
@@ -457,23 +456,21 @@ cle () {
 			printb CLE in remote session, update is pointless.
 			return 1
 		fi
-		NCLE=$CLE_D/clerc-new
-		curl -k $CLE_SRC/clerc >$NCLE
-		printb New CLE here: $NCLE
+		NC=$CLE_D/clerc-new
+		curl -k $CLE_SRC/clerc >$NC
 		echo current: $CLE_VER
-		echo "new:     `sed -n 's/^#\* version: //p' $NCLE`"
+		echo "new:     `sed -n 's/^#\* version: //p' $NC`"
 		S1=`md5sum $CLE_RC| cut -d' ' -f1`
-		S2=`md5sum $NCLE| cut -d' ' -f1`
+		S2=`md5sum $NC| cut -d' ' -f1`
 		[ $S1 = $S2 ] && { echo No difference; return 1; }
-		ask Do you want to see diff? && diff $CLE_RC $NCLE
+		ask Do you want to see diff? && diff $CLE_RC $NC
 		ask Do you want to install new version? || return
 		cp $CLE_RC $CLE_D/clerc-back
-		mv $NCLE $CLE_RC
+		mv $NC $CLE_RC
 		cle reload
 		printb New CLE activated, previous saved here: $CLE_D/clerc-back;;
 	reload) ## cle reload         -- reload CLE
 		unset CLE_EXE
-		printb Reloading CLE from $CLE_RC
 		. $CLE_RC
 		echo CLE $CLE_VER;;
 	mod)	## cle mod            -- cle module management
