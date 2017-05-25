@@ -416,47 +416,40 @@ _setp
 ## CLE command & control:
 ## ----------------------
 cle () {
-	local CMD=$1; shift
+	local I S1 S2 MM
 	# find & run enhancement _cle_* function
-	if declare -f _cle_$CMD >/dev/null; then
-		_cle_$CMD $*
+	if declare -f _cle_$1 >/dev/null; then
+		I=$1; shift
+		_cle_$I $*
 		return $?
 	fi
-	case "$CMD" in
+	case "$1" in
 	color)	## cle color COLOR    -- set prompt color
-		local CPC=$CLE_PCOLOR
-		CLE_PCOLOR=$1
-		_setp || CLE_PCOLOR=$CPC;;
-	p0)	## cle p0-p3 [string] -- define prompt part 0-3
-		CLE_P0="${*:-%e \A}"
-		_setp;;
-	p1)
-		CLE_P1="${*:-\\u}"
-		_setp;;
-	p2)
-		CLE_P2="${*:-%h}"
-		_setp;;
-	p3)
-		CLE_P3="${*:-\\w %>}"
+		I=$CLE_PCOLOR
+		CLE_PCOLOR=$2
+		_setp || CLE_PCOLOR=$I;;
+	p?)	## cle p0-p3 [string] -- show/define prompt parts
+		I=CLE_P${1:1:1}; shift
+		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
 		_setp;;
 	time)	## cle time [off]     -- toggle server time in prompt
-		[ "$1" = off ] && CLE_P0=%e
-		[ -z "$1" ] && CLE_P0='%e \A'
+		[ "$2" = off ] && CLE_P0=%e
+		[ -z "$2" ] && CLE_P0='%e \A'
 		_setp;;
 	title)	## cle title [off]    -- toggle window title
-		[ "$1" = off ] && CLE_WT='' || _defwt;;
+		[ "$2" = off ] && CLE_WT='' || _defwt;;
 	deploy)
 		## cle deploy         -- hook CLE into user's profile
-		local CLID='# Command Live Environment'
+		I='# Command Live Environment'
 		local BRC=$HOME/.bashrc
 		cp $CLE_RC $CLE_D/.clerc
-		if grep -q "$CLID" $BRC; then
+		if grep -q "$I" $BRC; then
 			printb CLE is already hooked into .bashrc :
-			command grep -A2 "$CLID" $BRC
+			command grep -A2 "$I" $BRC
 		else
 			printb CLE is to be integrated to your login script.
 			ask Are you sure? || return
-			echo -e >>$BRC \\n$CLID
+			echo -e >>$BRC \\n$I
 			echo -e >>$BRC "[ -f $CLE_D/.clerc ] && . $CLE_D/.clerc\n"
 			printb Lines added to your .bashrc :
 			tail -3 $BRC
@@ -471,9 +464,9 @@ cle () {
 		printb New CLE here: $NCLE
 		echo current: $CLE_VER
 		echo "new:     `sed -n 's/^#\* version: //p' $NCLE`"
-		local SUM1=`md5sum $CLE_RC| cut -d' ' -f1`
-		local SUM2=`md5sum $NCLE| cut -d' ' -f1`
-		[ $SUM1 = $SUM2 ] && { echo No difference; return 1; }
+		S1=`md5sum $CLE_RC| cut -d' ' -f1`
+		S2=`md5sum $NCLE| cut -d' ' -f1`
+		[ $S1 = $S2 ] && { echo No difference; return 1; }
 		ask Do you want to see diff? && diff $CLE_RC $NCLE
 		ask Do you want to install new version? || return
 		cp $CLE_RC $CLE_D/clerc-back
@@ -481,7 +474,7 @@ cle () {
 		cle reload
 		printb New CLE activated, previous saved here: $CLE_D/clerc-back;;
 	reload) ## cle reload         -- reload CLE
-		unset CLE_EXE
+		unset CLE_EXE; shift
 		printb Reloading CLE from $CLE_RC
 		. $CLE_RC
 		echo CLE $CLE_VER;;
@@ -489,7 +482,7 @@ cle () {
 		# this is just a fallback to initialize modularity
 		# downloaded mod-mod overrides this code 
 		ask Activate CLE modules? || return
-		local MM=$CLE_D/.cle/mod-mod
+		MM=$CLE_D/.cle/mod-mod
 		mkdir $CLE_D/.cle
 		curl -k $CLE_SRC/dotcle/mod-mod >$MM
 		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1; }
@@ -507,23 +500,23 @@ cle () {
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r;;
 	help)	## cle help [fnc|mod] -- show help for fuction or module
 		# double hash denotes help content
-		if [ -z "$1" ]; then
+		if [ -z "$2" ]; then
 			# overview
 			awk -F# "/[\t ]##|^##/ { print \$3 }" $CLE_RC
-		elif declare -f $1 >/dev/null; then
+		elif declare -f $2 >/dev/null; then
 			# extract one cle function
-			awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC
-		elif [ -f $1 ]; then
+			awk -F# "/[\t ]## *$2|^## *$2/ { print \$3 }" $CLE_RC
+		elif [ -f $2 ]; then
 			# extract from given files
 			awk -F# "/[\t ]##|^##/ { print \$3 }" $*
 		else # search in modules
-			local HF=`echo $CLE_EXE | tr : '\n' |grep mod-$1`
+			local HF=`echo $CLE_EXE | tr : '\n' |grep mod-$2`
 			[ -n "$HF" ] && cle help $HF || echo ...no help for you
 		fi;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC # header
 		;;
-	*)	echo cle $CMD not implemeted
+	*)	echo cle $1 not implemented
 		echo check cle help
 		return 1
 	esac
