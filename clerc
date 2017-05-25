@@ -504,9 +504,6 @@ cle () {
 		;;
 	env)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*=;;
-	cf)	## cle cf             -- show configuration
-		printb Config: $CLE_CF
-		cat $CLE_CF;;
 	reset)	## cle reset          -- reset configuration
 		rm -f $CLE_CF
 		cle reload;;
