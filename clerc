@@ -336,7 +336,7 @@ _clepak () (
 	cd $CLE_DRC
 	CLES=.clerc-remote-$CLE_USER
 	[[ $CLE_RC =~ $CLES ]] || cp $CLE_RC $CLES
-	[ -f $CLE_RCU ] && CLES="$CLES `basename $CLE_RCU`"
+	touch $CLE_RCU; CLES="$CLES `basename $CLE_RCU`"
 	tar chzf - $CLES | base64 | tr -d '\n\r '
 )
 
