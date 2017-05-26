@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-05-25 (HAlpha)
+#* version: 2017-05-26 (HAlpha)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -39,14 +39,14 @@ if [ -t 0 -a -z "$CLE_EXE" ]; then
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
-CLE_DRC=$(cd `dirname $CLE_RC`; pwd;)
+CLE_DRC=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_DRC/`basename $CLE_RC`
 
 # who I'm
 export CLE_USER=${CLE_USER:-$USER}
 
 # new session startup for su*
-if [ -n "$1" ]; then
+if [ "$1" ];then
 	CLE_USER=$1
 	exec `command which bash` --rcfile $CLE_RC
 fi
@@ -58,7 +58,7 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
 _clexe () {
-	if [ -f "$1" ]; then
+	if [ -f "$1" ];then
 		[[ $CLE_EXE =~ :$1 ]] && return
 		CLE_EXE=$CLE_EXE:$1
 		. $1
@@ -73,7 +73,7 @@ case $CLE_RC in
 	[ -w $HOME ] && CLE_DT=$HOME || CLE_DT=`dirname $CLE_RC`
 	cd $CLE_DT;;
 */clerc*) # first run from commandline
-	[ -z "$CLE_DK" ] && CLE_FIRST=1
+	CLE_FIRST=1
 	CLE_DT=$HOME;;
 *)	# locally deployed
 	CLE_DT=$HOME
@@ -99,7 +99,6 @@ CI=0; for CN in k r g y b m c w; do
         declare CT_$(echo $CN|tr a-z A-Z)=$CT_L$CL #bold
         (( CI += 1 ))
 done
-unset CI CN CL
 CT_E=`tput setab 1; tput setaf 7` # err highlight
 
 
@@ -161,12 +160,12 @@ _pesc () (
 	PP=">" # I hate $ in prompt
 	[ $UID = 0 ] && PP="#"
 	echo $*|sed \
-	 -e "s/%i/$CLE_IP/" \
-	 -e "s/%h/$CLE_THN/" \
-	 -e "s/%u/$CLE_USER/" \
-	 -e "s/%e/\\\$_E/" \
-	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g" \
-	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g" \
+	 -e "s/%i/$CLE_IP/"\
+	 -e "s/%h/$CLE_THN/"\
+	 -e "s/%u/$CLE_USER/"\
+	 -e "s/%e/\\\$_E/"\
+	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g"\
+	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
 	 -e "s/%>/$PP/"
 )
 
@@ -181,19 +180,19 @@ _cle_e () {
 _setp () {
 	local C0 C1 C2 I II P0 
 	case "$CLE_PCOLOR" in 
-	red)	C0=$CT_r; C2=$CT_R;;
-	green)	C0=$CT_g; C2=$CT_G;;
-	yellow)	C0=$CT_y; C2=$CT_Y;;
-	blue)	C0=$CT_b; C2=$CT_B;;
-	cyan)	C0=$CT_c; C2=$CT_C;;
-	magenta) C0=$CT_m; C2=$CT_M;;
-	white|grey|gray) C0=$CT_N; C1=$CT_w; C2=$CT_W;;
+	red)	C0=$CT_r;C2=$CT_R;;
+	green)	C0=$CT_g;C2=$CT_G;;
+	yellow)	C0=$CT_y;C2=$CT_Y;;
+	blue)	C0=$CT_b;C2=$CT_B;;
+	cyan)	C0=$CT_c;C2=$CT_C;;
+	magenta) C0=$CT_m;C2=$CT_M;;
+	white|grey|gray) C0=$CT_N;C1=$CT_w;C2=$CT_W;;
 	bold)	C0=$CT_L;;
-	tricolora) C0=$CT_R; C1=$CT_B; C2=$CT_W;;
+	tricolora) C0=$CT_R;C1=$CT_B;C2=$CT_W;;
 	marley) # Bob Marley style :-) have a smoke and imagine...
-		C0=$CT_R; C1=$CT_Y; C2=$CT_G;;
+		C0=$CT_R;C1=$CT_Y;C2=$CT_G;;
 	???)	# any 3 colors
-		for I in 0 1 2; do
+		for I in 0 1 2;do
 			II=CT_${CLE_PCOLOR:$I:1}
 			[ -z "${!II}" ] && echo "wrong color code '${CLE_PCOLOR:$I:1}' in $CLE_PCOLOR" && return 2
 			declare C$I=${!II}
@@ -221,17 +220,17 @@ _clepmt () {
 	# final prompt composition
 	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
 	# window title
-	[ -n "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
+	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 }
 PROMPT_COMMAND=_clepmt
 
 # filter for markdown files
 mdfilter () {
-	sed -e "s/^###\(.*\)/$CT_L\1$CT_N/" \
-	 -e "s/^##\(\s*\)\(.*\)/\1$CT_U$CT_L\2$CT_N/" \
-	 -e "s/^#\(\s*\)\(.*\)/\1$CT_L$CT_RV\2$CT_N/" \
-	 -e "s/\*\*\(.*\)\*\*/$CT_L\1$CT_N/" \
-	 -e "s/\<_\(.*\)_\>/$CT_U\1$CT_UE/g" \
+	sed -e "s/^###\(.*\)/$CT_L\1$CT_N/"\
+	 -e "s/^##\(\s*\)\(.*\)/\1$CT_U$CT_L\2$CT_N/"\
+	 -e "s/^#\(\s*\)\(.*\)/\1$CT_L$CT_RV\2$CT_N/"\
+	 -e "s/\*\*\(.*\)\*\*/$CT_L\1$CT_N/"\
+	 -e "s/\<_\(.*\)_\>/$CT_U\1$CT_UE/g"\
 	 -e "s/\`\([^\`]*\)\`/$CT_w\1$CT_N/g"
 }
 
@@ -240,12 +239,12 @@ mdfilter () {
 ## ------------------------------
 _defalias () {
 	## ls commands aliases: l ll la lt llr l. lld
-	if [[ "$OSTYPE" =~ linux ]]; then
+	if [[ "$OSTYPE" =~ linux ]];then
                 alias ls='ls --color=auto'
-        elif [[ "$OSTYPE" =~ darwin ]]; then
+        elif [[ "$OSTYPE" =~ darwin ]];then
                 export CLICOLOR=1
                 export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd
-        elif [[ "$OSTYPE" =~ freebsd ]]; then
+        elif [[ "$OSTYPE" =~ freebsd ]];then
                 alias ls='ls -G'
 	else
 		alias ls='ls -F' # at least some file type indication
@@ -264,7 +263,7 @@ _defalias () {
 	alias ..='cd ..'
 	alias ...='cd ../..'
 	alias cd-='cd -'
-	## xx & cx    -- path bookmark; set and 'cd' later, stored in $XX
+	## xx & cx    -- bookmark & use path; stored in $XX
 	alias xx='XX=`pwd`; echo path bookmark: XX=$XX'
 	alias cx='cd $XX'
 	alias grep='grep --color=auto'
@@ -341,7 +340,7 @@ _clepak () (
 
 ## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () (
-	if [ -n "$1" ]; then
+	if [ "$1" ];then
 		C64=`_clepak`
 		`command which ssh` -t $* "
 			[ -w $HOME ] || { mkdir /tmp/$CLE_USER 2>/dev/null; cd /tmp/$CLE_USER;}
@@ -360,7 +359,7 @@ sudd () (
 
 ## suu [username]       -- su wrapper
 suu () (
-	if [[ $OSTYPE =~ bsd ]]; then
+	if [[ $OSTYPE =~ bsd ]];then
 		su -l ${1:-root} $CLE_RC $CLE_USER
 	else
 		# enforcing bash
@@ -390,7 +389,7 @@ _clexe $CLE_RCU
 
 # indicate first run, show banner, create default conf
 [ -f $CLE_CF ] || { _clebanner; _defcf; _savecf; }
-[ -n "$CLE_FIRST" ] && cat <<-EOT
+[ "$CLE_FIRST" ] && cat <<-EOT
 $CT_w It seems you started CLE from command line issuing '. $CLE_RC'
  Since this is the first run, consider setup in your profile.
  Following command will hook CLE in $HOME/.bashrc
@@ -398,10 +397,9 @@ $CT_L    cle deploy$CT_N
 EOT
 
 # load modules from .cle folder
-for MD in $CLE_D/.cle/mod-*; do
+for MD in $CLE_D/.cle/mod-*;do
 	_clexe $MD
 done
-unset MD
 
 _defwt
 _setp
@@ -415,8 +413,8 @@ _setp
 cle () {
 	local C I S1 S2 MM BRC NC
 	# find & run enhancement _cle_* function
-	C=$1; shift
-	if declare -f _cle_$C >/dev/null; then
+	C=$1;shift
+	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
 		return $?
 	fi
@@ -440,19 +438,18 @@ cle () {
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
 		cp $CLE_RC $CLE_D/.clerc
-		if grep -q "$I" $BRC; then
-			printb CLE is already hooked into .bashrc :
-			command grep -A2 "$I" $BRC
+		if grep -A2 "$I" $BRC; then
+			printb CLE is already hooked into .bashrc:
 		else
 			printb CLE is to be integrated to your login script.
 			ask Are you sure? || return
 			echo -e >>$BRC \\n$I
 			echo -e >>$BRC "[ -f $CLE_D/.clerc ] && . $CLE_D/.clerc\n"
-			printb Lines added to your .bashrc :
+			printb Lines added to your .bashrc:
 			tail -3 $BRC
 		fi;;
 	update) ## cle update         -- install fresh version of CLE
-		if [[ $CLE_RC =~ remote ]]; then
+		if [[ $CLE_RC =~ remote ]];then
 			printb CLE in remote session, update is pointless.
 			return 1
 		fi
@@ -473,6 +470,9 @@ cle () {
 		unset CLE_EXE
 		. $CLE_RC
 		echo CLE $CLE_VER;;
+	reset)	## cle reset          -- reset configuration
+		rm -f $CLE_CF
+		cle reload;;
 	mod)	## cle mod            -- cle module management
 		# this is just a fallback to initialize modularity
 		# downloaded mod-mod overrides this code 
@@ -482,35 +482,18 @@ cle () {
 		curl -k $CLE_SRC/dotcle/mod-mod >$MM
 		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1; }
 		_clexe $MM
-		cle mod avail
-		;;
+		cle mod avail;;
 	env)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*=;;
-	reset)	## cle reset          -- reset configuration
-		rm -f $CLE_CF
-		cle reload;;
 	readme) ## cle readme         -- download and show README file
 		curl -k $CLE_SRC/README.md | mdfilter |less -r;;
 	man)	## cle man            -- download and show HOWTO file
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r;;
-	help)	## cle help [fnc|mod] -- show help for fuction or module
+	help)	## cle help [fnc]     -- show help
 		# double hash denotes help content
-		if [ -z "$1" ]; then
-			# overview
-			awk -F# "/[\t ]##|^##/ { print \$3 }" $CLE_RC
-		elif declare -f $1 >/dev/null; then
-			# extract one cle function
-			awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC
-		elif [ -f $1 ]; then
-			# extract from given files
-			awk -F# "/[\t ]##|^##/ { print \$3 }" $*
-		else # search in modules
-			MM=`echo $CLE_EXE | tr : '\n' |grep mod-$1`
-			[ -n "$MM" ] && cle help $MM || echo ...no help for you
-		fi;;
+		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC;;
 	"")	_clebanner
-		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC # header
-		;;
+		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 	*)	echo cle $1 not implemented
 		echo check cle help
 		return 1
@@ -518,7 +501,7 @@ cle () {
 }
 
 # remove disturbing stuff
-
+unset SUDO_COMMAND CLE_DT MD CI CN CL
 fi
 # and that's all the magic :-)
 
