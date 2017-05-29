@@ -70,15 +70,15 @@ case $CLE_RC in
 *.clerc-remote-*) # remote session
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
-	[ -w $HOME ] && CLE_DT=$HOME || CLE_DT=`dirname $CLE_RC`
-	cd $CLE_DT;;
+	[ -w $HOME ] && _D=$HOME || _D=`dirname $CLE_RC`
+	cd $_D;;
 */clerc*) # first run from commandline
 	CLE_FIRST=1
-	CLE_DT=$HOME;;
+	_D=$HOME;;
 *)	# locally deployed
-	CLE_DT=$HOME
+	_D=$HOME
 esac
-CLE_D=${CLE_D:-$CLE_DT}
+CLE_D=${CLE_D:-$_D}
 
 CLE_CF=${CLE_CF:-$CLE_D/.clecf-$CLE_USER}
 CLE_RCU=$CLE_DRC/.cleusr-$CLE_USER
@@ -93,11 +93,11 @@ CT_L=`tput bold`
 CT_U=`tput smul`; CT_UE=`tput rmul`
 CT_D=`tput dim`
 CT_RV=`tput rev`
-CI=0; for CN in k r g y b m c w; do
-        CL=`tput setaf $CI`
-        declare CT_$CN=$CT_N$CL
-        declare CT_$(echo $CN|tr a-z A-Z)=$CT_L$CL #bold
-        (( CI += 1 ))
+_I=0; for _N in k r g y b m c w; do
+        _C=`tput setaf $_I`
+        declare CT_$_N=$CT_N$_C
+        declare CT_$(echo $_N|tr a-z A-Z)=$CT_L$_C #bold
+        (( _I += 1 ))
 done
 CT_E=`tput setab 1; tput setaf 7` # err highlight
 
@@ -397,8 +397,8 @@ $CT_L    cle deploy$CT_N
 EOT
 
 # load modules from .cle folder
-for MD in $CLE_D/.cle/mod-*;do
-	_clexe $MD
+for _I in $CLE_D/.cle/mod-*;do
+	_clexe $_I
 done
 
 _defwt
@@ -420,9 +420,9 @@ cle () {
 	fi
 	case "$C" in
 	color)	## cle color COLOR    -- set prompt color
-		I=$CLE_PCOLOR
+		C=$CLE_PCOLOR
 		CLE_PCOLOR=$1
-		_setp || CLE_PCOLOR=$I;;
+		_setp || CLE_PCOLOR=$C;;
 	p?)	## cle p0-p3 [string] -- show/define prompt parts
 		I=CLE_P${C:1:1}
 		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
@@ -437,16 +437,14 @@ cle () {
 		## cle deploy         -- hook CLE into user's profile
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
-		cp $CLE_RC $CLE_D/.clerc
+		cp $CLE_RC $HOME/.clerc
 		if grep -A2 "$I" $BRC;then
-			printb CLE is already hooked into .bashrc:
+			printb CLE is already hooked into .bashrc
 		else
 			printb CLE is to be integrated to your login script.
 			ask Are you sure? || return
-			echo -e >>$BRC \\n$I
-			echo -e >>$BRC "[ -f $CLE_D/.clerc ] && . $CLE_D/.clerc\n"
-			printb Lines added to your .bashrc:
-			tail -3 $BRC
+			printb Adding lines to your .bashrc:
+			echo -e "\n$I\n[ -f $HOME/.clerc ] && . $HOME/.clerc\n" | tee -a $BRC
 		fi;;
 	update) ## cle update         -- install fresh version of CLE
 		if [[ $CLE_RC =~ remote ]];then
@@ -462,10 +460,11 @@ cle () {
 		[ $S1 = $S2 ] && { echo No difference; return 1;}
 		ask Do you want to see diff? && diff $CLE_RC $NC
 		ask Do you want to install new version? || return
-		cp $CLE_RC $CLE_D/clerc-back
+		BRC=$CLE_D/clerc-back
+		cp $CLE_RC $BRC
 		mv $NC $CLE_RC
 		cle reload
-		printb New CLE activated, previous saved here: $CLE_D/clerc-back;;
+		printb New CLE activated, previous saved here: $BRC;;
 	reload) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC
@@ -501,7 +500,7 @@ cle () {
 }
 
 # remove disturbing stuff
-unset SUDO_COMMAND CLE_DT MD CI CN CL
+unset SUDO_COMMAND _D _I _N _C
 fi
 # and that's all the magic :-)
 
