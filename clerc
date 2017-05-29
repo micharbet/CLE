@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-05-26 (HAlpha)
+#* version: 2017-05-29 (HAlpha)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -35,7 +35,7 @@
 
 # check running in interactive session otherwise skip all the tweaks
 # required for scp compattibility
-if [ -t 0 -a -z "$CLE_EXE" ]; then
+if [ -t 0 -a -z "$CLE_EXE" ];then
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
@@ -107,7 +107,7 @@ CT_E=`tput setab 1; tput setaf 7` # err highlight
 #
 
 # boldprint
-printb () { printf "$CT_w$*$CT_N\n"; }
+printb () { printf "$CT_w$*$CT_N\n";}
 
 # simple question
 ask () {
@@ -272,7 +272,7 @@ _defalias () {
 }
 
 # '-' must be function, alias was troublesome
-- () { cd -; }
+- () { cd -;}
 
 ##
 ## Alias management
@@ -388,7 +388,7 @@ _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
 
 # indicate first run, show banner, create default conf
-[ -f $CLE_CF ] || { _clebanner; _defcf; _savecf; }
+[ -f $CLE_CF ] || { _clebanner;_defcf;_savecf;}
 [ "$CLE_FIRST" ] && cat <<-EOT
 $CT_w It seems you started CLE from command line issuing '. $CLE_RC'
  Since this is the first run, consider setup in your profile.
@@ -438,7 +438,7 @@ cle () {
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
 		cp $CLE_RC $CLE_D/.clerc
-		if grep -A2 "$I" $BRC; then
+		if grep -A2 "$I" $BRC;then
 			printb CLE is already hooked into .bashrc:
 		else
 			printb CLE is to be integrated to your login script.
@@ -459,7 +459,7 @@ cle () {
 		echo "new:     `sed -n 's/^#\* version: //p' $NC`"
 		S1=`md5sum $CLE_RC| cut -d' ' -f1`
 		S2=`md5sum $NC| cut -d' ' -f1`
-		[ $S1 = $S2 ] && { echo No difference; return 1; }
+		[ $S1 = $S2 ] && { echo No difference; return 1;}
 		ask Do you want to see diff? && diff $CLE_RC $NC
 		ask Do you want to install new version? || return
 		cp $CLE_RC $CLE_D/clerc-back
@@ -480,7 +480,7 @@ cle () {
 		MM=$CLE_D/.cle/mod-mod
 		mkdir $CLE_D/.cle
 		curl -k $CLE_SRC/dotcle/mod-mod >$MM
-		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1; }
+		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1;}
 		_clexe $MM
 		cle mod avail;;
 	env)	## cle env            -- print CLE_* variables
@@ -494,7 +494,7 @@ cle () {
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
-	*)	echo cle $1 not implemented
+	*)	echo cle $C not implemented
 		echo check cle help
 		return 1
 	esac
