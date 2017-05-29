@@ -62,6 +62,8 @@ _clexe () {
 		[[ $CLE_EXE =~ :$1 ]] && return
 		CLE_EXE=$CLE_EXE:$1
 		. $1
+	else
+		return 1
 	fi
 }
 CLE_EXE=$CLE_RC
@@ -383,14 +385,12 @@ HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 
 # load config and custom tweaks
-_clexe $CLE_CF
+_clexe $CLE_CF || { _clebanner;_defcf;_savecf; }
 _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
 
-# indicate first run, show banner, create default conf
-[ -f $CLE_CF ] || { _clebanner;_defcf;_savecf;}
-[ "$CLE_FIRST" ] && cat <<-EOT
-$CT_w It seems you started CLE from command line issuing '. $CLE_RC'
+[ $CLE_FIRST ] && cat <<-EOT
+$CT_w It seems you started CLE issuing '. $CLE_RC'
  Since this is the first run, consider setup in your profile.
  Following command will hook CLE in $HOME/.bashrc
 $CT_L    cle deploy$CT_N
@@ -437,14 +437,15 @@ cle () {
 		## cle deploy         -- hook CLE into user's profile
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
-		cp $CLE_RC $HOME/.clerc
+		NC='$HOME/.clerc'
 		if grep -A2 "$I" $BRC;then
 			printb CLE is already hooked into .bashrc
 		else
 			printb CLE is to be integrated to your login script.
 			ask Are you sure? || return
+			eval cp $CLE_RC $NC
 			printb Adding lines to your .bashrc:
-			echo -e "\n$I\n[ -f $HOME/.clerc ] && . $HOME/.clerc\n" | tee -a $BRC
+			echo -e "\n$I\n[ -f $NC ] && . $NC\n" | tee -a $BRC
 		fi;;
 	update) ## cle update         -- install fresh version of CLE
 		if [[ $CLE_RC =~ remote ]];then
