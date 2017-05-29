@@ -199,7 +199,7 @@ _setp () {
 		done;;
 	*)	# print help - whoa! self documented function :)
 		echo "Unknown color '$CLE_PCOLOR' Select one of predefined:"
-		declare -f _setp|sed -n -e 's/\ *\(\<[a-zA-Z |]*\)).*/ \1 /p' 
+		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
 		echo Or create your own 3-letter style using: rgbcmykw / RGBCMYKW
 		echo e.g. cle color rgB
 		return 2 
