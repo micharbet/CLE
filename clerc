@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-05-30 (HAlpha)
+#* version: 2017-05-31 (HAlpha)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -55,13 +55,10 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
 _clexe () {
-	if [ -f "$1" ];then
-		[[ $CLE_EXE =~ :$1 ]] && return
-		CLE_EXE=$CLE_EXE:$1
-		. $1
-	else
-		return 1
-	fi
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1 ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	. $1
 }
 CLE_EXE=$CLE_RC
 
@@ -89,16 +86,16 @@ CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
 # color table
 CT_N=`tput sgr0`
 CT_L=`tput bold`
-CT_U=`tput smul`; CT_UE=`tput rmul`
+CT_U=`tput smul`;CT_UE=`tput rmul`
 CT_D=`tput dim`
 CT_RV=`tput rev`
 _I=0; for _N in k r g y b m c w; do
         _C=`tput setaf $_I`
         declare CT_$_N=$CT_N$_C
         declare CT_$(echo $_N|tr a-z A-Z)=$CT_L$_C #bold
-        (( _I += 1 ))
+        ((_I+=1))
 done
-CT_E=`tput setab 1; tput setaf 7` # err highlight
+CT_E=`tput setab 1;tput setaf 7` # err highlight
 
 
 #
@@ -196,7 +193,7 @@ _setp () {
 			[ -z "${!II}" ] && echo "wrong color code '${CLE_PCOLOR:$I:1}' in $CLE_PCOLOR" && return 2
 			declare C$I=${!II}
 		done;;
-	*)	# print help - whoa! self documented function :)
+	*)	# print help - whoa! self documented function
 		echo "Unknown color '$CLE_PCOLOR' Select one of predefined:"
 		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
 		echo Or create your own 3-letter style using: rgbcmykw / RGBCMYKW
@@ -215,7 +212,7 @@ _clepmt () {
 	_E=$? # save return code
 	local EE
 	# highlight error code only in P0
-	[ $_E -eq 0 ] && EE=[0] || EE="\[$CT_E\][$_E]\[$CT_N$CT_K\]"
+	[ $_E = 0 ] && EE=[0] || EE="\[$CT_E\][$_E]\[$CT_N$CT_K\]"
 	# final prompt composition
 	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
 	# window title
@@ -279,7 +276,7 @@ _clexe $CLE_ALIASES
 _defalias
 
 aa () {
-	local ABK=$CLE_ALIASES.back
+	local ABK=$CLE_ALIASES.back TAL=$CLE_ALIASES.edit
 	case "$1" in
 	"")	## aa         -- show aliases
 		alias;;
@@ -294,7 +291,6 @@ aa () {
 		unalias -a
 		. $CLE_ALIASES;;
 	ed)	## aa ed      -- edit and reload your aliases
-		local TAL=$CLE_ALIASES.edit
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
@@ -337,16 +333,13 @@ _clepak () (
 
 ## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () (
-	if [ "$1" ];then
-		C64=`_clepak`
-		`command which ssh` -t $* "
-			[ -w $HOME ] || { mkdir /tmp/$CLE_USER 2>/dev/null; cd /tmp/$CLE_USER;}
-			echo -n $C64|base64 --decode |tar xzf -;
-			export CLE_USER=$CLE_USER;
-			exec bash --rcfile .clerc-remote-$CLE_USER"
-	else 
-		cle help ssg
-	fi
+	[ "$1" ] || { cle help ssg; return 1;}
+	C64=`_clepak`
+	`command which ssh` -t $* "
+		[ -w $HOME ] || { mkdir /tmp/$CLE_USER 2>/dev/null; cd /tmp/$CLE_USER;}
+		echo -n $C64|base64 --decode |tar xzf -;
+		export CLE_USER=$CLE_USER;
+		exec bash --rcfile .clerc-remote-$CLE_USER"
 )
 
 ## sudd [username]      -- sudo wrapper; root is the default account
@@ -380,7 +373,7 @@ HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%d%b %H:%M:%S  "
 
 # load config and custom tweaks
-_clexe $CLE_CF || { _clebanner;_defcf;_savecf; }
+_clexe $CLE_CF || { _clebanner;_defcf;_savecf;}
 _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
 
