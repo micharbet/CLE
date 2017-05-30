@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-05-29 (HAlpha)
+#* version: 2017-05-30 (HAlpha)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -46,10 +46,7 @@ CLE_RC=$CLE_DRC/`basename $CLE_RC`
 export CLE_USER=${CLE_USER:-$USER}
 
 # new session startup for su*
-if [ "$1" ];then
-	CLE_USER=$1
-	exec `command which bash` --rcfile $CLE_RC
-fi
+[ "$1" ] && { CLE_USER=$1; exec `command which bash` --rcfile $CLE_RC;}
 
 # where in the deep space is CLE growing
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
@@ -75,7 +72,7 @@ case $CLE_RC in
 	[ -w $HOME ] && _D=$HOME || _D=`dirname $CLE_RC`
 	cd $_D;;
 */clerc*) # first run from commandline
-	CLE_FIRST=1
+	CLE_1=1
 	_D=$HOME;;
 *)	# locally deployed
 	_D=$HOME
@@ -130,7 +127,7 @@ cat <<EOT
 EOT
 }
 
-# default window title
+# window title
 _defwt () {
 	CLE_WT=''
 	[[ $TERM =~ linux ]] && return # no tits on console
@@ -241,16 +238,14 @@ mdfilter () {
 ## ------------------------------
 _defalias () {
 	## ls commands aliases: l ll la lt llr l. lld
-	if [[ "$OSTYPE" =~ linux ]];then
-                alias ls='ls --color=auto'
-        elif [[ "$OSTYPE" =~ darwin ]];then
-                export CLICOLOR=1
-                export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd
-        elif [[ "$OSTYPE" =~ freebsd ]];then
-                alias ls='ls -G'
-	else
-		alias ls='ls -F' # at least some file type indication
-        fi
+	case $OSTYPE in
+	linux*) alias ls='ls --color=auto';;
+	darwin*)
+		export CLICOLOR=1
+		export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
+	*bsd*) alias ls='ls -G';;
+	*) alias ls='ls -F' # at least some file type indication
+	esac
 	alias l='ls -l'
 	alias ll='ls -l'
 	alias lt='ls -ltr'
@@ -389,7 +384,7 @@ _clexe $CLE_CF || { _clebanner;_defcf;_savecf; }
 _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
 
-[ $CLE_FIRST ] && cat <<-EOT
+[ $CLE_1 ] && cat <<-EOT
 $CT_w It seems you started CLE issuing '. $CLE_RC'
  Since this is the first run, consider setup in your profile.
  Following command will hook CLE in $HOME/.bashrc
