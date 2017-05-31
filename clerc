@@ -14,9 +14,9 @@
 # of the License, or (at your option) any later version.
 #
 # Command line tweaks:
-# - colorful prompt with hihglighted exit code
-# - builtin aliases and functions
-# - history tweaks (timestamps etc)
+# -colorful prompt with hihglighted exit code
+# -builtin aliases and functions
+# -history tweaks (timestamps etc)
 #
 # Execute this file within your shell session
 # and integrate into your profile:
@@ -24,14 +24,14 @@
 #	$ . clerc
 #	$ cle deploy
 #
-# - use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
-#   started without installation
-# - try suu/sudd (su/sudo wrappers) with same effect
-# - alter settings using 'cle' command
-# - store and manage your aliases with 'aa' function
-# - use 'hh' function to ease history management
-# - built-in self documenting feature 'cle help'
-# - update from GIT source
+# -use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
+#  started without installation
+# -try suu/sudd (su/sudo wrappers) with same effect
+# -alter settings using 'cle' command
+# -store and manage your aliases with 'aa' function
+# -use 'hh' function to ease history management
+# -built-in self documenting feature 'cle help'
+# -update from GIT source
 
 # check running in interactive session otherwise skip all the tweaks
 # required for scp compattibility
@@ -45,7 +45,7 @@ CLE_RC=$CLE_DRC/`basename $CLE_RC`
 # who I'm
 export CLE_USER=${CLE_USER:-$USER}
 
-# new session startup for su*
+# session startup for su*
 [ "$1" ] && { CLE_USER=$1; exec `command which bash` --rcfile $CLE_RC;}
 
 # where in the deep space is CLE growing
@@ -63,7 +63,7 @@ _clexe () {
 CLE_EXE=$CLE_RC
 
 case $CLE_RC in
-*.clerc-remote-*) # remote session
+*-remote-*) # remote session
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
 	[ -w $HOME ] && _D=$HOME || _D=`dirname $CLE_RC`
@@ -125,7 +125,7 @@ EOT
 }
 
 # window title
-_defwt () {
+_setwt () {
 	CLE_WT=''
 	[[ $TERM =~ linux ]] && return # no tits on console
 	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_USER -> "
@@ -207,7 +207,7 @@ _setp () {
 	_savecf
 }
 
-# prompt function - called upon each new prompt line
+# prompt function callback
 _clepmt () {
 	_E=$? # save return code
 	local EE
@@ -333,10 +333,10 @@ _clepak () (
 
 ## ssg [user@]hostname  -- access remote system and take CLE along
 ssg () (
-	[ "$1" ] || { cle help ssg; return 1;}
+	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
 	`command which ssh` -t $* "
-		[ -w $HOME ] || { mkdir /tmp/$CLE_USER 2>/dev/null; cd /tmp/$CLE_USER;}
+		[ -w $HOME ] || { mkdir /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
 		echo -n $C64|base64 --decode |tar xzf -;
 		export CLE_USER=$CLE_USER;
 		exec bash --rcfile .clerc-remote-$CLE_USER"
@@ -352,8 +352,7 @@ suu () (
 	if [[ $OSTYPE =~ bsd ]];then
 		su -l ${1:-root} $CLE_RC $CLE_USER
 	else
-		# enforcing bash
-		su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER
+		su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER # enforce bash
 	fi
 )
 
@@ -370,7 +369,7 @@ shopt -s checkwinsize
 HISTFILE=$CLE_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
-HISTTIMEFORMAT="%d%b %H:%M:%S  "
+HISTTIMEFORMAT="%d%b %H:%M:%S "
 
 # load config and custom tweaks
 _clexe $CLE_CF || { _clebanner;_defcf;_savecf;}
@@ -389,10 +388,10 @@ for _I in $CLE_D/.cle/mod-*;do
 	_clexe $_I
 done
 
-_defwt
+_setwt
 _setp
 
-# enhance path with user's own bin directory
+# enhance path with user's own bin
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 ##
@@ -408,19 +407,18 @@ cle () {
 	fi
 	case "$C" in
 	color)	## cle color COLOR    -- set prompt color
-		C=$CLE_PCOLOR
+		I=$CLE_PCOLOR
 		CLE_PCOLOR=$1
-		_setp || CLE_PCOLOR=$C;;
+		_setp || CLE_PCOLOR=$I;;
 	p?)	## cle p0-p3 [string] -- show/define prompt parts
 		I=CLE_P${C:1:1}
 		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
 		_setp;;
 	time)	## cle time [off]     -- toggle server time in prompt
-		[ "$1" = off ] && CLE_P0=%e
-		[ -z "$1" ] && CLE_P0='%e \A'
+		[ "$1" = off ] && CLE_P0=%e || CLE_P0='%e \A'
 		_setp;;
 	title)	## cle title [off]    -- toggle window title
-		[ "$1" = off ] && CLE_WT='' || _defwt;;
+		[ "$1" = off ] && CLE_WT='' || _setwt;;
 	deploy)
 		## cle deploy         -- hook CLE into user's profile
 		I='# Command Live Environment'
@@ -453,7 +451,7 @@ cle () {
 		cp $CLE_RC $BRC
 		mv $NC $CLE_RC
 		cle reload
-		printb New CLE activated, previous saved here: $BRC;;
+		printb New CLE activated, backup saved here: $BRC;;
 	reload) ## cle reload         -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC
@@ -482,7 +480,7 @@ cle () {
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
-	*)	echo cle $C not implemented
+	*)	echo unimplemented: cle $C
 		echo check cle help
 		return 1
 	esac
