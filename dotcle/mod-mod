@@ -11,7 +11,7 @@
 
 
 _cle_mod () {
-	local MODIR=$CLE_DIR/.cle
+	local MODIR=$CLE_D/.cle
 	local MODLIST=$MODIR/modlist
 	local M MM MDESC MSRC
 	case "$1" in
@@ -81,7 +81,7 @@ _cle_mod () {
 #
 # check installed module - where it came from
 _modsource () {
-	local MODIR=$CLE_DIR/.cle
+	local MODIR=$CLE_D/.cle
 	local MODLIST=$MODIR/modlist
 	local LINK=`readlink $1`
 	local MM=`basename $1`

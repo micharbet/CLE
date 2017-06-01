@@ -13,7 +13,7 @@
 _cle_dk () {
 	case "$1" in
 	"")	## cle dk        -- development kit status
-		ls -l $CLE_DIR/.clerc-devel
+		ls -l $CLE_D/.clerc-devel
 		;;
 	init)	## cle dk init   -- initialize development kit for CLE
 		local P=`pwd`
@@ -26,21 +26,21 @@ _cle_dk () {
 		echo
 
 		# symlink .clerc-devel 
-		ln -sf $P/CLE/clerc $CLE_DIR/.clerc-devel
+		ln -sf $P/CLE/clerc $CLE_D/.clerc-devel
 
 		printb "Preparing modules to development:"
-		mkdir $CLE_DIR/dotcle-backup
-		cd $CLE_DIR/.cle
+		mkdir $CLE_D/dotcle-backup
+		cd $CLE_D/.cle
 		local MOD
 		# backup custom modules and symlink existing ones from devkit
 		for MOD in mod-*; do
 			if [ -f $P/CLE/dotcle/$MOD ]; then
 				echo "module $MOD - symlink to $P/CLE/dotcle"
-				mv -f $MOD $CLE_DIR/dotcle-backup/
-				ln -s $P/CLE/dotcle/$MOD $CLE_DIR/.cle/
+				mv -f $MOD $CLE_D/dotcle-backup/
+				ln -s $P/CLE/dotcle/$MOD $CLE_D/.cle/
 			else
-				echo "module $MOD - copy to $CLE_DIR/dotcle-backup"
-				cp $MOD $CLE_DIR/dotcle-backup/
+				echo "module $MOD - copy to $CLE_D/dotcle-backup"
+				cp $MOD $CLE_D/dotcle-backup/
 			fi
 		done
 		echo
@@ -114,9 +114,9 @@ cdc () {
 	# Check if devlopment kit is initialized
 	# - indication: .clerc-devel is symlink
 	if [ -z "$CLE_DK" ]; then
-		local CLE_DRC=$CLE_DIR/.clerc-devel
+		local CLE_DRC=$CLE_D/.clerc-devel
 		if [ -L $CLE_DRC ]; then
-			CLE_DK=`readlink $CLE_DIR/.clerc-devel`
+			CLE_DK=`readlink $CLE_D/.clerc-devel`
 			if [ -z "$CLE_DK" ]; then
 				echo "Broken symlink, removing:"
 				ls -l $CLE_DRC
@@ -127,11 +127,11 @@ cdc () {
 				# first run of cdc
 				printb "Restarting CLE with development resources"
 				CLE_RC=$CLE_DRC
-				CLE_CF=$CLE_DIR/.clecf-$CLE_USER-devel
+				CLE_CF=$CLE_D/.clecf-$CLE_USER-devel
 				# _clexe  $CLE_CF
-				CLE_VERB=1
 				cle reload
-				cle p3 '\w%cr:$(git symbolic-ref --short HEAD) %cW%>'
+				# add current branch name into prompt
+				cle p3 '\w%cy:$([ -d .git -o -d ../.git ] && git symbolic-ref --short HEAD) %cW%>'
 				CLE_DK=`dirname $CLE_DK`
 			fi
 		else
