@@ -371,28 +371,30 @@ HISTFILE=$CLE_D/.history-$CLE_USER
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%d%b %H:%M:%S "
 
-# load config and custom tweaks
-_clexe $CLE_CF || { _clebanner;_defcf;_savecf;}
+# custom tweaks
 _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
-
-[ $CLE_1 ] && cat <<-EOT
-$CT_w It seems you started CLE issuing '. $CLE_RC'
- Since this is the first run, consider setup in your profile.
- Following command will hook CLE in $HOME/.bashrc
-$CT_L    cle deploy$CT_N
-EOT
 
 # load modules from .cle folder
 for _I in $CLE_D/.cle/mod-*;do
 	_clexe $_I
 done
 
-_setwt
+# prompt init
+_clexe $CLE_CF || { _clebanner;_defcf;_savecf;}
 _setp
+_setwt
 
 # enhance path with user's own bin
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
+
+[ $CLE_1 ] && cat <<-EOT
+ It seems you started CLE issuing '. $CLE_RC'
+ Since this is the first run, consider setup in your profile.
+ Following command will hook CLE in $HOME/.bashrc:
+$CT_L	cle deploy
+
+EOT
 
 ##
 ## CLE command & control:
