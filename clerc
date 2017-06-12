@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-09 (RedH)
+#* version: 2017-06-12 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -49,7 +49,7 @@ export CLE_USER=${CLE_USER:-$USER}
 [ "$1" ] && { CLE_USER=$1; exec `command which bash` --rcfile $CLE_RC;}
 
 # where in the deep space is CLE growing
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/RedH
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # execute script and log its filename into CLE_EXE
@@ -473,15 +473,12 @@ cle () {
 		cle mod avail;;
 	env)	## cle env            -- print CLE_* variables
 		set | grep ^CLE_.*=;;
-	readme) ## cle readme         -- download and show README file
-		curl -k $CLE_SRC/README.md | mdfilter |less -r;;
-	man)	## cle man            -- download and show HOWTO file
-		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r;;
-	doc)	DD=`curl -k $CLE_SRC/index.md`
-		[[ $DD =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
+	doc)	## cle doc            -- show documentation
+		I=`curl -k $CLE_SRC/index.md`
+		[[ $I =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
 		PS3="$CT_w doc #"
-		select D in $DD; do
-			curl -k $CLE_SRC/$D | mdfilter |less -r; break
+		select C in $I; do
+			curl -k $CLE_SRC/$C | mdfilter |less -r; break
 		done;;
 	help)	## cle help [fnc]     -- show help
 		# double hash denotes help content
