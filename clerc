@@ -477,6 +477,12 @@ cle () {
 		curl -k $CLE_SRC/README.md | mdfilter |less -r;;
 	man)	## cle man            -- download and show HOWTO file
 		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r;;
+	doc)	DD=`curl -k $CLE_SRC/index.md`
+		[[ $DD =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
+		PS3="$CT_w doc #"
+		select D in $DD; do
+			curl -k $CLE_SRC/$D | mdfilter |less -r; break
+		done;;
 	help)	## cle help [fnc]     -- show help
 		# double hash denotes help content
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC;;
