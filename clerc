@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-12 (RedH)
+#* version: 2017-06-13 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -279,10 +279,9 @@ aa () {
 	local ABK=$CLE_ALIASES.back TAL=$CLE_ALIASES.edit
 	case "$1" in
 	"")	## aa         -- show aliases
-		alias;;
+                alias|sed "s/^alias \(.\+\)='\(.\+\)'/$CT_w\1$CT_N\t\2/";;
 	s)	## aa s       -- save current aliases
-		alias
-		ask Save aliases? || return
+		alias;ask Save aliases? || return
 		cp $CLE_ALIASES $ABK
 		alias >$CLE_ALIASES
 		printb Saved to file: $CLE_ALIASES
@@ -297,15 +296,21 @@ aa () {
 		mv $TAL $CLE_ALIASES
 		aa l
 		printb Backup in: $ABK;;
-	*)	
-		echo unimplemented: aa $1 $2
-		cle help aa
+	*)	cle help aa
+		return 1
 	esac
 }
 
 ##
-## History management
-## ------------------
+## History workarounds
+## -------------------
+## h          -- bash 'history' wrapper
+h () (
+	history $*|while read N D T C;do
+		echo "$CT_B$N$CT_N $D $T $CT_w$C$CT_N"
+	done
+)
+
 hh () {
 	case $1 in
 	"")	## hh         -- just print history
@@ -477,8 +482,8 @@ cle () {
 		I=`curl -k $CLE_SRC/index.md`
 		[[ $I =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
 		PS3="$CT_w doc #"
-		select C in $I; do
-			curl -k $CLE_SRC/$C | mdfilter |less -r; break
+		select C in $I;do
+			curl -k $CLE_SRC/$C |mdfilter|less -r; break
 		done;;
 	help)	## cle help [fnc]     -- show help
 		# double hash denotes help content
