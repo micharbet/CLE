@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-13 (RedH)
+#* version: 2017-06-15 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -217,6 +217,12 @@ _clepmt () {
 	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
 	# window title
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
+	# rich history
+	_H=`history 1`
+	if [ "$_H" != "$_HO"  -a -n "$_HO" ];then
+		echo "$_H" | { read N D T C; echo "$D $T $CLE_USER-$$ $_E $PWD $C" >>$CLE_HIST;}
+	fi
+	_HO=$_H
 }
 PROMPT_COMMAND=_clepmt
 
@@ -269,8 +275,8 @@ _defalias () {
 - () { cd -;}
 
 ##
-## Alias management
-## ----------------
+## Alias management:
+## -----------------
 CLE_ALIASES=$CLE_D/.aliases-$CLE_USER # personalized aliases
 _clexe $CLE_ALIASES
 _defalias
@@ -302,26 +308,45 @@ aa () {
 }
 
 ##
-## History workarounds
-## -------------------
-## h          -- bash 'history' wrapper
+## History workarounds:
+## --------------------
+HISTFILE=$CLE_D/.history-$CLE_USER
+[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
+HISTCONTROL=ignoredups
+HISTTIMEFORMAT="%Y-%m-%d %T "
+HISTIGNORE="h:h *:hh*:aa*:l:l[alst]:pwd:cd:scrn"
+CLE_HIST=$CLE_D/.history-ALL
+
+## h               -- bash 'history' wrapper
 h () (
 	history $*|while read N D T C;do
 		echo "$CT_B$N$CT_N $D $T $CT_w$C$CT_N"
 	done
 )
 
-hh () {
+## hh [opt] [srch] -- rich history viewer
+hh () (
+	while getopts "cs" O;do
+		case $O in
+		s) ONLY0=1;; ## hh -s           -- print successful commands only
+		c) ONLYC=1;; ## hh -c           -- show just commands
+	esac;done
+	shift $((OPTIND-1))
 	case $1 in
-	"")	## hh         -- just print history
-		history;;
+	"")	## hh [opt]        -- no search; print recent 100 items
+		tail -100 $CLE_HIST;;
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
-		## hh number  -- print last N entries
-		history $1;;
-	*)	## hh string  -- search in history
-		history | grep -i $1
-	esac
-}
+		## hh [opt] number -- find last N entries
+		tail -$1 $CLE_HIST;;
+	*)	## hh [opt] string -- search in history
+		grep $1 $CLE_HIST
+	esac | while read D T U E P C;do
+	 [ $E != 0 -a "$ONLY0" ] && continue
+	 [ $E = 0 ] && EE=$CT_g$E || EE=$CT_r$E
+	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
+	 	echo "$D $T $CT_b$U $EE $CT_N$P $CT_w$C$CT_N"
+	done
+)
 
 ##
 ## Session wrappers:
@@ -336,7 +361,7 @@ _clepak () (
 	tar chzf - $RCS | base64 | tr -d '\n\r '
 )
 
-## ssg [user@]hostname  -- access remote system and take CLE along
+## ssg [user@]hostname -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
@@ -347,12 +372,12 @@ ssg () (
 		exec bash --rcfile .clerc-remote-$CLE_USER"
 )
 
-## sudd [username]      -- sudo wrapper; root is the default account
+## sudd [username]     -- sudo wrapper; root is the default account
 sudd () (
 	sudo -i -u ${1:-root} $BASH $CLE_RC $CLE_USER
 )
 
-## suu [username]       -- su wrapper
+## suu [username]      -- su wrapper
 suu () (
 	if [[ $OSTYPE =~ bsd ]];then
 		su -l ${1:-root} $CLE_RC $CLE_USER
@@ -361,20 +386,20 @@ suu () (
 	fi
 )
 
-## kksu [username]      -- ksu wrapper
+## kksu [username]     -- ksu wrapper
 kksu () (
 	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
 )
 
-# default shell settings
+# default settings
 export EDITOR=vi
 export PAGER="less -s"
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
-HISTFILE=$CLE_D/.history-$CLE_USER
-[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
-HISTCONTROL=ignoredups
-HISTTIMEFORMAT="%d%b %H:%M:%S "
+
+# session record
+TTY=`tty|sed -e 's./\|dev..g'`
+date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [${STY:-${SSH_CONNECTION:-$CLE_RC}}]" >>$CLE_HIST
 
 # custom tweaks
 _clexe $CLE_D/.clerc-local
