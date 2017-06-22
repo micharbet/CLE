@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-15 (RedH)
+#* version: 2017-06-22 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -390,6 +390,53 @@ suu () (
 kksu () (
 	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
 )
+
+## scrn [-r]       -- gnu screen wrapper with list of active sessions to join
+##                    use -r to take control instead of share session
+scrn () (
+	# obtain screens list
+	SCRS=`screen -ls|sed -n "s/^[[:space:]]\+\([0-9]\+\..\+\)/\1/p"|tr " \t" "-"`
+	if [ -n "$SCRS" ];then
+		# join or take control
+		[ "$1" = "-r" ] && SW="-DR" || SW="-x"
+		[ $SW = -x ] && JR=join || JR="take control"
+		printb ${CT_U}Current sessions:
+		PS3="$CT_w choose # to $CT_W$JR$CT_w or <space> for new: $CT_N"
+		select S in $SCRS;do
+			[ $REPLY ] || break
+			if [ $S ];then
+				SS=`echo $S|cut -d- -f1`
+				date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [screen $SW $SS]" >>$CLE_HIST
+				screen -S $SS -X echo "$CLE_USER is joining"
+				exec screen $SW $SS
+			fi
+		done
+	fi
+	# start new session
+	SCF=$CLE_D/.screenrc-$CLE_USER
+	SN=$TTY.$CLE_USER
+	date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [screen -S $SN]" >>$CLE_HIST
+	_scrc >$SCF
+	screen -c $SCF -S $SN -t $USER bash --rcfile $CLE_RC
+)
+
+# screenrc generator
+_scrc () {
+cat <<-EOS
+	altscreen on
+	autodetach on
+	# enables shift-PgUp/PgDn
+	termcapinfo xterm* ti@:te@
+	# change window with ctrl-left/right
+	bindkey "^[[1;5D" prev
+	bindkey "^[[1;5C" next
+	defscrollback 3000
+	hardstatus alwayslastline 
+	hardstatus string '%{= Kk} %-w%{+u KC}%n %t%{-u Kk}%+w %-=%{KG}$CLE_THN%{Kg} %c'
+	bind c screen -t $USER /bin/bash -rcfile \$CLE_RC
+	source $HOME/.screenrc
+EOS
+}
 
 # default settings
 export EDITOR=vi
