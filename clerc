@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-22 (RedH)
+#* version: 2017-06-23 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -328,25 +328,30 @@ h () (
 ## hh [opt] [srch] -- rich history viewer
 hh () (
 	unset IFS
-	while getopts "cs" O;do
+	while getopts "cst" O;do
 		case $O in
 		s) ONLY0=1;; ## hh -s           -- print successful commands only
 		c) ONLYC=1;; ## hh -c           -- show just commands
+		t) THIS=$CLE_USER-$$ ## hh -t           -- commands from current session
 	esac;done
 	shift $((OPTIND-1))
-	case $1 in
+	grep "$THIS" $CLE_HIST | case $1 in
 	"")	## hh [opt]        -- no search; print recent 100 items
-		tail -100 $CLE_HIST;;
+		tail -100 ;;
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		## hh [opt] number -- find last N entries
-		tail -$1 $CLE_HIST;;
+		tail -$1;;
 	*)	## hh [opt] string -- search in history
-		grep $1 $CLE_HIST
+		grep $1
 	esac | while read D T U E P C;do
 	 [ $E != 0 -a "$ONLY0" ] && continue
-	 [ $E = 0 ] && EE=$CT_g$E || EE=$CT_r$E
+	 case $E in
+	 0)	EE=$CT_g;;
+	 @)	EE=$CT_c;;
+	 *)	EE=$CT_r
+	 esac
 	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
-	 	echo "$D $T $CT_b$U $EE $CT_N$P $CT_w$C$CT_N"
+	 	echo "$D $T $CT_b$U $EE$E $CT_N$P $CT_w$C$CT_N"
 	done
 )
 
@@ -487,21 +492,21 @@ cle () {
 		return $?
 	fi
 	case "$C" in
-	color)	## cle color COLOR    -- set prompt color
+	color)	## cle color COLOR -- set prompt color
 		I=$CLE_PCOLOR
 		CLE_PCOLOR=$1
 		_setp || CLE_PCOLOR=$I;;
-	p?)	## cle p0-p3 [string] -- show/define prompt parts
+	p?)	## cle p0-p3 [str] -- show/define prompt parts
 		I=CLE_P${C:1:1}
 		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
 		_setp;;
-	time)	## cle time [off]     -- toggle server time in prompt
+	time)	## cle time [off]  -- toggle server time in prompt
 		[ "$1" = off ] && CLE_P0=%e || CLE_P0='%e \A'
 		_setp;;
-	title)	## cle title [off]    -- toggle window title
+	title)	## cle title [off] -- toggle window title
 		[ "$1" = off ] && CLE_WT='' || _setwt;;
 	deploy)
-		## cle deploy         -- hook CLE into user's profile
+		## cle deploy      -- hook CLE into user's profile
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
 		NC='$HOME/.clerc'
@@ -514,7 +519,7 @@ cle () {
 			printb Adding lines to your .bashrc:
 			echo -e "\n$I\n[ -f $NC ] && . $NC\n" | tee -a $BRC
 		fi;;
-	update) ## cle update         -- install fresh version of CLE
+	update) ## cle update      -- install fresh version of CLE
 		if [[ $CLE_RC =~ remote ]];then
 			printb CLE in remote session, update is pointless.
 			return 1
@@ -533,14 +538,14 @@ cle () {
 		mv $NC $CLE_RC
 		cle reload
 		printb New CLE activated, backup saved here: $BRC;;
-	reload) ## cle reload         -- reload CLE
+	reload) ## cle reload      -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC
 		echo CLE $CLE_VER;;
-	reset)	## cle reset          -- reset configuration
+	reset)	## cle reset       -- reset configuration
 		rm -f $CLE_CF
 		cle reload;;
-	mod)	## cle mod            -- cle module management
+	mod)	## cle mod         -- cle module management
 		# this is just a fallback to initialize modularity
 		# downloaded mod-mod overrides this code 
 		ask Activate CLE modules? || return
@@ -550,16 +555,16 @@ cle () {
 		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1;}
 		_clexe $MM
 		cle mod avail;;
-	env)	## cle env            -- print CLE_* variables
+	env)	## cle env         -- print CLE_* variables
 		set | grep ^CLE_.*=;;
-	doc)	## cle doc            -- show documentation
+	doc)	## cle doc         -- show documentation
 		I=`curl -k $CLE_SRC/index.md`
 		[[ $I =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
 		PS3="$CT_w doc #"
 		select C in $I;do
 			curl -k $CLE_SRC/$C |mdfilter|less -r; break
 		done;;
-	help)	## cle help [fnc]     -- show help
+	help)	## cle help [fnc]  -- show help
 		# double hash denotes help content
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC;;
 	"")	_clebanner
