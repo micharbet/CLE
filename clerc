@@ -219,6 +219,7 @@ _clepmt () {
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# rich history
 	_H=`history 1`
+	unset IFS
 	if [ "$_H" != "$_HO"  -a -n "$_HO" ];then
 		echo "$_H" | { read N D T C; echo "$D $T $CLE_USER-$$ $_E $PWD $C" >>$CLE_HIST;}
 	fi
@@ -326,6 +327,7 @@ h () (
 
 ## hh [opt] [srch] -- rich history viewer
 hh () (
+	unset IFS
 	while getopts "cs" O;do
 		case $O in
 		s) ONLY0=1;; ## hh -s           -- print successful commands only
@@ -361,7 +363,7 @@ _clepak () (
 	tar chzf - $RCS | base64 | tr -d '\n\r '
 )
 
-## ssg [user@]hostname -- access remote system and take CLE along
+## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
@@ -372,12 +374,12 @@ ssg () (
 		exec bash --rcfile .clerc-remote-$CLE_USER"
 )
 
-## sudd [username]     -- sudo wrapper; root is the default account
+## sudd [user]     -- sudo wrapper; root is the default account
 sudd () (
 	sudo -i -u ${1:-root} $BASH $CLE_RC $CLE_USER
 )
 
-## suu [username]      -- su wrapper
+## suu [user]      -- su wrapper
 suu () (
 	if [[ $OSTYPE =~ bsd ]];then
 		su -l ${1:-root} $CLE_RC $CLE_USER
@@ -386,13 +388,13 @@ suu () (
 	fi
 )
 
-## kksu [username]     -- ksu wrapper
+## kksu [user]     -- ksu wrapper
 kksu () (
 	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
 )
 
-## scrn [-r]       -- gnu screen wrapper with list of active sessions to join
-##                    use -r to take control instead of share session
+## scrn [-r]       -- gnu screen wrapper, lists active sessions to attach
+##                    use -r to take control instead of join
 scrn () (
 	# obtain screens list
 	SCRS=`screen -ls|sed -n "s/^[[:space:]]\+\([0-9]\+\..\+\)/\1/p"|tr " \t" "-"`
