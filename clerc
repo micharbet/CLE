@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-23 (RedH)
+#* version: 2017-06-27 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -286,7 +286,7 @@ aa () {
 	local ABK=$CLE_ALIASES.back TAL=$CLE_ALIASES.edit
 	case "$1" in
 	"")	## aa         -- show aliases
-                alias|sed "s/^alias \(.\+\)='\(.\+\)'/$CT_w\1$CT_N\t\2/";;
+                alias|sed "s/^alias \(.*\)='\(.*\)'/$CT_w\1$CT_N	\2/";;
 	s)	## aa s       -- save current aliases
 		alias;ask Save aliases? || return
 		cp $CLE_ALIASES $ABK
@@ -337,7 +337,7 @@ hh () (
 	shift $((OPTIND-1))
 	grep "$THIS" $CLE_HIST | case $1 in
 	"")	## hh [opt]        -- no search; print recent 100 items
-		tail -100 ;;
+		tail -100;;
 	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		## hh [opt] number -- find last N entries
 		tail -$1;;
@@ -351,7 +351,7 @@ hh () (
 	 *)	EE=$CT_r
 	 esac
 	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
-	 	echo "$D $T $CT_b$U $EE$E $CT_N$P $CT_w$C$CT_N"
+		echo "$D $T $CT_b$U $EE$E $CT_N$P $CT_w$C$CT_N"
 	done
 )
 
@@ -373,7 +373,7 @@ ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
 	`command which ssh` -t $* "
-		[ -w $HOME ] || { mkdir /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
+		touch \$HOME || { mkdir /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
 		echo -n $C64|base64 --decode |tar xzf -;
 		export CLE_USER=$CLE_USER;
 		exec bash --rcfile .clerc-remote-$CLE_USER"
@@ -505,8 +505,7 @@ cle () {
 		_setp;;
 	title)	## cle title [off] -- toggle window title
 		[ "$1" = off ] && CLE_WT='' || _setwt;;
-	deploy)
-		## cle deploy      -- hook CLE into user's profile
+	deploy) ## cle deploy      -- hook CLE into user's profile
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
 		NC='$HOME/.clerc'
