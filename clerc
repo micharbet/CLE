@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-27 (RedH)
+#* version: 2017-06-28 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -51,6 +51,7 @@ export CLE_USER=${CLE_USER:-$USER}
 # where in the deep space is CLE growing
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/RedH
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
+dn=/dev/null
 
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
@@ -80,8 +81,8 @@ CLE_CF=${CLE_CF:-$CLE_D/.clecf-$CLE_USER}
 CLE_RCU=$CLE_DRC/.cleusr-$CLE_USER
 
 # tweaked hostname: remove domain, leave subdomains
-CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'`
-CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
+CLE_THN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
+CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # color table
 CT_N=`tput sgr0`
@@ -92,7 +93,7 @@ CT_RV=`tput rev`
 _I=0; for _N in k r g y b m c w; do
         _C=`tput setaf $_I`
         declare CT_$_N=$CT_N$_C
-        declare CT_$(echo $_N|tr a-z A-Z)=$CT_L$_C #bold
+        declare CT_$(tr a-z A-Z <<<$_N)=$CT_L$_C #bold
         ((_I+=1))
 done
 CT_E=`tput setab 1;tput setaf 7` # err highlight
@@ -143,19 +144,21 @@ _defcf () {
 
 # save configuration
 _savecf () {
-	echo "# $CLE_USER $CLE_VER"
-	echo CLE_PCOLOR=$CLE_PCOLOR
-	echo CLE_P0=\'$CLE_P0\'
-	echo CLE_P1=\'$CLE_P1\'
-	echo CLE_P2=\'$CLE_P2\'
-	echo CLE_P3=\'$CLE_P3\'
+	cat <<-EOC
+	# $CLE_USER $CLE_VER
+	CLE_PCOLOR=$CLE_PCOLOR
+	CLE_P0='$CLE_P0'
+	CLE_P1='$CLE_P1'
+	CLE_P2='$CLE_P2'
+	CLE_P3='$CLE_P3'
+	EOC
 } >$CLE_CF
 
 # prompt enhancements
 _pesc () (
 	PP=">" # I hate $ in prompt
 	[ $UID = 0 ] && PP="#"
-	echo $*|sed \
+	sed <<<$*\
 	 -e "s/%i/$CLE_IP/"\
 	 -e "s/%h/$CLE_THN/"\
 	 -e "s/%u/$CLE_USER/"\
@@ -221,7 +224,7 @@ _clepmt () {
 	_H=`history 1`
 	unset IFS
 	if [ "$_H" != "$_HO"  -a -n "$_HO" ];then
-		echo "$_H" | { read N D T C; echo "$D $T $CLE_USER-$$ $_E $PWD $C" >>$CLE_HIST;}
+		{ read N D T C; echo "$D $T $CLE_USER-$$ $_E $PWD $C" >>$CLE_HIST;} <<<$_H
 	fi
 	_HO=$_H
 }
@@ -244,10 +247,8 @@ _defalias () {
 	## ls commands aliases: l ll la lt llr l. lld
 	case $OSTYPE in
 	linux*) alias ls='ls --color=auto';;
-	darwin*)
-		export CLICOLOR=1
-		export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
-	*bsd*) alias ls='ls -G';;
+	darwin*) export CLICOLOR=1;export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
+	FreeBSD*) alias ls='ls -G';;
 	*) alias ls='ls -F' # at least some file type indication
 	esac
 	alias l='ls -l'
@@ -373,8 +374,8 @@ ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
 	`command which ssh` -t $* "
-		touch \$HOME || { mkdir /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
-		echo -n $C64|base64 --decode |tar xzf -;
+		touch \$HOME 2>$dn || { mkdir -p /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
+		echo -n $C64|base64 --decode|tar xzf - 2>$dn;
 		export CLE_USER=$CLE_USER;
 		exec bash --rcfile .clerc-remote-$CLE_USER"
 )
@@ -402,7 +403,7 @@ kksu () (
 ##                    use -r to take control instead of join
 scrn () (
 	# obtain screens list
-	SCRS=`screen -ls|sed -n "s/^[[:space:]]\+\([0-9]\+\..\+\)/\1/p"|tr " \t" "-"`
+	SCRS=`screen -ls|sed -n "s/^[[:space:]]*\([0-9]*\..*\)/\1/p"|tr " \t" "-"`
 	if [ -n "$SCRS" ];then
 		# join or take control
 		[ "$1" = "-r" ] && SW="-DR" || SW="-x"
@@ -440,7 +441,7 @@ cat <<-EOS
 	defscrollback 3000
 	hardstatus alwayslastline 
 	hardstatus string '%{= Kk} %-w%{+u KC}%n %t%{-u Kk}%+w %-=%{KG}$CLE_THN%{Kg} %c'
-	bind c screen -t $USER /bin/bash -rcfile \$CLE_RC
+	bind c screen -t $USER bash -rcfile $CLE_RC
 	source $HOME/.screenrc
 EOS
 }
@@ -452,7 +453,7 @@ PROMPT_DIRTRIM=2
 shopt -s checkwinsize
 
 # session record
-TTY=`tty|sed -e 's./\|dev..g'`
+TTY=`tty|sed 's;[/dev];;g'`
 date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [${STY:-${SSH_CONNECTION:-$CLE_RC}}]" >>$CLE_HIST
 
 # custom tweaks
@@ -487,7 +488,7 @@ cle () {
 	local C I S1 S2 MM BRC NC
 	# find & run enhancement _cle_* function
 	C=$1;shift
-	if declare -f _cle_$C >/dev/null;then
+	if declare -f _cle_$C >$dn;then
 		_cle_$C $*
 		return $?
 	fi
