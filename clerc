@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-28 (RedH)
+#* version: 2017-06-29 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -43,7 +43,8 @@ CLE_DRC=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_DRC/`basename $CLE_RC`
 
 # who I'm
-export CLE_USER=${CLE_USER:-$USER}
+_C=`sed -n 's/.*-\(.*\)/\1/p' <<<$CLE_RC`
+export CLE_USER=${CLE_USER:-${_C:-$USER}}
 
 # session startup for su*
 [ "$1" ] && { CLE_USER=$1; exec `command which bash` --rcfile $CLE_RC;}
@@ -51,7 +52,6 @@ export CLE_USER=${CLE_USER:-$USER}
 # where in the deep space is CLE growing
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/RedH
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
-dn=/dev/null
 
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
@@ -136,6 +136,7 @@ _setwt () {
 # default config
 _defcf () {
 	CLE_PCOLOR=marley
+	[ $UID = 0 ] && CLE_PCOLOR=red
 	CLE_P0='%e \A'
 	CLE_P1='\u'
 	CLE_P2='%h'
@@ -159,10 +160,9 @@ _pesc () (
 	PP=">" # I hate $ in prompt
 	[ $UID = 0 ] && PP="#"
 	sed <<<$*\
-	 -e "s/%i/$CLE_IP/"\
-	 -e "s/%h/$CLE_THN/"\
-	 -e "s/%u/$CLE_USER/"\
-	 -e "s/%e/\\\$_E/"\
+	 -e "s/%i/$CLE_IP/g"\
+	 -e "s/%h/$CLE_THN/g"\
+	 -e "s/%u/$CLE_USER/g"\
 	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g"\
 	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
 	 -e "s/%>/$PP/"
@@ -204,8 +204,7 @@ _setp () {
 		return 2 
 	esac
 	# prepare prompt strings
-	_PS1="\[$C0\]`_pesc $CLE_P1` \[$C1\]`_pesc $CLE_P2` \[$C2\]`_pesc $CLE_P3`"
-	_PS0=`_pesc $CLE_P0`
+	_PS1=`_pesc "\[$CT_K\]$CLE_P0 \[$C0\]$CLE_P1 \[$C1\]$CLE_P2 \[$C2\]$CLE_P3 \[$CT_N\]"`
 	PS2="\[$C0\] >>>\[$CT_N\] "
 	_savecf
 }
@@ -214,10 +213,9 @@ _setp () {
 _clepmt () {
 	_E=$? # save return code
 	local EE
-	# highlight error code only in P0
+	# highlight error code
 	[ $_E = 0 ] && EE=[0] || EE="\[$CT_E\][$_E]\[$CT_N$CT_K\]"
-	# final prompt composition
-	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
+	PS1="${_PS1//'%e'/$EE}"
 	# window title
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# rich history
@@ -356,6 +354,11 @@ hh () (
 	done
 )
 
+# rich history record
+_rhlog () {
+	date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [$*]" >>$CLE_HIST
+}
+
 ##
 ## Session wrappers:
 ## -----------------
@@ -374,9 +377,8 @@ ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
 	`command which ssh` -t $* "
-		touch \$HOME 2>$dn || { mkdir -p /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
-		echo -n $C64|base64 --decode|tar xzf - 2>$dn;
-		export CLE_USER=$CLE_USER;
+		[ -w \$HOME ] || { mkdir -p /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
+		echo -n $C64|base64 --decode|tar xzf -;
 		exec bash --rcfile .clerc-remote-$CLE_USER"
 )
 
@@ -414,7 +416,7 @@ scrn () (
 			[ $REPLY ] || break
 			if [ $S ];then
 				SS=`echo $S|cut -d- -f1`
-				date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [screen $SW $SS]" >>$CLE_HIST
+				_rhlog screen $SW $SS
 				screen -S $SS -X echo "$CLE_USER is joining"
 				exec screen $SW $SS
 			fi
@@ -423,7 +425,7 @@ scrn () (
 	# start new session
 	SCF=$CLE_D/.screenrc-$CLE_USER
 	SN=$TTY.$CLE_USER
-	date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [screen -S $SN]" >>$CLE_HIST
+	_rhlog screen -S $SN
 	_scrc >$SCF
 	screen -c $SCF -S $SN -t $USER bash --rcfile $CLE_RC
 )
@@ -454,7 +456,7 @@ shopt -s checkwinsize
 
 # session record
 TTY=`tty|sed 's;[/dev];;g'`
-date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [${STY:-${SSH_CONNECTION:-$CLE_RC}}]" >>$CLE_HIST
+_rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
 
 # custom tweaks
 _clexe $CLE_D/.clerc-local
@@ -488,7 +490,7 @@ cle () {
 	local C I S1 S2 MM BRC NC
 	# find & run enhancement _cle_* function
 	C=$1;shift
-	if declare -f _cle_$C >$dn;then
+	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
 		return $?
 	fi
