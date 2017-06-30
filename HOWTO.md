@@ -29,7 +29,7 @@ Prompt string has following parts and default values:
   and RGBCMYKW, where capitals denotes bright version of the colour. Those
   three letters correspond with prompt parts P1-P3. Colour of P0 is always gray.
 
-- `cle p0|p1|p2|p3` 'prompt string'
+- `cle p0|p1|p2|p3 ['prompt string']`
   Set P0-P3 strings, use either regular strings and special options. Special
   options cover all basic options described in `man bash` like e.g. \w, \u, \A,
   etc. and the set is enhanced by following CLE defined options
@@ -55,11 +55,10 @@ Prompt string has following parts and default values:
           string: `VARIABLE=its_value`, so showing also the name which may be
           convenient. Note that the value alone can be placed by simple $VAR.
 
-  Issuing command `cle p0` (or p1 .. p3 respectively) without string resets
-  the default value of give prompt part.
+  Without 'prompt string' current value of respecive part is printed.
 
-- `cle time on|off`
-  Turns server time in P0 on/off
+- `cle time [off]`
+  Turns server time in P0 off or on if no parameter is given.
 
 - `cle reset`
   Resets prompt settings to default values including color to 'marley' style
@@ -67,7 +66,7 @@ Prompt string has following parts and default values:
 All those prompt settings are immediately applied and stored in configuration
 file .clecf-$CLE_USER.
 
-- `cle title on|off`
+- `cle title [off]`
   This in fact has nothing with prompt settings. Sometimes it can be helplful
   to turn off window titling feature. It should be done for console
   automatically however in case of terminal without this capabilty some strange
@@ -93,16 +92,22 @@ to remote host and runs bash session with transferred environment. The
 environment resource file is in home directory named .clerc-remote-$CLE_USER
 where CLE_USER is first CLE username, typically logname from workstation.
 
-- `ssgt[account@]remote.host`
-This dous almost the same thing like ssg but places resource files into /tmp.
-You might find systems without your $HOME. however, you can run CLE anyway!
-
 - `suu [account]`
 - `sudd [account]`
 - `kksu [account]`
 Those are wrappers to su/sudo/ksu commands. Use appropriate one to switch user
 context for your particular purpose. CLE is not transferred but the current
 .clerc-YOURNAME is re-used for switched session.
+
+- `scrn [-r]`
+GNU screen requires this wrappaer mainly on remote sessions, where CLE is not
+deployed. As added value screen is started with newly generated configuration
+file .screenrc-$CLE_USER. This configuration contains nice status line with
+list of currently running screens and allows to switch between them with simple
+shortcut Ctrl-Left/Right arrow. Also before starting the screen itself it
+check if there are sessions already running. Those are offered to join and
+cooperate in shared mode or alternatively you can take control over such
+sessions if you issue 'scrn -r'
 
 Remember, what is transferred from workstation is '.clerc' file. Configuration
 remains stored locally on machine and in separated file for each user. This
@@ -124,6 +129,8 @@ Use known bash command `alias` and CLE function `aa` in following way:
 `alias something='command --opt1 --opt2'`
 `unalias removethis`
 `aa s`
+Command `aa` without any parameter show current alias set in nicer way than
+original built-in command.
 
 Now 'something' is saved into alias store file and recalled on all future CLE
 startups. The second alias 'removethis' is deleted.
@@ -141,25 +148,62 @@ damaged, etc.
 
 ## History management
 
-Command `hh` without parameters shows complete history list, exactly like
-command `history`. Other functionalities in this version:
+CLE intorduces persisten rich history. Persistent means that the record are
+not deleted. The file can grow to megabytes and holds complete history over
+the time. The word 'rich' points to more information contained in each
+history record. this history file exists besides 'regular' file. So in fact
+there are two history files:
+1. convenitional bash managed but personalized in CLE, .history-$CLE_USER
+2. rich history file .history-ALL
+Note that .history-ALL is not personalized and stores record from all sessions
+and from all users (e.g. inenvironments where more real users access root's
+account). This rich history file cosist of one-per-line record in following
+format:
+
+```
+  2017-06-30 14:31:26 mich-22793 0 /home/mich/d/CLE ls -al
+    |          |       |         | |                |
+    |          |       |         | |                issued command
+    |          |       |         | working directory
+    |          |       |         return code of the command
+    |          |       session ID ( $CLE_USER-shellpid
+    date and time
+```
+
+Special record appears when session is started. Those  are denoted with '@'
+at the place of return code. In that case working directory contains terminal
+name and instead of command there is additional information in square brackets.
+
 
 ### Searching through history
 
--`hh number`    show last number of commands
--`hh string`    searches history list for given string using grep
+Function `h` is simple wrapper for regular 'history' command. Basically it
+just colorizes it's output highliting command number and the command itself.
+
+New command `hh` works with rich history. When issued without arguments
+it prints out 100 recent records. However you can alter it's behavior or in
+other words filter the output using options and arguments. So use:
+- `hh string` to grep search for given string in rich history file. The grep
+  is applied to whole file, so you can search for specific date/time, session
+  identification, you can use regular expressions, etc.
+- 'hh number` prints out recent 'number' records. Note the number can be in
+  rane 1 .. 999.
+
+Options allowed in 'hh' are as follows:
+`-t` search only commands issued in current session
+`-s` filters only succesful commands (return code zero)
+`-c` strips out additional information and output just commands
+
+Examples:
+`hh -sc tar` - this prints out only successful 'tar' commands without rich
+               information, ready for copy/paste.
+`hh -s 20`   - shows successful commands among recent 20 records
+`hh -t tar`  - search for all (successful or not) tar issued in this terminal
+`hh 06-24`   - search all commands issued on 24th June, regardless the year
 
 
-### Sharing history between sessions
 
--`hh shon`      turns on this feature, must bue issued on all terminals
-                If you want to share command line history by default,
-                place following line into .cleusr-YOURUSERNAME :
-                      `CLE_HSH=1`
-                Sharing doesn't work over different remote sessions, of course.
-
-
-## Updating
+## Keeping CLE fresh
 `cle update`
 Downloads most recent version of CLE from the original source. Changes can be
 reviewed before replacement. All steps must be acknowledged. Update is

@@ -1,13 +1,16 @@
 #   Command Live Environment
 ## _The shell improvements :-)_
 
-CLE contains following bash tweaks:
- - colorized **prompt** including server time and exit code highlight
- - personalized and customizable **aliases**
- - **history** tweaks, timestamps
- - shell options
- - configuration with immediate effect, no restarts
- - seamless transfer of the environment from workstation to remote sessions
+CLE enhances bash with following tweaks:
+ - colorized and tweakable **prompt** string including server time and exit
+   code highlight
+ - save/edit and reuse **aliases** in easy way
+ - rich **history** with timestamps, return codes and additional information
+ - super easy installation ONLY on your workstation
+ - **seamless** transfer of the environment from workstation to remote
+   sessions without installation
+ - various shell options
+ - configuration from commandline with immediate effect, no restarts
  - self documenting feature
  - open framework for tweaks and further customization
  
@@ -41,14 +44,21 @@ seamlessly:
 
 ### suu, sudd, kksu utilities (su/sudo/ksu wrappers)
 
-Those wrappers starts CLE in different user's context.
-Without username the root is chosen by deafult, obviously.
+Those wrappers serve the same purpose like original su, sudo and ksu utilities
+however they add CLE to the sessions.
+
+
+### scrn - GNU screen wrapper
+
+This wrapper is workaround allowing starting CLE inside screen session. Added
+value here is configuration file with nice status line and switching between
+sessions with Ctrl-Left/Right.
 
 
 ### other utilities
 `aa` manges aliases
 
-`hh` makes history searches and sharing easier
+`hh` makes history searches easier
 
 `cle` the most important one - this is the command and control center
       of the environment
@@ -57,15 +67,19 @@ Without username the root is chosen by deafult, obviously.
 ## Compatibility
 
 CLE has been tested on various systems containing bash version 3.x and 4.x
-and different flavors of basic utilities (GNU vs. BSD)
-Those includes following:
+and different flavors of basic utilities (GNU vs. BSD) High attention was paid
+to write highly compatible code so some of nice features of bash4 couldn't be
+used. And, various flavor of 'sed' utility is another different story.
+
+Tested systems include following:
 - Linux Mint
 - Fedora 23+
 - RHEL 5 (bash v3)
 - RHEL 6
 - RHEL 7
 - NetBSD
-- OS X (bash v3 and BSD utilities)
+- FreeBSD
+- OS X
 - Android (some terminal software requires different tweaks, WIP) 
 
 It also works well with at least following terminal emulators:
@@ -75,6 +89,17 @@ It also works well with at least following terminal emulators:
 - rxvt
 - screen
 - tmux
+
+
+## Requirements
+
+Generaly basic OS installation should be sufficient. Some systems might however
+require to add missing utilities. Those really necessary are:
+- bash (yeah, minimal FreeBSD setup did't contain this!)
+- sed
+- base64
+- ssh (note, no scp required, e.g no openssh-clients on RHEL)
+- GNU screen (only if you want to use it with 'scrn' wrapper)
 
 
 ## Why 'CLE' and bit of history
