@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-29 (RedH)
+#* version: 2017-06-30 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -18,24 +18,27 @@
 # -builtin aliases and functions
 # -history tweaks (timestamps etc)
 #
-# Execute this file within your shell session
-# and integrate into your profile:
-# 
+# 1. execute this file within your shell session
+# 2. integrate into your profile:
 #	$ . clerc
 #	$ cle deploy
 #
 # -use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
 #  started without installation
 # -try suu/sudd (su/sudo wrappers) with same effect
-# -alter settings using 'cle' command
+# -work in gnu screen using 'scrn'
+# -alter settings with 'cle' command
 # -store and manage your aliases with 'aa' function
-# -use 'hh' function to ease history management
-# -built-in self documenting feature 'cle help'
+# -use 'h' as a shortcut to classic history
+# -check out rich history feature with 'hh'
+# -built-in documentation: 'cle help'
 # -update from GIT source
 
 # check running in interactive session otherwise skip all the tweaks
 # required for scp compattibility
 if [ -t 0 -a -z "$CLE_EXE" ];then
+
+# warning: magic inside!
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
@@ -178,15 +181,16 @@ _cle_e () {
 # prompt composer
 _setp () {
 	local C0 C1 C2 I II P0 
+	C2=$CT_L
 	case "$CLE_PCOLOR" in 
-	red)	C0=$CT_r;C2=$CT_R;;
-	green)	C0=$CT_g;C2=$CT_G;;
-	yellow)	C0=$CT_y;C2=$CT_Y;;
-	blue)	C0=$CT_b;C2=$CT_B;;
-	cyan)	C0=$CT_c;C2=$CT_C;;
-	magenta) C0=$CT_m;C2=$CT_M;;
+	red)	C0=$CT_R;C1=$CT_r;;
+	green)	C0=$CT_G;C1=$CT_g;;
+	yellow)	C0=$CT_Y;C1=$CT_y;;
+	blue)	C0=$CT_B;C1=$CT_b;;
+	cyan)	C0=$CT_C;C1=$CT_c;;
+	magenta) C0=$CT_M;C1=$CT_m;;
 	white|grey|gray) C0=$CT_N;C1=$CT_w;C2=$CT_W;;
-	bold)	C0=$CT_L;;
+	bold)	C0=$CT_N$CT_L;;
 	tricolora) C0=$CT_R;C1=$CT_B;C2=$CT_W;;
 	marley) # Bob Marley style :-) have a smoke and imagine...
 		C0=$CT_R;C1=$CT_Y;C2=$CT_G;;
@@ -453,6 +457,7 @@ export EDITOR=vi
 export PAGER="less -s"
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
+CDPATH=.:~
 
 # session record
 TTY=`tty|sed 's;[/dev];;g'`
@@ -580,5 +585,5 @@ cle () {
 # remove disturbing stuff
 unset SUDO_COMMAND _D _I _N _C
 fi
-# and that's all the magic :-)
+# that's all folks...
 
