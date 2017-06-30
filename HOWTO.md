@@ -126,7 +126,6 @@ enhancements. Some of them are system dependent - there are different options
 for colorful outputs in 'ls' etc. User can define it's own aliases and have
 them stored for future use.
 
-
 ### alias definition and save
 Use known bash command `alias` and CLE function `aa` in following way:
 `alias something='command --opt1 --opt2'`
@@ -138,11 +137,9 @@ original built-in command.
 Now 'something' is saved into alias store file and recalled on all future CLE
 startups. The second alias 'removethis' is deleted.
 
-
 ### Edit alias set
 `aa ed` function runs editor on current working alias set allowing more
 complex changes. Note that recent alias set is backed up.
-
 
 ### Reload aliases
 Use `aa l` in case of mischmatch, if working alias set has been unintentionally
@@ -177,9 +174,7 @@ Special record appears when session is started. Those  are denoted with '@'
 at the place of return code. In that case working directory contains terminal
 name and instead of command there is additional information in square brackets.
 
-
 ### Searching through history
-
 Function `h` is simple wrapper for regular 'history' command. Basically it
 just colorizes it's output highliting command number and the command itself.
 
@@ -204,6 +199,7 @@ Examples:
 `hh -t tar`  - search for all (successful or not) tar issued in this terminal
 `hh 06-24`   - search all commands issued on 24th June, regardless the year
 
+
 ## Searching for help
 
 CLE can assist you. There is help built-in script itself, issue `cle help` to
@@ -215,6 +211,7 @@ built-in function (mdfilter) hilighting formatted items.
 
 
 ## Keeping CLE fresh
+
 `cle update`
 Downloads most recent version of CLE from the original source. Changes can be
 reviewed before replacement. All steps must be acknowledged. Update is
