@@ -5,8 +5,11 @@ Issue following commands to first run and hook the environment into bash
 startup resource scripts.
 ```
 . clerc
-cle deploy user` or `cle deploy system
+cle deploy
 ```
+It is important to start the environment using a dot (ev. command 'source')
+to run it in current shell context. Do not make file 'clerc' executable.
+
 
 ## Prompting
 
@@ -77,13 +80,13 @@ file .clecf-$CLE_USER.
 
 Purpose of this environment is to be seamlessly transferrable from workstation
 to remote sessions without any installation. At the same time it allows
-different users to use same remote account with different custom settings
+different users to workon the same remote account with personalized settings
 and/or different CLE versions. This is useful in multi-admin environments. All
 users, even on the same machine and account are perfectly separated with help
 of variable $CLE_USER that is inherited over all sessions initiated from the
 workstation. At the same time, no default settings on the remote servers are
-altered so anybody who hates any change can still use old good ssh with its
-poor settings.
+altered so anybody who hates any change can still use old good ssh (su, sudo)
+into an account with its default/poor settings.
 
 Use following commands to initiate CLE sessions:
 - `ssg [account@]remote.host`
@@ -201,6 +204,14 @@ Examples:
 `hh -t tar`  - search for all (successful or not) tar issued in this terminal
 `hh 06-24`   - search all commands issued on 24th June, regardless the year
 
+## Searching for help
+
+CLE can assist you. There is help built-in script itself, issue `cle help` to
+extract those information. Basically they are contained in double-hashmark
+denoted comments. It's that somple. In case you need more use command `cle doc`
+that downoads documentation index from git source and offers files (like this
+one) through menu. Files are in .md (markdown) format and are filtered through
+built-in function (mdfilter) hilighting formatted items.
 
 
 ## Keeping CLE fresh
@@ -211,29 +222,26 @@ meaningful only on the account or machine where CLE has been deployed. On
 remote sessions it has just temporary effect.
 
 
-## Documentation
--`cle help [command]`
-  Prints out CLE's internal self-documentation strings.
-
--`cle readme`
-  Downloads docs from CLE source.
-
--`cle man`
-  Downloads and shows this file.
-
 ## Files
+
+Here comes list of files that plays various roles in the environment. Some
+of them are executed upon sartup, others are created to hold specific infos.
+
 - .clerc or .clerc-remote-$CLE_USER
   The CLE itself.
 
 - .clerc-local
-  Local tweak file, executed upon each CLE startup
+  Account's local tweak file
 
 - .cleusr-$CLE_USER
-  User's own tweak, executed upon CLE startup and also transferred along
-  with ssg/suu
+  User's own tweaks, executed upon CLE startup and also transferred along
+  with .clerc whem 
 
 - .history-$CLE_USER
-  Personal history file. History is enhanced with timestamps.
+  Personal history file, bash managed.
+
+- .history-ALL
+  Rich history file managed by CLE
 
 - .aliases-$CLE_USER
   Saved user's set of aliases.
@@ -249,30 +257,30 @@ named  obviously like $CLE_* There are some variables with shorter names like
 e.g color table ($CT_*). Those variables can be inspected using command
  `cle env`
 
-- CLE_RC       the CLE resource script itself
 - CLE_USER     original user who first initiated the environment. This value
-               is inherited over sessions. The most important variable here
-- CLE_CF       configuration file name, typically $HOME/.clecf-$CLE_USER
-- CLE_EXE      log and list of all files executed upon environment startup
-- CLE_VERSION  self descriptive
-- CLE_ALIASES  user's aliases store
-- CLE_PCOLOR   prompt color
-- CLE_P0 .. CLE_P3
-               prompt parts strings defined with `cle p0 .. cle p3` command
-- CLE_RCU      custom tweak file, typically $HOME/.cleusr-$CLE_USER if that
-               file exists
-- CLE_WTITLE   string to be terminal window title
-- CLE_SRC      web store of CLE for updates and documentation downloads
-- CLE_DIR      directory with configuration files
-- CLE_DRC      directory containing resource files
+               is inherited over all local and remote sessions. The most
+               important variable here
+- CLE_D        directory with configuration files
+- CLE_DRC      directory containing resource files might differ from $CLE_D
                Note, DIR and DRC are usually $HOME but not necesarily. they may
                differ in case $HOME does't exist and/or on local 'su' sessions
-- CLE_TODIR    if this value is set before remote ssg session starts, it causes
-               the environment will be placed to other path than $HOME. This is
-               useful on systems without home directories.
+               Also: CLE_D must be writable, CLE_DRC can be read-only
+- CLE_RC       the CLE resource script itself
+- CLE_RCU      custom tweak file, typically $HOME/.cleusr-$CLE_USER
+- CLE_CF       path to configuration file, typically $HOME/.clecf-$CLE_USER
+- CLE_EXE      log and list of all files executed upon environment startup
+- CLE_VER      current environment version
+- CLE_ALIASES  user's aliases store
+- CLE_PCOLOR   prompt color
+- CLE_Pn       prompt parts strings defined with command `cle p0 .. cle p3`
+- CLE_WT       string to be terminal window title
+- CLE_SRC      web store of CLE for updates and documentation downloads
 - CLE_IP       contains IP address in case of remote session
+- CLE_THN      tweaked hostname - main domain part removed
+- CLE_HIST     path to rich history file
+- CLE_EXE      colon separated log of scripts executed by CLE
 
 
-## CLE modules
+## CLE modules and further tweaks
+...to be documented in separate file
 
-...to be documented
