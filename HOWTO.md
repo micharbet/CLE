@@ -1,12 +1,15 @@
+
 # How to live with CLE
 
 ## Run and Deploy
 Issue following commands to first run and hook the environment into bash
 startup resource scripts.
+
 ```
-. clerc
-cle deploy
+  . clerc
+  cle deploy
 ```
+
 It is important to start the environment using a dot (ev. command 'source')
 to run it in current shell context. Do not make file 'clerc' executable.
 
@@ -18,10 +21,10 @@ Prompt string has following parts and default values:
 ```
   [0] 13:25 user tweaked.hostname /working/directory >
     \   /    |          |                 |
-     \ /     |          |                 P3='\w %> '
-      |      |          P2='%h'
-      |      P1='\u'
-      P0='%e \A'
+     \ /     |          |                 CLE_P3='\w %> '
+      |      |          CLE_P2='%h'
+      |      CLE_P1='\u'
+      CLE_P0='%e \A'
 ```
 
 ### Related commands
@@ -47,8 +50,7 @@ Prompt string has following parts and default values:
 
    %u ... name of original CLE user (value of $CLE_USER)
 
-   %e ... return code from recent command, in P0 it isenclosed in brackets
-          and changing color
+   %e ... return code from recent command enclosed in brackets, red if >0
 
    %cX .. set color. Replace X with some of rgbcmykw or respective capitals
           this is an addition to previously set colors
@@ -64,7 +66,9 @@ Prompt string has following parts and default values:
   Turns server time in P0 off or on if no parameter is given.
 
 - `cle reset`
-  Resets prompt settings to default values including color to 'marley' style
+  Resets prompt settings to default values including color to 'marley' style.
+  Note: this employs function _defcf that can be tweaked, find respective
+  document to learn more.
 
 All those prompt settings are immediately applied and stored in configuration
 file .clecf-$CLE_USER.
@@ -78,7 +82,7 @@ file .clecf-$CLE_USER.
 
 ## CLE sessions (remote and local)
 
-Purpose of this environment is to be seamlessly transferrable from workstation
+Purpose of this environment is also seamless transferr itself from workstation
 to remote sessions without any installation. At the same time it allows
 different users to workon the same remote account with personalized settings
 and/or different CLE versions. This is useful in multi-admin environments. All
@@ -128,9 +132,12 @@ them stored for future use.
 
 ### alias definition and save
 Use known bash command `alias` and CLE function `aa` in following way:
-`alias something='command --opt1 --opt2'`
-`unalias removethis`
-`aa s`
+```
+   alias something='command --opt1 --opt2'
+   unalias removethis
+   aa s
+```
+
 Command `aa` without any parameter show current alias set in nicer way than
 original built-in command.
 
@@ -144,6 +151,11 @@ complex changes. Note that recent alias set is backed up.
 ### Reload aliases
 Use `aa l` in case of mischmatch, if working alias set has been unintentionally
 damaged, etc.
+
+Note: there is `_defalias` built-in function that defines basic alias set upon
+each CLE start. Those predefined aliases override the ones saved with 'aa s'
+command. However, the function itself can be replaced. Learn more in further
+documentation.
 
 
 ## History management
@@ -162,11 +174,11 @@ format:
 
 ```
   2017-06-30 14:31:26 mich-22793 0 /home/mich/d/CLE ls -al
-    |          |       |         | |                |
-    |          |       |         | |                issued command
-    |          |       |         | working directory
-    |          |       |         return code of the command
-    |          |       session ID ( $CLE_USER-shellpid
+    |           |      |         | |                |
+    |           |      |         | |                issued command
+    |           |      |         | working directory
+    |           |      |         return code of the command
+    |           |      session ID ( $CLE_USER-shellpid )
     date and time
 ```
 
@@ -175,8 +187,8 @@ at the place of return code. In that case working directory contains terminal
 name and instead of command there is additional information in square brackets.
 
 ### Searching through history
-Function `h` is simple wrapper for regular 'history' command. Basically it
-just colorizes it's output highliting command number and the command itself.
+Function `h` is simple shortcut for regular 'history' command. Basically it
+just colorizes it's output highliting sequence number and the command itself.
 
 New command `hh` works with rich history. When issued without arguments
 it prints out 100 recent records. However you can alter it's behavior or in
@@ -184,7 +196,7 @@ other words filter the output using options and arguments. So use:
 - `hh string` to grep search for given string in rich history file. The grep
   is applied to whole file, so you can search for specific date/time, session
   identification, you can use regular expressions, etc.
-- 'hh number` prints out recent 'number' records. Note the number can be in
+- `hh number` prints out recent 'number' records. Note the number can be in
   rane 1 .. 999.
 
 Options allowed in 'hh' are as follows:
@@ -193,11 +205,11 @@ Options allowed in 'hh' are as follows:
 `-c` strips out additional information and output just commands
 
 Examples:
-`hh -sc tar` - this prints out only successful 'tar' commands without rich
+- `hh -sc tar` - this prints out only successful 'tar' commands without rich
                information, ready for copy/paste.
-`hh -s 20`   - shows successful commands among recent 20 records
-`hh -t tar`  - search for all (successful or not) tar issued in this terminal
-`hh 06-24`   - search all commands issued on 24th June, regardless the year
+- `hh -s 20`   - shows successful commands among recent 20 records
+- `hh -t tar`  - search for all (successful or not) tar issued in this terminal
+- `hh 06-24`   - search all commands issued on 24th June, regardless the year
 
 
 ## Searching for help

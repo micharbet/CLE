@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-30 (RedH)
+#* version: 2017-07-03 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -235,10 +235,11 @@ PROMPT_COMMAND=_clepmt
 # filter for markdown files
 mdfilter () {
 	sed -e "s/^###\(.*\)/$CT_L\1$CT_N/"\
-	 -e "s/^##\(\s*\)\(.*\)/\1$CT_U$CT_L\2$CT_N/"\
-	 -e "s/^#\(\s*\)\(.*\)/\1$CT_L$CT_RV\2$CT_N/"\
+	 -e "s/^##\( *\)\(.*\)/\1$CT_U$CT_L\2$CT_N/"\
+	 -e "s/^#\( *\)\(.*\)/\1$CT_L$CT_RV \2 $CT_N/"\
 	 -e "s/\*\*\(.*\)\*\*/$CT_L\1$CT_N/"\
 	 -e "s/\<_\(.*\)_\>/$CT_U\1$CT_UE/g"\
+	 -e "s/\`\`\`/$CT_D~~~~~~~~~~~~~~~~~$CT_N/"\
 	 -e "s/\`\([^\`]*\)\`/$CT_w\1$CT_N/g"
 }
 
@@ -393,7 +394,7 @@ sudd () (
 
 ## suu [user]      -- su wrapper
 suu () (
-	if [[ $OSTYPE =~ bsd ]];then
+	if [[ $OSTYPE =~ BSD|bsd|darwin ]];then
 		su -l ${1:-root} $CLE_RC $CLE_USER
 	else
 		su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER # enforce bash
@@ -569,7 +570,7 @@ cle () {
 		[[ $I =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
 		PS3="$CT_w doc #"
 		select C in $I;do
-			curl -k $CLE_SRC/$C |mdfilter|less -r; break
+			curl -sk $CLE_SRC/$C |mdfilter|less -r; break
 		done;;
 	help)	## cle help [fnc]  -- show help
 		# double hash denotes help content

@@ -20,12 +20,12 @@ All the mentioned functionality is encoded into __single file__ and no other
 executables are needed. Run this file in the current shell context using
 trailing dot:
 
-    . clerc
+    `. clerc`
 
 The CLE is activated now and you can setup this environment as persistent with
 command:
 
-    cle deploy
+    `cle deploy`
 
 CLE copies itself to `$HOME/.clerc` and adds two lines into your `.bashrc`
 si it will be started upon each login. Note this is the *only* one
@@ -39,7 +39,7 @@ The CLE is able to pass itself over ssh. Use 'ssg' wrapper instead of regular
 'ssh' for login into remote account and CLE will be copied over and started
 seamlessly:
 
-    ssg username@remote.host
+    `ssg username@remote.host`
 
 
 ### suu, sudd, kksu utilities (su/sudo/ksu wrappers)
@@ -56,12 +56,10 @@ sessions with Ctrl-Left/Right.
 
 
 ### other utilities
-`aa` manges aliases
-
-`hh` makes history searches easier
-
-`cle` the most important one - this is the command and control center
-      of the environment
+- `aa`  manges aliases
+- `hh`  makes history searches easier
+- `cle` the most important one - this is the command and control center
+        of the environment
 
 
 ## Compatibility
@@ -88,7 +86,6 @@ It also works well with at least following terminal emulators:
 - xterm
 - rxvt
 - screen
-- tmux
 
 
 ## Requirements
@@ -98,6 +95,7 @@ require to add missing utilities. Those really necessary are:
 - bash (yeah, minimal FreeBSD setup did't contain this!)
 - sed
 - base64
+- curl
 - ssh (note, no scp required, e.g no openssh-clients on RHEL)
 - GNU screen (only if you want to use it with 'scrn' wrapper)
 
