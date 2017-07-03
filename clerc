@@ -528,14 +528,12 @@ cle () {
 			echo -e "\n$I\n[ -f $NC ] && . $NC\n" | tee -a $BRC
 		fi;;
 	update) ## cle update      -- install fresh version of CLE
-		if [[ $CLE_RC =~ remote ]];then
-			printb CLE in remote session, update is pointless.
-			return 1
-		fi
 		NC=$CLE_D/clerc-new
 		curl -k $CLE_SRC/clerc >$NC
+		C=`sed -n 's/^#\* version: //p' $NC`
+		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
-		echo "new:     `sed -n 's/^#\* version: //p' $NC`"
+		echo "new:     $C"
 		S1=`md5sum $CLE_RC| cut -d' ' -f1`
 		S2=`md5sum $NC| cut -d' ' -f1`
 		[ $S1 = $S2 ] && { echo No difference; return 1;}
