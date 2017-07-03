@@ -66,7 +66,7 @@ Prompt string has following parts and default values:
   Turns server time in P0 off or on if no parameter is given.
 
 - `cle reset`
-  Resets prompt settings to default values including color to 'marley' style.
+  Resets prompt strings to default values and color to 'marley' style.
   Note: this employs function _defcf that can be tweaked, find respective
   document to learn more.
 

@@ -562,7 +562,7 @@ cle () {
 		_clexe $MM
 		cle mod avail;;
 	env)	## cle env         -- print CLE_* variables
-		set | grep ^CLE_.*=;;
+		for I in ${!CLE_*};do printf "$CT_w%-12s$CT_N%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation
 		I=`curl -k $CLE_SRC/index.md`
 		[[ $I =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
