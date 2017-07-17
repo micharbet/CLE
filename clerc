@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-07-04 (RedH)
+#* version: 2017-07-10 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -213,7 +213,7 @@ _setp () {
 	_savecf
 }
 
-# prompt function callback
+# prompt callback
 _clepmt () {
 	_E=$? # save return code
 	local EE
@@ -255,7 +255,7 @@ _defalias () {
 	*) alias ls='ls -F' # at least some file type indication
 	esac
 	alias l='ls -l'
-	alias ll='ls -l'
+	alias ll='ls -lL'
 	alias lt='ls -ltr'
 	alias la='ls -al'
 	alias llr='ls -lR'
@@ -319,7 +319,7 @@ HISTFILE=$CLE_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
-HISTIGNORE="h:h *:hh*:aa*:l:l[alst]:pwd:cd:scrn"
+HISTIGNORE="h:h *:scrn"
 CLE_HIST=$CLE_D/.history-ALL
 
 ## h               -- bash 'history' wrapper
@@ -464,14 +464,14 @@ CDPATH=.:~
 TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
 
-# custom tweaks
-_clexe $CLE_D/.clerc-local
-_clexe $CLE_RCU
-
 # load modules from .cle folder
 for _I in $CLE_D/.cle/mod-*;do
 	_clexe $_I
 done
+
+# custom tweaks
+_clexe $CLE_D/.clerc-local
+_clexe $CLE_RCU
 
 # prompt init
 _clexe $CLE_CF || { _clebanner;_defcf;_savecf;}
