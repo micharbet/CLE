@@ -192,8 +192,7 @@ _setp () {
 	blue)	CC=BbB;;
 	cyan)	CC=CcC;;
 	magenta) CC=MmM;;
-	white|grey|gray) CC=nwW;;
-	bold)	CC=NLL;;
+	white|grey|gray) CC=NwW;;
 	tricolora) CC=RBW;;
 	marley)	CC=RYG;; # Bob Marley style :-) have a smoke and imagine...
 	???)	CC=$CLE_PCOLOR;; # any 3 colors
@@ -204,10 +203,10 @@ _setp () {
 		echo e.g. cle color rgB
 		return 2 
 	esac
-	# prepare prompt strings
+	# prepare prompts
 	CC=K$CC
 	PS1=""
-	for I in 0 1 2 3;do
+	for I in {0..3};do
 		CI=CT_${CC:$I:1}
 		[ -z "${!CI}" ] && echo "wrong color code '${CC:$I:1}' in $CLE_PCOLOR" && return 2
 		eval _C$I="'${!CI}'"
