@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-07-10 (RedH)
+#* version: 2017-07-17 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -158,14 +158,18 @@ _savecf () {
 	EOC
 } >$CLE_CF
 
-# prompt enhancements
+# enhanced escapes
 _pesc () (
+	C=_C$1
+	P=CLE_P$1
 	PP=">" # I hate $ in prompt
 	[ $UID = 0 ] && PP="#"
-	sed <<<$*\
+	echo -n "\\[\$$C\\]"
+	sed <<<${!P}\
 	 -e "s/%i/$CLE_IP/g"\
 	 -e "s/%h/$CLE_THN/g"\
 	 -e "s/%u/$CLE_USER/g"\
+	 -e "s/%e/\$_CE[\$_E]\\\[\$CT_N\$$C\\\]/g"\
 	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g"\
 	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
 	 -e "s/%>/$PP/"
@@ -180,26 +184,19 @@ _cle_e () {
 
 # prompt composer
 _setp () {
-	local C0 C1 C2 I II P0 
-	C2=$CT_L
+	local CC I CI
 	case "$CLE_PCOLOR" in 
-	red)	C0=$CT_R;C1=$CT_r;;
-	green)	C0=$CT_G;C1=$CT_g;;
-	yellow)	C0=$CT_Y;C1=$CT_y;;
-	blue)	C0=$CT_B;C1=$CT_b;;
-	cyan)	C0=$CT_C;C1=$CT_c;;
-	magenta) C0=$CT_M;C1=$CT_m;;
-	white|grey|gray) C0=$CT_N;C1=$CT_w;C2=$CT_W;;
-	bold)	C0=$CT_N$CT_L;;
-	tricolora) C0=$CT_R;C1=$CT_B;C2=$CT_W;;
-	marley) # Bob Marley style :-) have a smoke and imagine...
-		C0=$CT_R;C1=$CT_Y;C2=$CT_G;;
-	???)	# any 3 colors
-		for I in 0 1 2;do
-			II=CT_${CLE_PCOLOR:$I:1}
-			[ -z "${!II}" ] && echo "wrong color code '${CLE_PCOLOR:$I:1}' in $CLE_PCOLOR" && return 2
-			declare C$I=${!II}
-		done;;
+	red)	CC=RrR;;
+	green)	CC=GgG;;
+	yellow)	CC=YyY;;
+	blue)	CC=BbB;;
+	cyan)	CC=CcC;;
+	magenta) CC=MmM;;
+	white|grey|gray) CC=nwW;;
+	bold)	CC=NLL;;
+	tricolora) CC=RBW;;
+	marley)	CC=RYG;; # Bob Marley style :-) have a smoke and imagine...
+	???)	CC=$CLE_PCOLOR;; # any 3 colors
 	*)	# print help - whoa! self documented function
 		echo "Unknown color '$CLE_PCOLOR' Select one of predefined:"
 		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
@@ -208,18 +205,24 @@ _setp () {
 		return 2 
 	esac
 	# prepare prompt strings
-	_PS1=`_pesc "\[$CT_K\]$CLE_P0 \[$C0\]$CLE_P1 \[$C1\]$CLE_P2 \[$C2\]$CLE_P3 \[$CT_N\]"`
-	PS2="\[$C0\] >>>\[$CT_N\] "
+	CC=K$CC
+	PS1=""
+	for I in 0 1 2 3;do
+		CI=CT_${CC:$I:1}
+		[ -z "${!CI}" ] && echo "wrong color code '${CC:$I:1}' in $CLE_PCOLOR" && return 2
+		eval _C$I="'${!CI}'"
+		PS1="$PS1`_pesc $I` "
+	done
+	PS1="$PS1\[\$CT_N\]"
+	PS2="\[\$_C1\] >>>\[\$CT_N\] "
 	_savecf
 }
 
 # prompt callback
 _clepmt () {
 	_E=$? # save return code
-	local EE
 	# highlight error code
-	[ $_E = 0 ] && EE=[0] || EE="\[$CT_E\][$_E]\[$CT_N$CT_K\]"
-	PS1="${_PS1//'%e'/$EE}"
+	[ $_E = 0 ] && _CE="" || _CE="$CT_E"
 	# window title
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# rich history
