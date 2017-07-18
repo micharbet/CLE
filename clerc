@@ -122,7 +122,7 @@ cat <<EOT
 
    ___|  |      ____|  Command Live Environment activated
   |      |      __|    ...bit of life to the command line
-  |      |      |      Learn more:$CT_L cle help $CT_N
+  |      |      |      Learn more:$CT_L cle help$CT_N
  \____| _____| _____| $CT_L less $CLE_RC$CT_N to discover the magic
  
 EOT
@@ -168,7 +168,7 @@ _pesc () (
 	 -e "s/%i/$CLE_IP/g"\
 	 -e "s/%h/$CLE_THN/g"\
 	 -e "s/%u/$CLE_USER/g"\
-	 -e "s/%e/\$_CE[\$_E]\\\[\$CT_N\$$C\\\]/g"\
+	 -e "s/%e/\\\[\$_CE\\\][\$_E]\\\[\$CT_N\$$C\\\]/g"\
 	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g"\
 	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
 	 -e "s/%>/$PP/"
@@ -191,7 +191,7 @@ _setp () {
 	*)	# print help - whoa! self documented function
 		printb "Unknown color '$CLE_PCOLOR' Select one of predefined:"
 		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
-		echo Alternatively make your own 3-letter code using rgbcmykw / RGBCMYKW
+		echo Alternatively make your own 3-letter code using rgbcmykw/RGBCMYKW
 		echo E.g. cle color rgB
 		CC=NNN
 	esac
