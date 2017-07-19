@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-07-18 (RedH)
+#* version: 2017-07-19 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -88,18 +88,18 @@ CLE_THN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # color table
-CT_N=`tput sgr0`
-CT_L=`tput bold`
-CT_U=`tput smul`;CT_UE=`tput rmul`
-CT_D=`tput dim`
-CT_RV=`tput rev`
+_TN=`tput sgr0`
+_TL=`tput bold`
+_TU=`tput smul`;_Tu=`tput rmul`
+_TD=`tput dim`
+_TV=`tput rev`
 _I=0; for _N in k r g y b m c w; do
         _C=`tput setaf $_I`
-        declare CT_$_N=$CT_N$_C
-        declare CT_$(tr a-z A-Z <<<$_N)=$CT_L$_C #bold
+        declare _T$_N=$_TN$_C
+        declare _T$(tr a-z A-Z <<<$_N)=$_TL$_C #bold
         ((_I+=1))
 done
-CT_E=`tput setab 1;tput setaf 7` # err highlight
+_TE=`tput setab 1;tput setaf 7` # err highlight
 
 
 #
@@ -107,11 +107,11 @@ CT_E=`tput setab 1;tput setaf 7` # err highlight
 #
 
 # boldprint
-printb () { printf "$CT_w$*$CT_N\n";}
+printb () { printf "$_Tw$*$_TN\n";}
 
 # simple question
 ask () {
-	read -p "$CT_L$* (y/N) $CT_N" -n 1 -s
+	read -p "$_TL$* (y/N) $_TN" -n 1 -s
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 }
@@ -122,16 +122,16 @@ cat <<EOT
 
    ___|  |      ____|  Command Live Environment activated
   |      |      __|    ...bit of life to the command line
-  |      |      |      Learn more:$CT_L cle help$CT_N
- \____| _____| _____| $CT_L less $CLE_RC$CT_N to discover the magic
+  |      |      |      Learn more:$_TL cle help$_TN
+ \____| _____| _____| $_TL less $CLE_RC$_TN to discover the magic
  
 EOT
 }
 
 # default config
 _defcf () {
-	CLE_PCOLOR=marley
-	[ $UID = 0 ] && CLE_PCOLOR=red
+	CLE_CLR=marley
+	[ $UID = 0 ] && CLE_CLR=red
 	CLE_P0='%e \A'
 	CLE_P1='\u'
 	CLE_P2='%h'
@@ -142,7 +142,7 @@ _defcf () {
 _savecf () {
 	cat <<-EOC
 	# $CLE_USER $CLE_VER
-	CLE_PCOLOR=$CLE_PCOLOR
+	CLE_CLR=$CLE_CLR
 	CLE_P0='$CLE_P0'
 	CLE_P1='$CLE_P1'
 	CLE_P2='$CLE_P2'
@@ -152,9 +152,9 @@ _savecf () {
 
 _cle_e () {
 	[ "$1" != e ] && return
-	printf "$CT_C\nH ${CT_c}CL${CT_C}E $CT_W  .-*$CT_R)$CT_W\`\`-. $CT_C\n"
-	printf "a   a $CT_W /  $CT_R(($CT_b*$CT_W   '.$CT_C\np   s$CT_W |  $CT_b*$CT_R))$CT_W     #:"
-	printf "$CT_C\np   t $CT_W \\  $CT_R(($CT_b*$CT_W   .'$CT_C\ny   er $CT_W '-.$CT_R)${CT_W}_.-'\n\n$CT_N"
+	printf "$_TC\nH ${_Tc}CL${_TC}E $_TW  .-*$_TR)$_TW\`\`-. $_TC\n"
+	printf "a   a $_TW /  $_TR(($_Tb*$_TW   '.$_TC\np   s$_TW |  $_Tb*$_TR))$_TW     #:"
+	printf "$_TC\np   t $_TW \\  $_TR(($_Tb*$_TW   .'$_TC\ny   er $_TW '-.$_TR)${_TW}_.-'\n\n$_TN"
 }
 
 # enhanced escapes
@@ -168,8 +168,8 @@ _pesc () (
 	 -e "s/%i/$CLE_IP/g"\
 	 -e "s/%h/$CLE_THN/g"\
 	 -e "s/%u/$CLE_USER/g"\
-	 -e "s/%e/\\\[\$_CE\\\][\$_E]\\\[\$CT_N\$$C\\\]/g"\
-	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g"\
+	 -e "s/%e/\\\[\$_CE\\\][\$_E]\\\[\$_TN\$$C\\\]/g"\
+	 -e "s/%c\(.\)/\\\[\\\$_T\1\\\]/g"\
 	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
 	 -e "s/%>/$PP/"
 )
@@ -177,7 +177,7 @@ _pesc () (
 # prompt composer
 _setp () {
 	local CC I CI
-	case "$CLE_PCOLOR" in 
+	case "$CLE_CLR" in 
 	red)	CC=RrR;;
 	green)	CC=GgG;;
 	yellow)	CC=YyY;;
@@ -187,9 +187,9 @@ _setp () {
 	white|grey|gray) CC=NwW;;
 	tricolora) CC=RBW;;
 	marley)	CC=RYG;; # Bob Marley style :-) have a smoke and imagine...
-	???)	CC=$CLE_PCOLOR;; # any 3 colors
+	???)	CC=$CLE_CLR;; # any 3 colors
 	*)	# print help - whoa! self documented function
-		printb "Unknown color '$CLE_PCOLOR' Select one of predefined:"
+		printb "Unknown color '$CLE_CLR' Select one of predefined:"
 		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
 		echo Alternatively make your own 3-letter code using rgbcmykw/RGBCMYKW
 		echo E.g. cle color rgB
@@ -199,13 +199,13 @@ _setp () {
 	CC=K$CC
 	PS1=""
 	for I in {0..3};do
-		CI=CT_${CC:$I:1}
-		[ -z "${!CI}" ] && printb "Wrong color code '${CC:$I:1}' in $CLE_PCOLOR" && CI=CT_N
+		CI=_T${CC:$I:1}
+		[ -z "${!CI}" ] && printb "Wrong color code '${CC:$I:1}' in $CLE_CLR" && CI=_TN
 		eval _C$I="'${!CI}'"
 		PS1="$PS1`_pesc $I` "
 	done
-	PS1="$PS1\[\$CT_N\]"
-	PS2="\[\$_C1\] >>>\[\$CT_N\] "
+	PS1="$PS1\[\$_TN\]"
+	PS2="\[\$_C1\] >>>\[\$_TN\] "
 	_savecf
 }
 
@@ -213,7 +213,7 @@ _setp () {
 _clepmt () {
 	_E=$? # save return code
 	# highlight error code
-	[ $_E = 0 ] && _CE="" || _CE="$CT_E"
+	[ $_E = 0 ] && _CE="" || _CE="$_TE"
 	# window title
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
 	# rich history
@@ -236,13 +236,13 @@ _setwt () {
 
 # filter for markdown files
 mdfilter () {
-	sed -e "s/^###\(.*\)/$CT_L\1$CT_N/"\
-	 -e "s/^##\( *\)\(.*\)/\1$CT_U$CT_L\2$CT_N/"\
-	 -e "s/^#\( *\)\(.*\)/\1$CT_L$CT_RV \2 $CT_N/"\
-	 -e "s/\*\*\(.*\)\*\*/$CT_L\1$CT_N/"\
-	 -e "s/\<_\(.*\)_\>/$CT_U\1$CT_UE/g"\
-	 -e "s/\`\`\`/$CT_D~~~~~~~~~~~~~~~~~$CT_N/"\
-	 -e "s/\`\([^\`]*\)\`/$CT_w\1$CT_N/g"
+	sed -e "s/^###\(.*\)/$_TL\1$_TN/"\
+	 -e "s/^##\( *\)\(.*\)/\1$_TU$_TL\2$_TN/"\
+	 -e "s/^#\( *\)\(.*\)/\1$_TL$_TV \2 $_TN/"\
+	 -e "s/\*\*\(.*\)\*\*/$_TL\1$_TN/"\
+	 -e "s/\<_\(.*\)_\>/$_TU\1$_Tu/g"\
+	 -e "s/\`\`\`/$_TD~~~~~~~~~~~~~~~~~$_TN/"\
+	 -e "s/\`\([^\`]*\)\`/$_Tw\1$_TN/g"
 }
 
 ##
@@ -284,29 +284,29 @@ _defalias () {
 ##
 ## Alias management:
 ## -----------------
-CLE_ALIASES=$CLE_D/.aliases-$CLE_USER # personalized aliases
-_clexe $CLE_ALIASES
+CLE_ALI=$CLE_D/.aliases-$CLE_USER # personalized aliases
+_clexe $CLE_ALI
 _defalias
 
 aa () {
-	local ABK=$CLE_ALIASES.back TAL=$CLE_ALIASES.edit
+	local ABK=$CLE_ALI.back TAL=$CLE_ALI.edit
 	case "$1" in
 	"")	## aa         -- show aliases
-                alias|sed "s/^alias \(.*\)='\(.*\)'/$CT_w\1$CT_N	\2/";;
+                alias|sed "s/^alias \(.*\)='\(.*\)'/$_Tw\1$_TN	\2/";;
 	s)	## aa s       -- save current aliases
 		alias;ask Save aliases? || return
-		cp $CLE_ALIASES $ABK
-		alias >$CLE_ALIASES
-		printb Saved to file: $CLE_ALIASES
+		cp $CLE_ALI $ABK
+		alias >$CLE_ALI
+		printb Saved to file: $CLE_ALI
 		printb Backup in: $ABK;;
 	l)	## aa l       -- reload aliases
 		unalias -a
-		. $CLE_ALIASES;;
+		. $CLE_ALI;;
 	ed)	## aa ed      -- edit and reload your aliases
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
-		mv $TAL $CLE_ALIASES
+		mv $TAL $CLE_ALI
 		aa l
 		printb Backup in: $ABK;;
 	*)	cle help aa
@@ -327,7 +327,7 @@ CLE_HIST=$CLE_D/.history-ALL
 ## h               -- bash 'history' wrapper
 h () (
 	history $*|while read N D T C;do
-		echo "$CT_B$N$CT_N $D $T $CT_w$C$CT_N"
+		echo "$_TB$N$_TN $D $T $_Tw$C$_TN"
 	done
 )
 
@@ -352,12 +352,12 @@ hh () (
 	esac | while read D T U E P C;do
 	 [ $E != 0 -a "$ONLY0" ] && continue
 	 case $E in
-	 0)	EE=$CT_g;;
-	 @)	EE=$CT_c;;
-	 *)	EE=$CT_r
+	 0)	EE=$_Tg;;
+	 @)	EE=$_Tc;;
+	 *)	EE=$_Tr
 	 esac
 	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
-		echo "$D $T $CT_b$U $EE$E $CT_N$P $CT_w$C$CT_N"
+		echo "$D $T $_Tb$U $EE$E $_TN$P $_Tw$C$_TN"
 	done
 )
 
@@ -417,8 +417,8 @@ scrn () (
 		# join or take control
 		[ "$1" = "-r" ] && SW="-DR" || SW="-x"
 		[ $SW = -x ] && JR=join || JR="take control"
-		printb ${CT_U}Current sessions:
-		PS3="$CT_w choose # to $CT_W$JR$CT_w or <space> for new: $CT_N"
+		printb ${_TU}Current sessions:
+		PS3="$_Tw choose # to $_TW$JR$_Tw or <space> for new: $_TN"
 		select S in $SCRS;do
 			[ $REPLY ] || break
 			if [ $S ];then
@@ -477,6 +477,7 @@ _clexe $CLE_RCU
 
 # prompt init
 _clexe $CLE_CF || { _clebanner;_defcf;}
+[ $CLE_CLR ] || CLE_CLR=$CLE_PCOLOR   # 2B REMOVED!
 _setp
 _setwt
 
@@ -487,7 +488,7 @@ _setwt
  It seems you started CLE issuing '. $CLE_RC'
  Since this is the first run, consider setup in your profile.
  Following command will hook CLE in $HOME/.bashrc:
-$CT_L	cle deploy
+$_TL	cle deploy
 
 EOT
 
@@ -504,7 +505,7 @@ cle () {
 	fi
 	case "$C" in
 	color)	## cle color COLOR -- set prompt color
-		CLE_PCOLOR=$1
+		CLE_CLR=$1
 		_setp;;
 	p?)	## cle p0-p3 [str] -- show/define prompt parts
 		I=CLE_P${C:1:1}
@@ -563,11 +564,11 @@ cle () {
 		_clexe $MM
 		cle mod avail;;
 	env)	## cle env         -- print CLE_* variables
-		for I in ${!CLE_*};do printf "$CT_w%-12s$CT_N%s\n" $I "${!I}";done;;
+		for I in ${!CLE_*};do printf "$_Tw%-12s$_TN%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation
 		I=`curl -k $CLE_SRC/index.md`
 		[[ $I =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
-		PS3="$CT_w doc #"
+		PS3="$_Tw doc #"
 		select C in $I;do
 			curl -sk $CLE_SRC/$C |mdfilter|less -r; break
 		done;;
