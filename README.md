@@ -61,8 +61,10 @@ switching between sessions with Ctrl-Left/Right.
 - `aa`  manges aliases
 - `hh`  makes history searches easier
 - `cle` the most important one - this is the command and control center
-        of the environment. Issue `cle help` to read more.
-Read HOWTO.md and other cocuments to find ot more.
+      of the environment. Issue `cle help` to read more.
+
+Read HOWTO.md and other documents to find ot more.
+
 
 ## Compatibility
 
@@ -130,7 +132,7 @@ manage the world :-) Everywhere you go use the same and still customizable
 environment.
 
 Incorporating `ssg`, `su*` wrappers together with `cle` managment function into
-one single resource file was just a nature evolution that gave the word 'Live':
+one single resource file was just a nature evolution that gave the word 'Live'
 its true meaning -- the `clerc` now contains a mechanism of multiplication it's
 own DNA [1].
 

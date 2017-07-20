@@ -1,5 +1,8 @@
 
 # How to live with CLE
+This document covers once again installation. Also understanding of its
+components, how to customize the environment and initiating sessions.
+
 
 ## Run and Deploy
 Issue following commands to first run and hook the environment into bash
@@ -256,23 +259,17 @@ of them are executed upon sartup, others are created to hold specific infos.
 
 - `.clerc` or `.clerc-remote-$CLE_USER`
   The CLE itself.
-
 - `.clerc-local`
   Account's local tweak file
-
 - `.cleusr-$CLE_USER`
   User's own tweaks, executed upon CLE startup and also transferred along
   with .clerc whem 
-
 - `.history-$CLE_USER`
   Personal history file, bash managed.
-
 - `.history-ALL`
   Rich history file managed by CLE
-
 - `.aliases-$CLE_USER`
   Saved user's set of aliases.
-
 - `.cle/mod-*`
   Modules enhancing CLE functionality.
 
