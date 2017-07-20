@@ -58,12 +58,19 @@ Prompt string has following parts and default values:
           codes in color table $_T* (inspect the list of items with command
           `echo ${!_T*}` - print all variable names beginning with _T)
           Non color items are as follows:
+
             L ... bold
+
             D ... dim
+
             V ... reverse fg/bg
+
             U ... underline
+
             u ... underline end
+
             E ... special error code highiht
+
             N ... reset all colors
 
    %vVARIABLE
@@ -247,26 +254,26 @@ remote sessions it has just temporary effect.
 Here comes list of files that plays various roles in the environment. Some
 of them are executed upon sartup, others are created to hold specific infos.
 
-- .clerc or .clerc-remote-$CLE_USER
+- `.clerc` or `.clerc-remote-$CLE_USER`
   The CLE itself.
 
-- .clerc-local
+- `.clerc-local`
   Account's local tweak file
 
-- .cleusr-$CLE_USER
+- `.cleusr-$CLE_USER`
   User's own tweaks, executed upon CLE startup and also transferred along
   with .clerc whem 
 
-- .history-$CLE_USER
+- `.history-$CLE_USER`
   Personal history file, bash managed.
 
-- .history-ALL
+- `.history-ALL`
   Rich history file managed by CLE
 
-- .aliases-$CLE_USER
+- `.aliases-$CLE_USER`
   Saved user's set of aliases.
 
-- .cle/mod-*
+- `.cle/mod-*`
   Modules enhancing CLE functionality.
 
 
@@ -277,28 +284,28 @@ named like $CLE_* There are alse variables with shorter names beginning with
 underscore, e.g color table ($_T*) or internal $_H, $_E, etc. Command 'cle env'
 shows values in main variable set and following is their description:
 
-- CLE_USER     original user who first initiated the environment. This value
-               is inherited over all local and remote sessions. The most
-               important variable here!
-- CLE_D        directory with configuration files
-- CLE_DRC      directory containing resource files might differ from $CLE_D
-               Note, CLE_D and CLE_DRC are usually $HOME but not necesarily.
-               They may differ in case $HOME does't exist and/or when 'su*'
-               session has been initiated. Also: CLE_D must be writable while
-               CLE_DRC can be read-only.
-- CLE_RC       the CLE resource script itself
-- CLE_RCU      custom tweak file, typically $HOME/.cleusr-$CLE_USER
-- CLE_CF       path to configuration file, typically $HOME/.clecf-$CLE_USER
-- CLE_CLR      prompt color
-- CLE_Pn       prompt parts strings defined with command `cle p0 .. cle p3`
-- CLE_WT       string to be terminal window title
-- CLE_IP       contains IP address in case of remote session
-- CLE_THN      tweaked hostname - main domain part removed
-- CLE_ALI      user's aliases store
-- CLE_HIST     path to rich history file
-- CLE_EXE      colon separated log of scripts executed by CLE
-- CLE_SRC      web store of CLE for updates and documentation downloads
-- CLE_VER      current environment version
+- `CLE_USER`  original user who first initiated the environment. This value
+            is inherited over all local and remote sessions. The most
+            important variable here!
+- `CLE_D`     directory with configuration files
+- `CLE_DRC`   directory containing resource files might differ from $CLE_D
+            Note, CLE_D and CLE_DRC are usually $HOME but not necesarily.
+            They may differ in case $HOME does't exist and/or when 'su*'
+            session has been initiated. Also: CLE_D must be writable while
+            CLE_DRC can be read-only.
+- `CLE_RC`    the CLE resource script itself
+- `CLE_RCU`   custom tweak file, typically $HOME/.cleusr-$CLE_USER
+- `CLE_CF`    path to configuration file, typically $HOME/.clecf-$CLE_USER
+- `CLE_CLR`   prompt color
+- `CLE_Pn`    prompt parts strings defined with command `cle p0 .. cle p3`
+- `CLE_WT`    string to be terminal window title
+- `CLE_IP`    contains IP address in case of remote session
+- `CLE_THN`   tweaked hostname - main domain part removed
+- `CLE_ALI`   user's aliases store
+- `CLE_HIST`  path to rich history file
+- `CLE_EXE`   colon separated log of scripts executed by CLE
+- `CLE_SRC`   web store of CLE for updates and documentation downloads
+- `CLE_VER`   current environment version
 
 
 ## CLE modules and further tweaks

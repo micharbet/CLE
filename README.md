@@ -1,8 +1,9 @@
+
 #   Command Live Environment
 ## _The shell improvements :-)_
 
 CLE enhances bash with following tweaks:
- - colorized and tweakable **prompt** string including server time and exit
+ - colorized and customizable **prompt** string including server time and exit
    code highlight
  - save/edit and reuse **aliases** in easy way
  - rich **history** with timestamps, return codes and additional information
@@ -50,17 +51,18 @@ however they add CLE to the sessions.
 
 ### scrn - GNU screen wrapper
 
-This wrapper is workaround allowing starting CLE inside screen session. Added
-value here is configuration file with nice status line and switching between
-sessions with Ctrl-Left/Right.
+This wrapper is workaround allowing starting CLE inside screen session. By
+default it lists active sessions if any and allows to join them in cooperative
+mode. Another added value is configuration file with nice status line and
+switching between sessions with Ctrl-Left/Right.
 
 
 ### other utilities
 - `aa`  manges aliases
 - `hh`  makes history searches easier
 - `cle` the most important one - this is the command and control center
-        of the environment
-
+        of the environment. Issue `cle help` to read more.
+Read HOWTO.md and other cocuments to find ot more.
 
 ## Compatibility
 
@@ -114,22 +116,28 @@ boxes and in scattered backup files. You all probably have something similar.
 utilities (scripts like 'cle', 'hlp', etc - some of them are part of different
 project 'rootils' now) This version worked without 'ssg' however required to be
 installed on each particular account. The setup was done using 'cle' script
-but still it was necessary step. Also, changes on those accouts might be
+but installation was necessary step. Also, changes on those accouts might be
 unwelcomed by other administrators. BTW, in version 2, the current name was
-introduced as I considered it was bringingmore live into poor, plain command
+introduced as I considered it was bringing more live into poor, plain command
 line.
 
  In third version I removed necessity to setup by ingenious way -
 passing resource file encoded with base64 through a shell variable to the
-remote system. Result is no setup, no tweaks on remote site and no harm
-to the current environment! Whoa! The only what you need is working CLE on
-your workstation from where you manage the world :-)
+remote system. To be honest, I was inspired by 'sshrc' project. Result is no
+setup, no tweaks on remote site and no harm to the current environment! Whoa!
+The only thing you need is working CLE on your workstation from where you
+manage the world :-) Everywhere you go use the same and still customizable
+environment.
 
-You can always use the same and still customizable environment everywhere.
-Incorporating `ssg`, `suu` utilities and `cle` managment function into the
-sinle file was just a nature evolution that enhanced word 'Live': the `clerc`
-resourcefile now contains a mechanism of multiplication it's own DNA [1]
+Incorporating `ssg`, `su*` wrappers together with `cle` managment function into
+one single resource file was just a nature evolution that gave the word 'Live':
+its true meaning -- the `clerc` now contains a mechanism of multiplication it's
+own DNA [1].
 
 
-[1] CLE is not a virus :-) Everything, all the spreading is done in controlled
-way and you, the user is the one who know what you're doing.
+[1] CLE is not a virus :-) It doesn't run itself on any host. Everything is
+under user's (your) control and responsibilty. All the spreading is initiated
+and driven by user who must know what he's doing. Feel free to inspect the
+source code.
+
+

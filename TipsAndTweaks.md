@@ -4,11 +4,12 @@
   warning highly explosive material!
   ----------------------------------
 
-This document contains useful ideas how to customize CLE to your very own
+This document presents useful ideas how to customize CLE to your very own
 preferences. Some tips may require to install additional software.
 
 
 ## Prompting
+The first thing you may want to customize. Go beyond just color change!
 
 ### Nice double line prompt
 ```
@@ -37,4 +38,12 @@ issue `cd -` or simple `-` to switch between PWD and OLDPWD.
 Simply executes `git symbolic-ref --short HEAD` whenever there is .git directory
 underneath. Note, this is not CLE feature! Pure bash is able to execute
 commands if there is something like PS1='string $(the_command) other string'
+
+
+## Various startup files
+
+## How to enhance 'cle' command
+
+## Override internal functions
+
 
