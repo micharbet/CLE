@@ -235,11 +235,11 @@ Examples:
 
 ## Searching for help
 
-CLE can assist you. There is help built-in script itself, issue `cle help` to
-extract those information. Basically they are contained in double-hashmark
-denoted comments. It's that somple. In case you need more use command `cle doc`
-that downoads documentation index from git source and offers files (like this
-one) through menu. Files are in .md (markdown) format and are filtered through
+CLE contains built-in descriptions of its functions. Issue `cle help` to
+extract those information. In principle they can be found as double-hashmark
+denoted comments. It's that simple. If you need more use command `cle doc`
+that downoads documentation index from git source and offers files (incl. this
+one) through menu. Files use .md (markdown) format and are passed through
 built-in function (mdfilter) hilighting formatted items.
 
 
@@ -305,6 +305,27 @@ shows values in main variable set and following is their description:
 - `CLE_VER`   current environment version
 
 
-## CLE modules and further tweaks
-...to be documented in separate file
+## Advanced features and tweaks
+
+CLE is modular. Modules are just another scripts adding custom functions
+to the environment. Over the development it has revealed that not every 
+single idea has to be included (keeping the main code as small as possible).
+Very specific functionalities have been (re)moved into modules and it's
+user's choice to include them into his/her environment. It is also possible
+and easy to write own modules. This topis is covered in separated document,
+read 'Modules.md' to learn more.
+
+CLE itself is a tweak but it can be customized further more. One way might
+seem to be edit 'clerc' file but this is discouraged. There are plenty of
+files (see above) that are dedicated to exactly this purpose. Find more
+information on how to use them in document 'TipsAndTweaks.md'
+
+In case of issue in main resource (clerc file), if you feel there is
+missing important functionality or if you just wrote nice module that you
+want to share follow the document 'Contribute.md'
+
+Love CLE? Hate it? Do you want to improve something? Read 'Feedback.md' and
+chose any of the options how to report.
+
+Thank you for reading and using!
 
