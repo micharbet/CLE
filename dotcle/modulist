@@ -1,0 +1,7 @@
+mod-cfe:0.0.prd:9d99105d2c494e8571f630dd799d7615:config editor
+mod-cledk::139bd390dd109d8bc3aa715dadb506f7:functions to assist CLE development process
+mod-example:0.0.prd:d7adc51538d35bd528570188430ec86a:example / template module
+mod-fsps:0.0.prd:f583e8354089e1ae46e79219657495e2:filesystem and processess utilities
+mod-git:0.0.prd:bbb685760a2742e803a7a60a5dd82665:git functions / shorcuts
+mod-mod:0.0.prd:81c0885a4685488e5aea045d30e95d17:CLE module management
+mod-see:0.1.prd:f48c546097ed86d328af459955b1b839:Text flow highlighter

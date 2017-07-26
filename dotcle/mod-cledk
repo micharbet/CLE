@@ -147,13 +147,11 @@ cdc () {
 	git status
 }
 
-modgen () {
-	local DOTCLE=$HOME/.cle
-	for M in $DOTCLE/mod-*; do
-		local MM=`basename $M`
-		local DESC=`grep "## $MM:" $M | sed "s/^## $MM:\s*//"`
-		echo $MM: $DESC
+_cle_modgen () (
+	cd $CLE_DK/dotcle
+	for M in mod-*; do
+		echo $M:`_modver $M`:`_modsum $M`:`_modesc $M`
 	done
+) >$CLE_DK/dotcle/modulist
 
-}
 

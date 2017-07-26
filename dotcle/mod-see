@@ -1,17 +1,20 @@
-#
 ##
 ## mod-see: Text flow highlighter
 ## ------------------------------
+#* version: 0.1.prd
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2016-2017 by Michael Arbet 
+#
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# (c) 2013-2017 Michael Arbet
 
-##
-## usage: see [-n] [-t nsec] [-f filename] [-a] word1 [word2] [word3]
+## see [-n] [-t nsec] [-f filename] [-a] word1 [word2] [word3]
 ##
 ## Parses the text through regular expressions (sed) and highlights
 ## up to three selected words. It filters either stdin or file
@@ -53,16 +56,16 @@ see () {
 	# Prepare search - replacement expressions
 	# currently up to three words
 	case $# in
-	1)	RE1="-e 's/\\($1\\)/$CT_G\\1$CT_N/'"
+	1)	RE1="-e 's/\\($1\\)/$_TG\\1$_TN/'"
 		[ "$SUPPRESS" ] && RE1=${REXP}p
 		;;
 	2)	if [ -n "$AND" ]; then
-			#RE1="-e '/$1.*$2/s/\\($1\\)\\(.*\\)\\($2\\)/$CT_B\\1$CT_N\\2$CT_W\\3$CT_N/'"
-			RE1="-e '/$1.*$2/s/\\(.*\\)/$CT_B\\1$CT_N/'"
-			RE2="-e '/$2.*$1/s/\\(.*\\)/$CT_B\\1$CT_N/'"
+			#RE1="-e '/$1.*$2/s/\\($1\\)\\(.*\\)\\($2\\)/$_TB\\1$_TN\\2$_TW\\3$_TN/'"
+			RE1="-e '/$1.*$2/s/\\(.*\\)/$_TB\\1$_TN/'"
+			RE2="-e '/$2.*$1/s/\\(.*\\)/$_TB\\1$_TN/'"
 		else
-			RE2="-e '/$1/s/\\($1\\)/$CT_G\\1$CT_N/'"
-			RE1="-e '/$2/s/\\($2\\)/$CT_Y\\1$CT_N/'"
+			RE2="-e '/$1/s/\\($1\\)/$_TG\\1$_TN/'"
+			RE1="-e '/$2/s/\\($2\\)/$_TY\\1$_TN/'"
 		fi
 		[ "$SUPPRESS" ] && RE2=${RE2}p
 		;;
@@ -72,12 +75,12 @@ see () {
 			RE2="-e '/$2/s/\\(.*\\)/@\\1/'"
 			RE3="-e '/$3/s/\\(.*\\)/@\\1/'"
 			# remove marker and eventually highlight if there are 3
-			RE3=$RE3" -e 's/\\(@@@\\)\\(.*\\)/$CT_B\\2$CT_N/'"
+			RE3=$RE3" -e 's/\\(@@@\\)\\(.*\\)/$_TB\\2$_TN/'"
 			RE3=$RE3" -e 's/\\(@\\{1,3\\}\\)\\(.*\\)/\\2/'"
 		else
-			RE1="-e '/$1/s/\\($1\\)/$CT_G\\1$CT_N/'"
-			RE2="-e '/$2/s/\\($2\\)/$CT_Y\\1$CT_N/'"
-			RE3="-e '/$3/s/\\($3\\)/$CT_C\\1$CT_N/'"
+			RE1="-e '/$1/s/\\($1\\)/$_TG\\1$_TN/'"
+			RE2="-e '/$2/s/\\($2\\)/$_TY\\1$_TN/'"
+			RE3="-e '/$3/s/\\($3\\)/$_TC\\1$_TN/'"
 		fi
 		[ "$SUPPRESS" ] && RE3=${RE3}p
 		;;
@@ -91,7 +94,7 @@ see () {
 	if [ $TSTAMP -gt 0 ]; then
 		# loop in background prints timestamps, 
 		bash -c "while true; do \
-				date '+$CT_R[%d-%m-%Y %T]$CT_N'; \
+				date '+$_TR[%d-%m-%Y %T]$_TN'; \
 				sleep $TSTAMP; \
 			 done" &
 		# trap ensures the loop will be terminated
