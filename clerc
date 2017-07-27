@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-07-19 (RedH)
+#* version: 2017-07-27 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -79,6 +79,7 @@ case $CLE_RC in
 	_D=$HOME
 esac
 CLE_D=${CLE_D:-$_D}
+CLE_DM=$CLE_D/.cle
 
 CLE_CF=${CLE_CF:-$CLE_D/.clecf-$CLE_USER}
 CLE_RCU=$CLE_DRC/.cleusr-$CLE_USER
@@ -467,7 +468,7 @@ TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
 
 # load modules from .cle folder
-for _I in $CLE_D/.cle/mod-*;do
+for _I in $CLE_DM/mod-*;do
 	_clexe $_I
 done
 
@@ -497,10 +498,13 @@ EOT
 ## ----------------------
 cle () {
 	local C I S1 S2 MM BRC NC
-	# find & run enhancement _cle_* function
+	# find & run cle_* enhancement
 	C=$1;shift
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
+		return $?
+	elif [ -f $CLE_DM/cle_$C ]; then
+		. $CLE_DM/cle_$C $*
 		return $?
 	fi
 	case "$C" in
@@ -557,8 +561,8 @@ cle () {
 		# this is just a fallback to initialize modularity
 		# downloaded mod-mod overrides this code 
 		ask Activate CLE modules? || return
-		MM=$CLE_D/.cle/mod-mod
-		mkdir $CLE_D/.cle
+		MM=$CLE_DM/mod-mod
+		mkdir $CLE_DM
 		curl -k $CLE_SRC/dotcle/mod-mod >$MM
 		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1;}
 		_clexe $MM

@@ -285,6 +285,7 @@ shows values in main variable set and following is their description:
             is inherited over all local and remote sessions. The most
             important variable here!
 - `CLE_D`     directory with configuration files
+- `CLE_DM`    directory for modules and enhancements
 - `CLE_DRC`   directory containing resource files might differ from $CLE_D
             Note, CLE_D and CLE_DRC are usually $HOME but not necesarily.
             They may differ in case $HOME does't exist and/or when 'su*'
