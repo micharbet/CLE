@@ -559,14 +559,14 @@ cle () {
 		cle reload;;
 	mod)	## cle mod         -- cle module management
 		# this is just a fallback to initialize modularity
-		# downloaded mod-mod overrides this code 
+		# downloaded cle_mod overrides this code 
 		ask Activate CLE modules? || return
-		MM=$CLE_DM/mod-mod
-		mkdir $CLE_DM
-		curl -k $CLE_SRC/dotcle/mod-mod >$MM
-		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1;}
-		_clexe $MM
-		cle mod avail;;
+		I=cle_mod
+		MM=$CLE_DM/$I
+		mkdir -p $CLE_DM
+		curl -k $CLE_SRC/dotcle/$I >$MM
+		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
+		cle mod;;
 	env)	## cle env         -- print CLE_* variables
 		for I in ${!CLE_*};do printf "$_Tw%-12s$_TN%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation

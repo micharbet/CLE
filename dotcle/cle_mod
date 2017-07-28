@@ -1,0 +1,128 @@
+##
+## cle_mod: CLE module management
+## ------------------------------
+#* version: 0.0.prd
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2016-2017 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+
+
+#
+# mod-mod helper functions
+#
+# check installed module - where it came from
+_modsource () {
+local CLE_DM=$CLE_D/.cle
+local MODULIST=$CLE_DM/$LISTFILE
+local LINK=`readlink $1`
+local MM=`basename $1`
+local MSRC="LN"
+if [ -z "$LINK" ]; then
+	if grep $MM $MODULIST >/dev/null; then
+		MSRC="DL"
+	else
+		echo "CU"
+		return 2	# return code indicates module not to be deleted!
+	fi
+fi
+echo $MSRC
+}
+
+# extract module description 
+_modesc () {
+	local MM=`basename $1`
+	sed -n "s/^## $MM:\s*//p" $1
+}
+
+# extract module version 
+_modver () {
+	sed -n "s/^#\* version:\s*//p" $1
+}
+
+# compute module content checksum
+_modsum () {
+	md5sum $1 | cut -d' ' -f1
+}
+
+
+LISTFILE=modulist
+MODULIST=$CLE_DM/$LISTFILE
+case "$1" in
+list)	## cle mod list    -- list installed modules
+	printb Modules installed in $CLE_DM:
+	for M in $CLE_DM/mod-* $CLE_DM/cle_*; do
+		MM=`basename $M`
+		MDESC=`_modesc $M`
+		MSRC=`_modsource $M`
+		MVER=`_modver $M`
+		printf "$_TW%-15s $_Tw[%-3s %10s] $_TN%s\n" $MM $MSRC "$MVER" "$MDESC"
+	done
+	;;
+avail)	## cle mod avail   -- list modules available to install
+	printb Modules available in repository: $CLE_SRC
+	curl -ksS $CLE_SRC/dotcle/$LISTFILE >$MODULIST
+	cat $MODULIST | { IFS=:; while read MM MVER MSUM MDESC; do
+		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"
+	done; }
+	#if [ -n "$CLE_DK" ]; then
+	#	printb Modules available in development kit: $CLE_DK
+	#	for M in $CLE_DK/dotcle/mod-*; do
+	#		MM=`basename $M`
+	#		MDESC=`_modesc $M`
+	#		printf "$_TW%-15s $_TN%s\n" $MM "$MDESC"
+	#	done
+	#fi
+	;;
+inst*)	## cle mod inst [mod] -- install/upgrade module from repository
+	if [ -z "$2" ]; then
+		curl -ksS $CLE_SRC/dotcle/$LISTFILE >$MODULIST
+		PS3="$_TL choose module $_TN"
+		select MM in `cat $MODULIST`; do
+			[ -n "$MM" ] && break
+		done
+	else
+		MM=mod-$2
+	fi
+	# download module into temporary file
+	# this doesn't destroy one that is already installed
+	printb "Downloading $MM"
+	curl -k $CLE_SRC/dotcle/$MM >$CLE_DM/$MM-dload || return
+	echo
+	if grep "##\s\+$MM:" $CLE_DM/$MM-dload; then
+		mv $CLE_DM/$MM-dload $CLE_DM/$MM
+		printb Executing module $CLE_DM/$MM
+		_clexe $CLE_DM/$MM
+	else
+		printb No module header found, see:
+		head $CLE_DM/$MM-dload
+		echo
+		echo Removing temporary file...
+		rm -f $CLE_DM/$MM-dload
+	fi
+	;;
+rm)	## cle mod rm [mod]   -- remove/deactivate module
+	echo TBD!
+	;;
+'')
+	printb CLE module management
+	echo Repository: $CLE_SRC
+	echo Modules in: $CLE_DM
+	;;
+help)
+	cle help "cle mod"
+	;;
+*)
+	echo "'cle mod $1' not implemented"
+	echo "Try 'cle mod help '"
+	return 1
+	;;
+esac
+
+unset _modsource _modesc _modver _modsum 
