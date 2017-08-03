@@ -96,7 +96,8 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 		if [[ $MM =~ 'mod-' ]]; then
 			# immediately include the module
 			printb Executing module $CLE_DM/$MM
-			_clexe $CLE_DM/$MM
+			MDESC=`_modesc $CLE_DM/$MM`
+			_clexe $CLE_DM/$MM && { echo $MM: $MDESC; printb ready!; }
 		fi
 	else
 		printb Error, no module header found

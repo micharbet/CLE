@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-08-02 (RedH)
+#* version: 2017-08-03 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -212,8 +212,8 @@ _setp () {
 
 # prompt callback
 _clepmt () {
-	local N D T C
 	_E=$? # save return code
+	local N D T C
 	# highlight error code
 	[ $_E = 0 ] && _CE="" || _CE="$_TE"
 	# window title
