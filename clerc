@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-07-27 (RedH)
+#* version: 2017-08-02 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -212,6 +212,7 @@ _setp () {
 
 # prompt callback
 _clepmt () {
+	local N D T C
 	_E=$? # save return code
 	# highlight error code
 	[ $_E = 0 ] && _CE="" || _CE="$_TE"
@@ -578,7 +579,8 @@ cle () {
 		done;;
 	help)	## cle help [fnc]  -- show help
 		# double hash denotes help content
-		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ };;
+		_C=`find $CLE_DM -name cle_*`
+		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 	*)	echo unimplemented: cle $C
