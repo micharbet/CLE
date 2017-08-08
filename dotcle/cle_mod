@@ -1,7 +1,7 @@
 ##
 ## cle_mod: CLE module management
 ## ------------------------------
-#* version: 2017-08-03
+#* version: 2017-08-08
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -20,12 +20,12 @@ local MODULIST=$CLE_DM/$LISTFILE
 # cle_mod helper functions
 #
 # check installed module - where it came from
-_modsource () {
-	local LINK=`readlink $1`
-	local MM=`basename $1`
-	local MSRC="LN"
-	if [ -z "$LINK" ]; then
-		if grep $MM $MODULIST >/dev/null; then
+_modtype () (
+	M=`basename $1`
+	MLINK=`readlink $1`
+	MSRC="LN"
+	if [ -z "$MLINK" ]; then
+		if grep $M $MODULIST >/dev/null; then
 			MSRC="DL"
 		else
 			echo "CU"
@@ -33,56 +33,89 @@ _modsource () {
 		fi
 	fi
 	echo $MSRC
-}
+)
 
 # extract module description 
-_modesc () {
-	local MM=`basename $1`
-	sed -n "s/^## $MM:\s*//p" $1
-}
+_modesc () (
+	local M=`basename $1`
+	sed -n "s/^## $M:\s*//p" $1
+)
 
 # extract module version 
-_modver () {
+_modver () (
 	sed -n "s/^#\* version:\s*//p" $1
-}
+)
 
 # compute module content checksum
-_modsum () {
+_modsum () (
 	md5sum $1 | cut -d' ' -f1
-}
+)
 
+# module deails
+_modet () (
+	M=$CLE_DM/$1
+	MDESC=`_modesc $M`
+	MSRC=`_modtype $M`
+	MVER=`_modver $M`
+	printf "$_TW%-15s $_Tw[%-3s %10s] $_TN%s\n" $1 $MSRC "$MVER" "$MDESC"
+)
+
+# get list of currently installed modules
+_getinstalled () (
+	cd $CLE_DM
+	ls cle_* mod-* 2>/dev/null
+)
+
+# download list of available modules
+_getindex () (
+	curl -ksS $CLE_SRC/dotcle/$LISTFILE >$MODULIST.tmp
+	M=`head -1 $MODULIST.tmp`
+	# check if the file appears lik module index
+	if [[ $M =~ ..*:.*:.*:.* ]]; then
+		mv -f $MODULIST.tmp $MODULIST
+	else
+		rm -f $MODULIST.tmp
+		echo Module list could not be downloaded from $CLE_SRC
+		return 1
+	fi
+)
 
 # variable used only in this script
-local M MM DMM MDESC MSRC MVER
+local M MM MODS DMM MDESC MSRC MVER
+
 case "$1" in
-list)	## cle mod list    -- list installed modules
+ls)	## cle mod ls        -- list installed modules
 	printb Modules installed in $CLE_DM:
-	for M in $CLE_DM/mod-* $CLE_DM/cle_*; do
-		MM=`basename $M`
-		MDESC=`_modesc $M`
-		MSRC=`_modsource $M`
-		MVER=`_modver $M`
-		printf "$_TW%-15s $_Tw[%-3s %10s] $_TN%s\n" $MM $MSRC "$MVER" "$MDESC"
+	for M in `_getinstalled`; do
+		_modet $M
 	done
 	;;
-avail)	## cle mod avail   -- list modules available to install
+avail)	## cle mod avail     -- list modules available to install
+	_getindex || return $?
 	printb Modules available in repository: $CLE_SRC
-	curl -ksS $CLE_SRC/dotcle/$LISTFILE >$MODULIST
 	cat $MODULIST | { IFS=:; while read MM MVER MSUM MDESC; do
 		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"
 	done; }
 	;;
 add)	## cle mod add [mod] -- install/upgrade module from repository
-	if [ -z "$2" ]; then
-		cle mod avail
+	_getindex || return $?
+	MODS=`grep ^[^:]*$2[^:]* $MODULIST |cut -d: -f1`
+	[ "$MODS" ] || { echo Nothing like $2 to install; return 1; }
+	MODN=`wc -w <<<$MODS`
+	if [ $MODN -gt 1 ]; then
+		# chose one if more were found
 		PS3="$_TL choose module # $_TN"
-		select MM in `cat $MODULIST|cut -d: -f1`; do
+		select MM in $MODS; do
 			[ -n "$MM" ] && break
 		done
 	else
-		# construct module name, you can omit 'mod-' on command line 
-		[[ $2 =~ 'mod-' ]] && MM=$2 || MM=mod-$2
+		MM=$MODS
 	fi
+	[ $MM ] || return
+	echo
+	grep ^$MM $MODULIST | { IFS=:; read MM MVER MSUM MDESC; 
+		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"; }
+	ask "Do yo want to install this module?" || return
 
 	# download module into temporary file
 	# this doesn't destroy one that is already installed
@@ -107,7 +140,25 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 	fi
 	;;
 del)	## cle mod del [mod] -- delete module
-	echo TBD!
+	MODS=`_getinstalled | grep "$2"`
+	[ "$MODS" ] || { echo Nothing like $2 to remove; return 1; }
+	MODN=`wc -w <<<$MODS`
+	if [ $MODN -gt 1 ]; then
+		# chose one if more were found
+		PS3="$_TL choose module to remove # $_TN"
+		select MM in $MODS; do
+			[ -n "$MM" ] && break
+		done
+	else
+		MM=$MODS
+	fi
+	[ $MM ] || return
+	echo
+	_modet $MM
+	ask "Do yo want to remove this?" || return
+	mkdir -p $CLE_DM/inactive
+	mv $CLE_DM/$MM $CLE_DM/inactive
+	echo Module $MM moved into $CLE_DM/inactive
 	;;
 '')
 	printb CLE module management
@@ -125,4 +176,5 @@ help)
 esac
 
 # remove internal functions
-unset _modsource _modesc _modver _modsum 
+unset _modtype _modesc _modver _modsum _modet _getinstalled _getindex
+
