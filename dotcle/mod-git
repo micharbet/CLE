@@ -1,7 +1,7 @@
 ##
-## mod-git: git functions / shorcuts
-## ---------------------------------
-#* version: 0.0.prd
+## mod-git: git helpers / shorcuts
+## -------------------------------
+#* version: 2017-08-08
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -13,24 +13,24 @@
 # of the License, or (at your option) any later version.
 
 #
-# those might be written as aliases mostly but I wanted them not to 
+# Some functions might be written as aliases but I wanted them not to 
 # affect already defined set of aliases
 #
 
 ## gipul            -- just git pull
-function gipul {
+gipul () {
 	git pull
 }
 
 ## gipus            -- git push into origin / current working branch
-function gipus {
+gipus () {
 	BRANCH=`git symbolic-ref --short HEAD`
 	printb git push -u origin $BRANCH 
 	git push -u origin $BRANCH 
 }
 
 ## gicom [message]  -- git commit, if message not specified, opens editor
-function gicom {
+gicom () {
 	if [ $# -eq 0 ]; then
 		git commit -a
 	else
@@ -39,17 +39,27 @@ function gicom {
 }
 
 ## gista            -- git status
-function gista {
+gista () {
 	git status
 }
 
 ## gilog            -- git log
-function gilog {
+gilog () {
 	git log
 }
 
 ## gidif            -- git diff
-function gidif {
+gidif () {
 	git diff
 }
+
+## gicwb            -- show current working branch name
+gicwb () (
+	# search all parent directories
+	while [ $PWD != / ]; do
+		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
+		cd ..
+	done
+	return 1  # not in git repository
+)
 
