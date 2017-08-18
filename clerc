@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-08-08 (RedH)
+#* version: 2017-08-18 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -462,7 +462,7 @@ export EDITOR=vi
 export PAGER="less -s"
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
-CDPATH=.:~
+CDPATH=.:..:~
 
 # session record
 TTY=`tty|sed 's;[/dev];;g'`
@@ -504,8 +504,8 @@ cle () {
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
 		return $?
-	elif [ -f $CLE_DM/cle_$C ]; then
-		. $CLE_DM/cle_$C $*
+	elif [ -f $CLE_DM/cle-$C ]; then
+		. $CLE_DM/cle-$C $*
 		return $?
 	fi
 	case "$C" in
@@ -560,9 +560,9 @@ cle () {
 		cle reload;;
 	mod)	## cle mod         -- cle module management
 		# this is just a fallback to initialize modularity
-		# downloaded cle_mod overrides this code 
+		# downloaded cle-mod overrides this code 
 		ask Activate CLE modules? || return
-		I=cle_mod
+		I=cle-mod
 		MM=$CLE_DM/$I
 		mkdir -p $CLE_DM
 		curl -k $CLE_SRC/dotcle/$I >$MM
@@ -579,7 +579,7 @@ cle () {
 		done;;
 	help)	## cle help [fnc]  -- show help
 		# double hash denotes help content
-		_C=`ls $CLE_DM/cle_* 2>/dev/null`
+		_C=`ls $CLE_DM/cle-* 2>/dev/null`
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header

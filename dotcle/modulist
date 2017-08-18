@@ -1,7 +1,8 @@
-mod-cfe:0.0.prd:9d99105d2c494e8571f630dd799d7615:config editor
-mod-cledk::139bd390dd109d8bc3aa715dadb506f7:functions to assist CLE development process
+mod-cledk:2017-08-18:3f67acc1b7e0801ef89df05edf8d223e:functions to assist CLE development process
 mod-example:0.0.prd:d7adc51538d35bd528570188430ec86a:example / template module
 mod-fsps:0.0.prd:f583e8354089e1ae46e79219657495e2:filesystem and processess utilities
-mod-git:0.0.prd:bbb685760a2742e803a7a60a5dd82665:git functions / shorcuts
-mod-mod:0.0.prd:81c0885a4685488e5aea045d30e95d17:CLE module management
-mod-see:0.1.prd:f48c546097ed86d328af459955b1b839:Text flow highlighter
+mod-git:2017-08-08:5bb12beec20cf3140674e9913b8cdf12:git helpers / shorcuts
+cle-mod:2017-08-17:10dafb605991438e4d2a53cc4f740d62:CLE module management
+bin-cfe:0.0.prd:bd701bbf87a9ba4b2039c4b27d0ed5a9:config editor
+bin-hlp:2017-08-17:d62e655fc62ff24bc1ed64811fcfb8dd:extracts built-in documentation from scripts
+bin-see:0.1.prd:2200cf374a5ea589a5e18a0486683522:Text flow highlighter
