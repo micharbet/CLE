@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+## hlp: extracts built-in documentation from scripts
+## -------------------------------------------------
+#* version: 2017-08-18
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2016-2017 by Michael Arbet
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+##
+## usage: hlp [-v] [-u] [command]
+##
+##  The built-in documentation is denoted by double-hash like special comments
+##  and is typically found at the beginning of script. However can be placed anywhere
+##  else in the source. Use 'hlp' script itself as an example.
+##  First double-hash line contains synopsis. Those lines are printed when no particular 
+##  command is given as a parameter - plain 'hlp' lists all available scripts from
+##  the same directory with their synopsis lines. 
+##  
+
+VERB=''   # verbose flag
+## Options:
+##  -v ... verbose mode, prints out paths and filenames useful for debugging
+if [ "$1" = "-v" ]; then
+	VERB=y
+	shift
+fi
+
+##  -u ... usage mode, prints out only line containing 'usage:'
+if [ "$1" = "-u" ]; then
+	USAGE=y
+	shift
+fi
+
+HDIR=`dirname $0`
+if [ $# = 0 ]; then
+	# no argument on cmdline - print only synopsis of avaliable scripts
+	cd $HDIR
+	[ "$VERB" ] && echo rootils directory: `pwd`
+	# list available scripts
+	for F in *; do
+		# filter only first line beginning with double-hash '##''
+		[ -f $F ] && awk 'BEGIN { FS="#" } /##/ { printf " %-12s -%s\n",FILENAME,$3; exit }' $F
+	done
+else
+	# first, find the file
+	if [ -f $1 ]; then
+		SCR=$1 		# path/filename on command line
+	elif [ -f $HDIR/$1 ]; then
+		SCR=$HDIR/$1	# or inside the same directory as 'hlp' itself
+	else
+		# ... or not found anything
+		echo hlp: no such script $1 >&2
+		exit 1
+	fi
+
+	[ "$VERB" ] && echo file: $SCR
+	if [ "$USAGE" ]; then
+		awk 'BEGIN { FS="#" } /## usage:/ { print $3; exit }' $SCR
+	else
+		# extract complete help of given command
+		# print all lines beginning with '##'
+		awk 'BEGIN { FS="#" } /##/ { print $3 }' $SCR >&2
+	fi
+fi
+

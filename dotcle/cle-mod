@@ -121,22 +121,39 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 	# this doesn't destroy one that is already installed
 	printb "Downloading $MM"
 	DMM=$CLE_DM/dl-$MM
-	curl -ksS $CLE_SRC/dotcle/$MM >$DMM
-
-	# check module signature
-	if grep -q "## *$MM: ..*" $DMM ; then
-		mv -f $DMM $CLE_DM/$MM
-		if [[ $MM =~ 'mod-' ]]; then
-			# immediately include the module
-			printb Executing module $CLE_DM/$MM
-			MDESC=`modesc $CLE_DM/$MM`
-			_clexe $CLE_DM/$MM && { echo $MM: $MDESC; printb ready!; }
+	if [[ $MM =~ ^bin- ]]; then
+		# executable scripts specific actions
+		MM=${MM/bin-/}
+		curl -ksS $CLE_SRC/bin/$MM >$DMM
+		# check module signature
+		if grep -q "## *$MM: ..*" $DMM ; then
+			mv -f $DMM ~/bin/$MM
+			chmod 755 ~/bin/$MM
+		else
+			printb Error, no module header found
+			head $DMM
+			printb Removing temporary file...
+			rm -f $DMM
+			return 1
 		fi
 	else
-		printb Error, no module header found
-		head $DMM
-		printb Removing temporary file...
-		rm -f $DMM
+		curl -ksS $CLE_SRC/dotcle/$MM >$DMM
+		# check module signature
+		if grep -q "## *$MM: ..*" $DMM ; then
+			mv -f $DMM $CLE_DM/$MM
+			if [[ $MM =~ 'mod-' ]]; then
+				# immediately include the module
+				printb Executing module $CLE_DM/$MM
+				MDESC=`modesc $CLE_DM/$MM`
+				_clexe $CLE_DM/$MM && { echo $MM: $MDESC; printb ready!; }
+			fi
+		else
+			printb Error, no module header found
+			head $DMM
+			printb Removing temporary file...
+			rm -f $DMM
+			return 1
+		fi
 	fi
 	;;
 del)	## cle mod del [mod] -- delete module
@@ -157,7 +174,7 @@ del)	## cle mod del [mod] -- delete module
 	modet $MM
 	ask "Do yo want to remove this?" || return
 	mkdir -p $CLE_DM/inactive
-	mv $CLE_DM/$MM $CLE_DM/inactive
+	mv -f $CLE_DM/$MM $CLE_DM/inactive
 	echo Module $MM moved into $CLE_DM/inactive
 	;;
 '')

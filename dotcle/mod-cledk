@@ -81,7 +81,7 @@ _cle_dk () {
 ## cle ed [mod]  -- edit clerc file ev. specified module
 _cle_ed () {
 	local F=$CLE_DK/clerc
-	[ -n "$1" ] && F=`ls $CLE_DK/dotcle/mod-$1 $CLE_DK/dotcle/cle-$1 | grep $1`
+	[ -n "$1" ] && F=`ls $CLE_DK/dotcle/mod-$1 $CLE_DK/dotcle/cle-$1 2>/dev/null | grep $1`
 	if [ ! -f "$F" ]; then
 		echo no such file: $F
 		return 1
