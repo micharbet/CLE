@@ -1,13 +1,12 @@
 #!/bin/bash
-##
-## see: Text flow highlighter
-## --------------------------
-#* version: 0.1.prd
+#
+## see: text stream highlighter
+## ----------------------------
+#* version: 2017-08-18
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
-#
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,6 +21,7 @@
 ## on command line. As an addition red timestamps are printed every 
 ## minute, they can be turned off by setting the interval to zero.
 ## 
+
 # defaults
 SUPPRESS=""
 TSTAMP=60

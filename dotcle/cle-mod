@@ -127,6 +127,7 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 		curl -ksS $CLE_SRC/bin/$MM >$DMM
 		# check module signature
 		if grep -q "## *$MM: ..*" $DMM ; then
+			mkdir -p ~/bin
 			mv -f $DMM ~/bin/$MM
 			chmod 755 ~/bin/$MM
 		else

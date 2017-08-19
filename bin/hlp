@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-## hlp: extracts built-in documentation from scripts
-## -------------------------------------------------
+## hlp: show script's built-in documentation
+## -----------------------------------------
 #* version: 2017-08-18
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
@@ -16,57 +16,57 @@
 ##
 ## usage: hlp [-v] [-u] [command]
 ##
-##  The built-in documentation is denoted by double-hash like special comments
-##  and is typically found at the beginning of script. However can be placed anywhere
-##  else in the source. Use 'hlp' script itself as an example.
-##  First double-hash line contains synopsis. Those lines are printed when no particular 
-##  command is given as a parameter - plain 'hlp' lists all available scripts from
-##  the same directory with their synopsis lines. 
-##  
-
+##  The built-in documentation consist of comments introduced by double-hash
+##  that can be placed anywhere inside script. Inspect this utility itself
+##  to see and learn how it looks and works.
+##  Running 'hlp' without arguments prints list of each script and its 
+##  synopsis. Such it provides list of installed custom utilities found
+##  typically in $HOME/bin directory. Issue 'hlp <scriptname>' to extract
+##  complete documentation from particular script. Alternatively use options:
+##
 VERB=''   # verbose flag
-## Options:
-##  -v ... verbose mode, prints out paths and filenames useful for debugging
-if [ "$1" = "-v" ]; then
-	VERB=y
-	shift
-fi
-
-##  -u ... usage mode, prints out only line containing 'usage:'
-if [ "$1" = "-u" ]; then
-	USAGE=y
-	shift
-fi
+while getopts "vu" OPT
+do
+	case $OPT in
+	v) ##  -v     verbose mode, prints out paths and filenames useful for debugging
+		VERB=y;;
+	u) ##  -u     usage mode - short help
+		USAGE=y;;
+	esac
+done
+shift $((OPTIND-1))
+##
 
 HDIR=`dirname $0`
 if [ $# = 0 ]; then
 	# no argument on cmdline - print only synopsis of avaliable scripts
 	cd $HDIR
-	[ "$VERB" ] && echo rootils directory: `pwd`
+	[ "$VERB" ] && echo directory: `pwd`
 	# list available scripts
 	for F in *; do
-		# filter only first line beginning with double-hash '##''
-		[ -f $F ] && awk 'BEGIN { FS="#" } /##/ { printf " %-12s -%s\n",FILENAME,$3; exit }' $F
+		##  Synopsis is the first duble-hashed comment.
+		[ -f $F ] && awk -F: '/^##/ { printf " %-12s -%s\n",FILENAME,$2; exit }' $F
 	done
 else
 	# first, find the file
 	if [ -f $1 ]; then
-		SCR=$1 		# path/filename on command line
+		SCR=$1		# script from current directory
 	elif [ -f $HDIR/$1 ]; then
-		SCR=$HDIR/$1	# or inside the same directory as 'hlp' itself
+		SCR=$HDIR/$1	# or from the same directory as 'hlp' itself
 	else
 		# ... or not found anything
 		echo hlp: no such script $1 >&2
 		exit 1
 	fi
 
-	[ "$VERB" ] && echo file: $SCR
+	[ "$VERB" ] && { echo directory: $HDIR; echo file: $HDIR/$SCR; }
 	if [ "$USAGE" ]; then
-		awk 'BEGIN { FS="#" } /## usage:/ { print $3; exit }' $SCR
+		##  There can be line containing "usage:" as a short hint.
+		awk -F# '/## usage:/ { print $3; exit }' $SCR
 	else
 		# extract complete help of given command
-		# print all lines beginning with '##'
-		awk 'BEGIN { FS="#" } /##/ { print $3 }' $SCR >&2
+		# print all double-hashed comments
+		awk -F# '/[\t ]## *|^## */ { print $3, $4, $5, $6 }' $SCR
 	fi
 fi
 
