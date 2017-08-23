@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-08-18 (RedH)
+#* version: 2017-08-23 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -571,11 +571,11 @@ cle () {
 	env)	## cle env         -- print CLE_* variables
 		for I in ${!CLE_*};do printf "$_Tw%-12s$_TN%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation
-		I=`curl -k $CLE_SRC/index.md`
+		I=`curl -sk $CLE_SRC/index.md`
 		[[ $I =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
-		PS3="$_Tw doc #"
+		PS3="$_Tw doc #$_TN"
 		select C in $I;do
-			curl -sk $CLE_SRC/$C |mdfilter|less -r; break
+			[ $C ] && curl -sk $CLE_SRC/$C |mdfilter|less -r; break
 		done;;
 	help)	## cle help [fnc]  -- show help
 		# double hash denotes help content

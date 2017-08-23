@@ -1,8 +1,9 @@
 (DRAFT)
 # I want to hear from you!
-          Really
+          Really!!
 
-- Watch & Star on Gitlab (URL)
-- Give a like nad discuss on Facebook (URL)
+- Watch & Star the project on Gitlab https://github.com/micharbet/CLE
+- Give a like & discuss on Facebook (URL)
+- Repurt bugs
+- Donate at PayPal (micharbet@gmail.com)
 
-Also use featured module mod-feedback.
