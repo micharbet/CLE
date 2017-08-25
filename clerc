@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-08-23 (RedH)
+#* version: 2017-08-25 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -213,7 +213,7 @@ _setp () {
 # prompt callback
 _clepmt () {
 	_E=$? # save return code
-	local N D T C
+	local N D T C OI=$IFS
 	# highlight error code
 	[ $_E = 0 ] && _CE="" || _CE="$_TE"
 	# window title
@@ -225,6 +225,7 @@ _clepmt () {
 		{ read N D T C; echo "$D $T $CLE_USER-$$ $_E $PWD $C" >>$CLE_HIST;} <<<$_H
 	fi
 	_HO=$_H
+	IFS=$OI
 }
 PROMPT_COMMAND=_clepmt
 
@@ -335,6 +336,7 @@ h () (
 
 ## hh [opt] [srch] -- rich history viewer
 hh () (
+	OI=$IFS
 	unset IFS
 	while getopts "cst" O;do
 		case $O in
@@ -361,6 +363,7 @@ hh () (
 	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
 		echo "$D $T $_Tb$U $EE$E $_TN$P $_Tw$C$_TN"
 	done
+	IFS=OI
 )
 
 # rich history record
@@ -463,6 +466,9 @@ export PAGER="less -s"
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
 CDPATH=.:..:~
+
+# completion
+declare -F _known_hosts >/dev/null && complete -F _known_hosts ssg
 
 # session record
 TTY=`tty|sed 's;[/dev];;g'`

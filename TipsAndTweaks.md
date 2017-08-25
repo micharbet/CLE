@@ -30,11 +30,12 @@ This uses 'D' - terminal escape sequence for dim attribute
 
 ### Show previous working directory in prompt
 `cle p3 '(%vOLDPWD) \w %>'
-You will see where have you been before most recent 'cd something'. Try to
-issue `cd -` or simple `-` to switch between PWD and OLDPWD.
+You will see where have you been before recent 'cd something'. Try to
+issue `cd -` or simple `-` to swap between PWD and OLDPWD.
 
 ### GIT branch in prompt?
-`cle p3 '\w%cy:$([ -d .git -o -d ../.git ] && git symbolic-ref --short HEAD) %cW%>'`
+Insert module 'git' and its function 'gicwb', then:
+`cle p3 '\w%cy:$(gicwb) %cW%>'`
 Simply executes `git symbolic-ref --short HEAD` whenever there is .git directory
 underneath. Note, this is not CLE feature! Pure bash is able to execute
 commands if there is something like PS1='string $(the_command) other string'
