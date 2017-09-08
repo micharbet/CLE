@@ -25,7 +25,7 @@
 # defaults
 SUPPRESS=""
 TSTAMP=60
-READER=""
+READER="cat"  # stdin will be used without '-f filename' argument
 AND=""
 
 # Colours
@@ -36,6 +36,13 @@ YLL=$BLD$(tput setaf 3)
 CYA=$BLD$(tput setaf 6)
 RED=$BLD$(tput setaf 1)
 
+RST='_RST_'
+BLD='_BLD_'
+GRN='_GRN_'
+YLL='_YLL_'
+CYA='_CYA_'
+RED='_RED_'
+
 ## Options:
 while getopts "ant:f:" OPT
 do
@@ -44,7 +51,8 @@ do
 		TSTAMP=$OPTARG
 		;;
 	f)	##   -f file  open filename instead of stdin
-		READER="tail -f $OPTARG |"
+		INFILE=$OPTARG
+		READER="tail -f $INFILE | "
 		;;
 	a)	##   -a       highlight when all words are found (AND operator, default is OR)
 		##            note: AND will highight whole line not separated words
@@ -61,49 +69,52 @@ shift $((OPTIND-1))
 # Prepare search - replacement expressions
 # currently up to three words
 case $# in
-1)	RE1="-e 's/\\($1\\)/$GRN\\1$RST/'"
-	[ "$SUPPRESS" ] && RE1=${REXP}p
+1)	RE="s/\\($1\\)/$GRN\\1$RST/"
+	[ "$SUPPRESS" ] && RE=${RE}p
+	$READER | sed $SUPPRESS -e "$RE" &
 	;;
 2)	if [ -n "$AND" ]; then
-		RE1="-e '/$1.*$2/s/\\(.*\\)/$CYA\\1$RST/'"
-		RE2="-e '/$2.*$1/s/\\(.*\\)/$CYA\\1$RST/'"
+		RE1="'/$1.*$2/s/\\(.*\\)/$CYA\\1$RST/'"
+		RE2="'/$2.*$1/s/\\(.*\\)/$CYA\\1$RST/'"
 	else
-		RE2="-e '/$1/s/\\($1\\)/$GRN\\1$RST/'"
-		RE1="-e '/$2/s/\\($2\\)/$YLL\\1$RST/'"
+		RE1="s/\\($1\\)/$GRN\\1$RST/"
+		RE2="s/\\($2\\)/$YLL\\1$RST/"
 	fi
 	[ "$SUPPRESS" ] && RE2=${RE2}p
+	echo $SUPPRESS -e "$RE1;$RE2"
+	$READER | sed $SUPPRESS -e "$RE1;$RE2" &
 	;;
 3)	if [ -n "$AND" ]; then
 		# count matching words, use '@' as marker
-		RE1="-e '/$1/s/\\(.*\\)/@\\1/'"
-		RE2="-e '/$2/s/\\(.*\\)/@\\1/'"
-		RE3="-e '/$3/s/\\(.*\\)/@\\1/'"
+		RE1="'/$1/s/\\(.*\\)/@\\1/'"
+		RE2="'/$2/s/\\(.*\\)/@\\1/'"
+		RE3="'/$3/s/\\(.*\\)/@\\1/'"
 		# remove marker and eventually highlight if there are 3
-		RE3=$RE3" -e 's/\\(@@@\\)\\(.*\\)/$CYA\\2$RST/'"
-		RE3=$RE3" -e 's/\\(@\\{1,3\\}\\)\\(.*\\)/\\2/'"
+		RE3=$RE3";'s/\\(@@@\\)\\(.*\\)/$CYA\\2$RST/'"
+		RE3=$RE3";'s/\\(@\\{1,3\\}\\)\\(.*\\)/\\2/'"
 	else
-		RE1="-e '/$1/s/\\($1\\)/$GRN\\1$RST/'"
-		RE2="-e '/$2/s/\\($2\\)/$YLL\\1$RST/'"
-		RE3="-e '/$3/s/\\($3\\)/$CYA\\1$RST/'"
+		RE1="'/$1/s/\\($1\\)/$GRN\\1$RST/'"
+		RE2="'/$2/s/\\($2\\)/$YLL\\1$RST/'"
+		RE3="'/$3/s/\\($3\\)/$CYA\\1$RST/'"
 	fi
-	[ "$SUPPRESS" ] && RE3=${RE3}p
+	RE="$RE1;$RE2;$RE3"
+	[ "$SUPPRESS" ] && RE=${RE}p
 	;;
 *)
 	hlp ${BASH_SOURCE[0]}
 	exit;;
 esac
 
-# prepare the filter to be run
-RUN="$READER sed $SUPPRESS $RE1 $RE2 $RE3"
-if [ $TSTAMP -gt 0 ]; then
-	# loop in background prints timestamps, 
-	bash -c "while true; do \
-			date '+$RED[%d-%m-%Y %T]$RST'; \
-			sleep $TSTAMP; \
-		 done" &
-	# trap ensures the loop will be terminated
-	bash -c "trap 'kill $!' EXIT; $RUN"  
+# run and parse in tha background
+
+# print timestamps (if required) in the foreground
+if [ $TSTAMP -ne 0 ]; then
+
+	while true; do 
+		date "+$RED[%d-%m-%Y %T] -- ${INFILE:stdin}$RST";
+		sleep $TSTAMP
+	done
 else
-	bash -c "$RUN"
+	wait
 fi
 

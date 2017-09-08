@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-08-25 (RedH)
+#* version: 2017-09-07 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -70,7 +70,7 @@ case $CLE_RC in
 *-remote-*) # remote session
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
-	[ -w $HOME ] && _D=$HOME || _D=`dirname $CLE_RC`
+	[ -w $HOME ] && _D=$HOME || { _D=/tmp/$USER; mkdir -p $_D; }
 	cd $_D;;
 */clerc*) # first run from commandline
 	CLE_1=1
@@ -389,7 +389,7 @@ ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
 	`command which ssh` -t $* "
-		[ -w \$HOME ] || { mkdir -p /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
+		[ -w \$HOME ] || { mkdir -p /tmp/\$USER; cd /tmp/\$USER;}
 		echo -n $C64|base64 --decode|tar xzf -;
 		exec bash --rcfile .clerc-remote-$CLE_USER"
 )
