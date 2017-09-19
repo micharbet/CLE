@@ -10,11 +10,21 @@ CLE uses it's own repository. The reason for this is compatibility among
 various distributions and operating systems so no dependancy on rpm/deb/etc.
 
 - where are stored (.cle)
-- different types of modules (mod-* vs. cle-* vs. bin-*)
-- mod-* code is executed upon each CLE session startup
-- cle-* mainly 'cle' command enhancements, code is executed on demand only
-- bin-* not true modules but rather standalone scripts
 
+## module types
+Following modules are available in CLE
+- mod-* this code is executed upon each CLE session startup
+- cle-* scripts provides enhanced functionality to 'cle' command
+- bin-* not true modules but rather standalone / independent scripts
+
+          executed    can alter    can use        is
+         on startup   variables   functions   independent 
+                         and       defined      of CLE
+                      functions   in .clerc
+         ------------------------------------------------------
+  mod-*      yes         yes         yes
+  cle-*                  yes         yes
+  bin/*                                          yes
 
 ## How to use modules
 `cle mod`

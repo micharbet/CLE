@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-09-07 (RedH)
+#* version: 2017-09-12 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -297,7 +297,8 @@ aa () {
 	"")	## aa         -- show aliases
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_Tw\1$_TN	\2/";;
 	s)	## aa s       -- save current aliases
-		alias;ask Save aliases? || return
+		alias|diff $CLE_ALI -
+		ask Save aliases? || return
 		cp $CLE_ALI $ABK
 		alias >$CLE_ALI
 		printb Saved to file: $CLE_ALI
@@ -324,12 +325,12 @@ HISTFILE=$CLE_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
-HISTIGNORE="h:h *:scrn"
+HISTIGNORE="scrn*"
 CLE_HIST=$CLE_D/.history-ALL
 
 ## h               -- bash 'history' wrapper
 h () (
-	history $*|while read N D T C;do
+	history "$@"|while read N D T C;do
 		echo "$_TB$N$_TN $D $T $_Tw$C$_TN"
 	done
 )
