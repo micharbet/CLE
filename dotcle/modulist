@@ -2,7 +2,9 @@ mod-cledk:2017-08-18:4bc9f71d43d2072208c63fbe64cbc16d:functions to assist CLE de
 mod-example:0.0.prd:d7adc51538d35bd528570188430ec86a:example / template module
 mod-fsps:0.0.prd:f583e8354089e1ae46e79219657495e2:filesystem and processess utilities
 mod-git:2017-08-08:5bb12beec20cf3140674e9913b8cdf12:git helpers / shorcuts
+mod-mancolor::8764194f37956b17223bcb930bfbb0d4:
 cle-mod:2017-08-17:9d398a3b127042ba8b1a617f7852d659:CLE module management
 bin-cfe:0.0.prd:7a00ff8a29d02fa3fac91cdf1c9a90e5:config editor
 bin-hlp:2017-08-18:cdcf53456992f1017056b1af2c817f00:show script's built-in documentation
-bin-see:2017-08-18:5c3d91e823c379e784263a4885704e3a:text stream highlighter
+bin-see:2017-09-21:f9af19f89db7cafac37c047d9f3ccc2f:text stream highlighter
+bin-seelog::4cc9b0400d604ca5620a115946f7213a:

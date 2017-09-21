@@ -2,7 +2,7 @@
 #
 ## see: text stream highlighter
 ## ----------------------------
-#* version: 2017-08-18
+#* version: 2017-09-21
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -25,7 +25,7 @@
 # defaults
 SUPPRESS=""
 TSTAMP=60
-READER="cat |"  # stdin will be used without '-f filename' argument
+READER=""  # stdin will be used without '-f filename' argument
 AND=""
 
 # Colours
@@ -35,6 +35,15 @@ RD=`tput setaf 1`; BR=$BLD$RD
 GR=`tput setaf 2`; BG=$BLD$GR
 YL=`tput setaf 3`; BY=$BLD$YL
 CY=`tput setaf 6`; BC=$BLD$CY
+
+# function printing regular red colored timestamps
+tstamp () {
+	[ $1 -eq 0 ] && return
+	while true; do
+		date "+$BR[%Y-%m-%d %T] -- ${INFILE:-STDIN}$RST"
+		sleep $1
+	done &
+}
 
 ## Options:
 while getopts "ant:f:" OPT
@@ -93,18 +102,9 @@ case $# in
 	exit;;
 esac
 
-# run and parse in the background
+tstamp $TSTAMP
+
+# run and parse 
 [ "$SUPPRESS" ] && RE=${RE}p
-eval "$READER sed $SUPPRESS -e '$RE'&"
-
-# print timestamps (if required) in the foreground
-if [ $TSTAMP -ne 0 ]; then
-
-	while true; do 
-		date "+$BR[%Y-%m-%d %T] -- ${INFILE:-STDIN}$RST";
-		sleep $TSTAMP
-	done
-else
-	wait
-fi
+eval "$READER sed $SUPPRESS -e '$RE'"
 
