@@ -2,7 +2,7 @@
 #
 ## see: text stream highlighter
 ## ----------------------------
-#* version: 2017-09-21
+#* version: 2017-09-22
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -74,8 +74,14 @@ case $# in
 1)	RE="s/\\($1\\)/$BG\\1$RST/"g
 	;;
 2)	if [ -n "$AND" ]; then
-		RE1="/$1.*$2/s/\\(.*\\)/$CY\\1$RST/"
-		RE2="/$2.*$1/s/\\(.*\\)/$CY\\1$RST/"
+		# count matching words, use '@' as marker
+		RE1="/$1/s/\\(.*\\)/@\\1/"
+		RE2="/$2/s/\\(.*\\)/@\\1/"
+		# remove marker and eventually highlight if there are 3
+		RE2=$RE2";/^@@/s/\\($1\\|$2\\)/$BC\\1$RST$CY/g"
+		RE2=$RE2";/^@@/s/\\(@@\\)\\(.*\\)/$CY\\2$RST/"
+		RE2=$RE2";/^@/s/\\($1\\|$2\\)/$BC\\1$RST/g"
+		RE2=$RE2";/^@/s/\\(@\\)\\(.*\\)/\\2/"
 	else
 		RE1="s/\\($1\\)/$BG\\1$RST/"g
 		RE2="s/\\($2\\)/$BY\\1$RST/"g
@@ -88,8 +94,10 @@ case $# in
 		RE2="/$2/s/\\(.*\\)/@\\1/"
 		RE3="/$3/s/\\(.*\\)/@\\1/"
 		# remove marker and eventually highlight if there are 3
-		RE3=$RE3";s/\\(@@@\\)\\(.*\\)/$CY\\2$RST/"
-		RE3=$RE3";s/\\(@\\{1,3\\}\\)\\(.*\\)/\\2/"
+		RE3=$RE3";/^@@@/s/\\($1\\|$2\\|$3\\)/$BY\\1$RST$YL/g"
+		RE3=$RE3";/^@@@/s/\\(@@@\\)\\(.*\\)/$YL\\2$RST/"
+		RE3=$RE3";/^@/s/\\($1\\|$2\\|$3\\)/$BY\\1$RST/g"
+		RE3=$RE3";/^@/s/\\(@\\{1,3\\}\\)\\(.*\\)/\\2/"
 	else
 		RE1="s/\\($1\\)/$BG\\1$RST/"g
 		RE2="s/\\($2\\)/$BY\\1$RST/"g
