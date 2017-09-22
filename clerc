@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-09-12 (RedH)
+#* version: 2017-09-22 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -216,8 +216,9 @@ _clepmt () {
 	local N D T C OI=$IFS
 	# highlight error code
 	[ $_E = 0 ] && _CE="" || _CE="$_TE"
-	# window title
+	# window title & screen name
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
+	[[ $TERM =~ screen ]] && echo -e "\ek$USER\e\\"
 	# rich history
 	_H=`history 1`
 	unset IFS
@@ -456,7 +457,8 @@ cat <<-EOS
 	defscrollback 3000
 	hardstatus alwayslastline 
 	hardstatus string '%{= Kk} %-w%{+u KC}%n %t%{-u Kk}%+w %-=%{KG}$CLE_THN%{Kg} %c'
-	bind c screen -t $USER bash -rcfile $CLE_RC
+	bind c screen bash -rcfile $CLE_RC
+	bind ^c screen bash -rcfile $CLE_RC
 	source $HOME/.screenrc
 EOS
 }
