@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-09-22 (RedH)
+#* version: 2017-09-23 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -223,7 +223,7 @@ _clepmt () {
 	_H=`history 1`
 	unset IFS
 	if [ "$_H" != "$_HO"  -a -n "$_HO" ];then
-		{ read N D T C; echo "$D $T $CLE_USER-$$ $_E $PWD $C" >>$CLE_HIST;} <<<$_H
+		{ read -r N D T C; echo "$D $T $CLE_USER-$$ $_E $PWD $C" >>$CLE_HIST;} <<<$_H
 	fi
 	_HO=$_H
 	IFS=$OI
@@ -355,7 +355,7 @@ hh () (
 		tail -$1;;
 	*)	## hh [opt] string -- search in history
 		grep $1
-	esac | while read D T U E P C;do
+	esac | while read -r D T U E P C;do
 	 [ $E != 0 -a "$ONLY0" ] && continue
 	 case $E in
 	 0)	EE=$_Tg;;
