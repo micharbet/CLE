@@ -5,4 +5,4 @@ mod-git:2017-08-08:5bb12beec20cf3140674e9913b8cdf12:git helpers / shorcuts
 cle-mod:2017-08-17:9d398a3b127042ba8b1a617f7852d659:CLE module management
 bin-cfe:0.0.prd:7a00ff8a29d02fa3fac91cdf1c9a90e5:config editor
 bin-hlp:2017-08-18:cdcf53456992f1017056b1af2c817f00:show script's built-in documentation
-bin-see:2017-09-22:38cf675c03645628d0c6e475726ebbc6:text stream highlighter
+bin-see:2017-09-23:6979aa5f2a6578ddcecc28d2d3a6d2a3:text stream highlighter
