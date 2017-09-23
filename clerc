@@ -363,7 +363,7 @@ hh () (
 	 @)	EE=$_Tc;;
 	 *)	EE=$_Tr
 	 esac
-	 [[ "$C" =~ ^# ]] && { E='# note:';EE=$_Ty;P=;}
+	 [[ "$C" =~ ^# ]] && { E='#';EE=$_Ty;C=$_Ty$C$_TN;}
 	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
 		echo "$D $T $_Tb$U $EE$E $_TN$P $_Tw$C$_TN"
 	done | ${OUTF:-cat}
