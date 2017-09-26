@@ -1,0 +1,10 @@
+export LESS_TERMCAP_mb=$(tput bold; tput setaf 2) # green instead of blink
+export LESS_TERMCAP_md=$(tput bold; tput setaf 6) # yellow
+export LESS_TERMCAP_me=$(tput sgr0)
+export LESS_TERMCAP_so=$(tput bold; tput setaf 7; tput setab 4) # white on blue
+export LESS_TERMCAP_se=$(tput rmso; tput sgr0)
+export LESS_TERMCAP_us=$(tput setaf 7) # white instead of underline
+export LESS_TERMCAP_ue=$(tput sgr0)
+export LESS_TERMCAP_mr=$(tput rev)
+export LESS_TERMCAP_mh=$(tput dim)
+export GROFF_NO_SGR=1         # For Konsole and Gnome-terminal

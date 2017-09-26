@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# slog version: 1.0
+# (c) 2013 Michael Arbet
+#
+## Log observer / highlighter
+##
+## usage: slog [-n] filename [word1] [word2] [word3]
+##
+##  1. looks for the file, either direct path or in the list of directories
+##     (variable LOGPATH)
+##  2. highlights up to three selected words - uses 'see' utility
+##  3. option '-n' suppress unmatched lines
+##
+## Examples:
+##  seelog messages              ... same as 'tail -f /var/adm/messages'
+##  seelog messages sendmail     ... similar, highliths also word 'sendmail'
+##  seelog -n messages sendmail  ... print only matched lines (like grep)
+
+# where to find log files
+[ -z "$LOGPATH" ] && LOGPATH=/var/adm:/var/log
+
+#
+# chceck if to suppress of unmatched lines
+if [ "$1" = "-n" ]; then
+	NOUL="-n"
+	shift
+fi
+
+#
+# get filename
+LF=$1
+shift
+if [ -z "$LF" ]; then
+	hlp $0
+	exit 1
+fi
+
+#
+# either open directly specified file ...
+if [ -f $LF ]; then
+	LOGF=$LF
+else
+# ...or look for the file through directories listed in $LOGPATH
+	IFS=":"
+	for LP in $LOGPATH; do
+		if [ -f $LP/$LF ]; then
+			LOGF=$LP/$LF
+			break
+		fi
+	done
+fi
+
+if [ -z "$LOGF" ]; then
+	echo "seelog: file $LF couldn't be find in LOGPATH ($LOGPATH)"
+	exit 2
+fi
+
+# print header
+echo -e "\e[1mseelog: read from file $LOGF\e[0m"
+
+# do it!
+case $# in
+0) tail -20f $LOGF | see -t dummy_word ;;
+*) tail -20f $LOGF | see -t $NOUL $@ ;;
+esac
+

@@ -1,0 +1,26 @@
+##
+## mod-alifun: bash aliases and functions management
+## -------------------------------------------------
+#* version: 2017-09-25
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2017 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+## fed funcname       -- edit function
+fed () {
+	local FUNDIR=~/functions
+	local FF=$FUNDIR/f-$1
+
+	[ $1 ] || { echo "fed: missing function_name"; return 1; }
+	mkdir -p $FUNDIR
+	declare -f $1 >$FF   # grab function
+	vi $FF               # edit
+	. $FF                # re-inplement
+}
+
