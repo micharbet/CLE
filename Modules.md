@@ -100,7 +100,7 @@ Set the `$CLE_SRC` in one of following files:
 - `$HOME/.cleusr-YOURNAME` (remember this file is transferred and executed
   over all ssg/su/sudo sessions, for this you might want to create 'if'
   statement for this.)
-- /etc/clerc-local - global files for all CLE sessions on particular host
+- /etc/clerc-system - global files for all CLE sessions on particular host
  (^^^ this needs to be done!)
 
 Downloading of modules is ensured with `curl` utility. Any URL valid for curl
