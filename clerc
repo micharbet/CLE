@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-09-24 (RedH)
+#* version: 2017-10-20 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -218,7 +218,7 @@ _clepmt () {
 	[ $_E = 0 ] && _CE="" || _CE="$_TE"
 	# window title & screen name
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
-	[[ $TERM =~ screen ]] && echo -e "\ek$USER\e\\"
+	[[ $TERM =~ screen ]] && echo -en "\ek$USER\e\\"
 	# rich history
 	_H=`history 1`
 	unset IFS
