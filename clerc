@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-10-20 (RedH)
+#* version: 2017-11-10 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -355,7 +355,7 @@ hh () (
 		## hh [opt] number -- find last N entries
 		tail -$1;;
 	*)	## hh [opt] string -- search in history
-		grep $1
+		grep "$*"
 	esac | while read -r D T U E P C;do
 	 [ $E != 0 -a "$ONLY0" ] && continue
 	 case $E in
