@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-11-10 (RedH)
+#* version: 2017-11-12 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -340,10 +340,11 @@ h () (
 hh () (
 	OI=$IFS
 	unset IFS
-	while getopts "cstl" O;do
+	while getopts "cstdl" O;do
 		case $O in
 		s) ONLY0=1;; ## hh -s           -- print successful commands only
 		c) ONLYC=1;; ## hh -c           -- show just commands
+		d) THIS=`date +%Y-%m-%d`;; ## hh -d           -- today's commands
 		t) THIS=$CLE_USER-$$;; ## hh -t           -- commands from current session
 		l) OUTF="less -r +G" ## hh -l           -- show history with 'less'
 	esac;done
@@ -502,7 +503,6 @@ _setwt
  Since this is the first run, consider setup in your profile.
  Following command will hook CLE in $HOME/.bashrc:
 $_TL	cle deploy
-
 EOT
 
 ##
