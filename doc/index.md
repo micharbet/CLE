@@ -4,4 +4,4 @@ TipsAndTweaks.md
 Modules.md
 Contribute.md
 Feedback.md
-LICENSE
+LICENSE.md
