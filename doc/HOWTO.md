@@ -181,11 +181,11 @@ documentation.
 
 ## History management
 
-CLE intorduces persisten rich history. Persistent means that the record are
-not deleted. The file can grow to megabytes and holds complete history over
-the time. The word 'rich' points to more information contained in each
-history record. this history file exists besides 'regular' file. So in fact
-there are two history files:
+CLE intorduces persistent rich history. Persistent means that the records are
+not deleted, file is not truncated. The file can grow to megabytes and holds
+complete history over time. The word 'rich' refers to amount of information
+contained in each history record. This history file exists besides 'regular'
+file. So in fact there are two history files:
 1. convenitional bash managed but personalized in CLE, .history-$CLE_USER
 2. rich history file .history-ALL
 Note that .history-ALL is not personalized and stores record from all sessions
@@ -207,11 +207,17 @@ Special record appears when session is started. Those  are denoted with '@'
 at the place of return code. In that case working directory contains terminal
 name and instead of command there is additional information in square brackets.
 
+
 ### Searching through history
+
 Function `h` is simple shortcut for regular 'history' command. Basically it
 just colorizes it's output highliting sequence number and the command itself.
+Use the `h` with the same parameters like `history` command. This just more
+sophisticated alias.
 
-New command `hh` works with rich history. When issued without arguments
+New command `hh` works with rich history.
+When issued without arguments
+
 it prints out 100 recent records. However you can alter it's behavior or in
 other words filter the output using options and arguments. So use:
 - `hh string` to grep search for given string in rich history file. The grep

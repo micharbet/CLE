@@ -1,6 +1,7 @@
 # Use modules to enhance CLE funcionality
 
 ## What are modules
+
 Besides basic fuctionalities CLE is extensible framework. Various modules can
 In addition to basic fuctionalities the CLE is in fact extensible framework.
 Various modules can be added to enhance or modify the environment. For example
@@ -18,11 +19,12 @@ can be found here as decribed in next chapter.
 
 
 ## Module types
-Following modules are available in CLE
+
+Following modules are available in CLE:
 - _mod-*_ this code is executed upon each CLE session startup
   Those modules may implement new bash functions, replace original CLE
   functions and alter variables.
-- _cle-*_ scripts provides enhanced functionality to `cle` command
+- _cle-*_ contain scripts provides enhanced functionality to `cle` command
   Modules of this kind resides in the folder but are called on demand and
   only through command `cle` Good example is 'cle-mod'. This module contains
   code for working with modules itself, like adding, removing, etc. When you
@@ -36,7 +38,7 @@ Following modules are available in CLE
   scripts into CLE is ease of distribution from networked repository.
 
 
-Following table provides overview of module types and their main properties
+This table provides overview of module types and their main properties
 
 ```
           executed    can alter    can use        is
@@ -78,8 +80,7 @@ code) if it's mod-* (because cle-* and bin/* are executed on demand only) On
 the other side, module removal means not exactly deletion just the file is
 moved int $HOME/.cle/inactive. Another fact is that any residuals of modules 
 are still in memory of sessions started before removal. In other words, even
-if mod-something has been removed, it had been activated when CLE started so
-if you require full deactivation you need to start nev session.
+if mod-something has been removed, full deactivation happens in new session.
 
 
 ## Module repository
