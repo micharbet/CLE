@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-11-23 (RedH)
+#* version: 2017-11-24 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -418,33 +418,33 @@ kksu () (
 	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
 )
 
-## scrn [-r]       -- gnu screen wrapper, lists active sessions to attach
-##                    use -r to take control instead of join
+## scrn [name]     -- gnu screen wrapper, join your recent session or start new
+## scrn -j [name]  -- join other screen sessions, ev. search by name
 scrn () (
-	# obtain screens list
-	SCRS=`screen -ls|sed -n "s/^[[:space:]]*\([0-9]*\..*\)/\1/p"|tr " \t" "-"`
-	if [ -n "$SCRS" ];then
-		# join or take control
-		[ "$1" = "-r" ] && SW="-DR" || SW="-x"
-		[ $SW = -x ] && JR=join || JR="take control"
-		printb ${_TU}Current sessions:
-		PS3="$_Tw choose # to $_TW$JR$_Tw or <space> for new: $_TN"
-		select S in $SCRS;do
-			[ $REPLY ] || break
-			if [ $S ];then
-				SS=`echo $S|cut -d- -f1`
-				_rhlog screen $SW $SS
-				screen -S $SS -X echo "$CLE_USER is joining"
-				exec screen $SW $SS
-			fi
-		done
+	SR=$CLE_USER${1:+-$1}
+	[ "$1" = -j ] && SR=${2:-.}
+	SCRS=`screen -ls|sed -n "/$SR/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
+	NS=`wc -w <<<$SCRS`
+	if [ $NS = 0 ]; then
+		[ "$1" = -j ] && echo "No screen to join" && return 1
+		SCF=$CLE_D/.screenrc-$CLE_USER
+		SN=$TTY-CLE.$SR
+		_rhlog screen -S $SN
+		_scrc >$SCF
+		screen -c $SCF -S $SN -t $USER bash --rcfile $CLE_RC
+	else
+		if [ $NS = 1 ]; then SN=$SCRS
+		else
+			printb "${_TU}Current '$SR' sessions:"
+			PS3="$_Tw choose # to join: $_TN"
+			select SN in $SCRS;do
+				[ $SN ] && break
+			done
+		fi
+		_rhlog screen $SW $SN
+		screen -S $SN -X echo "$CLE_USER joining"
+		screen -x $SN
 	fi
-	# start new session
-	SCF=$CLE_D/.screenrc-$CLE_USER
-	SN=$TTY.$CLE_USER
-	_rhlog screen -S $SN
-	_scrc >$SCF
-	screen -c $SCF -S $SN -t $USER bash --rcfile $CLE_RC
 )
 
 # screenrc generator
@@ -583,7 +583,7 @@ cle () {
 		for I in ${!CLE_*};do printf "$_Tw%-12s$_TN%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation
 		I=`curl -sk $CLE_SRC/doc/index.md`
-		[[ $I =~ LICENSE$ ]] || { echo Unable to get documentation;return 1;}
+		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
 		PS3="$_Tw doc #$_TN"
 		select C in $I;do
 			[ $C ] && curl -sk $CLE_SRC/doc/$C |mdfilter|less -r; break
