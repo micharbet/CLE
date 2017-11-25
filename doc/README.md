@@ -1,6 +1,6 @@
 
 #   Command Live Environment
-## _The shell improvements :-)_
+##   The shell improvements :-)
 
 CLE enhances bash with following tweaks:
  - colorized and customizable **prompt** string including server time and exit
@@ -16,8 +16,10 @@ CLE enhances bash with following tweaks:
  - open framework for tweaks and further customization
  
 
+
 ## CLE setup and usage
-All the mentioned functionality is encoded into __single file__ and no other
+
+All the mentioned functionality is encoded into _single file_ and no other
 executables are needed. Run this file in the current shell context using
 trailing dot:
 
@@ -52,9 +54,13 @@ however they add CLE to the sessions.
 ### scrn - GNU screen wrapper
 
 This wrapper is workaround allowing starting CLE inside screen session. By
-default it lists active sessions if any and allows to join them in cooperative
-mode. Another added value is configuration file with nice status line and
-switching between sessions with Ctrl-Left/Right.
+default is searches for _yours_ opened/detached session and joins or creates
+new one. You can also run `scrn -j` to obtain list of sessions opened on this
+account by all users and join them in cooperative mode. (Imagine environment
+whre more users access root's account.
+
+Another added value is configuration file with nice status line and shortcut
+Ctrl-Left/Right to switch between windows.
 
 
 ### other utilities
@@ -63,7 +69,7 @@ switching between sessions with Ctrl-Left/Right.
 - `cle` the most important one - this is the command and control center
       of the environment. Issue `cle help` to read more.
 
-Read HOWTO.md and other documents to find ot more.
+Read HOWTO.md and other documents to find out more about this environment.
 
 
 ## Compatibility
@@ -92,6 +98,7 @@ It also works well with at least following terminal emulators:
 - screen
 
 
+
 ## Requirements
 
 Generaly basic OS installation should be sufficient. Some systems might however
@@ -102,6 +109,7 @@ require to add missing utilities. Those really necessary are:
 - curl
 - ssh (note, no scp required, e.g no openssh-clients on RHEL)
 - GNU screen (only if you want to use it with 'scrn' wrapper)
+
 
 
 ## Why 'CLE' and bit of history
@@ -136,10 +144,19 @@ one single resource file was just a nature evolution that gave the word 'Live'
 its true meaning -- the `clerc` now contains a mechanism of multiplication it's
 own DNA [1].
 
-
 [1] CLE is not a virus :-) It doesn't run itself on any host. Everything is
 under user's (your) control and responsibilty. All the spreading is initiated
 and driven by user who must know what he's doing. Feel free to inspect the
 source code.
 
+
+
+## LICENSE
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version 2
+ of the License, or (at your option) any later version.
+
+ Find complete text in file LICENSE.md or at following URL:
+ https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 

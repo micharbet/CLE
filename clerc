@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-11-24 (RedH)
+#* version: 2017-11-25 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -431,7 +431,7 @@ scrn () (
 		SN=$TTY-CLE.$SR
 		_rhlog screen -S $SN
 		_scrc >$SCF
-		screen -c $SCF -S $SN -t $USER bash --rcfile $CLE_RC
+		screen -c $SCF -S $SN bash --rcfile $CLE_RC
 	else
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
@@ -441,7 +441,7 @@ scrn () (
 				[ $SN ] && break
 			done
 		fi
-		_rhlog screen $SW $SN
+		_rhlog screen -x $SN
 		screen -S $SN -X echo "$CLE_USER joining"
 		screen -x $SN
 	fi

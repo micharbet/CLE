@@ -114,11 +114,18 @@ altered so anybody who hates any change can still use old good ssh (su, sudo)
 into an account with its default/poor settings.
 
 Use following commands to initiate CLE sessions:
+
 - `ssg [account@]remote.host`
 This command is in fact 'ssh' wrapper that packs whole CLE - copies clerc file
 to remote host and runs bash session with transferred environment. The
 environment resource file is in home directory named .clerc-remote-$CLE_USER
 where CLE_USER is first CLE username, typically logname from workstation.
+
+Remember, what is transferred from workstation is '.clerc' file. Configuration
+remains stored locally on machine and in separated file for each user. This
+allows to use different prompt settings on various accounts - this is another
+step to distinguish not only commands and their outputs but also servers
+by their prompt colours.
 
 - `suu [account]`
 - `sudd [account]`
@@ -127,21 +134,31 @@ Those are wrappers to su/sudo/ksu commands. Use appropriate one to switch user
 context for your particular purpose. CLE is not transferred but the current
 .clerc-YOURNAME is re-used for switched session.
 
-- `scrn [-r]`
+- `scrn [-j] [session_name]`
 GNU screen requires this wrappaer mainly on remote sessions, where CLE is not
-deployed. As added value screen is started with newly generated configuration
-file .screenrc-$CLE_USER. This configuration contains nice status line with
-list of currently running screens and allows to switch between them with simple
-shortcut Ctrl-Left/Right arrow. Also before starting the screen itself it
-check if there are sessions already running. Those are offered to join and
-cooperate in shared mode or alternatively you can take control over such
-sessions if you issue 'scrn -r'
+deployed and hooked into .bashrc. As added value screen is started with
+customized configuration file .screenrc-$CLE_USER. This configuration contains
+nice status line with list of currently running screens and allows to switch
+between them with simple shortcut Ctrl-Left/Right arrow.
 
-Remember, what is transferred from workstation is '.clerc' file. Configuration
-remains stored locally on machine and in separated file for each user. This
-allows to use different prompt settings on various accounts - this is another
-step to distinguish not only commands and their outputs but also servers
-by their prompt colours.
+Before start it checks if there are sessions already running or detached.
+Those are offered to join in cooperative mode (in fact it runs `screen -x`)
+
+This wrapper is ready to environments where there might be e.g. multiple
+administrators. If issued without arguments it checks if you already have
+opened and/or detached sessions and joins them if found. Otherwise it creates
+new one. Such new session is always named by following convence:
+
+    $PID.$TTY-CLE.$CLE_USER  e.g. '2785.pty3.mich'
+
+So again, CLE_USER is the key to find your session. You can run more sessions
+if you add session_name as parameter, then it will be named like e.g.
+'2785.pty3.mich-session_name' Check all this with `screen -ls`
+
+There is option '-j' use this to search and join other user's sessions to
+cooperate in multi-admin environments. The parameter 'session_name' in this
+case narrows down searching but doesn't create new session. Using option `-j`
+you are searching through all screen session, not only those invoked with CLE.
 
 
 ## Alias management
@@ -151,45 +168,46 @@ enhancements. Some of them are system dependent - there are different options
 for colorful outputs in 'ls' etc. User can define it's own aliases and have
 them stored for future use.
 
-### alias definition and save
+### Alias definition and save
 Use known bash command `alias` and CLE function `aa` in following way:
 ```
-   alias something='command --opt1 --opt2'
-   unalias removethis
+   alias newalias='command --opt1 --opt2'
+   unalias oldalias
    aa s
 ```
 
-Command `aa` without any parameter show current alias set in nicer way than
+Now 'newalias' is saved into alias store file and recalled on all future CLE
+startups. The 'oldalias' is deleted and will not appear in new sessions.
+
+Command `aa` without any parameter shows current alias set in nicer way than
 original built-in command.
 
-Now 'something' is saved into alias store file and recalled on all future CLE
-startups. The second alias 'removethis' is deleted.
 
 ### Edit alias set
 `aa ed` function runs editor on current working alias set allowing more
 complex changes. Note that recent alias set is backed up.
+
 
 ### Reload aliases
 Use `aa l` in case of mischmatch, if working alias set has been unintentionally
 damaged, etc.
 
 Note: there is `_defalias` built-in function that defines basic alias set upon
-each CLE start. Those predefined aliases override the ones saved with 'aa s'
-command. However, the function itself can be replaced. Learn more in further
-documentation.
+each CLE start. Those predefined aliases override the ones saved with `aa s`
+command.
 
 
 ## History management
 
-CLE intorduces persistent rich history. Persistent means that the records are
+CLE introduces persistent rich history. Persistent means that the records are
 not deleted, file is not truncated. The file can grow to megabytes and holds
 complete history over time. The word 'rich' refers to amount of information
 contained in each history record. This history file exists besides 'regular'
 file. So in fact there are two history files:
-1. convenitional bash managed but personalized in CLE, .history-$CLE_USER
+1. convenitional bash managed .history-$CLE_USER (replaces .bash_history)
 2. rich history file .history-ALL
 Note that .history-ALL is not personalized and stores record from all sessions
-and from all users (e.g. inenvironments where more real users access root's
+and from all users (e.g. in environments where more real users access root's
 account). This rich history file cosist of one-per-line record in following
 format:
 
@@ -216,10 +234,9 @@ Use the `h` with the same parameters like `history` command. This just more
 sophisticated alias.
 
 New command `hh` works with rich history.
-When issued without arguments
-
-it prints out 100 recent records. However you can alter it's behavior or in
-other words filter the output using options and arguments. So use:
+When issued without arguments it prints out 100 recent records. However you
+can alter it's behavior or in other words filter the output using options
+and arguments. So use:
 - `hh string` to grep search for given string in rich history file. The grep
   is applied to whole file, so you can search for specific date/time, session
   identification, you can use regular expressions, etc.
@@ -228,8 +245,10 @@ other words filter the output using options and arguments. So use:
 
 Options allowed in 'hh' are as follows:
 `-t` search only commands issued in current session
+`-d` narrow down search to current day's sessions
 `-s` filters only succesful commands (return code zero)
 `-c` strips out additional information and output just commands
+`-l` pass the output into 'less' command
 
 Examples:
 - `hh -sc tar` - this prints out only successful 'tar' commands without rich
@@ -248,14 +267,22 @@ that downoads documentation index from git source and offers files (incl. this
 one) through menu. Files use .md (markdown) format and are passed through
 built-in function (mdfilter) hilighting formatted items.
 
+You can also obtain information about particular buit-in function. Try e.g.
+  `cle help hh`
+
+Self documenting feauture `cle help` automatically searches in all files
+invoked upon startup, e.g. custom resources, modules, etc. All those texts
+are nothing else just comments introduced with `##`. Look at .clerc itself
+as a good example.
+
 
 ## Keeping CLE fresh
 
 `cle update`
 Downloads most recent version of CLE from the original source. Changes can be
 reviewed before replacement. All steps must be acknowledged. Update is
-meaningful only on the account or machine where CLE has been deployed. On
-remote sessions it has just temporary effect.
+meaningful only on the account where CLE has been deployed (CLE workstation).
+On remote sessions it would have just temporary effect and is not allowed.
 
 
 ## Files
@@ -276,6 +303,8 @@ of them are executed upon sartup, others are created to hold specific infos.
   Rich history file managed by CLE
 - `.aliases-$CLE_USER`
   Saved user's set of aliases.
+- `.cle`
+  Working directory for various other CLE stuff
 - `.cle/mod-*`
   Modules enhancing CLE functionality.
 
