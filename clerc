@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-11-25 (RedH)
+#* version: 2017-11-30 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -218,8 +218,9 @@ _clepmt () {
 	[ $_E = 0 ] && _CE="" || _CE="$_TE"
 	# window title & screen name
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
-	[[ $TERM =~ screen ]] && echo -en "\ek$USER\e\\"
+	[ $STY ] && echo -en "\ek$USER\e\\"
 	# rich history
+	history -a
 	_H=`history 1`
 	unset IFS
 	if [ "$_H" != "$_HO"  -a -n "$_HO" ];then
@@ -235,7 +236,7 @@ _setwt () {
 	CLE_WT=''
 	[[ $TERM =~ linux ]] && return # no tits on console
 	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_USER -> "
-	CLE_WT=$CLE_WT$USER@$CLE_THN
+	CLE_WT=$CLE_WT$USER@$CLE_THN-$TTY
 }
 
 # filter for markdown files
