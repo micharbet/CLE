@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-11-30 (RedH)
+#* version: 2017-12-01 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -341,12 +341,13 @@ h () (
 hh () (
 	OI=$IFS
 	unset IFS
-	while getopts "cstdl" O;do
+	while getopts "cstdlf" O;do
 		case $O in
 		s) ONLY0=1;; ## hh -s           -- print successful commands only
 		c) ONLYC=1;; ## hh -c           -- show just commands
 		d) THIS=`date +%Y-%m-%d`;; ## hh -d           -- today's commands
 		t) THIS=$CLE_USER-$$;; ## hh -t           -- commands from current session
+		f) FMODE=1;; ## hh -f           -- show working folder history
 		l) OUTF="less -r +G" ## hh -l           -- show history with 'less'
 	esac;done
 	shift $((OPTIND-1))
@@ -359,6 +360,10 @@ hh () (
 	*)	## hh [opt] string -- search in history
 		grep "$*"
 	esac | while read -r D T U E P C;do
+	 if [ $FMODE ]; then
+		[[ $FOLDS =~ $P: ]] || { FOLDS=$FOLDS$P:; echo $P; }
+		continue
+	 fi
 	 [ $E != 0 -a "$ONLY0" ] && continue
 	 case $E in
 	 0)	EE=$_Tg;;
