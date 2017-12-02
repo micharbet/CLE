@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-12-01 (RedH)
+#* version: 2017-12-02 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -339,7 +339,6 @@ h () (
 
 ## hh [opt] [srch] -- rich history viewer
 hh () (
-	OI=$IFS
 	unset IFS
 	while getopts "cstdlf" O;do
 		case $O in
@@ -347,21 +346,22 @@ hh () (
 		c) ONLYC=1;; ## hh -c           -- show just commands
 		d) THIS=`date +%Y-%m-%d`;; ## hh -d           -- today's commands
 		t) THIS=$CLE_USER-$$;; ## hh -t           -- commands from current session
-		f) FMODE=1;; ## hh -f           -- show working folder history
-		l) OUTF="less -r +G" ## hh -l           -- show history with 'less'
+		f) FMODE=1;NUM=0;OUTF="sort|uniq";; ## hh -f           -- show working folder history
+		l) NUM=0; OUTF="less -r +G" ## hh -l           -- show history with 'less'
 	esac;done
 	shift $((OPTIND-1))
-	grep -w "$THIS" $CLE_HIST | case $1 in
-	"")	## hh [opt]        -- no search; print recent 100 items
-		[ "$OUTF" ] && cat || tail -100;;
-	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
+	F1=${*:-${NUM:-100}}	## hh [opt]        -- no search; print recent 100 items
+	grep -w "$THIS" $CLE_HIST | case $F1 in  #FILTER1 (search)
+	0)	## hh [opt] 0      -- print all
+		cat;;
+	[1-9]|[1-9][0-9]|[1-9][0-9][0-9])
 		## hh [opt] number -- find last N entries
-		tail -$1;;
+		tail -$F1;;
 	*)	## hh [opt] string -- search in history
 		grep "$*"
-	esac | while read -r D T U E P C;do
+	esac | while read -r D T U E P C;do #FILTER2 (format)
 	 if [ $FMODE ]; then
-		[[ $FOLDS =~ $P: ]] || { FOLDS=$FOLDS$P:; echo $P; }
+		[[ $P =~ ^/ ]] && echo $P
 		continue
 	 fi
 	 [ $E != 0 -a "$ONLY0" ] && continue
@@ -373,8 +373,7 @@ hh () (
 	 [[ "$C" =~ ^# ]] && { E='#';EE=$_Ty;C=$_Ty$C$_TN;}
 	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
 		echo "$D $T $_Tb$U $EE$E $_TN$P $_Tw$C$_TN"
-	done | ${OUTF:-cat}
-	IFS=OI
+	done | eval "${OUTF:-cat}" #FILTER3 (output)
 )
 
 # rich history record
