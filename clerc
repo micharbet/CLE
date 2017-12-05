@@ -321,8 +321,8 @@ aa () {
 }
 
 ##
-## History workarounds:
-## --------------------
+## History tools:
+## --------------
 HISTFILE=$CLE_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
@@ -376,6 +376,17 @@ hh () (
 		echo "$D $T $_Tb$U $EE$E $_TN$P $_Tw$C$_TN"
 	done | eval "${OUTF:-cat}" #FILTER3 (output)
 )
+
+
+## cdh             -- cd to folder from history
+cdh () {
+	[ $* ] && _CDL=`hh -f "$*"` || _CDL=`hh -ft`
+	PS3="$_TL folder: $_TN"
+	select _CDH in $_CDL; do
+		[ $_CDH ] && cd $_CDH
+		break
+	done
+}
 
 # rich history record
 _rhlog () {
