@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-12-05 (RedH)
+#* version: 2017-12-12 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -108,7 +108,7 @@ _TE=`tput setab 1;tput setaf 7` # err highlight
 #
 
 # boldprint
-printb () { printf "$_Tw$*$_TN\n";}
+printb () { printf "$_TL$*$_TN\n";}
 
 # simple question
 ask () {
@@ -247,7 +247,7 @@ mdfilter () {
 	 -e "s/\*\*\(.*\)\*\*/$_TL\1$_TN/"\
 	 -e "s/\<_\(.*\)_\>/$_TU\1$_Tu/g"\
 	 -e "s/\`\`\`/$_TD~~~~~~~~~~~~~~~~~$_TN/"\
-	 -e "s/\`\([^\`]*\)\`/$_Tw\1$_TN/g"
+	 -e "s/\`\([^\`]*\)\`/$_Tg\1$_TN/g"
 }
 
 ##
@@ -297,7 +297,7 @@ aa () {
 	local ABK=$CLE_ALI.back TAL=$CLE_ALI.edit
 	case "$1" in
 	"")	## aa         -- show aliases
-                alias|sed "s/^alias \(.*\)='\(.*\)'/$_Tw\1$_TN	\2/";;
+                alias|sed "s/^alias \(.*\)='\(.*\)'/$_TL\1$_TN	\2/";;
 	s)	## aa s       -- save current aliases
 		alias|diff $CLE_ALI -
 		ask Save aliases? || return
@@ -333,7 +333,7 @@ CLE_HIST=$CLE_D/.history-ALL
 ## h               -- bash 'history' wrapper
 h () (
 	history "$@"|while read N D T C;do
-		echo "$_TB$N$_TN $D $T $_Tw$C$_TN"
+		echo "$_TB$N$_Tb $D $T $_TN$_TL$C$_TN"
 	done
 )
 
@@ -373,7 +373,7 @@ hh () (
 	 esac
 	 [[ "$C" =~ ^# ]] && { E='#';EE=$_Ty;C=$_Ty$C$_TN;}
 	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
-		echo "$D $T $_Tb$U $EE$E $_TN$P $_Tw$C$_TN"
+		echo "$_Tb$D $T $_TB$U $EE$E $_TN$P $_TL$C$_TN"
 	done | eval "${OUTF:-cat}" #FILTER3 (output)
 )
 
@@ -453,7 +453,7 @@ scrn () (
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
 			printb "${_TU}Current '$SR' sessions:"
-			PS3="$_Tw choose # to join: $_TN"
+			PS3="$_TL choose # to join: $_TN"
 			select SN in $SCRS;do
 				[ $SN ] && break
 			done
@@ -597,11 +597,11 @@ cle () {
 		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
 		cle mod;;
 	env)	## cle env         -- print CLE_* variables
-		for I in ${!CLE_*};do printf "$_Tw%-12s$_TN%s\n" $I "${!I}";done;;
+		for I in ${!CLE_*};do printf "$_TL%-12s$_TN%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation
 		I=`curl -sk $CLE_SRC/doc/index.md`
 		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
-		PS3="$_Tw doc #$_TN"
+		PS3="$_TL doc #$_TN"
 		select C in $I;do
 			[ $C ] && curl -sk $CLE_SRC/doc/$C |mdfilter|less -r; break
 		done;;
