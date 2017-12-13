@@ -294,27 +294,27 @@ _clexe $CLE_ALI
 _defalias
 
 aa () {
-	local ABK=$CLE_ALI.back TAL=$CLE_ALI.edit
+	local ABK=$CLE_ALI.back TAL=$CLE_ALI.ed
 	case "$1" in
 	"")	## aa         -- show aliases
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_TL\1$_TN	\2/";;
-	s)	## aa s       -- save current alias set
+	-s)	## aa -s      -- save current alias set
 		alias|diff $CLE_ALI - 2>/dev/null && return
 		cp $CLE_ALI $ABK
 		alias >$CLE_ALI;;
-	l)	## aa l       -- reload aliases
+	-l)	## aa -l      -- reload aliases
 		unalias -a
 		. $CLE_ALI;;
-	ed)	## aa ed      -- edit and reload aliases
+	-e)	## aa -e      -- edit and reload aliases
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
 		mv $TAL $CLE_ALI
-		aa l
+		aa -l
 		printb Backup in: $ABK;;
 	*=*)	## aa a='b'   -- create and save new alias
 		alias "$*"
-		aa s;;
+		aa -s;;
 	*)	cle help aa
 		return 1
 	esac
