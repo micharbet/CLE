@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-12-12 (RedH)
+#* version: 2017-12-13 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -298,23 +298,23 @@ aa () {
 	case "$1" in
 	"")	## aa         -- show aliases
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_TL\1$_TN	\2/";;
-	s)	## aa s       -- save current aliases
-		alias|diff $CLE_ALI -
-		ask Save aliases? || return
+	s)	## aa s       -- save current alias set
+		alias|diff $CLE_ALI - 2>/dev/null && return
 		cp $CLE_ALI $ABK
-		alias >$CLE_ALI
-		printb Saved to file: $CLE_ALI
-		printb Backup in: $ABK;;
+		alias >$CLE_ALI;;
 	l)	## aa l       -- reload aliases
 		unalias -a
 		. $CLE_ALI;;
-	ed)	## aa ed      -- edit and reload your aliases
+	ed)	## aa ed      -- edit and reload aliases
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
 		mv $TAL $CLE_ALI
 		aa l
 		printb Backup in: $ABK;;
+	*=*)	## aa a='b'   -- create and save new alias
+		alias "$*"
+		aa s;;
 	*)	cle help aa
 		return 1
 	esac
