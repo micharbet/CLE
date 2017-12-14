@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-12-13 (RedH)
+#* version: 2017-12-14 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -251,8 +251,8 @@ mdfilter () {
 }
 
 ##
-## Default aliases and functions:
-## ------------------------------
+## Default aliases and functions
+## -----------------------------
 _defalias () {
 	## ls commands aliases: l ll la lt llr l. lld
 	case $OSTYPE in
@@ -287,8 +287,8 @@ _defalias () {
 - () { cd -;}
 
 ##
-## Alias management:
-## -----------------
+## Alias management
+## ----------------
 CLE_ALI=$CLE_D/.aliases-$CLE_USER # personalized aliases
 _clexe $CLE_ALI
 _defalias
@@ -321,8 +321,8 @@ aa () {
 }
 
 ##
-## History tools:
-## --------------
+## History tools
+## -------------
 HISTFILE=$CLE_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
@@ -394,8 +394,8 @@ _rhlog () {
 }
 
 ##
-## Session wrappers:
-## -----------------
+## Session wrappers
+## ----------------
 
 # environment packer
 _clepak () (
@@ -523,10 +523,10 @@ $_TL	cle deploy
 EOT
 
 ##
-## CLE command & control:
-## ----------------------
+## CLE command & control
+## ---------------------
 cle () {
-	local C I S1 S2 MM BRC NC
+	local C I MM BRC NC
 	# find & run cle_* enhancement
 	C=$1;shift
 	if declare -f _cle_$C >/dev/null;then
@@ -569,14 +569,12 @@ cle () {
 		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
 		echo "new:     $C"
-		S1=`md5sum $CLE_RC| cut -d' ' -f1`
-		S2=`md5sum $NC| cut -d' ' -f1`
-		[ $S1 = $S2 ] && { echo No difference; return 1;}
-		ask Do you want to see diff? && diff $CLE_RC $NC
+		MM=`diff $CLE_RC $NC` && { echo No difference; return 1;}
+		ask Do you want to see diff? && cat <<<$MM
 		ask Do you want to install new version? || return
 		BRC=$CLE_D/clerc-back
 		cp $CLE_RC $BRC
-		mv $NC $CLE_RC
+		mv -f $NC $CLE_RC
 		cle reload
 		printb New CLE activated, backup saved here: $BRC;;
 	reload) ## cle reload      -- reload CLE
