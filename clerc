@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-12-14 (RedH)
+#* version: 2017-12-21 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -53,7 +53,7 @@ export CLE_USER=${CLE_USER:-${_C:-$USER}}
 [ "$1" ] && { CLE_USER=$1; exec `command which bash` --rcfile $CLE_RC;}
 
 # where in the deep space is CLE growing
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/RedH
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # execute script and log its filename into CLE_EXE
@@ -153,9 +153,9 @@ _savecf () {
 
 _cle_e () {
 	[ "$1" != e ] && return
-	printf "$_TC\nH ${_Tc}CL${_TC}E $_TW  .-*$_TR)$_TW\`\`-. $_TC\n"
-	printf "a   a $_TW /  $_TR(($_Tb*$_TW   '.$_TC\np   s$_TW |  $_Tb*$_TR))$_TW     #:"
-	printf "$_TC\np   t $_TW \\  $_TR(($_Tb*$_TW   .'$_TC\ny   er $_TW '-.$_TR)${_TW}_.-'\n\n$_TN"
+	printf "\n$_Tr     ;~~~~~~~^\\ \n    /#,..,#####\\ \n ,,.. ##########]\n((###,   ^:######:,"
+	printf "\n  \\######,,######^###)\n$_Tw   (@#,$_Tr############/\n$_Tw"
+	printf "    (@@\\  ,,,,,,..\n      \\@@@@@__@@)\n        '@@@@@@'\n$_TN\n"
 }
 
 # enhanced escapes
@@ -218,7 +218,7 @@ _clepmt () {
 	[ $_E = 0 ] && _CE="" || _CE="$_TE"
 	# window title & screen name
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
-	[ $STY ] && echo -en "\ek$USER\e\\"
+	[[ $TERM =~ screen ]] && echo -en "\ek$USER\e\\"
 	# rich history
 	history -a
 	_H=`history 1`
@@ -377,16 +377,6 @@ hh () (
 	done | eval "${OUTF:-cat}" #FILTER3 (output)
 )
 
-
-## cdh             -- cd to folder from history
-cdh () {
-	[ $* ] && _CDL=`hh -f "$*"` || _CDL=`hh -ft`
-	PS3="$_TL folder: $_TN"
-	select _CDH in $_CDL; do
-		[ $_CDH ] && cd $_CDH
-		break
-	done
-}
 
 # rich history record
 _rhlog () {
