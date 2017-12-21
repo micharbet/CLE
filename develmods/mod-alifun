@@ -1,7 +1,7 @@
 ##
-## mod-example: example / template module
-## -------------------------------------------------------
-#* version: 0.0.prd
+## mod-alifun: bash aliases and functions management
+## -------------------------------------------------
+#* version: 2017-09-25
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -12,11 +12,15 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
-## cle example [parm]  --  new cle functionality
-_cle_example () {
-	echo cle running new fuctionality with following parameters: $*
-}
+## fed funcname       -- edit function
+fed () {
+	local FUNDIR=~/functions
+	local FF=$FUNDIR/f-$1
 
-# this code is run on every CLE startup
-CLE_EXAMPLE=initiated
+	[ $1 ] || { echo "fed: missing function_name"; return 1; }
+	mkdir -p $FUNDIR
+	declare -f $1 >$FF   # grab function
+	vi $FF               # edit
+	. $FF                # re-inplement
+}
 

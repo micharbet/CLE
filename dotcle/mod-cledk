@@ -1,13 +1,35 @@
 ##
 ## mod-cledk: functions to assist CLE development process
 ## -------------------------------------------------------
-
-# Copyright (C) 2017 by Michael Arbet
+#* version: 2017-08-18
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#*` Copyright (C) 2017 by Michael Arbet
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
+
+# development helper functions
+
+# extract module description 
+_modesc () (
+	local M=`basename $1`
+	sed -n "s/^## $M:\s*//p" $1
+)
+
+# extract module version 
+_modver () (
+	sed -n "s/^#\* version:\s*//p" $1
+)
+
+# compute module content checksum
+_modsum () (
+	md5sum $1 | cut -d' ' -f1
+)
+
 
 # This is another 'cle something' enhancement :-)
 _cle_dk () {
@@ -59,8 +81,8 @@ _cle_dk () {
 ## cle ed [mod]  -- edit clerc file ev. specified module
 _cle_ed () {
 	local F=$CLE_DK/clerc
-	[ -n "$1" ] && F=$CLE_DK/dotcle/mod-$1
-	if [ ! -f $F ]; then
+	[ -n "$1" ] && F=`ls $CLE_DK/dotcle/mod-$1 $CLE_DK/dotcle/cle-$1 2>/dev/null | grep $1`
+	if [ ! -f "$F" ]; then
 		echo no such file: $F
 		return 1
 	fi
@@ -131,7 +153,7 @@ cdc () {
 				# _clexe  $CLE_CF
 				cle reload
 				# add current branch name into prompt
-				cle p3 '\w%cy:$([ -d .git -o -d ../.git ] && git symbolic-ref --short HEAD) %cW%>'
+				cle p3 '\w%cY:$(gicwb) %>'
 				CLE_DK=`dirname $CLE_DK`
 			fi
 		else
@@ -147,13 +169,19 @@ cdc () {
 	git status
 }
 
-modgen () {
-	local DOTCLE=$HOME/.cle
-	for M in $DOTCLE/mod-*; do
-		local MM=`basename $M`
-		local DESC=`grep "## $MM:" $M | sed "s/^## $MM:\s*//"`
-		echo $MM: $DESC
+## cle modgen     -- generate module index
+_cle_modgen () (
+	# find modules mod-* and cle-*
+	cd $CLE_DK/dotcle
+	for M in mod-* cle-*; do
+		echo $M:`_modver $M`:`_modsum $M`:`_modesc $M`
 	done
+	# find scripts in bin folder
+	cd $CLE_DK/bin
+	for M in *; do
+		echo bin-$M:`_modver $M`:`_modsum $M`:`_modesc $M`
+	done
+) >$CLE_DK/dotcle/modulist
 
-}
+
 

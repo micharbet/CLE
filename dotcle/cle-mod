@@ -1,0 +1,198 @@
+##
+## cle-mod: CLE module management
+## ------------------------------
+#* version: 2017-08-17
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2016-2017 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+
+local LISTFILE=modulist
+local MODULIST=$CLE_DM/$LISTFILE
+
+#
+# cle-mod helper functions
+#
+# check installed module - where it came from
+modtype () (
+	M=`basename $1`
+	MLINK=`readlink $1`
+	MSRC="LN"
+	if [ -z "$MLINK" ]; then
+		if grep $M $MODULIST >/dev/null; then
+			MSRC="DL"
+		else
+			echo "CU"
+			return 2	# return code indicates module not to be deleted!
+		fi
+	fi
+	echo $MSRC
+)
+
+# extract module description 
+modesc () (
+	local M=`basename $1`
+	sed -n "s/^## $M:\s*//p" $1
+)
+
+# extract module version 
+modver () (
+	sed -n "s/^#\* version:\s*//p" $1
+)
+
+# compute module content checksum
+modsum () (
+	md5sum $1 | cut -d' ' -f1
+)
+
+# module deails
+modet () (
+	M=$CLE_DM/$1
+	MDESC=`modesc $M`
+	MSRC=`modtype $M`
+	MVER=`modver $M`
+	printf "$_TW%-15s $_Tw[%-3s %10s] $_TN%s\n" $1 $MSRC "$MVER" "$MDESC"
+)
+
+# get list of currently installed modules
+getinstalled () (
+	cd $CLE_DM
+	ls cle-* mod-* bin-* 2>/dev/null
+)
+
+# download list of available modules
+getindex () (
+	curl -ksS $CLE_SRC/dotcle/$LISTFILE >$MODULIST.tmp
+	M=`head -1 $MODULIST.tmp`
+	# check if the file appears lik module index
+	if [[ $M =~ ..*:.*:.*:.* ]]; then
+		mv -f $MODULIST.tmp $MODULIST
+	else
+		rm -f $MODULIST.tmp
+		echo Module list could not be downloaded from $CLE_SRC
+		return 1
+	fi
+)
+
+# variable used only in this script
+local M MM MODS DMM MDESC MSRC MVER
+
+case "$1" in
+ls)	## cle mod ls        -- list installed modules
+	printb ${_TU}Modules installed in $CLE_DM:
+	for M in `getinstalled`; do
+		modet $M
+	done
+	;;
+avail)	## cle mod avail     -- list modules available to install
+	getindex || return $?
+	printb ${_TU}Modules available in repository: $CLE_SRC
+	cat $MODULIST | { IFS=:; while read MM MVER MSUM MDESC; do
+		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"
+	done; }
+	;;
+add)	## cle mod add [mod] -- install/upgrade module from repository
+	getindex || return $?
+	MODS=`grep ^[^:]*$2[^:]* $MODULIST |cut -d: -f1`
+	[ "$MODS" ] || { echo Nothing like $2 to install; return 1; }
+	MODN=`wc -w <<<$MODS`
+	if [ $MODN -gt 1 ]; then
+		# chose one if more were found
+		PS3="$_TL choose module # $_TN"
+		select MM in $MODS; do
+			[ -n "$MM" ] && break
+		done
+	else
+		MM=$MODS
+	fi
+	[ $MM ] || return
+	echo
+	grep ^$MM $MODULIST | { IFS=:; read MM MVER MSUM MDESC; 
+		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"; }
+	ask "Do yo want to install this module?" || return
+
+	# download module into temporary file
+	# this doesn't destroy one that is already installed
+	printb "Downloading $MM"
+	DMM=$CLE_DM/dl-$MM
+	if [[ $MM =~ ^bin- ]]; then
+		# executable scripts specific actions
+		MM=${MM/bin-/}
+		curl -ksS $CLE_SRC/bin/$MM >$DMM
+		# check module signature
+		if grep -q "## *$MM: ..*" $DMM ; then
+			mkdir -p ~/bin
+			mv -f $DMM ~/bin/$MM
+			chmod 755 ~/bin/$MM
+		else
+			printb Error, no module header found
+			head $DMM
+			printb Removing temporary file...
+			rm -f $DMM
+			return 1
+		fi
+	else
+		curl -ksS $CLE_SRC/dotcle/$MM >$DMM
+		# check module signature
+		if grep -q "## *$MM: ..*" $DMM ; then
+			mv -f $DMM $CLE_DM/$MM
+			if [[ $MM =~ 'mod-' ]]; then
+				# immediately include the module
+				printb Executing module $CLE_DM/$MM
+				MDESC=`modesc $CLE_DM/$MM`
+				_clexe $CLE_DM/$MM && { echo $MM: $MDESC; printb ready!; }
+			fi
+		else
+			printb Error, no module header found
+			head $DMM
+			printb Removing temporary file...
+			rm -f $DMM
+			return 1
+		fi
+	fi
+	;;
+del)	## cle mod del [mod] -- delete module
+	MODS=`getinstalled | grep "$2"`
+	[ "$MODS" ] || { echo Nothing like $2 to remove; return 1; }
+	MODN=`wc -w <<<$MODS`
+	if [ $MODN -gt 1 ]; then
+		# chose one if more were found
+		PS3="$_TL choose module to remove # $_TN"
+		select MM in $MODS; do
+			[ -n "$MM" ] && break
+		done
+	else
+		MM=$MODS
+	fi
+	[ $MM ] || return
+	echo
+	modet $MM
+	ask "Do yo want to remove this?" || return
+	mkdir -p $CLE_DM/inactive
+	mv -f $CLE_DM/$MM $CLE_DM/inactive
+	echo Module $MM moved into $CLE_DM/inactive
+	;;
+'')
+	printb ${_TU}CLE module management
+	echo "Repository:$_Tw $CLE_SRC$_TN"
+	echo "Local lib: $_Tw $CLE_DM$_TN"
+	;;
+help)
+	cle help "cle mod"
+	;;
+*)
+	echo "'cle mod $1' not implemented"
+	echo "Try 'cle mod help '"
+	return 1
+	;;
+esac
+
+# remove internal functions
+unset modtype modesc modver modsum modet getinstalled getindex
+

@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-06-07 (HAlpha)
+#* version: 2017-12-21 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -16,26 +16,29 @@
 # Command line tweaks:
 # -colorful prompt with hihglighted exit code
 # -builtin aliases and functions
-# -history tweaks (timestamps etc)
+# -history tweaks
 #
-# Execute this file within your shell session
-# and integrate into your profile:
-# 
+# 1. execute this file within your shell session
+# 2. integrate into your profile:
 #	$ . clerc
 #	$ cle deploy
 #
 # -use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
 #  started without installation
 # -try suu/sudd (su/sudo wrappers) with same effect
-# -alter settings using 'cle' command
+# -work in gnu screen using 'scrn'
+# -alter settings with 'cle' command
 # -store and manage your aliases with 'aa' function
-# -use 'hh' function to ease history management
-# -built-in self documenting feature 'cle help'
+# -use 'h' as a shortcut to classic history
+# -check out rich history feature with 'hh'
+# -built-in documentation: 'cle help'
 # -update from GIT source
 
 # check running in interactive session otherwise skip all the tweaks
 # required for scp compattibility
 if [ -t 0 -a -z "$CLE_EXE" ];then
+
+# warning: magic inside!
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
@@ -43,7 +46,8 @@ CLE_DRC=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_DRC/`basename $CLE_RC`
 
 # who I'm
-export CLE_USER=${CLE_USER:-$USER}
+_C=`sed -n 's/.*-\(.*\)/\1/p' <<<$CLE_RC`
+export CLE_USER=${CLE_USER:-${_C:-$USER}}
 
 # session startup for su*
 [ "$1" ] && { CLE_USER=$1; exec `command which bash` --rcfile $CLE_RC;}
@@ -66,7 +70,7 @@ case $CLE_RC in
 *-remote-*) # remote session
 	_clexe /etc/profile
 	_clexe $HOME/.bashrc
-	[ -w $HOME ] && _D=$HOME || _D=`dirname $CLE_RC`
+	[ -w $HOME ] && _D=$HOME || { _D=/tmp/$USER; mkdir -p $_D; }
 	cd $_D;;
 */clerc*) # first run from commandline
 	CLE_1=1
@@ -75,27 +79,28 @@ case $CLE_RC in
 	_D=$HOME
 esac
 CLE_D=${CLE_D:-$_D}
+CLE_DM=$CLE_D/.cle
 
 CLE_CF=${CLE_CF:-$CLE_D/.clecf-$CLE_USER}
 CLE_RCU=$CLE_DRC/.cleusr-$CLE_USER
 
 # tweaked hostname: remove domain, leave subdomains
-CLE_THN=`hostname |sed 's;\.\w\+\.\w\+$;;'`
-CLE_IP=`echo -n $SSH_CONNECTION | cut -d' ' -f3`
+CLE_THN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
+CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # color table
-CT_N=`tput sgr0`
-CT_L=`tput bold`
-CT_U=`tput smul`;CT_UE=`tput rmul`
-CT_D=`tput dim`
-CT_RV=`tput rev`
+_TN=`tput sgr0`
+_TL=`tput bold`
+_TU=`tput smul`;_Tu=`tput rmul`
+_TD=`tput dim`
+_TV=`tput rev`
 _I=0; for _N in k r g y b m c w; do
         _C=`tput setaf $_I`
-        declare CT_$_N=$CT_N$_C
-        declare CT_$(echo $_N|tr a-z A-Z)=$CT_L$_C #bold
+        declare _T$_N=$_TN$_C
+        declare _T$(tr a-z A-Z <<<$_N)=$_TL$_C #bold
         ((_I+=1))
 done
-CT_E=`tput setab 1;tput setaf 7` # err highlight
+_TE=`tput setab 1;tput setaf 7` # err highlight
 
 
 #
@@ -103,11 +108,11 @@ CT_E=`tput setab 1;tput setaf 7` # err highlight
 #
 
 # boldprint
-printb () { printf "$CT_w$*$CT_N\n";}
+printb () { printf "$_TL$*$_TN\n";}
 
 # simple question
 ask () {
-	read -p "$CT_L$* (y/N) $CT_N" -n 1 -s
+	read -p "$_TL$* (y/N) $_TN" -n 1 -s
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 }
@@ -118,23 +123,16 @@ cat <<EOT
 
    ___|  |      ____|  Command Live Environment activated
   |      |      __|    ...bit of life to the command line
-  |      |      |      Learn more:$CT_L cle help $CT_N
- \____| _____| _____| $CT_L less $CLE_RC$CT_N to discover the magic
+  |      |      |      Learn more:$_TL cle help$_TN
+ \____| _____| _____| $_TL less $CLE_RC$_TN to discover the magic
  
 EOT
 }
 
-# window title
-_setwt () {
-	CLE_WT=''
-	[[ $TERM =~ linux ]] && return # no tits on console
-	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_USER -> "
-	CLE_WT=$CLE_WT$USER@$CLE_THN:
-}
-
 # default config
 _defcf () {
-	CLE_PCOLOR=marley
+	CLE_CLR=marley
+	[ $UID = 0 ] && CLE_CLR=red
 	CLE_P0='%e \A'
 	CLE_P1='\u'
 	CLE_P2='%h'
@@ -143,108 +141,128 @@ _defcf () {
 
 # save configuration
 _savecf () {
-	echo "# $CLE_USER $CLE_VER"
-	echo CLE_PCOLOR=$CLE_PCOLOR
-	echo CLE_P0=\'$CLE_P0\'
-	echo CLE_P1=\'$CLE_P1\'
-	echo CLE_P2=\'$CLE_P2\'
-	echo CLE_P3=\'$CLE_P3\'
+	cat <<-EOC
+	# $CLE_USER $CLE_VER
+	CLE_CLR=$CLE_CLR
+	CLE_P0='$CLE_P0'
+	CLE_P1='$CLE_P1'
+	CLE_P2='$CLE_P2'
+	CLE_P3='$CLE_P3'
+	EOC
 } >$CLE_CF
 
-# prompt enhancements
+_cle_e () {
+	[ "$1" != e ] && return
+	printf "\n$_Tr     ,==~~-~w^, \n    /#=-.,#####\\ \n .,!. ##########!\n((###,. \`\"#######;."
+	printf "\n &######\`..#####;^###)\n$_Tw   (&@$_Tr^#############\"\n$_Tw"
+	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_TN\n"
+}
+
+# enhanced escapes
 _pesc () (
+	C=_C$1
+	P=CLE_P$1
 	PP=">" # I hate $ in prompt
 	[ $UID = 0 ] && PP="#"
-	echo $*|sed \
-	 -e "s/%i/$CLE_IP/"\
-	 -e "s/%h/$CLE_THN/"\
-	 -e "s/%u/$CLE_USER/"\
-	 -e "s/%e/\\\$_E/"\
-	 -e "s/%c\(.\)/\\\[\\\$CT_\1\\\]/g"\
+	printf "\\[\$$C\\]"
+	sed <<<${!P}\
+	 -e "s/%i/$CLE_IP/g"\
+	 -e "s/%h/$CLE_THN/g"\
+	 -e "s/%u/$CLE_USER/g"\
+	 -e "s/%e/\\\[\$_CE\\\][\$_E]\\\[\$_TN\$$C\\\]/g"\
+	 -e "s/%c\(.\)/\\\[\\\$_T\1\\\]/g"\
 	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
 	 -e "s/%>/$PP/"
 )
 
-_cle_e () {
-	[ "$1" != e ] && return
-	printf "$CT_C\nH ${CT_c}CL${CT_C}E $CT_W  .-*$CT_R)$CT_W\`\`-. $CT_C\n"
-	printf "a   a $CT_W /  $CT_R(($CT_b*$CT_W   '.$CT_C\np   s$CT_W |  $CT_b*$CT_R))$CT_W     #:"
-	printf "$CT_C\np   t $CT_W \\  $CT_R(($CT_b*$CT_W   .'$CT_C\ny   er $CT_W '-.$CT_R)${CT_W}_.-'\n\n$CT_N"
-}
-
 # prompt composer
 _setp () {
-	local C0 C1 C2 I II P0 
-	case "$CLE_PCOLOR" in 
-	red)	C0=$CT_r;C2=$CT_R;;
-	green)	C0=$CT_g;C2=$CT_G;;
-	yellow)	C0=$CT_y;C2=$CT_Y;;
-	blue)	C0=$CT_b;C2=$CT_B;;
-	cyan)	C0=$CT_c;C2=$CT_C;;
-	magenta) C0=$CT_m;C2=$CT_M;;
-	white|grey|gray) C0=$CT_N;C1=$CT_w;C2=$CT_W;;
-	bold)	C0=$CT_L;;
-	tricolora) C0=$CT_R;C1=$CT_B;C2=$CT_W;;
-	marley) # Bob Marley style :-) have a smoke and imagine...
-		C0=$CT_R;C1=$CT_Y;C2=$CT_G;;
-	???)	# any 3 colors
-		for I in 0 1 2;do
-			II=CT_${CLE_PCOLOR:$I:1}
-			[ -z "${!II}" ] && echo "wrong color code '${CLE_PCOLOR:$I:1}' in $CLE_PCOLOR" && return 2
-			declare C$I=${!II}
-		done;;
+	local CC I CI
+	case "$CLE_CLR" in 
+	red)	CC=RrR;;
+	green)	CC=GgG;;
+	yellow)	CC=YyY;;
+	blue)	CC=BbB;;
+	cyan)	CC=CcC;;
+	magenta) CC=MmM;;
+	white|grey|gray) CC=NwW;;
+	tricolora) CC=RBW;;
+	marley)	CC=RYG;; # Bob Marley style :-) have a smoke and imagine...
+	???)	CC=$CLE_CLR;; # any 3 colors
 	*)	# print help - whoa! self documented function
-		echo "Unknown color '$CLE_PCOLOR' Select one of predefined:"
+		printb "Unknown color '$CLE_CLR' Select one of predefined:"
 		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
-		echo Or create your own 3-letter style using: rgbcmykw / RGBCMYKW
-		echo e.g. cle color rgB
-		return 2 
+		echo Alternatively make your own 3-letter code using rgbcmykw/RGBCMYKW
+		echo E.g. cle color rgB
+		CC=NNN
 	esac
-	# prepare prompt strings
-	_PS1="\[$C0\]`_pesc $CLE_P1` \[$C1\]`_pesc $CLE_P2` \[$C2\]`_pesc $CLE_P3`"
-	_PS0=`_pesc $CLE_P0`
-	PS2="\[$C0\] >>>\[$CT_N\] "
+	# decode colors and prompt strings
+	CC=K$CC
+	PS1=""
+	for I in {0..3};do
+		CI=_T${CC:$I:1}
+		[ -z "${!CI}" ] && printb "Wrong color code '${CC:$I:1}' in $CLE_CLR" && CI=_TN
+		eval _C$I="'${!CI}'"
+		PS1="$PS1`_pesc $I` "
+	done
+	PS1="$PS1\[\$_TN\]"
+	PS2="\[\$_C1\] >>>\[\$_TN\] "
 	_savecf
 }
 
-# prompt function callback
+# prompt callback
 _clepmt () {
 	_E=$? # save return code
-	local EE
-	# highlight error code only in P0
-	[ $_E = 0 ] && EE=[0] || EE="\[$CT_E\][$_E]\[$CT_N$CT_K\]"
-	# final prompt composition
-	PS1="\[$CT_K\]${_PS0/'$_E'/$EE} $_PS1 \[$CT_N\]"
-	# window title
+	local N D T C OI=$IFS
+	# highlight error code
+	[ $_E = 0 ] && _CE="" || _CE="$_TE"
+	# window title & screen name
 	[ "$CLE_WT" ] && printf "\033]0;$CLE_WT $PWD\007"
+	[[ $TERM =~ screen ]] && echo -en "\ek$USER\e\\"
+	# rich history
+	history -a
+	_H=`history 1`
+	unset IFS
+	if [ "$_H" != "$_HO"  -a -n "$_HO" ];then
+		{ read -r N D T C; echo "$D $T $CLE_USER-$$ $_E $PWD $C" >>$CLE_HIST;} <<<$_H
+	fi
+	_HO=$_H
+	IFS=$OI
 }
 PROMPT_COMMAND=_clepmt
 
+# window title
+_setwt () {
+	CLE_WT=''
+	[[ $TERM =~ linux ]] && return # no tits on console
+	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_USER -> "
+	CLE_WT=$CLE_WT$USER@$CLE_THN-$TTY
+}
+
 # filter for markdown files
 mdfilter () {
-	sed -e "s/^###\(.*\)/$CT_L\1$CT_N/"\
-	 -e "s/^##\(\s*\)\(.*\)/\1$CT_U$CT_L\2$CT_N/"\
-	 -e "s/^#\(\s*\)\(.*\)/\1$CT_L$CT_RV\2$CT_N/"\
-	 -e "s/\*\*\(.*\)\*\*/$CT_L\1$CT_N/"\
-	 -e "s/\<_\(.*\)_\>/$CT_U\1$CT_UE/g"\
-	 -e "s/\`\([^\`]*\)\`/$CT_w\1$CT_N/g"
+	sed -e "s/^###\(.*\)/$_TL\1$_TN/"\
+	 -e "s/^##\( *\)\(.*\)/\1$_TU$_TL\2$_TN/"\
+	 -e "s/^#\( *\)\(.*\)/\1$_TL$_TV \2 $_TN/"\
+	 -e "s/\*\*\(.*\)\*\*/$_TL\1$_TN/"\
+	 -e "s/\<_\(.*\)_\>/$_TU\1$_Tu/g"\
+	 -e "s/\`\`\`/$_TD~~~~~~~~~~~~~~~~~$_TN/"\
+	 -e "s/\`\([^\`]*\)\`/$_Tg\1$_TN/g"
 }
 
 ##
-## Default aliases and functions:
-## ------------------------------
+## Default aliases and functions
+## -----------------------------
 _defalias () {
 	## ls commands aliases: l ll la lt llr l. lld
 	case $OSTYPE in
 	linux*) alias ls='ls --color=auto';;
-	darwin*)
-		export CLICOLOR=1
-		export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
-	*bsd*) alias ls='ls -G';;
+	darwin*) export CLICOLOR=1;export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
+	FreeBSD*) alias ls='ls -G';;
 	*) alias ls='ls -F' # at least some file type indication
 	esac
 	alias l='ls -l'
-	alias ll='ls -l'
+	alias ll='ls -lL'
 	alias lt='ls -ltr'
 	alias la='ls -al'
 	alias llr='ls -lR'
@@ -271,56 +289,103 @@ _defalias () {
 ##
 ## Alias management
 ## ----------------
-CLE_ALIASES=$CLE_D/.aliases-$CLE_USER # personalized aliases
-_clexe $CLE_ALIASES
+CLE_ALI=$CLE_D/.aliases-$CLE_USER # personalized aliases
+_clexe $CLE_ALI
 _defalias
 
 aa () {
-	local ABK=$CLE_ALIASES.back TAL=$CLE_ALIASES.edit
+	local ABK=$CLE_ALI.back TAL=$CLE_ALI.ed
 	case "$1" in
 	"")	## aa         -- show aliases
-		alias;;
-	s)	## aa s       -- save current aliases
-		alias
-		ask Save aliases? || return
-		cp $CLE_ALIASES $ABK
-		alias >$CLE_ALIASES
-		printb Saved to file: $CLE_ALIASES
-		printb Backup in: $ABK;;
-	l)	## aa l       -- reload aliases
+                alias|sed "s/^alias \(.*\)='\(.*\)'/$_TL\1$_TN	\2/";;
+	-s)	## aa -s      -- save current alias set
+		alias|diff $CLE_ALI - 2>/dev/null && return
+		cp $CLE_ALI $ABK
+		alias >$CLE_ALI;;
+	-l)	## aa -l      -- reload aliases
 		unalias -a
-		. $CLE_ALIASES;;
-	ed)	## aa ed      -- edit and reload your aliases
+		. $CLE_ALI;;
+	-e)	## aa -e      -- edit and reload aliases
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
-		mv $TAL $CLE_ALIASES
-		aa l
+		mv $TAL $CLE_ALI
+		aa -l
 		printb Backup in: $ABK;;
-	*)	
-		echo unimplemented: aa $1 $2
-		cle help aa
+	*=*)	## aa a='b'   -- create and save new alias
+		alias "$*"
+		aa -s;;
+	*)	cle help aa
+		return 1
 	esac
 }
 
 ##
-## History management
-## ------------------
-hh () {
-	case $1 in
-	"")	## hh         -- just print history
-		history;;
-	[0-9]|[0-9][0-9]|[0-9][0-9][0-9])
-		## hh number  -- print last N entries
-		history $1;;
-	*)	## hh string  -- search in history
-		history | grep -i $1
-	esac
+## History tools
+## -------------
+HISTFILE=$CLE_D/.history-$CLE_USER
+[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
+HISTCONTROL=ignoredups
+HISTTIMEFORMAT="%Y-%m-%d %T "
+HISTIGNORE="scrn*"
+CLE_HIST=$CLE_D/.history-ALL
+
+## h               -- bash 'history' wrapper
+h () (
+	history "$@"|while read N D T C;do
+		echo "$_TB$N$_Tb $D $T $_TN$_TL$C$_TN"
+	done
+)
+
+## hh [opt] [srch] -- rich history viewer
+hh () (
+	unset IFS
+	while getopts "cstdlf" O;do
+		case $O in
+		s) ONLY0=1;; ## hh -s           -- print successful commands only
+		c) ONLYC=1;; ## hh -c           -- show just commands
+		d) THIS=`date +%Y-%m-%d`;; ## hh -d           -- today's commands
+		t) THIS=$CLE_USER-$$;; ## hh -t           -- commands from current session
+		f) FMODE=1;NUM=0;OUTF="sort|uniq";; ## hh -f           -- show working folder history
+		l) NUM=0; OUTF="less -r +G";; ## hh -l           -- show history with 'less'
+		\?) cle help hh;return
+	esac;done
+	shift $((OPTIND-1))
+	F1=${*:-${NUM:-100}}	## hh [opt]        -- no search; print recent 100 items
+	grep -w "$THIS" $CLE_HIST | case $F1 in  #FILTER1 (search)
+	0)	## hh [opt] 0      -- print all
+		cat;;
+	[1-9]|[1-9][0-9]|[1-9][0-9][0-9])
+		## hh [opt] number -- find last N entries
+		tail -$F1;;
+	*)	## hh [opt] string -- search in history
+		grep "$*"
+	esac | while read -r D T U E P C;do #FILTER2 (format)
+	 if [ $FMODE ]; then
+		[[ $P =~ ^/ ]] && echo $P
+		continue
+	 fi
+	 [ $E != 0 -a "$ONLY0" ] && continue
+	 case $E in
+	 0)	EE=$_Tg;;
+	 @)	EE=$_Tc;;
+	 *)	EE=$_Tr
+	 esac
+	 [[ "$C" =~ ^# ]] && { E='#';EE=$_Ty;C=$_Ty$C$_TN;}
+	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
+		echo "$_Tb$D $T $_TB$U $EE$E $_TN$P $_TL$C$_TN"
+	done | eval "${OUTF:-cat}" #FILTER3 (output)
+)
+
+
+# rich history record
+_rhlog () {
+	date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [$*]" >>$CLE_HIST
 }
 
 ##
-## Session wrappers:
-## -----------------
+## Session wrappers
+## ----------------
 
 # environment packer
 _clepak () (
@@ -331,57 +396,109 @@ _clepak () (
 	tar chzf - $RCS | base64 | tr -d '\n\r '
 )
 
-## ssg [user@]hostname  -- access remote system and take CLE along
+## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
 	`command which ssh` -t $* "
-		[ -w $HOME ] || { mkdir /tmp/$CLE_USER; cd /tmp/$CLE_USER;}
-		echo -n $C64|base64 --decode |tar xzf -;
-		export CLE_USER=$CLE_USER;
+		[ -w \$HOME ] || { mkdir -p /tmp/\$USER; cd /tmp/\$USER;}
+		echo -n $C64|base64 --decode|tar xzf -;
 		exec bash --rcfile .clerc-remote-$CLE_USER"
 )
 
-## sudd [username]      -- sudo wrapper; root is the default account
+## sudd [user]     -- sudo wrapper; root is the default account
 sudd () (
 	sudo -i -u ${1:-root} $BASH $CLE_RC $CLE_USER
 )
 
-## suu [username]       -- su wrapper
+## suu [user]      -- su wrapper
 suu () (
-	if [[ $OSTYPE =~ bsd ]];then
+	if [[ $OSTYPE =~ BSD|bsd|darwin ]];then
 		su -l ${1:-root} $CLE_RC $CLE_USER
 	else
 		su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER # enforce bash
 	fi
 )
 
-## kksu [username]      -- ksu wrapper
+## kksu [user]     -- ksu wrapper
 kksu () (
 	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
 )
 
-# default shell settings
+## scrn [name]     -- gnu screen wrapper, join your recent session or start new
+## scrn -j [name]  -- join other screen sessions, ev. search by name
+scrn () (
+	SR=$CLE_USER${1:+-$1}
+	[ "$1" = -j ] && SR=${2:-.}
+	SCRS=`screen -ls|sed -n "/$SR/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
+	NS=`wc -w <<<$SCRS`
+	if [ $NS = 0 ]; then
+		[ "$1" = -j ] && echo "No screen to join" && return 1
+		SCF=$CLE_D/.screenrc-$CLE_USER
+		SN=$TTY-CLE.$SR
+		_rhlog screen -S $SN
+		_scrc >$SCF
+		screen -c $SCF -S $SN bash --rcfile $CLE_RC
+	else
+		if [ $NS = 1 ]; then SN=$SCRS
+		else
+			printb "${_TU}Current '$SR' sessions:"
+			PS3="$_TL choose # to join: $_TN"
+			select SN in $SCRS;do
+				[ $SN ] && break
+			done
+		fi
+		_rhlog screen -x $SN
+		screen -S $SN -X echo "$CLE_USER joining"
+		screen -x $SN
+	fi
+)
+
+# screenrc generator
+_scrc () {
+cat <<-EOS
+	altscreen on
+	autodetach on
+	# enables shift-PgUp/PgDn
+	termcapinfo xterm* ti@:te@
+	# change window with ctrl-left/right
+	bindkey "^[[1;5D" prev
+	bindkey "^[[1;5C" next
+	defscrollback 3000
+	hardstatus alwayslastline 
+	hardstatus string '%{= Kk} %-w%{+u KC}%n %t%{-u Kk}%+w %-=%{KG}$CLE_THN%{Kg} %c'
+	bind c screen bash -rcfile $CLE_RC
+	bind ^c screen bash -rcfile $CLE_RC
+	source $HOME/.screenrc
+EOS
+}
+
+# default settings
 export EDITOR=vi
 export PAGER="less -s"
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
-HISTFILE=$CLE_D/.history-$CLE_USER
-[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
-HISTCONTROL=ignoredups
-HISTTIMEFORMAT="%d%b %H:%M:%S "
+CDPATH=.:..:~
+
+# completion
+declare -F _known_hosts >/dev/null && complete -F _known_hosts ssg
+
+# session record
+TTY=`tty|sed 's;[/dev];;g'`
+_rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
+
+# load modules from .cle folder
+for _I in $CLE_DM/mod-*;do
+	_clexe $_I
+done
 
 # custom tweaks
 _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
 
-# load modules from .cle folder
-for _I in $CLE_D/.cle/mod-*;do
-	_clexe $_I
-done
-
 # prompt init
-_clexe $CLE_CF || { _clebanner;_defcf;_savecf;}
+_clexe $CLE_CF || { _clebanner;_defcf;}
+[ $CLE_CLR ] || CLE_CLR=$CLE_PCOLOR   # 2B REMOVED!
 _setp
 _setwt
 
@@ -392,37 +509,37 @@ _setwt
  It seems you started CLE issuing '. $CLE_RC'
  Since this is the first run, consider setup in your profile.
  Following command will hook CLE in $HOME/.bashrc:
-$CT_L	cle deploy
-
+$_TL	cle deploy
 EOT
 
 ##
-## CLE command & control:
-## ----------------------
+## CLE command & control
+## ---------------------
 cle () {
-	local C I S1 S2 MM BRC NC
-	# find & run enhancement _cle_* function
+	local C I MM BRC NC
+	# find & run cle_* enhancement
 	C=$1;shift
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
 		return $?
+	elif [ -f $CLE_DM/cle-$C ]; then
+		. $CLE_DM/cle-$C $*
+		return $?
 	fi
 	case "$C" in
-	color)	## cle color COLOR    -- set prompt color
-		I=$CLE_PCOLOR
-		CLE_PCOLOR=$1
-		_setp || CLE_PCOLOR=$I;;
-	p?)	## cle p0-p3 [string] -- show/define prompt parts
+	color)	## cle color COLOR -- set prompt color
+		CLE_CLR=$1
+		_setp;;
+	p?)	## cle p0-p3 [str] -- show/define prompt parts
 		I=CLE_P${C:1:1}
 		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
 		_setp;;
-	time)	## cle time [off]     -- toggle server time in prompt
+	time)	## cle time [off]  -- toggle server time in prompt
 		[ "$1" = off ] && CLE_P0=%e || CLE_P0='%e \A'
 		_setp;;
-	title)	## cle title [off]    -- toggle window title
+	title)	## cle title [off] -- toggle window title
 		[ "$1" = off ] && CLE_WT='' || _setwt;;
-	deploy)
-		## cle deploy         -- hook CLE into user's profile
+	deploy) ## cle deploy      -- hook CLE into user's profile
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
 		NC='$HOME/.clerc'
@@ -435,51 +552,51 @@ cle () {
 			printb Adding lines to your .bashrc:
 			echo -e "\n$I\n[ -f $NC ] && . $NC\n" | tee -a $BRC
 		fi;;
-	update) ## cle update         -- install fresh version of CLE
-		if [[ $CLE_RC =~ remote ]];then
-			printb CLE in remote session, update is pointless.
-			return 1
-		fi
+	update) ## cle update      -- install fresh version of CLE
 		NC=$CLE_D/clerc-new
 		curl -k $CLE_SRC/clerc >$NC
+		C=`sed -n 's/^#\* version: //p' $NC`
+		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
-		echo "new:     `sed -n 's/^#\* version: //p' $NC`"
-		S1=`md5sum $CLE_RC| cut -d' ' -f1`
-		S2=`md5sum $NC| cut -d' ' -f1`
-		[ $S1 = $S2 ] && { echo No difference; return 1;}
-		ask Do you want to see diff? && diff $CLE_RC $NC
+		echo "new:     $C"
+		MM=`diff $CLE_RC $NC` && { echo No difference; return 1;}
+		ask Do you want to see diff? && cat <<<$MM
 		ask Do you want to install new version? || return
 		BRC=$CLE_D/clerc-back
 		cp $CLE_RC $BRC
-		mv $NC $CLE_RC
+		mv -f $NC $CLE_RC
 		cle reload
 		printb New CLE activated, backup saved here: $BRC;;
-	reload) ## cle reload         -- reload CLE
+	reload) ## cle reload      -- reload CLE
 		unset CLE_EXE
 		. $CLE_RC
 		echo CLE $CLE_VER;;
-	reset)	## cle reset          -- reset configuration
+	reset)	## cle reset       -- reset configuration
 		rm -f $CLE_CF
 		cle reload;;
-	mod)	## cle mod            -- cle module management
+	mod)	## cle mod         -- cle module management
 		# this is just a fallback to initialize modularity
-		# downloaded mod-mod overrides this code 
+		# downloaded cle-mod overrides this code 
 		ask Activate CLE modules? || return
-		MM=$CLE_D/.cle/mod-mod
-		mkdir $CLE_D/.cle
-		curl -k $CLE_SRC/dotcle/mod-mod >$MM
-		grep -q '# mod-mod:' $MM || { printb module download failed; rm -f $MM; return 1;}
-		_clexe $MM
-		cle mod avail;;
-	env)	## cle env            -- print CLE_* variables
-		set | grep ^CLE_.*=;;
-	readme) ## cle readme         -- download and show README file
-		curl -k $CLE_SRC/README.md | mdfilter |less -r;;
-	man)	## cle man            -- download and show HOWTO file
-		curl -k $CLE_SRC/HOWTO.md | mdfilter |less -r;;
-	help)	## cle help [fnc]     -- show help
+		I=cle-mod
+		MM=$CLE_DM/$I
+		mkdir -p $CLE_DM
+		curl -k $CLE_SRC/dotcle/$I >$MM
+		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
+		cle mod;;
+	env)	## cle env         -- print CLE_* variables
+		for I in ${!CLE_*};do printf "$_TL%-12s$_TN%s\n" $I "${!I}";done;;
+	doc)	## cle doc         -- show documentation
+		I=`curl -sk $CLE_SRC/doc/index.md`
+		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
+		PS3="$_TL doc #$_TN"
+		select C in $I;do
+			[ $C ] && curl -sk $CLE_SRC/doc/$C |mdfilter|less -r; break
+		done;;
+	help)	## cle help [fnc]  -- show help
 		# double hash denotes help content
-		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" $CLE_RC;;
+		_C=`ls $CLE_DM/cle-* 2>/dev/null`
+		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 	*)	echo unimplemented: cle $C
@@ -491,5 +608,5 @@ cle () {
 # remove disturbing stuff
 unset SUDO_COMMAND _D _I _N _C
 fi
-# and that's all the magic :-)
+# that's all folks...
 
