@@ -2,16 +2,15 @@
 
 ## What are modules
 
-Besides basic fuctionalities CLE is extensible framework. Various modules can
 In addition to basic fuctionalities the CLE is in fact extensible framework.
 Various modules can be added to enhance or modify the environment. For example
 CLE doesn't contain functions to backup/restore settings. If there is a module
 providing this it can be downloaded and installed. Important word here is
 "to download". Remember, CLE itself is one resource file only! But it can
-execute several files if they exist and uses it's own repository to find and
+execute several files if they exist. CLE uses it's own repository to find and
 download those files on user's request. The reason for using own repository
 is compatibility among various distributions and operating systems so there
-is no dependancy on rpm/deb/etc packaging system nor the OS flavour (meaning
+is no dependancy on rpm/deb/other packaging system nor the OS flavour (meaning
 Linux/*BSD/Solaris/...)
 
 Modules are internally stored in `$HOME/.cle folder`. Various types of modules 

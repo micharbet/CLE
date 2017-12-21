@@ -173,7 +173,12 @@ Use known bash command `alias` and CLE function `aa` in following way:
 ```
    alias newalias='command --opt1 --opt2'
    unalias oldalias
-   aa s
+   aa -s
+```
+
+Define and store new alias in one step:
+```
+   aa newalias='command --with options`
 ```
 
 Now 'newalias' is saved into alias store file and recalled on all future CLE
@@ -184,17 +189,17 @@ original built-in command.
 
 
 ### Edit alias set
-`aa ed` function runs editor on current working alias set allowing more
+`aa -e` function runs editor on current working alias set allowing more
 complex changes. Note that recent alias set is backed up.
 
 
 ### Reload aliases
-Use `aa l` in case of mischmatch, if working alias set has been unintentionally
+Use `aa -l` in case of mischmatch, if working alias set has been unintentionally
 damaged, etc.
 
-Note: there is `_defalias` built-in function that defines basic alias set upon
-each CLE start. Those predefined aliases override the ones saved with `aa s`
-command.
+Note: there are predefined aliases that are set to their defaults upon each CLE
+start. To see them inspect function '_defalias' either in clerc code or with
+command `decalre -f  _defalias`.
 
 
 ## History management
@@ -249,6 +254,7 @@ Options allowed in 'hh' are as follows:
 `-s` filters only succesful commands (return code zero)
 `-c` strips out additional information and output just commands
 `-l` pass the output into 'less' command
+`-f` instead of issued commands prints out their working directories (folders)
 
 Examples:
 - `hh -sc tar` - this prints out only successful 'tar' commands without rich

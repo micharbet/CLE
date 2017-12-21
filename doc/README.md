@@ -54,17 +54,17 @@ however they add CLE to the sessions.
 ### scrn - GNU screen wrapper
 
 This wrapper is workaround allowing starting CLE inside screen session. By
-default is searches for _yours_ opened/detached session and joins or creates
-new one. You can also run `scrn -j` to obtain list of sessions opened on this
-account by all users and join them in cooperative mode. (Imagine environment
-whre more users access root's account.
+default it searches for _yours_ opened/detached session and joins them.
+Otherwise creates new one. You can also run `scrn -j` to obtain list of
+sessions opened on this account by all users and join them in cooperative
+mode. (Imagine this in environment whre more users access root's account.)
 
 Another added value is configuration file with nice status line and shortcut
 Ctrl-Left/Right to switch between windows.
 
 
 ### other utilities
-- `aa`  manges aliases
+- `aa`  manages aliases
 - `hh`  makes history searches easier
 - `cle` the most important one - this is the command and control center
       of the environment. Issue `cle help` to read more.
