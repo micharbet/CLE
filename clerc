@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-12-21 (RedH)
+#* version: 2017-01-27 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -136,7 +136,7 @@ _defcf () {
 	CLE_P0='%e \A'
 	CLE_P1='\u'
 	CLE_P2='%h'
-	CLE_P3='\w %>'
+	CLE_P3='\w \$'
 }
 
 # save configuration
@@ -151,8 +151,8 @@ _savecf () {
 	EOC
 } >$CLE_CF
 
-_cle_e () {
-	[ "$1" != e ] && return
+_cle_r () {
+	[ "$1" != h ] && return
 	printf "\n$_Tr     ,==~~-~w^, \n    /#=-.,#####\\ \n .,!. ##########!\n((###,. \`\"#######;."
 	printf "\n &######\`..#####;^###)\n$_Tw   (&@$_Tr^#############\"\n$_Tw"
 	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_TN\n"
@@ -162,8 +162,6 @@ _cle_e () {
 _pesc () (
 	C=_C$1
 	P=CLE_P$1
-	PP=">" # I hate $ in prompt
-	[ $UID = 0 ] && PP="#"
 	printf "\\[\$$C\\]"
 	sed <<<${!P}\
 	 -e "s/%i/$CLE_IP/g"\
@@ -171,8 +169,7 @@ _pesc () (
 	 -e "s/%u/$CLE_USER/g"\
 	 -e "s/%e/\\\[\$_CE\\\][\$_E]\\\[\$_TN\$$C\\\]/g"\
 	 -e "s/%c\(.\)/\\\[\\\$_T\1\\\]/g"\
-	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
-	 -e "s/%>/$PP/"
+	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"
 )
 
 # prompt composer
@@ -299,7 +296,6 @@ aa () {
 	"")	## aa         -- show aliases
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_TL\1$_TN	\2/";;
 	-s)	## aa -s      -- save current alias set
-		alias|diff $CLE_ALI - 2>/dev/null && return
 		cp $CLE_ALI $ABK
 		alias >$CLE_ALI;;
 	-l)	## aa -l      -- reload aliases
@@ -420,8 +416,8 @@ suu () (
 	fi
 )
 
-## kksu [user]     -- ksu wrapper
-kksu () (
+## ksuu [user]     -- ksu wrapper
+ksuu () (
 	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
 )
 
@@ -479,6 +475,7 @@ export PAGER="less -s"
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
 CDPATH=.:..:~
+[[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 # completion
 declare -F _known_hosts >/dev/null && complete -F _known_hosts ssg
@@ -498,12 +495,9 @@ _clexe $CLE_RCU
 
 # prompt init
 _clexe $CLE_CF || { _clebanner;_defcf;}
-[ $CLE_CLR ] || CLE_CLR=$CLE_PCOLOR   # 2B REMOVED!
+CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # fix removed '%>' DELETE THIS LATER
 _setp
 _setwt
-
-# enhance path with user's own bin
-[[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 [ $CLE_1 ] && cat <<-EOT
  It seems you started CLE issuing '. $CLE_RC'

@@ -153,7 +153,6 @@ cdc () {
 				# _clexe  $CLE_CF
 				cle reload
 				# add current branch name into prompt
-				cle p3 '\w%cY:$(gicwb) %>'
 				CLE_DK=`dirname $CLE_DK`
 			fi
 		else
