@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-01-27 (RedH)
+#* version: 2017-01-29 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -16,7 +16,7 @@
 # Command line tweaks:
 # -colorful prompt with hihglighted exit code
 # -builtin aliases and functions
-# -history tweaks
+# -history improved
 #
 # 1. execute this file within your shell session
 # 2. integrate into your profile:
@@ -34,7 +34,7 @@
 # -built-in documentation: 'cle help'
 # -update from GIT source
 
-# check running in interactive session otherwise skip all the tweaks
+# check running in interactive session otherwise skip all
 # required for scp compattibility
 if [ -t 0 -a -z "$CLE_EXE" ];then
 
@@ -489,13 +489,12 @@ for _I in $CLE_DM/mod-*;do
 	_clexe $_I
 done
 
-# custom tweaks
+# config & tweaks
+_clexe $CLE_CF || { _clebanner;_defcf;}
 _clexe $CLE_D/.clerc-local
 _clexe $CLE_RCU
 
-# prompt init
-_clexe $CLE_CF || { _clebanner;_defcf;}
-CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # fix removed '%>' DELETE THIS LATER
+CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # compatibility fix for removed '%>' DELETE THIS LATER
 _setp
 _setwt
 
@@ -554,7 +553,7 @@ cle () {
 		echo current: $CLE_VER
 		echo "new:     $C"
 		MM=`diff $CLE_RC $NC` && { echo No difference; return 1;}
-		ask Do you want to see diff? && cat <<<$MM
+		ask Do you want to see diff? && cat <<<"$MM"
 		ask Do you want to install new version? || return
 		BRC=$CLE_D/clerc-back
 		cp $CLE_RC $BRC
