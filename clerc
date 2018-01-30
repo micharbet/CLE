@@ -4,7 +4,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2017-01-29 (RedH)
+#* version: 2018-01-31 (RedH)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2017 by Michael Arbet 
 #
@@ -296,7 +296,7 @@ aa () {
 	"")	## aa         -- show aliases
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_TL\1$_TN	\2/";;
 	-s)	## aa -s      -- save current alias set
-		cp $CLE_ALI $ABK
+		cp $CLE_ALI $ABK 2>/dev/null
 		alias >$CLE_ALI;;
 	-l)	## aa -l      -- reload aliases
 		unalias -a
