@@ -14,7 +14,7 @@
 # 
 
 local LISTFILE=modulist
-local MODULIST=$CLE_DM/$LISTFILE
+local MODULIST=$CLE_D/$LISTFILE
 
 #
 # cle-mod helper functions
@@ -53,7 +53,7 @@ modsum () (
 
 # module deails
 modet () (
-	M=$CLE_DM/$1
+	M=$CLE_D/$1
 	MDESC=`modesc $M`
 	MSRC=`modtype $M`
 	MVER=`modver $M`
@@ -62,7 +62,7 @@ modet () (
 
 # get list of currently installed modules
 getinstalled () (
-	cd $CLE_DM
+	cd $CLE_D
 	ls cle-* mod-* bin-* 2>/dev/null
 )
 
@@ -85,7 +85,7 @@ local M MM MODS DMM MDESC MSRC MVER
 
 case "$1" in
 ls)	## cle mod ls        -- list installed modules
-	printb ${_TU}Modules installed in $CLE_DM:
+	printb ${_TU}Modules installed in $CLE_D:
 	for M in `getinstalled`; do
 		modet $M
 	done
@@ -120,7 +120,7 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 	# download module into temporary file
 	# this doesn't destroy one that is already installed
 	printb "Downloading $MM"
-	DMM=$CLE_DM/dl-$MM
+	DMM=$CLE_D/dl-$MM
 	if [[ $MM =~ ^bin- ]]; then
 		# executable scripts specific actions
 		MM=${MM/bin-/}
@@ -141,12 +141,12 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 		curl -ksS $CLE_SRC/dotcle/$MM >$DMM
 		# check module signature
 		if grep -q "## *$MM: ..*" $DMM ; then
-			mv -f $DMM $CLE_DM/$MM
+			mv -f $DMM $CLE_D/$MM
 			if [[ $MM =~ 'mod-' ]]; then
 				# immediately include the module
-				printb Executing module $CLE_DM/$MM
-				MDESC=`modesc $CLE_DM/$MM`
-				_clexe $CLE_DM/$MM && { echo $MM: $MDESC; printb ready!; }
+				printb Executing module $CLE_D/$MM
+				MDESC=`modesc $CLE_D/$MM`
+				_clexe $CLE_D/$MM && { echo $MM: $MDESC; printb ready!; }
 			fi
 		else
 			printb Error, no module header found
@@ -174,14 +174,14 @@ del)	## cle mod del [mod] -- delete module
 	echo
 	modet $MM
 	ask "Do yo want to remove this?" || return
-	mkdir -p $CLE_DM/inactive
-	mv -f $CLE_DM/$MM $CLE_DM/inactive
-	echo Module $MM moved into $CLE_DM/inactive
+	mkdir -p $CLE_D/inactive
+	mv -f $CLE_D/$MM $CLE_D/inactive
+	echo Module $MM moved into $CLE_D/inactive
 	;;
 '')
 	printb ${_TU}CLE module management
 	echo "Repository:$_Tw $CLE_SRC$_TN"
-	echo "Local lib: $_Tw $CLE_DM$_TN"
+	echo "Local lib: $_Tw $CLE_D$_TN"
 	;;
 help)
 	cle help "cle mod"
