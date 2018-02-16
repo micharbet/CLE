@@ -1,10 +1,11 @@
+#!/bin/bash
 #
 # CLE : Command Live Environment
 #
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-02-14 (Nova)
+#* version: 2018-02-16 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -13,7 +14,7 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 #
-# Command line tweaks:
+# CLE provides:
 # -colorful prompt with hihglighted exit code
 # -builtin aliases and functions
 # -history improved
@@ -40,18 +41,20 @@ if [ -t 0 -a -z "$CLE_EXE" ];then
 
 # warning: magic inside!
 
-# REWRITE THIS
-# And also check how it behaves when ssg / suu into accounts with deployed CLE
-# session startup for su*
-[ "$1" ] && { CLE_USER=$1; exec `command which bash` --rcfile $CLE_RC;}
-
 #debug stuff
-prd () { printf "%10s = %s\n" $1 ${!1}; }
+DEBUG=
+prd () { [ $DEBUG ] && printf "%10s = %s\n" $1 ${!1}; }
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_DRC=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_DRC/`basename $CLE_RC`
+
+[ $DEBUG ] && echo starting: $0
+[ $DEBUG ] && echo startup cmdline $#: $*
+prd CLE_RC
+# ensure bash session will be started with this rcfile
+[[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
 
 # who I'm
 _N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
@@ -65,17 +68,20 @@ _D=$HOME
 CLE_D=$_D/.cle-$CLE_USER
 mkdir -p $CLE_D
 
+# Transition hacks, remove this section later
+[ -f $_D/.clecf-$CLE_USER ] && mv -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: moved config file
+[ -f $_D/.aliases-$CLE_USER ] && mv -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: moved aliases
+[ -f $_D/.cleusr-$CLE_USER ] && mv -f $_D/.cleusr-$CLE_USER $_D/cleusr-$CLE_USER-old && echo CLE transition: found .cleusr-$CLE_USER, saved, remove it yourself probably
+[ -f $_D/.screenrc-$CLE_USER ] && rm -f $_D/.screenrc-$CLE_USER && echo CLE transition: deleted .screenrc
+[ -f $_D/.clerc-remote-$CLE_USER ] && rm -f $_D/.clerc-remote-$CLE_USER && echo CLE transition: deleted .clerc-remote-$CLE_USER
+[ -d $_D/.cle ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle, saved, remove it yourself probably
+
+
 CLE_CF=${CLE_CF:-$CLE_D/cf}
 CLE_TW=$CLE_DRC/tweak
 
-prd CLE_RC
-prd CLE_DRC
-prd CLE_D
-prd CLE_CF
-prd CLE_TW
-
 # where in the deep space is CLE growing
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Nova
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # execute script and log its filename into CLE_EXE
@@ -88,10 +94,8 @@ _clexe () {
 }
 CLE_EXE=$CLE_RC
 
-# ADD THIS SOMEWHERE
-# IF remote session
-#	_clexe /etc/profile
-#	_clexe $HOME/.bashrc
+_clexe /etc/profile
+_clexe $HOME/.bashrc
 
 # short hostname: remove domain, leave subdomains
 CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
@@ -394,11 +398,11 @@ _rhlog () {
 
 # environment packer
 _clepak () (
-	cd $CLE_DRC
-	RCS=.clerc-remote-$CLE_USER
-	[[ $CLE_RC =~ $RCS ]] || cp $CLE_RC $RCS
-	touch $CLE_TW; RCS="$RCS `basename $CLE_TW`"
-	tar chzf - $RCS | base64 | tr -d '\n\r '
+	H=`dirname $CLE_DRC`
+	D=`basename $CLE_DRC`
+	cd $H
+	RCS="$D/rc $D/tweak"
+	tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '
 )
 
 ## ssg [user@]host -- access remote system and take CLE along
@@ -406,28 +410,29 @@ ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	C64=`_clepak`
 	`command which ssh` -t $* "
-		[ -w \$HOME ] || { mkdir -p /tmp/\$USER; cd /tmp/\$USER;}
+		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
+	       	mkdir -p \$_H; cd \$_H
 		echo -n $C64|base64 --decode|tar xzf -;
-		exec bash --rcfile .clerc-remote-$CLE_USER"
+		exec `basename $CLE_DRC`/rc"
 )
 
 ## sudd [user]     -- sudo wrapper; root is the default account
 sudd () (
-	sudo -i -u ${1:-root} $BASH $CLE_RC $CLE_USER
+	sudo -i -u ${1:-root} $CLE_RC
 )
 
 ## suu [user]      -- su wrapper
 suu () (
 	if [[ $OSTYPE =~ BSD|bsd|darwin ]];then
-		su -l ${1:-root} $CLE_RC $CLE_USER
+		su -l ${1:-root} $CLE_RC
 	else
-		su -l -s $BASH ${1:-root} $CLE_RC $CLE_USER # enforce bash
+		su -l -s $BASH ${1:-root} $CLE_RC # enforce bash
 	fi
 )
 
 ## ksuu [user]     -- ksu wrapper
 ksuu () (
-	ksu ${1:-root} -a -c "$BASH $CLE_RC $CLE_USER"
+	ksu ${1:-root} -a -c $CLE_RC
 )
 
 ## scrn [name]     -- gnu screen wrapper, join your recent session or start new
@@ -439,11 +444,11 @@ scrn () (
 	NS=`wc -w <<<$SCRS`
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
-		SCF=$CLE_D/.screenrc-$CLE_USER
+		SCF=$CLE_D/screenrc
 		SN=$TTY-CLE.$SR
 		_rhlog screen -S $SN
 		_scrc >$SCF
-		screen -c $SCF -S $SN bash --rcfile $CLE_RC
+		screen -c $SCF -S $SN $CLE_RC
 	else
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
@@ -472,8 +477,8 @@ cat <<-EOS
 	defscrollback 3000
 	hardstatus alwayslastline 
 	hardstatus string '%{= Kk} %-w%{+u KC}%n %t%{-u Kk}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
-	bind c screen bash -rcfile $CLE_RC
-	bind ^c screen bash -rcfile $CLE_RC
+	bind c screen $CLE_RC
+	bind ^c screen $CLE_RC
 	source $HOME/.screenrc
 EOS
 }
