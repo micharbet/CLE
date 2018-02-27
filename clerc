@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-02-16 (Nova)
+#* version: 2018-02-17 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -42,31 +42,34 @@ if [ -t 0 -a -z "$CLE_EXE" ];then
 # warning: magic inside!
 
 #debug stuff
-DEBUG=
+DEBUG=y
 prd () { [ $DEBUG ] && printf "%10s = %s\n" $1 ${!1}; }
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
-CLE_DRC=$(cd `dirname $CLE_RC`;pwd;)
-CLE_RC=$CLE_DRC/`basename $CLE_RC`
+CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
+CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 [ $DEBUG ] && echo starting: $0
 [ $DEBUG ] && echo startup cmdline $#: $*
 prd CLE_RC
+
 # ensure bash session will be started with this rcfile
 [[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
 
 # who I'm
 _N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
-prd _N
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
+prd _N
 prd CLE_USER
 
-# cle working dir
+# find writable folder
 _D=$HOME
 [ -w $_D ] || _D=/tmp/$USER
 CLE_D=$_D/.cle-$CLE_USER
 mkdir -p $CLE_D
+CLE_CF=$CLE_D/cf
+
 
 # Transition hacks, remove this section later
 [ -f $_D/.clecf-$CLE_USER ] && mv -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: moved config file
@@ -76,10 +79,6 @@ mkdir -p $CLE_D
 [ -f $_D/.clerc-remote-$CLE_USER ] && rm -f $_D/.clerc-remote-$CLE_USER && echo CLE transition: deleted .clerc-remote-$CLE_USER
 [ -d $_D/.cle ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle, saved, remove it yourself probably
 
-
-CLE_CF=${CLE_CF:-$CLE_D/cf}
-CLE_TW=$CLE_DRC/tweak
-
 # where in the deep space is CLE growing
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Nova
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
@@ -87,6 +86,7 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
 _clexe () {
+	[ $DEBUG ] && echo "clexe [$_EEE]:" $*
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1 ]] && return
 	CLE_EXE=$CLE_EXE:$1
@@ -398,8 +398,8 @@ _rhlog () {
 
 # environment packer
 _clepak () (
-	H=`dirname $CLE_DRC`
-	D=`basename $CLE_DRC`
+	H=`dirname $CLE_RD`
+	D=`basename $CLE_RD`
 	cd $H
 	RCS="$D/rc $D/tweak"
 	tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '
@@ -413,7 +413,7 @@ ssg () (
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
 	       	mkdir -p \$_H; cd \$_H
 		echo -n $C64|base64 --decode|tar xzf -;
-		exec `basename $CLE_DRC`/rc"
+		exec `basename $CLE_RD`/rc"
 )
 
 ## sudd [user]     -- sudo wrapper; root is the default account
@@ -503,8 +503,8 @@ done
 
 # config & tweaks
 _clexe $CLE_CF || { _clebanner;_defcf;}
-_clexe $CLE_D/.clerc-local
-_clexe $CLE_TW
+_clexe $HOME/.cle-local
+_clexe $CLE_RD/tweak
 
 CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # compatibility fix for removed '%>' DELETE THIS LATER
 _setp
