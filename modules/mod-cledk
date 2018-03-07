@@ -1,0 +1,102 @@
+##
+## mod-cledk: functions to assist CLE development process
+## -------------------------------------------------------
+#* version: 2018-03-07
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#*` Copyright (C) 2017-2018 by Michael Arbet
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+# where I do development
+CLE_DK=$HOME/d/CLE
+
+# those functions are the same like in cle-mod
+# extract module description 
+_modesc () (
+	local M=`basename $1`
+	sed -n "s/^## $M:\s*//p" $1
+)
+
+# extract module version 
+_modver () (
+	sed -n "s/^#\* version:\s*//p" $1
+)
+
+# compute module content checksum
+_modsum () (
+	md5sum $1 | cut -d' ' -f1
+)
+
+
+## cle ed [mod]  -- edit clerc file ev. specified module
+_cle_ed () {
+	local F=$CLE_DK/clerc
+	[ -n "$1" ] && F=`ls $CLE_DK/modules/mod-$1 $CLE_DK/modules/cle-$1 2>/dev/null | grep $1`
+	if [ ! -f "$F" ]; then
+		echo no such file: $F
+		return 1
+	fi
+	vi $F
+}
+
+## cle cp        -- copy and run new development version of clerc
+_cle_cp() {
+	local CLERS="$CLE_DK/clerc $CLE_RC"
+	eval diff $CLERS
+	eval ls -lL $CLERS
+	ask "replace clerc?" && { cp $CLE_RC $CLE_RC-recent; eval cp $CLERS; cle reload; }
+}
+
+## cle ls        -- list CLE related files
+_cle_ls () {
+	ls -l ~/.history-* $CLE_D
+}
+
+## cle exe       -- show list of all files executed during CLE startup
+_cle_exe () {
+	echo $CLE_EXE|tr : \\n
+}
+
+## cle func      -- list all current bash functions
+_cle_func () {
+	declare -f |sed -n '/.\+\s()/p'
+}
+
+
+## cle debug [on|off]  - debug mode ($CLE_DEBUG variable)
+_cle_debug () {
+	case "$1" in
+	on) CLE_DEBUG=1 ;;
+	off) CLE_DEBUG="" ;;
+	esac
+	echo CLE_DEBUG=$CLE_DEBUG
+}
+
+## cle modgen     -- generate module index
+_cle_modgen () (
+	# find modules mod-* and cle-*
+	cd $CLE_DK/modules
+	for M in mod-* cle-*; do
+		echo $M:`_modver $M`:`_modsum $M`:`_modesc $M`
+	done
+	# find scripts in bin folder
+	cd $CLE_DK/bin
+	for M in *; do
+		echo bin-$M:`_modver $M`:`_modsum $M`:`_modesc $M`
+	done
+) >$CLE_DK/modules/modulist
+
+
+## cdc      - shortcut into $HOME/d/cle
+cdc () {
+	cd $CLE_DK
+	printb CLE development kit: $PWD
+	git status
+}
+
+

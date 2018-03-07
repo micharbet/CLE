@@ -1,11 +1,11 @@
 ##
 ## cle-mod: CLE module management
 ## ------------------------------
-#* version: 2017-08-17
+#* version: 2018-03-08
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2017 by Michael Arbet 
+#* Copyright (C) 2016-2018 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -103,7 +103,7 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 	[ "$MODS" ] || { echo Nothing like $2 to install; return 1; }
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
-		# chose one if more were found
+		# chose one module in case of more matches
 		PS3="$_TL choose module # $_TN"
 		select MM in $MODS; do
 			[ -n "$MM" ] && break
@@ -113,23 +113,26 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 	fi
 	[ $MM ] || return
 	echo
+	# show this module details
 	grep ^$MM $MODULIST | { IFS=:; read MM MVER MSUM MDESC; 
 		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"; }
 	ask "Do yo want to install this module?" || return
 
-	# download module into temporary file
-	# this doesn't destroy one that is already installed
 	printb "Downloading $MM"
 	DMM=$CLE_D/dl-$MM
 	if [[ $MM =~ ^bin- ]]; then
-		# executable scripts specific actions
+		# executable script setup
 		MM=${MM/bin-/}
 		curl -ksS $CLE_SRC/bin/$MM >$DMM
 		# check module signature
+		# this should be changed in furure to check only hashbang
+		# to ensure compatibility with *any* scripts
 		if grep -q "## *$MM: ..*" $DMM ; then
 			mkdir -p ~/bin
 			mv -f $DMM ~/bin/$MM
 			chmod 755 ~/bin/$MM
+			echo Script $MM is ready to use
+			ls -l ~/bin/$MM
 		else
 			printb Error, no module header found
 			head $DMM
@@ -138,18 +141,21 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 			return 1
 		fi
 	else
+		# regular module setup
 		curl -ksS $CLE_SRC/dotcle/$MM >$DMM
 		# check module signature
+		# every regular cle module should have at least it's identification
 		if grep -q "## *$MM: ..*" $DMM ; then
 			mv -f $DMM $CLE_D/$MM
 			if [[ $MM =~ 'mod-' ]]; then
-				# immediately include the module
+				# now include the module
 				printb Executing module $CLE_D/$MM
 				MDESC=`modesc $CLE_D/$MM`
 				_clexe $CLE_D/$MM && { echo $MM: $MDESC; printb ready!; }
 			fi
 		else
-			printb Error, no module header found
+			# either download error or this is no module
+			printb Error, no module header found, see following:
 			head $DMM
 			printb Removing temporary file...
 			rm -f $DMM
@@ -162,7 +168,7 @@ del)	## cle mod del [mod] -- delete module
 	[ "$MODS" ] || { echo Nothing like $2 to remove; return 1; }
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
-		# chose one if more were found
+		# chose one in case of more matches
 		PS3="$_TL choose module to remove # $_TN"
 		select MM in $MODS; do
 			[ -n "$MM" ] && break

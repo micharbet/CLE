@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-02-17 (Nova)
+#* version: 2018-03-07 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -42,16 +42,15 @@ if [ -t 0 -a -z "$CLE_EXE" ];then
 # warning: magic inside!
 
 #debug stuff
-DEBUG=y
-prd () { [ $DEBUG ] && printf "%10s = %s\n" $1 ${!1}; }
+prd () { [ $CLE_DEBUG ] && printf "%10s = %s\n" $1 ${!1}; }
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
-[ $DEBUG ] && echo starting: $0
-[ $DEBUG ] && echo startup cmdline $#: $*
+[ $CLE_DEBUG ] && echo starting: $0
+[ $CLE_DEBUG ] && echo startup cmdline $#: $*
 prd CLE_RC
 
 # ensure bash session will be started with this rcfile
@@ -86,7 +85,7 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
 _clexe () {
-	[ $DEBUG ] && echo "clexe [$_EEE]:" $*
+	[ $CLE_DEBUG ] && echo "clexe [$_EEE]:" $*
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1 ]] && return
 	CLE_EXE=$CLE_EXE:$1
@@ -584,9 +583,9 @@ cle () {
 		# downloaded cle-mod overrides this code 
 		ask Activate CLE modules? || return
 		I=cle-mod
-		MM=$CLE_M/$I
+		MM=$CLE_D/$I
 		mkdir -p $CLE_D
-		curl -k $CLE_SRC/dotcle/$I >$MM
+		curl -k $CLE_SRC/modules/$I >$MM
 		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
 		cle mod;;
 	env)	## cle env         -- print CLE_* variables

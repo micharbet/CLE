@@ -1,8 +1,8 @@
-mod-cledk:2017-08-18:4bc9f71d43d2072208c63fbe64cbc16d:functions to assist CLE development process
+mod-cledk:2018-03-08:1ceec5ceb17937ffe81051f2a6fed7aa:functions to assist CLE development process
 mod-example:0.0.prd:d7adc51538d35bd528570188430ec86a:example / template module
 mod-fsps:0.0.prd:f583e8354089e1ae46e79219657495e2:filesystem and processess utilities
 mod-git:2017-08-08:5bb12beec20cf3140674e9913b8cdf12:git helpers / shorcuts
-cle-mod:2017-08-17:9d398a3b127042ba8b1a617f7852d659:CLE module management
+cle-mod:2018-03-08:b00890318840c71e656d2671d7f66fc6:CLE module management
 bin-cfe:0.0.prd:7a00ff8a29d02fa3fac91cdf1c9a90e5:config editor
 bin-hlp:2017-08-18:cdcf53456992f1017056b1af2c817f00:show script's built-in documentation
 bin-see:2017-09-23:6979aa5f2a6578ddcecc28d2d3a6d2a3:text stream highlighter
