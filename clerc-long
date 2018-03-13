@@ -35,6 +35,12 @@
 # -built-in documentation: 'cle help'
 # -update from GIT source
 
+#: If you're reading this text, you probably downloaded commented version
+#: of CLE named clerc-long. That is basically fine if you want to check how
+#: the code is the same but the file is much longer. For general use there is
+#: shortened file that has all comments introduced with '#:' removed.
+#: Note other special comments - '##' introduces self documentation
+#: and '#*' denotes script header
 
 # check running as interactive session otherwise CLE is not needed
 # also required for scp compattibility
@@ -46,6 +52,7 @@ dbg_var () { [ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "${!1}" >/dev/tty; }
 dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }
 
 # a little bit complicated way to find absolute path
+#: cross-plattform compatible way to determine absolute path to rc file
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
@@ -56,6 +63,9 @@ dbg_echo arguments $# : $*
 dbg_var BASH_SOURCE[0]
 
 # ensure bash session will be sourced with this rcfile
+#: CLE can be executed as a regular script but such it wouldn't work
+#: following condition recognizes this and re-executes bash with the same
+#: file as resource script
 [[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
 dbg_echo
 dbg_echo CLE resource init begins!
@@ -63,12 +73,20 @@ dbg_var CLE_RD
 dbg_var CLE_RC
 
 # who I'm
+#: determine username that will be inherited over the all subsquent
+#: sessions initiated with ssg and su* wrappers
 _N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_var _N
 dbg_var CLE_USER
 
 # find writable folder
+#: there can be real situation where a remote account is restricted and have no
+#: home folder. In such case CLE can be started from /tmp. Also, after su*
+#: wrapper the folder containing main resource file can be and usually will be
+#: in different place than current home.
+#: Simply to say, this sequence ensures customized configuration for every
+#: account accessed with CLE.
 _D=$HOME
 [ -w $_D ] || _D=/tmp/$USER
 CLE_D=$_D/.cle-$CLE_USER
@@ -82,11 +100,12 @@ CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # check first run
+#: check if CLE has been initiated manually from downloaded file
 case $CLE_RC in
 */clerc*)        # started manually from downloaded file
 	CLE_1=1
 	CLE_WS=$CLE_SHN
-	cp $CLE_RC $CLE_D/rc1 
+	cp $CLE_RC $CLE_D/rc1 #: rc1 is temporarily used to prevent overwriting original rc file
 	CLE_RD=$CLE_D
 	CLE_RC=$CLE_D/rc1
 	dbg_echo First run, changing some values:
@@ -202,6 +221,8 @@ _cle_r () {
 }
 
 # new prompt escapes
+#: library of enhanced prompt escape codes
+#: they are introduced with % sign
 _pesc () (
 	C=_C$1
 	P=CLE_P$1
@@ -216,6 +237,8 @@ _pesc () (
 )
 
 # prompt composer
+#: compile PS1 string from values in $CLE_COLOR and $CLE_Px
+#: Note this function is self-documented!
 _setp () {
 	local CC I CI
 	case "$CLE_CLR" in 
@@ -251,6 +274,11 @@ _setp () {
 }
 
 # prompt callback
+#: This is what you see...
+#: As _prompt function is executed *every* time you push enter key its code
+#: should be as simple as possible. In best case all commands here should be
+#: bash internals. Those don't invoke new processes and as such they are much
+#: easier to system resources.
 _prompt () {
 	_E=$? # save return code
 	local N D T C OI=$IFS
@@ -272,6 +300,12 @@ _prompt () {
 PROMPT_COMMAND=_prompt
 
 # window title
+#: This is simple window title composer
+#: By 'simple' I mean it should be much improved in next version. Ideas:
+#: -compose full WT string into the variable and simplyfy corresponding part
+#:  in _prompt function
+#: -make decision based on different environments (shell window, text console,
+#:  screen session, maybe termux, etc...)
 _setwt () {
 	CLE_WT=''
 	[[ $TERM =~ linux ]] && return # no tits on console
@@ -280,6 +314,10 @@ _setwt () {
 }
 
 # filter for markdown files
+#: "Highly sophisticated" highlighter :-D
+#: Just replaces special strings in markdown files and augments the output
+#: with escape codes to highlight.
+#: Not perfect, but it helps and is simple, isn't it?
 mdfilter () {
 	sed -e "s/^###\(.*\)/$_CL\1$_CN/"\
 	 -e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/"\
@@ -359,6 +397,8 @@ aa () {
 ##
 ## History tools
 ## -------------
+#: Following settings should not be edited, nor tweaked in other files.
+#: Mainly $HISTTIMEFORMAT - the rich history feature is dependent on it!
 HISTFILE=$_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
@@ -375,7 +415,7 @@ h () (
 
 ## hh [opt] [srch] -- rich history viewer
 hh () (
-	unset IFS	
+	unset IFS	#: necessary if user manipulates with IFS value
 	while getopts "cstdlf" O;do
 		case $O in
 		s) ONLY0=1;; ## hh -s           -- print successful commands only
@@ -415,6 +455,8 @@ hh () (
 
 
 # rich history record
+#: used to record session init into rich history
+#: TODO: think and edit this function
 _rhlog () {
 	date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [$*]" >>$CLE_HIST
 }
@@ -424,7 +466,14 @@ _rhlog () {
 ## ----------------
 
 # environment packer
+#: grab *active* resource file, tweak file, pack it to tarball and print
+#: to stdout as base64 encoded string
+#: argument ($1) may contain additional suffix to filenames
+#: Note: configuration is not packed ensuring unique cf on all hosts and accounts.
 _clepak () (
+	#: following base/dirname is here to ensure the tar will contain
+	#: relative paths only
+	#: It anyway seems to be quite complicated, subject to think and edit
 	H=`dirname $CLE_RD`
 	D=`basename $CLE_RD`
 	C=`basename $CLE_RC`
@@ -438,6 +487,9 @@ _clepak () (
 ## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
+	#: on CLE workstation, suffix to resource filename is added
+	#: this 1. prevents overwriting on destination accounts
+	#: and 2. provides information about source of this session
 	S=${CLE_WS:+-$CLE_WS} # suffix to rc filename
 	dbg_var S
 	C64=`_clepak $S`
@@ -458,6 +510,7 @@ suu () (
 	if [[ $OSTYPE =~ BSD|bsd|darwin ]];then
 		su -l ${1:-root} $CLE_RC
 	else
+		#: this allows su to accounts with /bin/nologin
 		su -l -s /bin/bash ${1:-root} $CLE_RC
 	fi
 )
