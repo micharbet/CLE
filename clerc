@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# CLE : Command Live Environment
+## CLE : Command Live Environment
 #
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-07 (Nova)
+#* version: 2018-03-13 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -35,32 +35,39 @@
 # -built-in documentation: 'cle help'
 # -update from GIT source
 
-# check running in interactive session otherwise skip all
+
+# check running as interactive session otherwise skip everything
 # required for scp compattibility
 if [ -t 0 -a -z "$CLE_EXE" ];then
 
 # warning: magic inside!
 
-#debug stuff
-prd () { [ $CLE_DEBUG ] && printf "%10s = %s\n" $1 ${!1}; }
+# debug stuff
+dbg_var () { [ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 ${!1} >/dev/tty; }
+dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
-[ $CLE_DEBUG ] && echo starting: $0
-[ $CLE_DEBUG ] && echo startup cmdline $#: $*
-prd CLE_RC
+dbg_echo
+dbg_echo starting: $0
+dbg_echo arguments $# : $*
+dbg_var BASH_SOURCE[0]
 
-# ensure bash session will be started with this rcfile
+# ensure bash session will be sourced with this rcfile
 [[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
+dbg_echo
+dbg_echo CLE resource init begins!
+dbg_var CLE_RD
+dbg_var CLE_RC
 
 # who I'm
 _N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
-prd _N
-prd CLE_USER
+dbg_var _N
+dbg_var CLE_USER
 
 # find writable folder
 _D=$HOME
@@ -68,37 +75,43 @@ _D=$HOME
 CLE_D=$_D/.cle-$CLE_USER
 mkdir -p $CLE_D
 CLE_CF=$CLE_D/cf
-
-
-# Transition hacks, remove this section later
-[ -f $_D/.clecf-$CLE_USER ] && mv -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: moved config file
-[ -f $_D/.aliases-$CLE_USER ] && mv -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: moved aliases
-[ -f $_D/.cleusr-$CLE_USER ] && mv -f $_D/.cleusr-$CLE_USER $_D/cleusr-$CLE_USER-old && echo CLE transition: found .cleusr-$CLE_USER, saved, remove it yourself probably
-[ -f $_D/.screenrc-$CLE_USER ] && rm -f $_D/.screenrc-$CLE_USER && echo CLE transition: deleted .screenrc
-[ -f $_D/.clerc-remote-$CLE_USER ] && rm -f $_D/.clerc-remote-$CLE_USER && echo CLE transition: deleted .clerc-remote-$CLE_USER
-[ -d $_D/.cle ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle, saved, remove it yourself probably
-
-# where in the deep space is CLE growing
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Nova
-CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	[ $CLE_DEBUG ] && echo "clexe [$_EEE]:" $*
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1 ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	. $1
-}
-CLE_EXE=$CLE_RC
-
-_clexe /etc/profile
-_clexe $HOME/.bashrc
+dbg_var _D
+dbg_var CLE_D
 
 # short hostname: remove domain, leave subdomains
 CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
+
+# check first run
+case $CLE_RC in
+*/clerc*)        # started manually from downloaded file
+	CLE_1=1
+	CLE_WS=$CLE_SHN
+	cp $CLE_RC $CLE_D/rc1 
+	CLE_RD=$CLE_D
+	CLE_RC=$CLE_D/rc1
+	dbg_echo First run, changing some values:
+	dbg_var CLE_RD
+	dbg_var CLE_RC
+	;;
+*/rc*-*)  # on remote
+	CLE_WS=
+	;;
+*/rc*)    # workstation, started upon login
+	CLE_WS=$CLE_SHN
+	;;
+esac
+dbg_echo
+
+# tweak file with same suffix as rc
+_I=`sed 's:.*/rc::' <<<$CLE_RC`
+CLE_TW=$CLE_RD/tw$_I
+dbg_var _I
+dbg_var CLE_TW
+
+# where in the deep space is CLE growing
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Nova
+CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # color table
 _CN=`tput sgr0`
@@ -114,10 +127,29 @@ _I=0; for _N in k r g y b m c w; do
 done
 _Ce=`tput setab 1;tput setaf 7` # err highlight
 
+# RedH to Nova transition hacks, remove this section later
+[ -f $_D/.clecf-$CLE_USER ] && mv -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: moved config file
+[ -f $_D/.aliases-$CLE_USER ] && mv -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: moved aliases
+[ -f $_D/.cleusr-$CLE_USER ] && mv -f $_D/.cleusr-$CLE_USER $_D/cleusr-$CLE_USER-old && echo CLE transition: found .cleusr-$CLE_USER, saved, remove it yourself probably
+[ -f $_D/.screenrc-$CLE_USER ] && rm -f $_D/.screenrc-$CLE_USER && echo CLE transition: deleted .screenrc
+[ -f $_D/.clerc-remote-$CLE_USER ] && rm -f $_D/.clerc-remote-$CLE_USER && echo CLE transition: deleted .clerc-remote-$CLE_USER
+[ -d $_D/.cle ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle, saved, remove it yourself probably
+
 
 #
 # Internal helper functions
 #
+
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	dbg_echo clexe $*
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1 ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	. $1
+}
+CLE_EXE=$CLE_RC
 
 # boldprint
 printb () { printf "$_CL$*$_CN\n";}
@@ -133,10 +165,10 @@ ask () {
 _clebanner () {
 cat <<EOT
 
-   ___|  |      ____|  Command Live Environment activated
-  |      |      __|    ...bit of life to the command line
-  |      |      |      Learn more:$_CL cle help$_CN
- \____| _____| _____| $_CL less $CLE_RC$_CN to discover the magic
+   ___| |     ____|  Command Live Environment activated
+  |     |     __|    ...bit of life to the command line
+  |     |     |      Learn more:$_CL cle help$_CN
+ \____|_____|_____| $_CL less $CLE_RC$_CN to discover the magic
  
 EOT
 }
@@ -170,7 +202,7 @@ _cle_r () {
 	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
 }
 
-# enhanced escapes
+# new prompt escapes
 _pesc () (
 	C=_C$1
 	P=CLE_P$1
@@ -198,7 +230,7 @@ _setp () {
 	tricolora) CC=RBW;;
 	marley)	CC=RYG;; # Bob Marley style :-) have a smoke and imagine...
 	???)	CC=$CLE_CLR;; # any 3 colors
-	*)	# print help - whoa! self documented function
+	*)	# print help on colors
 		printb "Unknown color '$CLE_CLR' Select one of predefined:"
 		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
 		echo Alternatively make your own 3-letter code using rgbcmykw/RGBCMYKW
@@ -299,11 +331,8 @@ _defalias () {
 ## Alias management
 ## ----------------
 CLE_ALI=$CLE_D/aliases # personalized aliases
-_clexe $CLE_ALI
-_defalias
-
 aa () {
-	local ABK=$CLE_ALI.back TAL=$CLE_ALI.ed
+	local ABK=$CLE_ALI.bk TAL=$CLE_ALI.ed
 	case "$1" in
 	"")	## aa         -- show aliases
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
@@ -347,7 +376,7 @@ h () (
 
 ## hh [opt] [srch] -- rich history viewer
 hh () (
-	unset IFS
+	unset IFS	
 	while getopts "cstdlf" O;do
 		case $O in
 		s) ONLY0=1;; ## hh -s           -- print successful commands only
@@ -399,20 +428,25 @@ _rhlog () {
 _clepak () (
 	H=`dirname $CLE_RD`
 	D=`basename $CLE_RD`
+	C=`basename $CLE_RC`
 	cd $H
-	RCS="$D/rc $D/tweak"
+	[ $1 ] && cp $CLE_RC $D/$C$1 && cp $CLE_TW $D/tw$1 2>/dev/null
+	RCS="$D/$C$1 $D/tw$1"
+	dbg_var RCS
 	tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '
 )
 
 ## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
-	C64=`_clepak`
+	S=${CLE_WS:+-$CLE_WS} # suffix to rc filename
+	dbg_var S
+	C64=`_clepak $S`
 	`command which ssh` -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
 	       	mkdir -p \$_H; cd \$_H
 		echo -n $C64|base64 --decode|tar xzf -;
-		exec `basename $CLE_RD`/rc"
+		exec `basename $CLE_RD`/`basename $CLE_RC`$S"
 )
 
 ## sudd [user]     -- sudo wrapper; root is the default account
@@ -425,7 +459,7 @@ suu () (
 	if [[ $OSTYPE =~ BSD|bsd|darwin ]];then
 		su -l ${1:-root} $CLE_RC
 	else
-		su -l -s $BASH ${1:-root} $CLE_RC # enforce bash
+		su -l ${1:-root} $CLE_RC # enforce bash
 	fi
 )
 
@@ -482,10 +516,15 @@ cat <<-EOS
 EOS
 }
 
-# default settings
+# session startup
+_clexe /etc/profile
+_clexe $HOME/.bashrc
+
+_clexe $CLE_ALI
+_defalias
+
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
-CDPATH=.:..:~
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 # completion
@@ -503,14 +542,15 @@ done
 # config & tweaks
 _clexe $CLE_CF || { _clebanner;_defcf;}
 _clexe $HOME/.cle-local
-_clexe $CLE_RD/tweak
+_clexe $CLE_TW
 
-CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # compatibility fix for removed '%>' DELETE THIS LATER
+CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # transition fix for removed '%>'
 _setp
 _setwt
 
-[[ $CLE_RC =~ /clerc ]] && cat <<-EOT # run from commandline
- It seems you started CLE issuing '. $CLE_RC'
+# check first run
+[ $CLE_1 ] && cat <<-EOT
+ It seems you started CLE running '$CLE_RC'
  Since this is the first run, consider setup in your profile.
  Following command will hook CLE in $HOME/.bashrc:
 $_CL	cle deploy
@@ -546,7 +586,6 @@ cle () {
 	deploy) ## cle deploy      -- hook CLE into user's profile
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
-		NC='$HOME/.clerc'
 		if grep -A2 "$I" $BRC;then
 			printb CLE is already hooked into .bashrc
 		else
@@ -554,10 +593,10 @@ cle () {
 			ask Are you sure? || return
 			eval cp $CLE_RC $NC
 			printb Adding lines to your .bashrc:
-			echo -e "\n$I\n[ -f $NC ] && . $NC\n" | tee -a $BRC
+			echo -e "\n$I\nCLE_RC=$CLE_RC\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $BRC
 		fi;;
 	update) ## cle update      -- install fresh version of CLE
-		NC=$CLE_D/clerc-new
+		NC=$CLE_D/rc-new
 		curl -k $CLE_SRC/clerc >$NC
 		C=`sed -n 's/^#\* version: //p' $NC`
 		[ "$C" ] || { echo "Download error"; return 1; }
@@ -566,8 +605,9 @@ cle () {
 		MM=`diff $CLE_RC $NC` && { echo No difference; return 1;}
 		ask Do you want to see diff? && cat <<<"$MM"
 		ask Do you want to install new version? || return
-		BRC=$CLE_D/clerc-back
+		BRC=$CLE_D/rc.bk
 		cp $CLE_RC $BRC
+		chmod 755 $NC
 		mv -f $NC $CLE_RC
 		cle reload
 		printb New CLE activated, backup saved here: $BRC;;
@@ -603,6 +643,11 @@ cle () {
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
+# DEBUG
+	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;; #debug
+	debug)	CLE_DEBUG=$1;; #debug
+	pak)	_clepak | base64 -d | tar tzvf -;; #debug
+# DEBUG
 	*)	echo unimplemented: cle $C
 		echo check cle help
 		return 1

@@ -1,7 +1,7 @@
 ##
 ## mod-cledk: functions to assist CLE development process
 ## -------------------------------------------------------
-#* version: 2018-03-07
+#* version: 2018-03-13
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -35,21 +35,56 @@ _modsum () (
 
 ## cle ed [mod]  -- edit clerc file ev. specified module
 _cle_ed () {
-	local F=$CLE_DK/clerc
-	[ -n "$1" ] && F=`ls $CLE_DK/modules/mod-$1 $CLE_DK/modules/cle-$1 2>/dev/null | grep $1`
+	local F=$CLE_DK/clerc-long
+	[ -n "$1" ] && F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
 	if [ ! -f "$F" ]; then
 		echo no such file: $F
 		return 1
 	fi
-	vi $F
+	vim $F
+}
+
+## cle short c|s|t  -- remove extended comments or debug ev. transtition stuff
+_cle_short () {
+	local F=$CLE_DK/clerc-long
+	local S=$CLE_DK/clerc-s
+	local T=$CLE_DK/clerc-t
+	cp $F $S
+	while [ $1 ]; do
+		case "$1" in
+		c)
+			echo removing comments
+			sed -e '/^[[:space:]]*#:/d' -e 's/#:.*//' <$S >$T 
+			mv -f $T $S
+			;;
+		d)
+			echo removing debug stuff
+			grep -v -e debug -e DEBUG -e dbg_ $S >$T
+			mv -f $T $S
+			;;
+		t)
+			echo 'removing version compatibility (transition) hacks'
+			grep -v -i transition $S >$T
+			mv -f $T $S
+			;;
+		*)	echo 'cle short c|d|s'
+			return 1
+			;;
+		esac
+		shift
+	done
+	chmod 755 $S
+	ls -l $F $S
+	ask Wanna see diff? && diff -W $COLUMNS -y $F $S
 }
 
 ## cle cp        -- copy and run new development version of clerc
 _cle_cp() {
-	local CLERS="$CLE_DK/clerc $CLE_RC"
+	local CLERS="$CLE_DK/clerc-long $CLE_RC"
+	[ "$1" = s ] && CLERS="$CLE_DK/clerc-s $CLE_RC"
 	eval diff $CLERS
 	eval ls -lL $CLERS
-	ask "replace clerc?" && { cp $CLE_RC $CLE_RC-recent; eval cp $CLERS; cle reload; }
+	ask "replace clerc?" && { cp $CLE_RC $CLE_RC.bkdev; eval cp $CLERS; cle reload; }
 }
 
 ## cle ls        -- list CLE related files
