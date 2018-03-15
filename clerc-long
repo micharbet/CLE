@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-13 (Nova)
+#* version: 2018-03-15 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -69,6 +69,9 @@ dbg_var BASH_SOURCE[0]
 [[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
 dbg_echo
 dbg_echo CLE resource init begins!
+CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
+CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+dbg_var CLE_RH
 dbg_var CLE_RD
 dbg_var CLE_RC
 
@@ -89,7 +92,7 @@ dbg_var CLE_USER
 #: account accessed with CLE.
 _D=$HOME
 [ -w $_D ] || _D=/tmp/$USER
-CLE_D=$_D/.cle-$CLE_USER
+CLE_D=$_D/$CLE_RD
 mkdir -p $CLE_D
 CLE_CF=$CLE_D/cf
 dbg_var _D
@@ -466,40 +469,54 @@ _rhlog () {
 ## ----------------
 
 # environment packer
-#: grab *active* resource file, tweak file, pack it to tarball and print
-#: to stdout as base64 encoded string
-#: argument ($1) may contain additional suffix to filenames
-#: Note: configuration is not packed ensuring unique cf on all hosts and accounts.
-_clepak () (
-	#: following base/dirname is here to ensure the tar will contain
-	#: relative paths only
-	#: It anyway seems to be quite complicated, subject to think and edit
-	H=`dirname $CLE_RD`
-	D=`basename $CLE_RD`
-	C=`basename $CLE_RC`
-	cd $H
-	[ $1 ] && cp $CLE_RC $D/$C$1 && cp $CLE_TW $D/tw$1 2>/dev/null
-	RCS="$D/$C$1 $D/tw$1"
+#: grab *active* resource file, tweak file, pack it to tarball and store
+#: into variable C64 as base64 encoded string (I've never owned that Commodore :-)
+#: Argument ($1) may contain additional suffix to filenames
+#: Second outcome of _clepak is value in $RC - relative path to the resource 
+#: file that should be run on remote system (it may contain the suffix)
+#: Note: configuration is not packed in order to ensure unique cf on all
+#:  remote accounts.
+#: Note 2: _clepak is defined with curly brackets {} to pass variables RC and C64
+#:  On the other side ssg is defined with () enasirng execution in own context
+#:  where all new variables are local only to ssg (and _clepak)
+#: Note 3: _clepak is fuction even if it is used only once and could be
+#:  included directly into ssg. However, this allows to create any other
+#:  remote access wrapper
+_clepak () {
+	cd $CLE_RH
+	RC=$CLE_RD/`basename $CLE_RC`
+	TW=$CLE_TW
+	if [ $1 ];then
+		RC=$RC$1; TW=$TW$1
+		cp $CLE_RC $RC
+		cp $CLE_TW $TW 2>/dev/null
+	fi
+	RCS="$RC $TW"
 	dbg_var RCS
-	tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '
-)
+	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
+}
 
 ## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	#: on CLE workstation, suffix to resource filename is added
 	#: this 1. prevents overwriting on destination accounts
-	#: and 2. provides information about source of this session
+	#:  and 2. provides information about source of the session
 	S=${CLE_WS:+-$CLE_WS} # suffix to rc filename
 	dbg_var S
-	C64=`_clepak $S`
+	_clepak $S
+	dbg_var RC
 	`command which ssh` -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
 	       	mkdir -p \$_H; cd \$_H
 		echo -n $C64|base64 --decode|tar xzf -;
-		exec `basename $CLE_RD`/`basename $CLE_RC`$S"
+		exec $RC"
 )
 
+#: Following are su* wrappers of different kinds including kerberos
+#: version 'ksu'. They are basically simple, you see. Environment is not
+#: packed and transferred when using them. Instead the original files from
+#: user's home folder are used.
 ## sudd [user]     -- sudo wrapper; root is the default account
 sudd () (
 	sudo -i -u ${1:-root} $CLE_RC
@@ -522,34 +539,50 @@ ksuu () (
 
 ## scrn [name]     -- gnu screen wrapper, join your recent session or start new
 ## scrn -j [name]  -- join other screen sessions, ev. search by name
+#: GNU screen wrapper is here 1) because of there was no way to tell original 
+#: program to start CLE on more than first window and, 2) to allow easily
+#: join detached own session and/or join cooperative session with more
+#: participants.
 scrn () (
-	SR=$CLE_USER${1:+-$1}
-	[ "$1" = -j ] && SR=${2:-.}
-	SCRS=`screen -ls|sed -n "/$SR/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
+	#: name of the screen to search and join
+	NM=$CLE_USER${1:+-$1}
+	[ "$1" = -j ] && NM=${2:-.}
+	#: list all screens with that name and find how many of them are there
+	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
 	NS=`wc -w <<<$SCRS`
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
+		#: prepare to start new session
 		SCF=$CLE_D/screenrc
-		SN=$TTY-CLE.$SR
+		SN=$TTY-CLE.$NM
 		_rhlog screen -S $SN
 		_scrc >$SCF
 		screen -c $SCF -S $SN $CLE_RC
 	else
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
-			printb "${_CU}Current '$SR' sessions:"
+			#: we found more screens with simiilar names, choose one!
+			printb "${_CU}Current '$NM' sessions:"
 			PS3="$_CL choose # to join: $_CN"
 			select SN in $SCRS;do
 				[ $SN ] && break
 			done
 		fi
 		_rhlog screen -x $SN
+		#: first send message to other screen, then join the session
 		screen -S $SN -X echo "$CLE_USER joining"
 		screen -x $SN
 	fi
 )
 
 # screenrc generator
+#: This generates nice configuration file with cool features:
+#:  - always visible status line with list of windows, hostname and clock
+#:  - feature to quickly switch using Ctrl+Left/Right Arrows
+#:  - reads good old $HOME/.screenrc
+#: Own screenrc file is necessary because otherwise it wouldn't start CLE in
+#: subsequent windows created with 'C-a C-c' (note the bind commands, above
+#: mentioned features are cool but this part is the important one)
 _scrc () {
 cat <<-EOS
 	altscreen on
@@ -594,7 +627,7 @@ done
 # config & tweaks
 _clexe $CLE_CF || { _clebanner;_defcf;}
 _clexe $HOME/.cle-local
-_clexe $CLE_TW
+_clexe $CLE_RH/$CLE_TW
 
 CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # transition fix for removed '%>'
 _setp
@@ -698,7 +731,7 @@ cle () {
 # DEBUG
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;; #debug
 	debug)	CLE_DEBUG=$1;; #debug
-	pak)	_clepak "$@" | base64 -d | tar tzvf -;; #debug
+	pak)	_clepak "$@" ; base64 -d <<<$C64| tar tzvf -;; #debug
 # DEBUG
 	*)	echo unimplemented: cle $C
 		echo check cle help

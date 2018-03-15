@@ -47,7 +47,7 @@ _cle_ed () {
 ## cle short c|s|t  -- remove extended comments or debug ev. transtition stuff
 _cle_short () {
 	local F=$CLE_DK/clerc-long
-	local S=$CLE_DK/clerc-s
+	local S=$CLE_DK/clerc
 	local T=$CLE_DK/clerc-t
 	cp $F $S
 	while [ $1 ]; do
@@ -81,7 +81,7 @@ _cle_short () {
 ## cle cp        -- copy and run new development version of clerc
 _cle_cp() {
 	local CLERS="$CLE_DK/clerc-long $CLE_RC"
-	[ "$1" = s ] && CLERS="$CLE_DK/clerc-s $CLE_RC"
+	[ "$1" = s ] && CLERS="$CLE_DK/clerc $CLE_RC"
 	eval diff $CLERS
 	eval ls -lL $CLERS
 	ask "replace clerc?" && { cp $CLE_RC $CLE_RC.bkdev; eval cp $CLERS; cle reload; }
@@ -134,4 +134,13 @@ cdc () {
 	git status
 }
 
+## cle commit   -- commit changes into git (also generate clerc from clerc-long)
+_cle_commit () (
+	# generate short version of CLE
+	cle short c d
+	# regenerate module index if necessary
+	NEWEST=`ls -rt $CLE_DK/modules|head -1`
+	[ $NEWEST != modulist ] && cle modgen
+	gicom $1
+)
 

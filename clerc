@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-13 (Nova)
+#* version: 2018-03-15 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -41,41 +41,28 @@
 if [ -t 0 -a -z "$CLE_EXE" -a -z "$BASH_EXECUTION_STRING" ];then
 # warning: magic inside!
 
-# debug stuff
-dbg_var () { [ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "${!1}" >/dev/tty; }
-dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }
 
 # a little bit complicated way to find absolute path
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
-dbg_echo
-dbg_echo starting: $0
-dbg_echo arguments $# : $*
-dbg_var BASH_SOURCE[0]
 
 # ensure bash session will be sourced with this rcfile
 [[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
-dbg_echo
-dbg_echo CLE resource init begins!
-dbg_var CLE_RD
-dbg_var CLE_RC
+CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
+CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 
 # who I'm
 _N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
-dbg_var _N
-dbg_var CLE_USER
 
 # find writable folder
 _D=$HOME
 [ -w $_D ] || _D=/tmp/$USER
-CLE_D=$_D/.cle-$CLE_USER
+CLE_D=$_D/$CLE_RD
 mkdir -p $CLE_D
 CLE_CF=$CLE_D/cf
-dbg_var _D
-dbg_var CLE_D
 
 # short hostname: remove domain, leave subdomains
 CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
@@ -89,9 +76,6 @@ case $CLE_RC in
 	cp $CLE_RC $CLE_D/rc1 
 	CLE_RD=$CLE_D
 	CLE_RC=$CLE_D/rc1
-	dbg_echo First run, changing some values:
-	dbg_var CLE_RD
-	dbg_var CLE_RC
 	;;
 */rc*-*)  # on remote
 	CLE_WS=
@@ -100,13 +84,10 @@ case $CLE_RC in
 	CLE_WS=$CLE_SHN
 	;;
 esac
-dbg_echo
 
 # tweak file with same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
-dbg_var _I
-dbg_var CLE_TW
 
 # where in the deep space is CLE growing
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Nova
@@ -142,7 +123,6 @@ _Ce=`tput setab 1;tput setaf 7` # err highlight
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
 _clexe () {
-	dbg_echo clexe $*
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1 ]] && return
 	CLE_EXE=$CLE_EXE:$1
@@ -424,28 +404,29 @@ _rhlog () {
 ## ----------------
 
 # environment packer
-_clepak () (
-	H=`dirname $CLE_RD`
-	D=`basename $CLE_RD`
-	C=`basename $CLE_RC`
-	cd $H
-	[ $1 ] && cp $CLE_RC $D/$C$1 && cp $CLE_TW $D/tw$1 2>/dev/null
-	RCS="$D/$C$1 $D/tw$1"
-	dbg_var RCS
-	tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '
-)
+_clepak () {
+	cd $CLE_RH
+	RC=$CLE_RD/`basename $CLE_RC`
+	TW=$CLE_TW
+	if [ $1 ];then
+		RC=$RC$1; TW=$TW$1
+		cp $CLE_RC $RC
+		cp $CLE_TW $TW 2>/dev/null
+	fi
+	RCS="$RC $TW"
+	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
+}
 
 ## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
 	S=${CLE_WS:+-$CLE_WS} # suffix to rc filename
-	dbg_var S
-	C64=`_clepak $S`
+	_clepak $S
 	`command which ssh` -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
 	       	mkdir -p \$_H; cd \$_H
 		echo -n $C64|base64 --decode|tar xzf -;
-		exec `basename $CLE_RD`/`basename $CLE_RC`$S"
+		exec $RC"
 )
 
 ## sudd [user]     -- sudo wrapper; root is the default account
@@ -470,21 +451,21 @@ ksuu () (
 ## scrn [name]     -- gnu screen wrapper, join your recent session or start new
 ## scrn -j [name]  -- join other screen sessions, ev. search by name
 scrn () (
-	SR=$CLE_USER${1:+-$1}
-	[ "$1" = -j ] && SR=${2:-.}
-	SCRS=`screen -ls|sed -n "/$SR/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
+	NM=$CLE_USER${1:+-$1}
+	[ "$1" = -j ] && NM=${2:-.}
+	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
 	NS=`wc -w <<<$SCRS`
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		SCF=$CLE_D/screenrc
-		SN=$TTY-CLE.$SR
+		SN=$TTY-CLE.$NM
 		_rhlog screen -S $SN
 		_scrc >$SCF
 		screen -c $SCF -S $SN $CLE_RC
 	else
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
-			printb "${_CU}Current '$SR' sessions:"
+			printb "${_CU}Current '$NM' sessions:"
 			PS3="$_CL choose # to join: $_CN"
 			select SN in $SCRS;do
 				[ $SN ] && break
@@ -541,7 +522,7 @@ done
 # config & tweaks
 _clexe $CLE_CF || { _clebanner;_defcf;}
 _clexe $HOME/.cle-local
-_clexe $CLE_TW
+_clexe $CLE_RH/$CLE_TW
 
 CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # transition fix for removed '%>'
 _setp
@@ -642,11 +623,6 @@ cle () {
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
-# DEBUG
-	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;; #debug
-	debug)	CLE_DEBUG=$1;; #debug
-	pak)	_clepak "$@" | base64 -d | tar tzvf -;; #debug
-# DEBUG
 	*)	echo unimplemented: cle $C
 		echo check cle help
 		return 1
