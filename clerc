@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-15 (Nova)
+#* version: 2018-03-17 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -50,48 +50,71 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 # ensure bash session will be sourced with this rcfile
 [[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
-CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
-CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 
 # who I'm
 _N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 
-# find writable folder
-_D=$HOME
-[ -w $_D ] || _D=/tmp/$USER
-CLE_D=$_D/$CLE_RD
-mkdir -p $CLE_D
-CLE_CF=$CLE_D/cf
-
 # short hostname: remove domain, leave subdomains
 CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
+# where in the deep space is CLE growing
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Nova
+CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
+
 # check first run
+_N=$HOME/.cle-$CLE_USER
+CLE_TRANS=mv	# default transition method (move files)
 case $CLE_RC in
 */clerc*)        # started manually from downloaded file
-	CLE_1=1
+	echo $CLE_VER
 	CLE_WS=$CLE_SHN
-	cp $CLE_RC $CLE_D/rc1 
-	CLE_RD=$CLE_D
-	CLE_RC=$CLE_D/rc1
+	CLE_1=$_N/rc1
+	mkdir -p $_N
+	cp $CLE_RC $CLE_1
+	CLE_RC=$CLE_1
+	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
 	;;
-*/rc*-*)  # on remote
+*/.clerc)	# started right after upgrade from older release - 'cle update' transition
+	mkdir -p $_N # transition
+	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
+	CLE_RC=$_N/rc # transition
+	mv $HOME/.cleusr-$CLE_USER $_N/tw.old && echo "CLE transition: found tweak file .cleusr-$CLE_USER, saved to $_N/tw.old (deactivated)."
+	CLE_WS=$CLE_HN # transition
+	# transition hack: change hook in .bashrc
+	cp .bashrc bashrc.bk	# transition: bashrc
+	sed "/\.clerc/s:.*:[ -f $CLE_RC ] \&\& . $CLE_RC:" .bashrc >bashrc.sed #transition
+	mv bashrc.sed .bashrc # transition
+	echo "CLE transition: .bashrc edited: "; grep -A1 "Command Live" .bashrc
+	;; # transition after update end
+*/rc-*)  # on remote
 	CLE_WS=
 	;;
 */rc*)    # workstation, started upon login
 	CLE_WS=$CLE_SHN
 	;;
 esac
+CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
+CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+
+# find writable folder
+_D=$HOME
+[ -w $_D ] || _D=/tmp/$USER
+CLE_D=$_D/$CLE_RD
+CLE_CF=$CLE_D/cf
+mkdir -p $CLE_D
 
 # tweak file with same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
 
-# where in the deep space is CLE growing
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Nova
-CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
+# RedH to Nova transition hacks stage 2
+# mode 'cp' - fiels are copied but originals retained
+[ -f $_D/.clecf-$CLE_USER ] && $CLE_TRANS -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: $CLE_TRANS config file
+[ -f $_D/.aliases-$CLE_USER ] && $CLE_TRANS -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: $CLE_TRANS aliases
+[ -d $_D/.cle -a $CLE_TRANS = 'mv' ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle - deactivated, saved into $HOME/dotcle-old
+[ $CLE_TRANS = 'mv' ] && rm -f .cleusr-$CLE_USER* .screenrc-$CLE_USER* .clerc-remote-$CLE_USER* .aliases-$CLE_USER* clerc-* 2>/dev/null # transition: debris removal
 
 # color table
 _CN=`tput sgr0`
@@ -106,15 +129,6 @@ _I=0; for _N in k r g y b m c w; do
         ((_I+=1))
 done
 _Ce=`tput setab 1;tput setaf 7` # err highlight
-
-# RedH to Nova transition hacks, remove this section later
-[ -f $_D/.clecf-$CLE_USER ] && mv -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: moved config file
-[ -f $_D/.aliases-$CLE_USER ] && mv -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: moved aliases
-[ -f $_D/.cleusr-$CLE_USER ] && mv -f $_D/.cleusr-$CLE_USER $_D/cleusr-$CLE_USER-old && echo CLE transition: found .cleusr-$CLE_USER, saved, remove it yourself probably
-[ -f $_D/.screenrc-$CLE_USER ] && rm -f $_D/.screenrc-$CLE_USER && echo CLE transition: deleted .screenrc
-[ -f $_D/.clerc-remote-$CLE_USER ] && rm -f $_D/.clerc-remote-$CLE_USER && echo CLE transition: deleted .clerc-remote-$CLE_USER
-[ -d $_D/.cle ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle, saved, remove it yourself probably
-
 
 #
 # Internal helper functions
@@ -566,14 +580,26 @@ cle () {
 	deploy) ## cle deploy      -- hook CLE into user's profile
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
-		if grep -A2 "$I" $BRC;then
+		if grep -A1 "$I" $BRC;then
 			printb CLE is already hooked into .bashrc
+			return 1
 		else
-			printb CLE is to be integrated to your login script.
+			cd
+			[ $CLE_RH != $HOME ] && { echo 'CLE must be run from $HOME'; return 1;}
+			C=.cle-$USER # default installation folder
+			if [ $1 ]; then 
+				[[ $1 =~ ^\. ]] || { echo 'prefix must start with dot'; return 1;}
+				mkdir -p $1
+				C=$1/cle-$USER
+			fi
+			echo "Installing CLE into $_CL$HOME/$C$_CN and hook to .bashrc"
 			ask Are you sure? || return
-			eval cp $CLE_RC $NC
-			printb Adding lines to your .bashrc:
-			echo -e "\n$I\nCLE_RC=$CLE_RC\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $BRC
+			mv $CLE_RC $CLE_RD/rc
+			[ $CLE_RD != $C ] && mv $CLE_RD $C
+			CLE_RC=$HOME/$C/rc
+			echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $BRC
+			unset CLE_1
+			cle reload
 		fi;;
 	update) ## cle update      -- install fresh version of CLE
 		NC=$CLE_D/rc-new

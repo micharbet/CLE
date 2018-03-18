@@ -1,7 +1,7 @@
 ##
 ## cle-mod: CLE module management
 ## ------------------------------
-#* version: 2018-03-08
+#* version: 2018-03-17
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -68,7 +68,7 @@ getinstalled () (
 
 # download list of available modules
 getindex () (
-	curl -ksS $CLE_SRC/dotcle/$LISTFILE >$MODULIST.tmp
+	curl -ksS $CLE_SRC/modules/$LISTFILE >$MODULIST.tmp
 	M=`head -1 $MODULIST.tmp`
 	# check if the file appears lik module index
 	if [[ $M =~ ..*:.*:.*:.* ]]; then
@@ -142,7 +142,7 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 		fi
 	else
 		# regular module setup
-		curl -ksS $CLE_SRC/dotcle/$MM >$DMM
+		curl -ksS $CLE_SRC/modules/$MM >$DMM
 		# check module signature
 		# every regular cle module should have at least it's identification
 		if grep -q "## *$MM: ..*" $DMM ; then

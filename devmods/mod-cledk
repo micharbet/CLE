@@ -1,7 +1,7 @@
 ##
 ## mod-cledk: functions to assist CLE development process
 ## -------------------------------------------------------
-#* version: 2018-03-13
+#* version: 2018-03-17
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -105,10 +105,7 @@ _cle_func () {
 
 ## cle debug [on|off]  - debug mode ($CLE_DEBUG variable)
 _cle_debug () {
-	case "$1" in
-	on) CLE_DEBUG=1 ;;
-	off) CLE_DEBUG="" ;;
-	esac
+	CLE_DEBUG=$1
 	echo CLE_DEBUG=$CLE_DEBUG
 }
 
