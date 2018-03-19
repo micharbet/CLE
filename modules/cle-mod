@@ -1,7 +1,7 @@
 ##
 ## cle-mod: CLE module management
 ## ------------------------------
-#* version: 2018-03-17
+#* version: 2018-03-19
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -57,7 +57,7 @@ modet () (
 	MDESC=`modesc $M`
 	MSRC=`modtype $M`
 	MVER=`modver $M`
-	printf "$_TW%-15s $_Tw[%-3s %10s] $_TN%s\n" $1 $MSRC "$MVER" "$MDESC"
+	printf "$_CW%-15s $_Cw[%-3s %10s] $_CN%s\n" $1 $MSRC "$MVER" "$MDESC"
 )
 
 # get list of currently installed modules
@@ -94,7 +94,7 @@ avail)	## cle mod avail     -- list modules available to install
 	getindex || return $?
 	printb ${_TU}Modules available in repository: $CLE_SRC
 	cat $MODULIST | { IFS=:; while read MM MVER MSUM MDESC; do
-		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"
+		printf "$_CW%-15s $_Cw[%10s] $_CN%s\n" $MM "$MVER" "$MDESC"
 	done; }
 	;;
 add)	## cle mod add [mod] -- install/upgrade module from repository
@@ -104,7 +104,7 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
 		# chose one module in case of more matches
-		PS3="$_TL choose module # $_TN"
+		PS3="$_CL choose module # $_CN"
 		select MM in $MODS; do
 			[ -n "$MM" ] && break
 		done
@@ -115,7 +115,7 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 	echo
 	# show this module details
 	grep ^$MM $MODULIST | { IFS=:; read MM MVER MSUM MDESC; 
-		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"; }
+		printf "$_CW%-15s $_Cw[%10s] $_CN%s\n" $MM "$MVER" "$MDESC"; }
 	ask "Do yo want to install this module?" || return
 
 	printb "Downloading $MM"
@@ -169,7 +169,7 @@ del)	## cle mod del [mod] -- delete module
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
 		# chose one in case of more matches
-		PS3="$_TL choose module to remove # $_TN"
+		PS3="$_CL choose module to remove # $_CN"
 		select MM in $MODS; do
 			[ -n "$MM" ] && break
 		done
@@ -186,8 +186,8 @@ del)	## cle mod del [mod] -- delete module
 	;;
 '')
 	printb ${_TU}CLE module management
-	echo "Repository:$_Tw $CLE_SRC$_TN"
-	echo "Local lib: $_Tw $CLE_D$_TN"
+	echo "Repository:$_Cw $CLE_SRC$_CN"
+	echo "Local lib: $_Cw $CLE_D$_CN"
 	;;
 help)
 	cle help "cle mod"

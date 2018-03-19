@@ -1,7 +1,7 @@
 ##
 ## mod-cledk: functions to assist CLE development process
 ## -------------------------------------------------------
-#* version: 2018-03-17
+#* version: 2018-03-19
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -34,15 +34,24 @@ _modsum () (
 
 
 ## cle ed [mod]  -- edit clerc file ev. specified module
-_cle_ed () {
+_cle_ed () (
 	local F=$CLE_DK/clerc-long
 	[ -n "$1" ] && F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
-	if [ ! -f "$F" ]; then
-		echo no such file: $F
-		return 1
-	fi
-	vim $F
-}
+	case `wc -w <<<$F` in
+	0)
+		echo no such file: $1
+		return 1;;
+	1)
+		vim $F;;
+	*)
+		PS3="$_CL choose file # $_CN"
+		select FF in $F; do
+			[ -n "$FF" ] && break
+		done
+		vim $FF
+		;;
+	esac
+)
 
 ## cle short c|s|t  -- remove extended comments or debug ev. transtition stuff
 _cle_short () {
@@ -139,5 +148,26 @@ _cle_commit () (
 	NEWEST=`ls -rt $CLE_DK/modules|head -1`
 	[ $NEWEST != modulist ] && cle modgen
 	gicom $1
+)
+
+## cle modln    -- symlink module from $CLE_DK
+_cle_modln () (
+	F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
+	case `wc -w <<<$F` in
+	0)
+		echo no such module: $1
+		return 1;;
+	1)
+		FF=$F;;
+	*)
+		PS3="$_CL choose module # $_CN"
+		select FF in $F; do
+			[ -n "$FF" ] && break
+		done
+		;;
+	esac
+	echo Linking $FF
+	ln -sf $FF $CLE_D
+	cle reload
 )
 
