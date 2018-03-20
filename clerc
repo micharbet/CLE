@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-17 (Nova)
+#* version: 2018-03-20 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -65,29 +65,15 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # check first run
 _N=$HOME/.cle-$CLE_USER
-CLE_TRANS=mv	# default transition method (move files)
 case $CLE_RC in
 */clerc*)        # started manually from downloaded file
 	echo $CLE_VER
 	CLE_WS=$CLE_SHN
 	CLE_1=$_N/rc1
-	mkdir -p $_N
+	mkdir -m 755 -p $_N
 	cp $CLE_RC $CLE_1
 	CLE_RC=$CLE_1
-	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
 	;;
-*/.clerc)	# started right after upgrade from older release - 'cle update' transition
-	mkdir -p $_N # transition
-	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
-	CLE_RC=$_N/rc # transition
-	mv $HOME/.cleusr-$CLE_USER $_N/tw.old && echo "CLE transition: found tweak file .cleusr-$CLE_USER, saved to $_N/tw.old (deactivated)."
-	CLE_WS=$CLE_HN # transition
-	# transition hack: change hook in .bashrc
-	cp .bashrc bashrc.bk	# transition: bashrc
-	sed "/\.clerc/s:.*:[ -f $CLE_RC ] \&\& . $CLE_RC:" .bashrc >bashrc.sed #transition
-	mv bashrc.sed .bashrc # transition
-	echo "CLE transition: .bashrc edited: "; grep -A1 "Command Live" .bashrc
-	;; # transition after update end
 */rc-*)  # on remote
 	CLE_WS=
 	;;
@@ -103,18 +89,12 @@ _D=$HOME
 [ -w $_D ] || _D=/tmp/$USER
 CLE_D=$_D/$CLE_RD
 CLE_CF=$CLE_D/cf
-mkdir -p $CLE_D
+mkdir -m 755 -p $CLE_D
 
 # tweak file with same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
 
-# RedH to Nova transition hacks stage 2
-# mode 'cp' - fiels are copied but originals retained
-[ -f $_D/.clecf-$CLE_USER ] && $CLE_TRANS -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: $CLE_TRANS config file
-[ -f $_D/.aliases-$CLE_USER ] && $CLE_TRANS -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: $CLE_TRANS aliases
-[ -d $_D/.cle -a $CLE_TRANS = 'mv' ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle - deactivated, saved into $HOME/dotcle-old
-[ $CLE_TRANS = 'mv' ] && rm -f .cleusr-$CLE_USER* .screenrc-$CLE_USER* .clerc-remote-$CLE_USER* .aliases-$CLE_USER* clerc-* 2>/dev/null # transition: debris removal
 
 # color table
 _CN=`tput sgr0`
@@ -438,7 +418,7 @@ ssg () (
 	_clepak $S
 	`command which ssh` -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
-	       	mkdir -p \$_H; cd \$_H
+		mkdir -m 755 -p \$_H; cd \$_H
 		echo -n $C64|base64 --decode|tar xzf -;
 		exec $RC"
 )
@@ -450,11 +430,7 @@ sudd () (
 
 ## suu [user]      -- su wrapper
 suu () (
-	if [[ $OSTYPE =~ BSD|bsd|darwin ]];then
-		su -l ${1:-root} $CLE_RC
-	else
-		su -l -s /bin/bash ${1:-root} $CLE_RC
-	fi
+	su -l ${1:-root} $CLE_RC
 )
 
 ## ksuu [user]     -- ksu wrapper
@@ -538,7 +514,6 @@ _clexe $CLE_CF || { _clebanner;_defcf;}
 _clexe $HOME/.cle-local
 _clexe $CLE_RH/$CLE_TW
 
-CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # transition fix for removed '%>'
 _setp
 _setwt
 
@@ -589,7 +564,7 @@ cle () {
 			C=.cle-$USER # default installation folder
 			if [ $1 ]; then 
 				[[ $1 =~ ^\. ]] || { echo 'prefix must start with dot'; return 1;}
-				mkdir -p $1
+				mkdir -m 755 -p $1
 				C=$1/cle-$USER
 			fi
 			echo "Installing CLE into $_CL$HOME/$C$_CN and hook to .bashrc"
@@ -602,8 +577,9 @@ cle () {
 			cle reload
 		fi;;
 	update) ## cle update      -- install fresh version of CLE
-		NC=$CLE_D/rc-new
+		NC=$CLE_D/rc.new
 		curl -k $CLE_SRC/clerc >$NC
+		chmod 755 $NC
 		C=`sed -n 's/^#\* version: //p' $NC`
 		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
@@ -625,15 +601,12 @@ cle () {
 		rm -f $CLE_CF
 		cle reload;;
 	mod)	## cle mod         -- cle module management
-		# this is just a fallback to initialize modularity
-		# downloaded cle-mod overrides this code 
 		ask Activate CLE modules? || return
 		I=cle-mod
 		MM=$CLE_D/$I
-		mkdir -p $CLE_D
 		curl -k $CLE_SRC/modules/$I >$MM
 		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
-		cle mod;;
+		cle mod "$@";;
 	env)	## cle env         -- print CLE_* variables
 		for I in ${!CLE_*};do printf "$_CL%-12s$_CN%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation

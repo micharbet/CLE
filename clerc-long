@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-17 (Nova)
+#* version: 2018-03-20 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -72,8 +72,8 @@ dbg_echo
 dbg_echo CLE resource init begins!
 
 # who I'm
-#: determine username that will be inherited over the all subsquent
-#: sessions initiated with ssg and su* wrappers
+#: determine username that will be inherited over the all
+#: subsquent sessions initiated with ssg and su* wrappers
 _N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_var CLE_USER
@@ -98,7 +98,7 @@ case $CLE_RC in
 	#: rc1 is temporarily used to prevent overwriting original rc file
 	#: CLE_1 is also used to indicate first run
 	CLE_1=$_N/rc1
-	mkdir -p $_N
+	mkdir -m 755 -p $_N
 	cp $CLE_RC $CLE_1
 	CLE_RC=$CLE_1
 	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
@@ -106,7 +106,7 @@ case $CLE_RC in
 	dbg_var CLE_RC
 	;;
 */.clerc)	# started right after upgrade from older release - 'cle update' transition
-	mkdir -p $_N # transition
+	mkdir -m 755 -p $_N # transition
 	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
 	CLE_RC=$_N/rc # transition
 	mv $HOME/.cleusr-$CLE_USER $_N/tw.old && echo "CLE transition: found tweak file .cleusr-$CLE_USER, saved to $_N/tw.old (deactivated)."
@@ -143,7 +143,7 @@ CLE_D=$_D/$CLE_RD
 CLE_CF=$CLE_D/cf
 dbg_var _D
 dbg_var CLE_D
-mkdir -p $CLE_D
+mkdir -m 755 -p $CLE_D
 dbg_echo
 
 # tweak file with same suffix as rc
@@ -154,11 +154,10 @@ dbg_var CLE_TW
 
 # RedH to Nova transition hacks stage 2
 dbg_var CLE_TRANS # transition mode
-# mode 'cp' - fiels are copied but originals retained
 [ -f $_D/.clecf-$CLE_USER ] && $CLE_TRANS -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: $CLE_TRANS config file
 [ -f $_D/.aliases-$CLE_USER ] && $CLE_TRANS -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: $CLE_TRANS aliases
 [ -d $_D/.cle -a $CLE_TRANS = 'mv' ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle - deactivated, saved into $HOME/dotcle-old
-[ $CLE_TRANS = 'mv' ] && rm -f .cleusr-$CLE_USER* .screenrc-$CLE_USER* .clerc-remote-$CLE_USER* .aliases-$CLE_USER* clerc-* 2>/dev/null # transition: debris removal
+[ $CLE_TRANS = 'mv' ] && rm -f $_D/.cleusr-$CLE_USER* $_D/.screenrc-$CLE_USER* $_D/.clerc-remote-$CLE_USER* $_D/.aliases-$CLE_USER* $_D/clerc-* 2>/dev/null # transition: debris removal
 
 # color table
 _CN=`tput sgr0`
@@ -525,7 +524,7 @@ ssg () (
 	dbg_var RC
 	`command which ssh` -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
-	       	mkdir -p \$_H; cd \$_H
+		mkdir -m 755 -p \$_H; cd \$_H
 		echo -n $C64|base64 --decode|tar xzf -;
 		exec $RC"
 )
@@ -540,13 +539,10 @@ sudd () (
 )
 
 ## suu [user]      -- su wrapper
+#: known issue - on debian systems controlling terminal is detached in case 
+#: a command ($CLE_RC) is specified, use 'sudd' instead
 suu () (
-	if [[ $OSTYPE =~ BSD|bsd|darwin ]];then
-		su -l ${1:-root} $CLE_RC
-	else
-		#: this allows su to accounts with /bin/nologin
-		su -l -s /bin/bash ${1:-root} $CLE_RC
-	fi
+	su -l ${1:-root} $CLE_RC
 )
 
 ## ksuu [user]     -- ksu wrapper
@@ -556,7 +552,7 @@ ksuu () (
 
 ## scrn [name]     -- gnu screen wrapper, join your recent session or start new
 ## scrn -j [name]  -- join other screen sessions, ev. search by name
-#: GNU screen wrapper is here 1) because of there was no way to tell original 
+#: GNU screen wrapper is here 1) because of there was no way to tell screen
 #: program to start CLE on more than first window and, 2) to allow easily
 #: join detached own session and/or join cooperative session with more
 #: participants.
@@ -699,7 +695,7 @@ cle () {
 				#: installation into different subfolder
 				#: $1 contains prefix
 				[[ $1 =~ ^\. ]] || { echo 'prefix must start with dot'; return 1;}
-				mkdir -p $1
+				mkdir -m 755 -p $1
 				C=$1/cle-$USER
 				dbg_var C
 			fi
@@ -714,8 +710,9 @@ cle () {
 			cle reload
 		fi;;
 	update) ## cle update      -- install fresh version of CLE
-		NC=$CLE_D/rc-new
+		NC=$CLE_D/rc.new
 		curl -k $CLE_SRC/clerc >$NC
+		chmod 755 $NC
 		C=`sed -n 's/^#\* version: //p' $NC`
 		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
@@ -737,15 +734,14 @@ cle () {
 		rm -f $CLE_CF
 		cle reload;;
 	mod)	## cle mod         -- cle module management
-		# this is just a fallback to initialize modularity
-		# downloaded cle-mod overrides this code 
+		#: this is just a fallback to initialize modularity
+		#: downloaded cle-mod overrides this code
 		ask Activate CLE modules? || return
 		I=cle-mod
 		MM=$CLE_D/$I
-		mkdir -p $CLE_D
 		curl -k $CLE_SRC/modules/$I >$MM
 		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
-		cle mod;;
+		cle mod "$@";;
 	env)	## cle env         -- print CLE_* variables
 		for I in ${!CLE_*};do printf "$_CL%-12s$_CN%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation
