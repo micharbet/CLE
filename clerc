@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-20 (Nova)
+#* version: 2018-03-24 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -52,7 +52,7 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 [[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
 
 # who I'm
-_N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
+_N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 
 # short hostname: remove domain, leave subdomains
@@ -65,6 +65,7 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # check first run
 _N=$HOME/.cle-$CLE_USER
+CLE_TRANS=mv	# default transition method (move files)
 case $CLE_RC in
 */clerc*)        # started manually from downloaded file
 	echo $CLE_VER
@@ -73,7 +74,20 @@ case $CLE_RC in
 	mkdir -m 755 -p $_N
 	cp $CLE_RC $CLE_1
 	CLE_RC=$CLE_1
+	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
 	;;
+*/.clerc)	# started right after upgrade from older release - 'cle update' transition
+	mkdir -m 755 -p $_N # transition
+	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
+	CLE_RC=$_N/rc # transition
+	mv $HOME/.cleusr-$CLE_USER $_N/tw.old && echo "CLE transition: found tweak file .cleusr-$CLE_USER, saved to $_N/tw.old (deactivated)."
+	CLE_WS=$CLE_HN # transition
+	# transition hack: change hook in .bashrc
+	cp .bashrc bashrc.bk	# transition: bashrc
+	sed "/\.clerc/s:.*:[ -f $CLE_RC ] \&\& . $CLE_RC:" .bashrc >bashrc.sed #transition
+	mv bashrc.sed .bashrc # transition
+	echo "CLE transition: .bashrc edited: "; grep -A1 "Command Live" .bashrc
+	;; # transition after update end
 */rc-*)  # on remote
 	CLE_WS=
 	;;
@@ -95,6 +109,11 @@ mkdir -m 755 -p $CLE_D
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
 
+# RedH to Nova transition hacks stage 2
+[ -f $_D/.clecf-$CLE_USER ] && $CLE_TRANS -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: $CLE_TRANS config file
+[ -f $_D/.aliases-$CLE_USER ] && $CLE_TRANS -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: $CLE_TRANS aliases
+[ -d $_D/.cle -a $CLE_TRANS = 'mv' ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle - deactivated, saved into $HOME/dotcle-old
+[ $CLE_TRANS = 'mv' ] && rm -f $_D/.cleusr-$CLE_USER* $_D/.screenrc-$CLE_USER* $_D/.clerc-remote-$CLE_USER* $_D/.aliases-$CLE_USER* $_D/clerc-* 2>/dev/null # transition: debris removal
 
 # color table
 _CN=`tput sgr0`
@@ -171,7 +190,7 @@ _savecf () {
 _cle_r () {
 	[ "$1" != h ] && return
 	printf "\n$_Cr     ,==~~-~w^, \n    /#=-.,#####\\ \n .,!. ##########!\n((###,. \`\"#######;."
-	printf "\n &######\`..#####;^###)\n$_Cw   (&@$_Cr^#############\"\n$_Cw"
+	printf "\n &######\`..#####;^###)\n$_CW   (&@$_Cr^#############\"\n$_CW"
 	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
 }
 
@@ -514,6 +533,7 @@ _clexe $CLE_CF || { _clebanner;_defcf;}
 _clexe $HOME/.cle-local
 _clexe $CLE_RH/$CLE_TW
 
+CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # transition fix for removed '%>'
 _setp
 _setwt
 

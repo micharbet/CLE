@@ -1,16 +1,15 @@
 
 #   Command Live Environment
-##   The shell improvements :-)
+##   The shell improvements
 
 CLE enhances bash with following tweaks:
  - colorized and customizable **prompt** string including server time and exit
    code highlight
  - save/edit and reuse **aliases** in easy way
  - rich **history** with timestamps, return codes and additional information
- - super easy installation ONLY on your workstation
- - **seamless** transfer of the environment from workstation to remote
+ - super easy installation on your workstation only, and...
+ - **seamless** transfer of the environment from ithe workstation to remote
    sessions without installation
- - various shell options
  - configuration from commandline with immediate effect, no restarts
  - self documenting feature
  - open framework for tweaks and further customization
@@ -20,10 +19,14 @@ CLE enhances bash with following tweaks:
 ## CLE setup and usage
 
 All the mentioned functionality is encoded into _single file_ and no other
-executables are needed. Run this file in the current shell context using
-trailing dot:
+executables are needed. Run this file either sourcing into the current shell
+context using trailing dot:
 
     `. clerc`
+
+or running it as a script:
+
+    `chmod a+x clerc; ./clerc`
 
 The CLE is activated now and you can setup this environment as persistent with
 command:
@@ -32,8 +35,11 @@ command:
 
 CLE copies itself to `$HOME/.clerc` and adds two lines into your `.bashrc`
 si it will be started upon each login. Note this is the *only* one
-installation step you need to perform. Typically you'd do it on your account
-on your workstation.
+installation step you need to perform. Typically you'd do it ionly on an your
+workstation's account. Note: do not do do this as root. CLE would work, no harm
+is expected, however it's not recommended. In case you insist on using the root
+as your working account read document 'TipsAndTweaks.md' and look corresponding 
+section.
 
 
 ### ssg utility (ssh wrapper)
@@ -103,7 +109,7 @@ It also works well with at least following terminal emulators:
 
 Generaly basic OS installation should be sufficient. Some systems might however
 require to add missing utilities. Those really necessary are:
-- bash (yeah, minimal FreeBSD setup did't contain this!)
+- bash (yeah, minimal FreeBSD setup did't contain this shell!)
 - sed
 - base64
 - curl

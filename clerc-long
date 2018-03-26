@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-20 (Nova)
+#* version: 2018-03-24 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -74,7 +74,12 @@ dbg_echo CLE resource init begins!
 # who I'm
 #: determine username that will be inherited over the all
 #: subsquent sessions initiated with ssg and su* wrappers
-_N=`sed -n 's/.*cle-\(.*\)\/.*/\1/p' <<<$CLE_RC`
+#: the regexp extracts username from following patterns:
+#: - /any/folder/.cle-username/rcfile
+#: - /any/folder/.config/cle-username/rcfile
+#: - /any/folder/.config/cle/username/rcfile
+#: important is the dot (hidden folder), word 'cle' and darh or slash
+_N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_var CLE_USER
 
@@ -235,7 +240,7 @@ _savecf () {
 _cle_r () {
 	[ "$1" != h ] && return
 	printf "\n$_Cr     ,==~~-~w^, \n    /#=-.,#####\\ \n .,!. ##########!\n((###,. \`\"#######;."
-	printf "\n &######\`..#####;^###)\n$_Cw   (&@$_Cr^#############\"\n$_Cw"
+	printf "\n &######\`..#####;^###)\n$_CW   (&@$_Cr^#############\"\n$_CW"
 	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
 }
 
