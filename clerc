@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-24 (Nova)
+#* version: 2018-03-27 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -529,10 +529,9 @@ for _I in $CLE_D/mod-*;do
 done
 
 # config & tweaks
-_clexe $CLE_CF || { _clebanner;_defcf;}
 _clexe $HOME/.cle-local
 _clexe $CLE_RH/$CLE_TW
-
+_clexe $CLE_CF || { _clebanner;_defcf;}
 CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # transition fix for removed '%>'
 _setp
 _setwt

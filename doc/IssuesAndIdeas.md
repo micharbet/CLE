@@ -5,6 +5,11 @@
 ## New feature Ideas
 - dynamic window/screen title changes with current executed command
 - preexec() and postexec() hooks
+- highlight also the command text
+- rework mdfilter to do following:
+  1. longer '~~~~~~~~' delimiter for code blocks
+  2. no highlighting inside the code block
+  (if it is even possible on **all** flavors of 'sed')
 
 ## Features, not a bugs!
 - rich history is updated after command finishes beacuse we need return code!

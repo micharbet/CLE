@@ -52,7 +52,7 @@ p1: username
 p2: shortened hostname
 p3: current working directory and prompt character
 
-Prompt parts strings are stored in variables $CLE_P0..3 and can be easily
+Prompt-part strings are stored in variables $CLE_P0..3 and can be easily
 inspect or changed using command  `cle p0..p3` moreover, each part can have
 it's own color. The color scheme is manipulated using command `cle color`.
 See below illustration and read description of prompt customization commands.
@@ -62,20 +62,25 @@ Prompt parts and default values:
 ```
      gray   red         yellow            green ('marley' scheme)
       |      |            |                 |
+
   [0] 13:25 user shortened.hostname /working/directory $
+
     \   /    |            |                 |
-     \ /     |            |                 '\w %> '
-      |      |            '%h'
-      |      '\u'
-      '%e \A'
+     \ /     |            |              '\w \$'
+      |      |           '%h'
+      |     '\u'
+   '%e \A'
 ```
+
+In prompt-part strings you can use backslash escapes as described in bash
+manual plus enhnacing percent escapes defined by CLE. Find their list below.
+
 
 ### Related commands
 - `cle p0|p1|p2|p3 ['prompt string']`
-  Set p0-p3 strings, use either regular strings and special options. Special
-  options cover all basic options described in `man bash` like e.g. \w, \u, \A,
-  etc. and the set is enhanced by following CLE defined options
-  (note character '%'):
+  Set p0-p3 strings, use either regular strings and escape sequences. Those
+  can be backslash escapes described in `man bash` like e.g. \w, \u, \A, etc
+  and following percent enhancements defined in CLE:
 
    %h ... shortened hostname, removed toplevel and subdomain, retaining other
           levels. E.g. six1.lab.brq.redhat.com shows like 'six1.lab.brq'
@@ -83,7 +88,8 @@ Prompt parts and default values:
 
    %i ... remote host IP
 
-   %u ... name of original CLE user (value of $CLE_USER)
+   %u ... name of original CLE user (value of $CLE_USER) - may be different
+          than bash's '\u' 
 
    %e ... return code from recent command enclosed in brackets, red if >0
 
@@ -104,18 +110,18 @@ Prompt parts and default values:
 
             u .... underline end
 
-            E .... special error code highiht
+            e .... special error code highlight
 
             N .... reset all colors
 
-            0-3 .. color of corresponding prompt part 
+            0-3 .. current color of corresponding prompt part 
 
-          Note, color table is mostly created usint 'tput' command ensuring
+          Note, color table is mostly created using 'tput' command ensuring
           compatibility across systems and terminals.
 
    %vVARIABLE
       ... place any VARIABLE into prompt string. This will result in following
-          string: `VARIABLE=its_value`, so showing also the name which may be
+          string: **VARIABLE=its_value**, so showing also the name which may be
           convenient. Note that the value alone can be placed by simple $VAR.
           Both ways are useful to watch a variable or to display any own
           dynamic content
@@ -142,11 +148,12 @@ Prompt parts and default values:
       cle color Cyg
       cle color tricolora    # set colours to your taste
 ```
-Note that part zero is always gray by default. It is however possible to
-change it e.g. like this:
 
-     `cle p0 '%cW%e'    # bright white status`
-
+Note that part zero (status+time) is always gray by default. It is however
+possible to change it e.g. like this:
+```
+     cle p0 '%cg%e'    # green status
+```
 
 - `cle time [off]`
   Toggles server time in P0 off or on.
@@ -157,11 +164,13 @@ change it e.g. like this:
   document to learn more.
 
 All prompt settings are immediately applied and stored in configuration
-file referenced with $CLE_CF.
+file referenced with $CLE_CF. That means:
+1. You don't need to restart shell session
+2. Prompt settings will be remembered and reused
 
 - `cle title [off]`
-  This in fact has nothing with prompt settings. Sometimes it can be helplful
-  to turn off window titling feature. It should be done for console
+  This in fact has nothing with prompt settings. However,sSometimes it can be
+  helplful to turn off window titling feature. It should be off for console
   automatically however in case of terminal without this capabilty some strange
   strings might appear. Use `cle title off` to avoid them.
 
@@ -422,7 +431,7 @@ shows values in main variable set and following is their description:
 - `CLE_RH`    home directory part of path to resource file.
 - `CLE_TW`    custom tweak file
 - `CLE_CF`    path to configuration file
-- `CLE_WS     contains hostname if started on workstation
+- `CLE_WS`    contains hostname if started on workstation
 - `CLE_CLR`   prompt color scheme
 - `CLE_Pn`    prompt parts strings defined with command `cle p0 .. cle p3`
 - `CLE_WT`    string to be terminal window title
@@ -434,12 +443,37 @@ shows values in main variable set and following is their description:
 - `CLE_SRC`   web store of CLE for updates and documentation downloads
 - `CLE_VER`   current environment version
 
+### More details about some variables
+
 Let's get back to the variable `$CLE_USER` - the most important variable here.
 You might notice how often is the variable mentioned here. It's value is set
 upon first login on the workstation and then is passed further into all
-subsequent sessions (ssg, suu, sudd...) There it becomes part of pathnames and
-ensures private space even on shared accounts (e.g. when root is accessed by
-more users)
+subsequent sessions (ssg, suu, sudd...) When CLE initializes, one of first
+thing it has to do is to determine the username. Trick is that it doesn't
+necessarily follow value of regular variable $USER. Username here is part of
+the path to the resource file. E.g. if path is '/home/foo/.cle-mich/rc' the
+string **mich** will be extracted and stored in $CLE_USER. Such CLE ensures:
+1. private configuration on shared accounts or multi-admin environments (when
+   root is accessed by more users)
+2. custom tweaks and command line histories
+3. accountability
+
+Another that might seem strange: `$CLE_SHN` - what does it mean 'shortened
+hostname'? Say, you are working in a company 'example.com' but their internal
+infrastructure contains subdomains like:
+- prod.intranet.example.com 
+- stage.intranet.example.com
+- world.exapmle.com
+And then imagine a host 'mail' in all those domains.
+It is important to see FQDN in prompt to be sure whre exactky we're working
+but last two words - 'example.com' can be safely omitted in favor of prompt
+string length and readability. This is exactly what `$CLE_SHN` will contain
+and what will appear in prompt when you use `%h`:
+- mail.prod.intranet
+- mail.stage.intranet
+- mail.world
+In plain bash you can place '\h' (hostname only) or '\H' (FQDN) into prompt.
+This is workaround - something in between.
 
 
 ## Advanced features and tweaks
