@@ -37,7 +37,7 @@ to 'cle deploy' on all visited accounts. Also do not deploy CLE into root's
 account. It would work without issues, basically no harm is expected, only
 unexpected behaviour may occur in multi-admin evirinment (the one where more
 people have administrator permissions). In case you use 'root' as your default
-login and insist on that please kindly find and follow corresponding section
+login and still insist on that please kindly follow corresponding section
 in file TipsAndTweaks.md
 
 
@@ -53,7 +53,7 @@ p2: shortened hostname
 p3: current working directory and prompt character
 
 Prompt-part strings are stored in variables $CLE_P0..3 and can be easily
-inspect or changed using command  `cle p0..p3` moreover, each part can have
+inspected or changed using command  `cle p0..p3`. Moreover, each part can have
 it's own color. The color scheme is manipulated using command `cle color`.
 See below illustration and read description of prompt customization commands.
 
@@ -120,11 +120,11 @@ manual plus enhnacing percent escapes defined by CLE. Find their list below.
           compatibility across systems and terminals.
 
    %vVARIABLE
-      ... place any VARIABLE into prompt string. This will result in following
-          string: **VARIABLE=its_value**, so showing also the name which may be
-          convenient. Note that the value alone can be placed by simple $VAR.
-          Both ways are useful to watch a variable or to display any own
-          dynamic content
+          place any VARIABLE into prompt string. This will result in following
+          string: **VARIABLE=its_value**, displayig also the name which may be
+          convenient. Note that the value alone can be displayed placing simple
+          '$VAR' into the string. Both ways are useful to watch a variable or
+          to display any own dynamic content.
 
   You may want to try e.g. following:
 ```
@@ -144,9 +144,10 @@ manual plus enhnacing percent escapes defined by CLE. Find their list below.
 
   Try for exapmle those commands, then find your very own style:
 ```
+      # set colours to your taste
       cle color green
       cle color Cyg
-      cle color tricolora    # set colours to your taste
+      cle color tricolora
 ```
 
 Note that part zero (status+time) is always gray by default. It is however
@@ -176,7 +177,7 @@ file referenced with $CLE_CF. That means:
 
 
 _Note following:_ you can anytime inspect CLE variables with command `cle env`
-with this you will opbtain list and values of all variables whose names start
+With this you will obtain list and values of all variables whose names start
 with 'CLE_' e.g. If you configure prompt you can watch how CLE_CLR and CLE_Px
 changes.
 
@@ -192,10 +193,11 @@ even on the same machine and account (e.g. root) are working within their own
 settings (prompt, aliases, history) separated with help of variable $CLE_USER
 that is inherited from first login on workstation through all subsequent
 sessions. At the same time, no default settings on the remote servers are
-altered so anybody who hates any change can still use old good ssh (su, sudo)
-and work in shell ith its default/poor settings.
+altered so anybody who hates changes can still use old good ssh, su and sudo
+and work in shell with its default/poor settings.
 
-Use following commands to initiate CLE sessions:
+
+### Use following commands to initiate CLE sessions:
 
 - `ssg [ssh-options] [account@]remote.host`
 This command is in fact 'ssh' wrapper that packs whole CLE - copies rc file
@@ -300,6 +302,13 @@ Use `aa -l` in case of mischmatch, if working alias set has been unintentionally
 damaged, etc.
 
 
+Remember: aliases are not inherited over sessions. They stay bound to the
+their accounts. The reason is that you may define special aliases on particlar
+server that would not be useful elsewhere. Also there is no way of pushing back
+newly defined alias from a session to workstation. There are however ways of
+definig aliases on remote sessions. Check out document _TipsAndTweaks.md_
+
+
 
 ## History management
 
@@ -310,9 +319,9 @@ Command line history in CLE is personalized in several ways:
    history of all commands issued by every user is collected. This is called
    the _rich history_
 
-The rich history is persistent. That means the records are adding only to the
-file not deleted, file is not truncated. As the rich history file grows it
-holds complete history over time. Next, the word 'rich' refers to enhanced
+The rich history is persistent. That means the records are adding only to
+the file and file is not truncated. As the rich history file grows it holds
+complete history over time. Next, the word 'rich' refers to enhanced
 information contained in each history record. The records are textual,
 one-per-line with following fields:
 
@@ -343,18 +352,18 @@ sophisticated alias.
 New command `hh` works with the rich history.
 When issued without arguments it prints out 100 recent records. However you
 can alter it's behavior or in other words filter the output using options
-and arguments. So use basic filters:
-- `hh string` to grep search for given string in rich history file. The grep
+and arguments. Use following basic filters:
+- `hh string` to grep-search for given string in rich history file. The grep
   is applied to whole file, so you can search for specific date/time, session
   identification, you can use regular expressions, etc.
 - `hh number` prints out recent 'number' records. Note the number can be in
-  rane 1 .. 999.
+  range 1 .. 999.
 
 Advanced filtering is done using options:
 `-t` search only commands issued in current session
 `-d` narrow down search to current day's sessions
 `-s` filters only succesful commands (return code zero)
-`-c` strip out additional information and output just commands
+`-c` strip out additional information and display just commands
 `-l` pass the output into 'less' command
 `-f` instead of issued commands prints out visited folders
 
@@ -372,15 +381,15 @@ CLE contains built-in descriptions of its functions. Issue `cle help` to
 extract those information. You can also obtain information about particular
 buit-in function. Try e.g `cle help hh`
 
-If you need more use command `cle doc` that downoads documentation index from
-git source and offers files (incl. this one) through menu. Files are written
-in .md (markdown) format and are passed through built-in function (mdfilter)
-that hilights formatted items.
-
 Self documenting feauture `cle help` automatically searches in all files
 invoked upon startup, e.g. custom tweaks, modules, etc. All those texts
 are nothing else just comments introduced with double hash `##`. It's that
 simpe! Look at clerc itself as a good example.
+
+If you need more use command `cle doc` that downloads documentation index from
+git source and offers files (incl. this one) through menu. Files are written
+in .md (markdown) format and are passed through built-in function (mdfilter)
+that hilights formatted items.
 
 
 ## Keeping CLE fresh
@@ -415,7 +424,7 @@ Some files however remain in main home directory:
 
 The username is stored in the variable $CLE_USER - this is set upon login on
 workstation and the variable is passed further into subsequent sessions.
-
+See next section for details.
 
 ## Variables
 
@@ -425,7 +434,7 @@ underscore, e.g color table ($_C*) or internal $_H, $_E, etc. Command `cle env`
 shows values in main variable set and following is their description:
 
 - `CLE_USER`  original user who first initiated the environment.
-- `CLE_D`     directory with configuration files
+- `CLE_D`     absolute path to folder with configuration files
 - `CLE_RC`    absolute path the CLE resource script itself
 - `CLE_RD`    relative path to folder containing resource files
 - `CLE_RH`    home directory part of path to resource file.
@@ -433,10 +442,10 @@ shows values in main variable set and following is their description:
 - `CLE_CF`    path to configuration file
 - `CLE_WS`    contains hostname if started on workstation
 - `CLE_CLR`   prompt color scheme
-- `CLE_Pn`    prompt parts strings defined with command `cle p0 .. cle p3`
+- `CLE_Pn`    prompt-parts strings defined with command `cle p0 .. cle p3`
 - `CLE_WT`    string to be terminal window title
 - `CLE_IP`    contains IP address in case of remote session
-- `CLE_SHN`   shortened hostname - main domain part removed
+- `CLE_SHN`   shortened hostname
 - `CLE_ALI`   user's aliases store
 - `CLE_HIST`  path to rich history file
 - `CLE_EXE`   colon separated log of scripts executed by CLE
@@ -446,26 +455,26 @@ shows values in main variable set and following is their description:
 ### More details about some variables
 
 Let's get back to the variable `$CLE_USER` - the most important variable here.
-You might notice how often is the variable mentioned here. It's value is set
-upon first login on the workstation and then is passed further into all
+You might notice how often is the variable mentioned here. Its value is set
+upon first login on the workstation and then it is passed further into all
 subsequent sessions (ssg, suu, sudd...) When CLE initializes, one of first
 thing it has to do is to determine the username. Trick is that it doesn't
 necessarily follow value of regular variable $USER. Username here is part of
 the path to the resource file. E.g. if path is '/home/foo/.cle-mich/rc' the
-string **mich** will be extracted and stored in $CLE_USER. Such CLE ensures:
+string **'mich'** will be extracted and stored in $CLE_USER. Such CLE ensures:
 1. private configuration on shared accounts or multi-admin environments (when
    root is accessed by more users)
 2. custom tweaks and command line histories
 3. accountability
 
-Another that might seem strange: `$CLE_SHN` - what does it mean 'shortened
-hostname'? Say, you are working in a company 'example.com' but their internal
-infrastructure contains subdomains like:
+Another thing that might seem strange: `$CLE_SHN` - what does it mean
+'shortened hostname'? Say, you are working in a company 'example.com' where
+internal infrastructure contains subdomains like:
 - prod.intranet.example.com 
 - stage.intranet.example.com
 - world.exapmle.com
-And then imagine a host 'mail' in all those domains.
-It is important to see FQDN in prompt to be sure whre exactky we're working
+And then imagine a hosts named 'mail' in all these domains.
+It is useful to see FQDN in prompt to be sure where exactky we're working
 but last two words - 'example.com' can be safely omitted in favor of prompt
 string length and readability. This is exactly what `$CLE_SHN` will contain
 and what will appear in prompt when you use `%h`:
@@ -478,12 +487,12 @@ This is workaround - something in between.
 
 ## Advanced features and tweaks
 
-CLE is modular. Modules are just another scripts adding custom functions
+CLE is modular. Modules are another scripts adding custom functionalities
 to the environment. Over the development it has revealed that not every 
 single idea has to be included (keeping the main code as small as possible).
-Very specific functionalities have been (re)moved into modules and it's
-user's choice to include them into his/her environment. It is also possible
-and easy to write own modules. This topis is covered in separated document.
+Very specific functions have been (re)moved into modules and it is user's
+choice to include them into his/her environment. It is also possible and easy
+to write own modules. This topis is covered in separated document.
 Read _Modules.md_ to learn more.
 
 CLE itself is a tweak but it can be customized further more. One way might
@@ -491,12 +500,14 @@ seem to be editing 'rc' file itself but this is discouraged. There are files
 dedicated to exactly this purpose. Find more information on how to use them
 in document _TipsAndTweaks.md_
 
-In case of issue in main resource (the clerc file), if you feel there is
-missing important functionality or if you just wrote nice module that you
+In case of issue in main resource (the clerc file), if you feel some important
+important functionality is missing or if you just wrote nice module that you
 want to share follow the document _Contribute.md_
 
 Love CLE? Hate it? Do you want to improve something? Read _Feedback.md_ and
 chose any of the options how to report.
 
-Thank you for reading and using!
+
+### Thank you for reading and using!
+
 

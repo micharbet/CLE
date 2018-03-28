@@ -13,10 +13,10 @@ The first thing you may want to customize. Go beyond just color change!
 
 ### Nice double line prompt
 ```
-cle p0 '\A'
-cle p1 '%h (%i)\n'
-cle p2 '%cK%e %u -> %cL\u'
-cle p3 '\w >'
+   cle p0 '\A'
+   cle p1 '%h (%i)\n'
+   cle p2 '%cK%e %u -> %cL\u'
+   cle p3 '\w >'
 ```
 
 ### Five shades of grey
@@ -40,8 +40,8 @@ issue `cd -` or simple `-` to swap between PWD and OLDPWD.
 ### GIT branch in prompt?
 Add module 'git' and use new function 'gicwb':
 ```
-cle mod add git
-cle p3 '\w%cy:$(gicwb) %cW>'
+   cle mod add git
+   cle p3 '\w%cy:$(gicwb) %cW>'
 ```
 The `gicwb` simply executes `git symbolic-ref --short HEAD` whenever there
 is `.git` directory underneath. Note, this is not CLE feature! Pure bash is
@@ -57,9 +57,20 @@ following items:
   bash's '\$' instead
 
 
-## CLE startup tweaks
+### Change dark grey of status part
+Do you want it green? Use this: `cle p0 '%cg%e'`
+If you desire to change also error code highlight, edit tweak file (described
+below) and alter color table with following lines:
+```
+	# this goes to file $HOME/.cle-YOURNAME/tw
+	_Ce=$_Cr	#  plain red status highlight
+```
+
+
+## CLE setup tweaks
 
 ### Deploying for user root
+
 In case you really insist on using root as your default login account and
 want to have cle deployed here, you can do it same way like for any other
 user. Remember following: there is variable **$CLE_USER** that makes it
@@ -72,23 +83,74 @@ To avoid this situation do following steps after deployment:
 1. rename '.cle-root' to '.cle-YOURNAME'
 2. open .bashrc in editor and replace all occurences of '.cle-root'
    with the name chosen in step #1
+3. start new session (new terminal window) if everything works, close
+   the previous one
 
 See section 'Variables' in document _HOWTO.md_ for more details about
 how $CLE_USER is determined and used.
 
 
-## Various startup files
+### How to deploy CLE into different folder
 
-Tweak CLE using one of startup files. Avoid editing .clerc whenever posible.
-Besides modules described in separate document, CLE finds and executes
+The environment is by default stored in following folder:`$HOME/.cle-YOURNAME`
+and almost all files are created there. You may want for example to use
+'.config' as the default place for your resource and configuration files. 
+It's definitely possible! You need to be aware of following facts:
+1. The installation folder must be hidden one (with dot at the beginning).
+2. Value of $CLE_USER is derived from the path, there must be either one
+   of `cle-YOURNAME` or `cle/YOURNAME`. The word 'cle' and delimiter are
+   important.
+3. The relative pathname will be used on remote sessions (ssg) and all folders
+   will be created.
+4. All changes are yours own only, other users may happily use defaults.
+
+Thus, following folders are valid (relative to home directory)
+- .cle-user1/  (default)
+- .config/cle-user1
+- .abc/cle/user1
+
+Regarding fact No.3 and 4: folder '.config' exists mainly on desktop accounts,
+there is rarely such folder for root or any other subsystem and servers. Do
+the reloacation only if you _know_ what are you doing and why.
+
+Well, this is how. Basically the procedure is the same like in previous
+chapter (Deploying fo root). Say you're going to use .config as the base:
+1. `mv .cle-YOURNAME .config/cle-YOURNAME`
+2. edit .bashrc file, find section starting CLE (should be at the end):
+```
+     # Command Live Environment
+     [ -f /home/YOURNAME/.cle-YOURNAME/rc ] && . /home/YOURNAME/.cle-YOURNAME/rc
+```
+   Replace correspondig pathnames:
+```
+     # Command Live Environment
+     [ -f /home/YOURNAME/.config/cle-YOURNAME/rc ] && . /home/YOURNAME/.config/cle-YOURNAME/rc
+```
+3. start new session (new terminal window) if everything works, close
+   the previous one
+
+There is another way, use module `cle-rcmove`. The module does all steps above
+for you and checks if necessary requirements are met.
+1. Add the module: `cle mod add rcmove`
+2. Use it: `cle rcmove .config`
+
+More about modules in dedicated document.
+
+
+
+## Startup tweaks
+
+Always customize CLE using one of tweak files. Avoid editing .clerc whenever
+posible. Besides modules described in separate document, CLE finds and executes
 following files:
 - `$HOME/.cle-local`
-  Local account's tweak is executed when CLE is started here.
+  Local account's tweak is executed when CLE is started.
 - `$HOME/.cle-YOURLOGIN/tw`
-  This file is packed, transferred and executed on remote account along with
-  the main resource file everytime new session is initiated with `ssg` or any
-  of `su*` wrappers. Using this file you can apply your own settings in just
-  one single file that resides on your workstation. 
+  This file is executed on CLE startup and moreover, it is packed, transferred
+  and executed on remote account along with the main resource file everytime
+  new session is initiated with `ssg` or any of `su*` wrappers. Using this file
+  you can apply your own settings in just one single file that resides on your
+  workstation. 
 
 Try for example this:
 1. using text editor create tweak file .cle-YOURNAME/tw with following content:
@@ -109,15 +171,38 @@ Try for example this:
 6. enjoy and tweak more!
 
 
-## Override internal functions
+### Tweaking only on particular accounts
+
+Some tweaks may be applicable only on particular hosts/accounts. Use 'case'
+statement like for example this:
+```
+   # we're using $USER - not $CLE_USER!
+   case $USER@$HOSTNAME in
+      user1@destination1.example.com)
+         # this will be executed only on one account
+         ;;
+      *@destination1.example.com)
+         # executed on all other accounts on the same host
+         ;;
+      user2@*|user3@*)
+         # executed for user2 and user3 on anyhost
+         ;;
+   esac
+```
+Be creative, make your own 'case', you can use it to define for example extra
+aliases. special prompt settings (see next section) etc.
+
+
+### Override internal functions
 
 Besides introducing new functions you can override any intenal CLE function
 with oyur own code. Doing this is easy and tricky at the same time. You need
 to ensure the new code serves the same purpose. 
 
 In this example you will override _defcf function that by default resets the
-prompt settings to scheme 'marley' But you might want to use your own colors
-and not to perform prompt setup on each new account.
+prompt settings to scheme 'marley' Instead you might want to define your own
+default colors and strings in order to avoid manual prompt setup on each new
+account.
 
 Add following code into the tweak file:
 ```
@@ -125,7 +210,7 @@ Add following code into the tweak file:
   # replace 'my-work.com' with your domain
   # replace 'mich' with your login name
   _defcf () {
-     # two-line prompt string wit IP address
+     # two-line prompt string with optional IP address
      CLE_P0='\A'
      CLE_P1='%h ${CLE_IP:+(%i)}\n'
      CLE_P2=' %cK%e \u'
@@ -147,33 +232,36 @@ Add following code into the tweak file:
      esac
   }
 ```
-Overridden function creates unified cool prompt that by color distinguishes
-between hosts/domains/usernames. Feel free to modify the snippet in your very
-own way! One important fact: function `_defcf` is called on new sessions, where
+Overridden function creates unified cool prompt that by its color distinguishes
+between various accounts. Feel free to modify the snippet in your very own way!
+One important fact: function `_defcf` is called on _new_ sessions, where
 no configuration file exists. That means, it literally creates default config
 but doesn't touch existing one. So if you open session on previously visited
 account nothing happens. Use brute force in that case with command `cle reset`.
 
-It is not enough to simply set CLE_CLR and CLE_Px values because configuration
-is applied after tweak. For this it would be always overwritten. Moreover,
-this method - overriding the _defcf function is universal as it allows you
-to alter those new defaults.
+It would be not enough to simply set CLE_CLR and CLE_Px values because
+configuration file is read after the tweak. For this the values would be
+always overwritten. Moreover, this method - overriding the _defcf function
+is universal as it still allows you to alter the configuration.
 
 Note statement `case $USER@$HOSTNAME` that ensures differentiation based on
 where you actually are. Of course replace 'mich', 'my-work.com' or eventually
 rewrite the whole function to your own taste.
 
-Pro tip: inspect the function with command `declare -f _defcf`
+Pro tip: inspect the function with command `declare -f _defcf` before apllyinig
+the tweak and after that.
 
 You can override almost any CLE internal fuction except the `cle` itself.
-For example somebody might want to use wider colour palette. Why not to rewrite
-function `_setp` responsible for setting prompt color? You just need to be
-familiar with the CLE internals, its variables and functions. Inspect and try
-to understand the magic inside `clerc` even if it might be tricky sometimes.
+For example somebody might want to use wider colour palette. Why not to
+redefine function `_setp` responsible for setting prompt color? You just need
+to be familiar with the CLE internals, its variables and functions. Inspect and
+try to understand the magic inside `clerc` even if it might seem tricky
+sometimes.
+
 There can be also parts of the code that could be written more effectively
-in Bash 4. but due to compatibility with older Bash 3 it is like it is. For
+in Bash 4. but due to **compatibility** with older Bash 3 it is like it is. For
 example: color table might be in associative array but that doesn't exist in
-Bash older than version 4. Keep that in mind.
+Bash 3 and older. Keep that in mind.
 
 
 

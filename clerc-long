@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-03-27 (Nova)
+#* version: 2018-03-28 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -688,31 +688,13 @@ cle () {
 	deploy) ## cle deploy      -- hook CLE into user's profile
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
-		if grep -A1 "$I" $BRC;then
-			printb CLE is already hooked into .bashrc
-			return 1
-		else
-			cd
-			[ $CLE_RH != $HOME ] && { echo 'CLE must be run from $HOME'; return 1;}
-			C=.cle-$USER # default installation folder
-			if [ $1 ]; then 
-				#: installation into different subfolder
-				#: $1 contains prefix
-				[[ $1 =~ ^\. ]] || { echo 'prefix must start with dot'; return 1;}
-				mkdir -m 755 -p $1
-				C=$1/cle-$USER
-				dbg_var C
-			fi
-			echo "Installing CLE into $_CL$HOME/$C$_CN and hook to .bashrc"
-			ask Are you sure? || return
-			mv $CLE_RC $CLE_RD/rc
-			[ $CLE_RD != $C ] && mv $CLE_RD $C
-			CLE_RC=$HOME/$C/rc
-			dbg_var CLE_RC
-			echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $BRC
-			unset CLE_1
-			cle reload
-		fi;;
+		grep -A1 "$I" $BRC && printb CLE is already hooked in .bashrc && return 1
+		ask "Do you want to add CLE to .bashrc?" || return
+		cp $CLE_RC $CLE_D/rc
+		CLE_RC=$CLE_D/rc
+		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $BRC
+		unset CLE_1
+		cle reload;;
 	update) ## cle update      -- install fresh version of CLE
 		NC=$CLE_D/rc.new
 		curl -k $CLE_SRC/clerc >$NC
