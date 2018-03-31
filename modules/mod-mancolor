@@ -1,3 +1,17 @@
+##
+## mod-mancolor: colorize man pages
+## -------------------------------------------------------
+#* version: 2018-03-29
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2017-2018 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
 export LESS_TERMCAP_mb=$(tput bold; tput setaf 2) # green instead of blink
 export LESS_TERMCAP_md=$(tput bold; tput setaf 6) # yellow
 export LESS_TERMCAP_me=$(tput sgr0)
@@ -8,3 +22,4 @@ export LESS_TERMCAP_ue=$(tput sgr0)
 export LESS_TERMCAP_mr=$(tput rev)
 export LESS_TERMCAP_mh=$(tput dim)
 export GROFF_NO_SGR=1         # For Konsole and Gnome-terminal
+

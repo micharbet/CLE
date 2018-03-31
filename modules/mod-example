@@ -1,6 +1,6 @@
 ##
-## mod-example: example / template module
-## -------------------------------------------------------
+## mod-example: example / template module (this is module id string)
+## -----------------------------------------------------------------
 #* version: 0.0.prd
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE

@@ -5,65 +5,59 @@
 In addition to basic fuctionalities the CLE is in fact extensible framework.
 Various modules can be added to enhance or modify the environment. For example
 CLE doesn't contain functions to backup/restore settings. If there is a module
-providing this it can be downloaded and installed. Important word here is
-"to download". Remember, CLE itself is one resource file only! But it can
-execute several files if they exist. CLE uses it's own repository to find and
-download those files on user's request. The reason for using own repository
-is compatibility among various distributions and operating systems so there
-is no dependancy on rpm/deb/other packaging system nor the OS flavour (meaning
-Linux/*BSD/Solaris/...)
+providing this it can be downloaded and installed. CLE uses it's own repository
+to find and download those files on user's request. The reason for using own
+repository is compatibility among various distributions and operating systems
+so there is no dependancy on rpm/deb/other packaging system nor the OS flavour
+(meaning Linux/*BSD/Solaris/...)
 
-Modules are internally stored in `$HOME/.cle folder`. Various types of modules 
-can be found here as decribed in next chapter.
+Modules are stored in folder `$CLE_D` (by default '$HOME/.cle-YOURNAME').
+Various types of modules can be found here as decribed in one of chapters
+below.
 
 
 ## Module types
 
-Following modules are available in CLE:
-- _mod-*_ this code is executed upon each CLE session startup
-  Those modules may implement new bash functions, replace original CLE
-  functions and alter variables.
-- _cle-*_ contain scripts provides enhanced functionality to `cle` command
-  Modules of this kind resides in the folder but are called on demand and
-  only through command `cle` Good example is 'cle-mod'. This module contains
-  code for working with modules itself, like adding, removing, etc. When you
-  issue command `cle mod add` execution is redircted into `$HOME/.cle/cle-mod`
-- _bin/*_ are not true modules but rather standalone / independent scripts
-  Those files are stored in `$HOME/bin` folder. This folder is also added to
-  `$PATH` when CLE starts. In contrast to true modules those files are not
-  executed/sourced within the shell context (not `. $HOME/.cle/mod-*`) For
-  this reason they cannot alter CLE environment. They are standalone scripts
-  and in fact they can be coded in any language. Reason for including those
-  scripts into CLE is ease of distribution from networked repository.
+Two kinds of modules are available in CLE:
+- _mod-*_ this code is executed - sourced into bash upon each CLE sessio
+  startup. These modules may implement new bash functions, replace original CLE
+  functions and alter variables. 
 
+- _cle-*_ contain scripts enhancing functionality of built in `cle` command.
+  Modules of this kind resides in the folder and are executed on demand only
+  through command `cle`. Execution is in fact sourcing into current bash, no
+  new process is created - like in previous type.
+  Good example is 'cle-mod'. This one enables module management itself, like
+  adding, removing, etc. When you issue command `cle mod add` execution is
+  redircted into `$CLE_D/cle-mod`
 
-This table provides overview of module types and their main properties
+Following chart provides overview of module types and their main properties
 
 ```
-          executed    can alter    can use        is
-         on startup   variables   functions   independent 
-                         and       defined      of CLE
+          executed    can alter    can use
+         on startup   variables   functions
+                         and       defined
                       functions   in .clerc
-         ------------------------------------------------------
+         ----------------------------------
   mod-*      yes         yes         yes
   cle-*                  yes         yes
-  bin/*                                          yes
 ```
 
 
 ## How to use modules
 
-There is command `cle mod` for that puprpose. This command is somehow special.
-When you inspect `.clerc` you can find corresponding section within `case`
+There is command `cle mod` that maintains modularity. This command is sort of
+special. When you inspect clerc you can find corresponding section within `case`
 statement. But this section just literally downloads module _cle-mod_ from
-repository. When the module (for working with modules) is downloaded it will
-be executed by `cle mod` command. Following is overview of subcommands:
+repository. This happens only once. When the module (cle-mod) is downloaded it
+will be executed instead of built-in code. The module defines following
+subcommands:
 
 `cle mod`       - shows URL of module repository and destination folder
 `cle mod help`  - provides short overview of module related commands
-`cle mod avail` - this downloads and displays moduls available in repository
-`cle mod ls`    - provides list of modules installed in $HOME/.cle folder
-`cle mod add [modname]` - installation/upgrade of module
+`cle mod avail` - downloads index and displays modules available in repository
+`cle mod ls`    - provides list of installed modules
+`cle mod add [modname]` - installs/upgrades module
 `cle mod del [modname]` - module removal
 
 Note that add/del subcommands do not require full module name, you can use
@@ -106,6 +100,40 @@ Set the `$CLE_SRC` in one of following files:
 Downloading of modules is ensured with `curl` utility. Any URL valid for curl
 can be used. For this reason, the repository can be also a local folder when
 URL of tyle `file://....` is used.
+
+
+## List of basic available modules
+
+### cle-mod - the basic one
+This one covers installations and removal other modules. The modularity is
+built in CLE but module maintenace is kept in separate file. First request
+to 'cle mod [operation]' downloads and install this file and then performs
+the action. The 'cle-mod' is not required however. If you install/or create
+your own modules manually they will work.
+
+### mod-mancolor
+Almost descriptive name. This module doesn't add any new feature to the CLE.
+It only defines LESS_TERMCAP_* variables with ansi escapes to colorize manual
+pages.
+
+### mod-fsps
+Defines following filesystem and process related functions:
+   `dfh` `dush` `dusk` `psg`
+They appear in `cle help` output. Those functions could be safely be defined
+as aliases, but why not to have this :-)
+
+### cle-rcmove
+This module makes it easy to move CLE installation folder to a different
+location. It's described in 'TipsAndTweks.md'.
+
+### mod-git
+Functions / shortcuts to 'git' commands. Maybe the most useful is function
+`gicwb`. It simply prints out curren working branch (hence it's name) and is
+useful if you want to display that information in prompt. Documentr
+'TipsAndTweaks.md' provides an example of such use.
+
+### mod-example
+Template of module. Use it how it names.
 
 
 ## How to write your own cool stuff
