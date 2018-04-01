@@ -1,8 +1,9 @@
 
 #   Command Live Environment
-##   The shell improvements
 
-CLE enhances bash with following functionalities:
+##   Enhanced shell experience
+
+CLE adds following functionalitiesi to bash:
  - colorized and customizable **prompt** string including server time and exit
    code highlight
  - save/edit and reuse **aliases** in easy way

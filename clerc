@@ -60,7 +60,7 @@ CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space is CLE growing
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Nova
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # check first run

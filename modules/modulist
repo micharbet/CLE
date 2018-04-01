@@ -5,4 +5,3 @@ mod-mancolor:2018-03-29:6be5e81139eb392d3e3c3742be97ec0d:colorize man pages
 cle-ed:2018-03-30:00436ffc61e38c2574e37dafca99a955:tweak and config editor
 cle-mod:2018-03-30:7769554e26e26f89b38a630baa7ae68e:CLE module management
 cle-rcmove:2018-03-23:8fcb5d35d5da974400d7a9043f65d54c:move resource files to different folder
-bin-*:::
