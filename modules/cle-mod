@@ -1,11 +1,11 @@
 ##
 ## cle-mod: CLE module management
 ## ------------------------------
-#* version: 2017-08-17
+#* version: 2018-03-30
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2017 by Michael Arbet 
+#* Copyright (C) 2016-2018 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -14,7 +14,7 @@
 # 
 
 local LISTFILE=modulist
-local MODULIST=$CLE_DM/$LISTFILE
+local MODULIST=$CLE_D/$LISTFILE
 
 #
 # cle-mod helper functions
@@ -53,22 +53,22 @@ modsum () (
 
 # module deails
 modet () (
-	M=$CLE_DM/$1
+	M=$CLE_D/$1
 	MDESC=`modesc $M`
 	MSRC=`modtype $M`
 	MVER=`modver $M`
-	printf "$_TW%-15s $_Tw[%-3s %10s] $_TN%s\n" $1 $MSRC "$MVER" "$MDESC"
+	printf "$_CW%-15s $_Cw[%-3s %10s] $_CN%s\n" $1 $MSRC "$MVER" "$MDESC"
 )
 
 # get list of currently installed modules
 getinstalled () (
-	cd $CLE_DM
+	cd $CLE_D
 	ls cle-* mod-* bin-* 2>/dev/null
 )
 
 # download list of available modules
 getindex () (
-	curl -ksS $CLE_SRC/dotcle/$LISTFILE >$MODULIST.tmp
+	curl -ksS $CLE_SRC/modules/$LISTFILE >$MODULIST.tmp
 	M=`head -1 $MODULIST.tmp`
 	# check if the file appears lik module index
 	if [[ $M =~ ..*:.*:.*:.* ]]; then
@@ -85,7 +85,7 @@ local M MM MODS DMM MDESC MSRC MVER
 
 case "$1" in
 ls)	## cle mod ls        -- list installed modules
-	printb ${_TU}Modules installed in $CLE_DM:
+	printb ${_TU}Modules installed in $CLE_D:
 	for M in `getinstalled`; do
 		modet $M
 	done
@@ -94,17 +94,21 @@ avail)	## cle mod avail     -- list modules available to install
 	getindex || return $?
 	printb ${_TU}Modules available in repository: $CLE_SRC
 	cat $MODULIST | { IFS=:; while read MM MVER MSUM MDESC; do
-		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"
+		printf "$_CW%-15s $_Cw[%10s] $_CN%s\n" $MM "$MVER" "$MDESC"
 	done; }
 	;;
 add)	## cle mod add [mod] -- install/upgrade module from repository
 	getindex || return $?
+
+	# get matching modules
 	MODS=`grep ^[^:]*$2[^:]* $MODULIST |cut -d: -f1`
 	[ "$MODS" ] || { echo Nothing like $2 to install; return 1; }
+
+	# choose one if there are more matches
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
-		# chose one if more were found
-		PS3="$_TL choose module # $_TN"
+		# chose one module in case of more matches
+		PS3="$_CL choose module # $_CN"
 		select MM in $MODS; do
 			[ -n "$MM" ] && break
 		done
@@ -112,49 +116,35 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 		MM=$MODS
 	fi
 	[ $MM ] || return
+
+	# show selected module details
 	echo
 	grep ^$MM $MODULIST | { IFS=:; read MM MVER MSUM MDESC; 
-		printf "$_TW%-15s $_Tw[%10s] $_TN%s\n" $MM "$MVER" "$MDESC"; }
+		printf "$_CW%-15s $_Cw[%10s] $_CN%s\n" $MM "$MVER" "$MDESC"; }
 	ask "Do yo want to install this module?" || return
 
-	# download module into temporary file
-	# this doesn't destroy one that is already installed
+	# module setup
 	printb "Downloading $MM"
-	DMM=$CLE_DM/dl-$MM
-	if [[ $MM =~ ^bin- ]]; then
-		# executable scripts specific actions
-		MM=${MM/bin-/}
-		curl -ksS $CLE_SRC/bin/$MM >$DMM
-		# check module signature
-		if grep -q "## *$MM: ..*" $DMM ; then
-			mkdir -p ~/bin
-			mv -f $DMM ~/bin/$MM
-			chmod 755 ~/bin/$MM
-		else
-			printb Error, no module header found
-			head $DMM
-			printb Removing temporary file...
-			rm -f $DMM
-			return 1
+	DMM=$CLE_D/dl-$MM
+	curl -ksS $CLE_SRC/modules/$MM >$DMM
+	# check module signature
+	# every regular cle module should have at least it's identification strings
+	# (comments at the beginning, see this file or mod-example)
+	if grep -q "## *$MM: ..*" $DMM ; then
+		mv -f $DMM $CLE_D/$MM
+		if [[ $MM =~ 'mod-' ]]; then
+			# now include the module
+			printb Executing module $CLE_D/$MM
+			MDESC=`modesc $CLE_D/$MM`
+			_clexe $CLE_D/$MM && { echo $MM: $MDESC; printb ready!; }
 		fi
 	else
-		curl -ksS $CLE_SRC/dotcle/$MM >$DMM
-		# check module signature
-		if grep -q "## *$MM: ..*" $DMM ; then
-			mv -f $DMM $CLE_DM/$MM
-			if [[ $MM =~ 'mod-' ]]; then
-				# immediately include the module
-				printb Executing module $CLE_DM/$MM
-				MDESC=`modesc $CLE_DM/$MM`
-				_clexe $CLE_DM/$MM && { echo $MM: $MDESC; printb ready!; }
-			fi
-		else
-			printb Error, no module header found
-			head $DMM
-			printb Removing temporary file...
-			rm -f $DMM
-			return 1
-		fi
+		# either download error or this is no module
+		printb Error, no module header found, see following:
+		head $DMM
+		printb Removing temporary file...
+		rm -f $DMM
+		return 1
 	fi
 	;;
 del)	## cle mod del [mod] -- delete module
@@ -162,8 +152,8 @@ del)	## cle mod del [mod] -- delete module
 	[ "$MODS" ] || { echo Nothing like $2 to remove; return 1; }
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
-		# chose one if more were found
-		PS3="$_TL choose module to remove # $_TN"
+		# chose one in case of more matches
+		PS3="$_CL choose module to remove # $_CN"
 		select MM in $MODS; do
 			[ -n "$MM" ] && break
 		done
@@ -174,14 +164,14 @@ del)	## cle mod del [mod] -- delete module
 	echo
 	modet $MM
 	ask "Do yo want to remove this?" || return
-	mkdir -p $CLE_DM/inactive
-	mv -f $CLE_DM/$MM $CLE_DM/inactive
-	echo Module $MM moved into $CLE_DM/inactive
+	mkdir -p $CLE_D/off
+	mv -f $CLE_D/$MM $CLE_D/off
+	echo Module $MM moved into $CLE_D/off
 	;;
 '')
 	printb ${_TU}CLE module management
-	echo "Repository:$_Tw $CLE_SRC$_TN"
-	echo "Local lib: $_Tw $CLE_DM$_TN"
+	echo "Repository:$_Cw $CLE_SRC$_CN"
+	echo "Local lib: $_Cw $CLE_D$_CN"
 	;;
 help)
 	cle help "cle mod"

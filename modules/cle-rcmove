@@ -1,0 +1,48 @@
+##
+## cle-rcmove: move resource files to different folder
+## ---------------------------------------------------
+#* version: 2018-03-23
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2018 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+## cle rcmove [dest]  --  move the environment files
+local BRC=$HOME/.bashrc
+local NOW=$CLE_RH/$CLE_RD
+
+# test if this is initial CLE session
+if [ -z "$CLE_WS" -o $NOW != $CLE_D ]; then
+	echo "Moving CLE folder is meaningless on subsquent sessions!"
+	return 1
+fi
+
+if [[ "$1" =~ ^\. ]]; then
+	local THEN=$HOME/$1/cle-$CLE_USER
+	[ $1 = . ] && THEN=$HOME/.cle-$CLE_USER
+	local NEWRC=$THEN/rc
+	printb "moving folder: $NOW -> $THEN"
+	mkdir -p -m 755 $HOME/$1 || return 1	# this fails in case $1 is a file
+	mv $NOW $THEN
+
+	# replace paths in .bashrc hook
+	printb "editing .bashrc:"
+	sed "s;$CLE_RC;$NEWRC;g" $BRC >$BRC.sed
+	mv -f $BRC.sed $BRC
+	command grep -A1 "Command Live Environment" $BRC
+
+	# restart the environment to fix the rest values
+	printb "cle reload"
+	CLE_RC=$NEWRC
+	cle reload
+else
+	# yes, the destination folder must be hidden one
+	echo destination folder must start with dot!
+	return 1
+fi
+

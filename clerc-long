@@ -35,25 +35,53 @@
 # -built-in documentation: 'cle help'
 # -update from GIT source
 
+#: If you're reading this text, you probably downloaded commented version
+#: of CLE named clerc-long. That is basically fine if you want to check how
+#: the code is the same but the file is much longer. For general use there is
+#: shortened file that has all comments introduced with '#:' removed.
+#: Note other special comments - '##' introduces self documentation
+#: and '#*' denotes script header
 
 # check running as interactive session otherwise CLE is not needed
 # also required for scp compattibility
 if [ -t 0 -a -z "$CLE_EXE" -a -z "$BASH_EXECUTION_STRING" ];then
 # warning: magic inside!
 
+# debug stuff
+dbg_var () { [ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "${!1}" >/dev/tty; }
+dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }
 
 # a little bit complicated way to find absolute path
+#: cross-plattform compatible way to determine absolute path to rc file
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
+dbg_echo
+dbg_echo starting: $0
+dbg_echo arguments $# : $*
+dbg_var BASH_SOURCE[0]
+dbg_var CLE_RC
 
 # ensure bash session will be sourced with this rcfile
+#: CLE can be executed as a regular script but such it wouldn't work
+#: following condition recognizes this and re-executes bash with the same
+#: file as resource script
 [[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
+dbg_echo
+dbg_echo CLE resource init begins!
 
 # who I'm
+#: determine username that will be inherited over the all
+#: subsquent sessions initiated with ssg and su* wrappers
+#: the regexp extracts username from following patterns:
+#: - /any/folder/.cle-username/rcfile
+#: - /any/folder/.config/cle-username/rcfile
+#: - /any/folder/.config/cle/username/rcfile
+#: important is the dot (hidden folder), word 'cle' and darh or slash
 _N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
+dbg_var CLE_USER
 
 # short hostname: remove domain, leave subdomains
 CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
@@ -64,17 +92,23 @@ CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
 # check first run
+#: check if CLE has been initiated manually from downloaded file
 _N=$HOME/.cle-$CLE_USER
+dbg_var _N
 CLE_TRANS=mv	# default transition method (move files)
 case $CLE_RC in
 */clerc*)        # started manually from downloaded file
 	echo $CLE_VER
 	CLE_WS=$CLE_SHN
+	#: rc1 is temporarily used to prevent overwriting original rc file
+	#: CLE_1 is also used to indicate first run
 	CLE_1=$_N/rc1
 	mkdir -m 755 -p $_N
 	cp $CLE_RC $CLE_1
 	CLE_RC=$CLE_1
 	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
+	dbg_echo First run, changing some values:
+	dbg_var CLE_RC
 	;;
 */.clerc)	# started right after upgrade from older release - 'cle update' transition
 	mkdir -m 755 -p $_N # transition
@@ -97,19 +131,34 @@ case $CLE_RC in
 esac
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
 CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+dbg_var CLE_RH
+dbg_var CLE_RD
+dbg_var CLE_RC
 
 # find writable folder
+#: there can be real situation where a remote account is restricted and have no
+#: home folder. In such case CLE can be started from /tmp. Also, after su*
+#: wrapper the folder containing main resource file can be and usually will be
+#: in different place than current home.
+#: Simply to say, this sequence ensures customized configuration for every
+#: account accessed with CLE.
 _D=$HOME
 [ -w $_D ] || _D=/tmp/$USER
 CLE_D=$_D/$CLE_RD
 CLE_CF=$CLE_D/cf
+dbg_var _D
+dbg_var CLE_D
 mkdir -m 755 -p $CLE_D
+dbg_echo
 
 # tweak file with same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
+dbg_var _I
+dbg_var CLE_TW
 
 # RedH to Nova transition hacks stage 2
+dbg_var CLE_TRANS # transition mode
 [ -f $_D/.clecf-$CLE_USER ] && $CLE_TRANS -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: $CLE_TRANS config file
 [ -f $_D/.aliases-$CLE_USER ] && $CLE_TRANS -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: $CLE_TRANS aliases
 [ -d $_D/.cle -a $CLE_TRANS = 'mv' ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle - deactivated, saved into $HOME/dotcle-old
@@ -136,6 +185,7 @@ _Ce=`tput setab 1;tput setaf 7` # err highlight
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
 _clexe () {
+	dbg_echo clexe $*
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1 ]] && return
 	CLE_EXE=$CLE_EXE:$1
@@ -195,6 +245,8 @@ _cle_r () {
 }
 
 # new prompt escapes
+#: library of enhanced prompt escape codes
+#: they are introduced with % sign
 _pesc () (
 	C=_C$1
 	P=CLE_P$1
@@ -209,6 +261,8 @@ _pesc () (
 )
 
 # prompt composer
+#: compile PS1 string from values in $CLE_COLOR and $CLE_Px
+#: Note this function is self-documented!
 _setp () {
 	local CC I CI
 	case "$CLE_CLR" in 
@@ -244,6 +298,11 @@ _setp () {
 }
 
 # prompt callback
+#: This is what you see...
+#: As _prompt function is executed *every* time you push enter key its code
+#: should be as simple as possible. In best case all commands here should be
+#: bash internals. Those don't invoke new processes and as such they are much
+#: easier to system resources.
 _prompt () {
 	_E=$? # save return code
 	local N D T C OI=$IFS
@@ -265,6 +324,12 @@ _prompt () {
 PROMPT_COMMAND=_prompt
 
 # window title
+#: This is simple window title composer
+#: By 'simple' I mean it should be much improved in next version. Ideas:
+#: -compose full WT string into the variable and simplyfy corresponding part
+#:  in _prompt function
+#: -make decision based on different environments (shell window, text console,
+#:  screen session, maybe termux, etc...)
 _setwt () {
 	CLE_WT=''
 	[[ $TERM =~ linux ]] && return # no tits on console
@@ -273,6 +338,10 @@ _setwt () {
 }
 
 # filter for markdown files
+#: "Highly sophisticated" highlighter :-D
+#: Just replaces special strings in markdown files and augments the output
+#: with escape codes to highlight.
+#: Not perfect, but it helps and is simple, isn't it?
 mdfilter () {
 	sed -e "s/^###\(.*\)/$_CL\1$_CN/"\
 	 -e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/"\
@@ -352,6 +421,8 @@ aa () {
 ##
 ## History tools
 ## -------------
+#: Following settings should not be edited, nor tweaked in other files.
+#: Mainly $HISTTIMEFORMAT - the rich history feature is dependent on it!
 HISTFILE=$_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
@@ -368,7 +439,7 @@ h () (
 
 ## hh [opt] [srch] -- rich history viewer
 hh () (
-	unset IFS	
+	unset IFS	#: necessary if user manipulates with IFS value
 	while getopts "cstdlf" O;do
 		case $O in
 		s) ONLY0=1;; ## hh -s           -- print successful commands only
@@ -408,6 +479,8 @@ hh () (
 
 
 # rich history record
+#: used to record session init into rich history
+#: TODO: think and edit this function
 _rhlog () {
 	date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [$*]" >>$CLE_HIST
 }
@@ -417,6 +490,19 @@ _rhlog () {
 ## ----------------
 
 # environment packer
+#: grab *active* resource file, tweak file, pack it to tarball and store
+#: into variable C64 as base64 encoded string (I've never owned that Commodore :-)
+#: Argument ($1) may contain additional suffix to filenames
+#: Second outcome of _clepak is value in $RC - relative path to the resource 
+#: file that should be run on remote system (it may contain the suffix)
+#: Note: configuration is not packed in order to ensure unique cf on all
+#:  remote accounts.
+#: Note 2: _clepak is defined with curly brackets {} to pass variables RC and C64
+#:  On the other side ssg is defined with () enasirng execution in own context
+#:  where all new variables are local only to ssg (and _clepak)
+#: Note 3: _clepak is fuction even if it is used only once and could be
+#:  included directly into ssg. However, this allows to create any other
+#:  remote access wrapper
 _clepak () {
 	cd $CLE_RH
 	RC=$CLE_RD/`basename $CLE_RC`
@@ -427,14 +513,20 @@ _clepak () {
 		cp $CLE_TW $TW 2>/dev/null
 	fi
 	RCS="$RC $TW"
+	dbg_var RCS
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
 }
 
 ## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
+	#: on CLE workstation, suffix to resource filename is added
+	#: this 1. prevents overwriting on destination accounts
+	#:  and 2. provides information about source of the session
 	S=${CLE_WS:+-$CLE_WS} # suffix to rc filename
+	dbg_var S
 	_clepak $S
+	dbg_var RC
 	`command which ssh` -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
 		mkdir -m 755 -p \$_H; cd \$_H
@@ -442,12 +534,18 @@ ssg () (
 		exec $RC"
 )
 
+#: Following are su* wrappers of different kinds including kerberos
+#: version 'ksu'. They are basically simple, you see. Environment is not
+#: packed and transferred when using them. Instead the original files from
+#: user's home folder are used.
 ## sudd [user]     -- sudo wrapper; root is the default account
 sudd () (
 	sudo -i -u ${1:-root} $CLE_RC
 )
 
 ## suu [user]      -- su wrapper
+#: known issue - on debian systems controlling terminal is detached in case 
+#: a command ($CLE_RC) is specified, use 'sudd' instead
 suu () (
 	su -l ${1:-root} $CLE_RC
 )
@@ -459,13 +557,20 @@ ksuu () (
 
 ## scrn [name]     -- gnu screen wrapper, join your recent session or start new
 ## scrn -j [name]  -- join other screen sessions, ev. search by name
+#: GNU screen wrapper is here 1) because of there was no way to tell screen
+#: program to start CLE on more than first window and, 2) to allow easily
+#: join detached own session and/or join cooperative session with more
+#: participants.
 scrn () (
+	#: name of the screen to search and join
 	NM=$CLE_USER${1:+-$1}
 	[ "$1" = -j ] && NM=${2:-.}
+	#: list all screens with that name and find how many of them are there
 	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
 	NS=`wc -w <<<$SCRS`
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
+		#: prepare to start new session
 		SCF=$CLE_D/screenrc
 		SN=$TTY-CLE.$NM
 		_rhlog screen -S $SN
@@ -474,6 +579,7 @@ scrn () (
 	else
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
+			#: we found more screens with simiilar names, choose one!
 			printb "${_CU}Current '$NM' sessions:"
 			PS3="$_CL choose # to join: $_CN"
 			select SN in $SCRS;do
@@ -481,12 +587,20 @@ scrn () (
 			done
 		fi
 		_rhlog screen -x $SN
+		#: first send message to other screen, then join the session
 		screen -S $SN -X echo "$CLE_USER joining"
 		screen -x $SN
 	fi
 )
 
 # screenrc generator
+#: This generates nice configuration file with cool features:
+#:  - always visible status line with list of windows, hostname and clock
+#:  - feature to quickly switch using Ctrl+Left/Right Arrows
+#:  - reads good old $HOME/.screenrc
+#: Own screenrc file is necessary because otherwise it wouldn't start CLE in
+#: subsequent windows created with 'C-a C-c' (note the bind commands, above
+#: mentioned features are cool but this part is the important one)
 _scrc () {
 cat <<-EOS
 	altscreen on
@@ -606,6 +720,8 @@ cle () {
 		rm -f $CLE_CF
 		cle reload;;
 	mod)	## cle mod         -- cle module management
+		#: this is just a fallback to initialize modularity
+		#: downloaded cle-mod overrides this code
 		ask Activate CLE modules? || return
 		I=cle-mod
 		MM=$CLE_D/$I
@@ -627,6 +743,11 @@ cle () {
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C;;
 	"")	_clebanner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
+# DEBUG
+	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;; #debug
+	debug)	CLE_DEBUG=$1; dbg_var CLE_DEBUG;; #debug
+	pak)	_clepak "$@" ; base64 -d <<<$C64| tar tzvf -;; #debug
+# DEBUG
 	*)	echo unimplemented: cle $C
 		echo check cle help
 		return 1
