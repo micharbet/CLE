@@ -11,6 +11,12 @@
   2. no highlighting inside the code block
   (if it is even possible on **all** flavors of 'sed')
 
+- This might be another big change: rework rich history
+  * dependency on $HISTTIMEFORMAT='%Y-%m-%d %T', maybe epoch time would be better
+  * more info about command: +running time
+  * the `hh` function is quite ugly
+  * new module to convert previous history into rich file (with some info missing)
+
 ## Features, not a bugs!
 - rich history is updated after command finishes beacuse we need return code!
 - `suu` on debian based systems starts shell without controlling terminal

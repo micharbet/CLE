@@ -3,7 +3,7 @@
           Really!!
 
 - Watch & Star the project on Gitlab https://github.com/micharbet/CLE
-- Like and foolow: https://www.facebook.com/CommandLiveEnv/
+- Like and foolow: https://www.facebook.com/CommandLive
 - Repurt bugs
-- Donate at PayPal (micharbet@gmail.com)
+- Donate a beer(PayPal: micharbet@gmail.com)
 
