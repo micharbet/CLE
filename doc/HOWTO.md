@@ -20,7 +20,7 @@ startup resource scripts.
   cle deploy
 ```
 
-You can as well run clerc as a regular script e.g.:
+You can as well run clerc as a regular script with the same effect:
 
 ```
   chmod 755 clerc

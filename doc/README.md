@@ -46,7 +46,7 @@ section.
 ### ssg utility (ssh wrapper)
 
 The CLE is able to pass itself over ssh. Use `ssg` wrapper instead of regular
-'ssh' for login into remote account and CLE will be copied over and started
+'ssh' for login into remote account and CLE will be copied over then started
 seamlessly:
 
     `ssg username@remote.host`
@@ -69,6 +69,7 @@ to switch between windows.
 
 ### Other utilities
 - `aa`  manages aliases
+- `h`   colorizes regular history
 - `hh`  makes history searches easier
 - `cle` the most important one - this is the command and control center
       of the environment. Issue `cle help` to read more.
