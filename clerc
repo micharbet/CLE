@@ -76,6 +76,8 @@ case $CLE_RC in
 	CLE_RC=$CLE_1
 	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
 	;;
+# this section converts configuration files of older release upon transition to Nova
+# all lines containig the word 'transition' will be removed in next release
 */.clerc)	# started right after upgrade from older release - 'cle update' transition
 	mkdir -m 755 -p $_N # transition
 	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
@@ -124,10 +126,11 @@ _CV=`tput rev`
 _I=0; for _N in k r g y b m c w; do
         _C=`tput setaf $_I`
         declare _C$_N=$_CN$_C
-        declare _C$(tr a-z A-Z <<<$_N)=$_CL$_C #bold
+        declare _C$(tr a-z A-Z <<<$_N)=$_CL$_C
         ((_I+=1))
 done
 _Ce=`tput setab 1;tput setaf 7` # err highlight
+
 
 #
 # Internal helper functions
@@ -159,8 +162,8 @@ cat <<EOT
 
    ___| |     ____|  Command Live Environment activated
   |     |     __|    ...bit of life to the command line
-  |     |     |      Learn more:$_CL cle help$_CN
- \____|_____|_____| $_CL less $CLE_RC$_CN to discover the magic
+  |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
+ \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
  
 EOT
 }
@@ -194,7 +197,7 @@ _cle_r () {
 	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
 }
 
-# new prompt escapes
+# additional prompt escapes
 _pesc () (
 	C=_C$1
 	P=CLE_P$1
@@ -549,7 +552,6 @@ EOT
 ## ---------------------
 cle () {
 	local C I MM BRC NC
-	# find & run cle_* enhancement
 	C=$1;shift
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
@@ -633,7 +635,7 @@ cle () {
 	esac
 }
 
-# remove disturbing stuff
+# remove temporary stuff
 unset SUDO_COMMAND _D _I _N _C
 fi
 # that's all folks...

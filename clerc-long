@@ -44,6 +44,9 @@
 
 # check running as interactive session otherwise CLE is not needed
 # also required for scp compattibility
+#: Note: scp is sensitive to unexpected strings printed on stdout,
+#: that means you should avoid printing anything unnecessary onto
+#: non interactive sessions.
 if [ -t 0 -a -z "$CLE_EXE" -a -z "$BASH_EXECUTION_STRING" ];then
 # warning: magic inside!
 
@@ -110,6 +113,8 @@ case $CLE_RC in
 	dbg_echo First run, changing some values:
 	dbg_var CLE_RC
 	;;
+# this section converts configuration files of older release upon transition to Nova
+# all lines containig the word 'transition' will be removed in next release
 */.clerc)	# started right after upgrade from older release - 'cle update' transition
 	mkdir -m 755 -p $_N # transition
 	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
@@ -129,6 +134,7 @@ case $CLE_RC in
 	CLE_WS=$CLE_SHN
 	;;
 esac
+#: $CLE_RH/$CLE_RD together gives folder with resource and tweak file
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
 CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 dbg_var CLE_RH
@@ -165,18 +171,25 @@ dbg_var CLE_TRANS # transition mode
 [ $CLE_TRANS = 'mv' ] && rm -f $_D/.cleusr-$CLE_USER* $_D/.screenrc-$CLE_USER* $_D/.clerc-remote-$CLE_USER* $_D/.aliases-$CLE_USER* $_D/clerc-* 2>/dev/null # transition: debris removal
 
 # color table
+#: initialize $_C* variables with terminal compatible escape sequences
+#: following are basic ones:
 _CN=`tput sgr0`
 _CL=`tput bold`
 _CU=`tput smul`;_Cu=`tput rmul`
 _CD=`tput dim`
 _CV=`tput rev`
+#: The loop creates table of color codes r, g, b...
+#: lower case is for dim variant, upper case stands for bright
+#: try e.g 'echo $_Cg green $_CY bright yellow'
 _I=0; for _N in k r g y b m c w; do
         _C=`tput setaf $_I`
         declare _C$_N=$_CN$_C
-        declare _C$(tr a-z A-Z <<<$_N)=$_CL$_C #bold
+        declare _C$(tr a-z A-Z <<<$_N)=$_CL$_C
         ((_I+=1))
 done
+#: and... special color code for error highlight in prompt
 _Ce=`tput setab 1;tput setaf 7` # err highlight
+
 
 #
 # Internal helper functions
@@ -209,8 +222,8 @@ cat <<EOT
 
    ___| |     ____|  Command Live Environment activated
   |     |     __|    ...bit of life to the command line
-  |     |     |      Learn more:$_CL cle help$_CN
- \____|_____|_____| $_CL less $CLE_RC$_CN to discover the magic
+  |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
+ \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
  
 EOT
 }
@@ -244,7 +257,7 @@ _cle_r () {
 	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
 }
 
-# new prompt escapes
+# additional prompt escapes
 #: library of enhanced prompt escape codes
 #: they are introduced with % sign
 _pesc () (
@@ -261,8 +274,9 @@ _pesc () (
 )
 
 # prompt composer
+#: This is what you see...
 #: compile PS1 string from values in $CLE_COLOR and $CLE_Px
-#: Note this function is self-documented!
+#: Note how this function is self-documented!
 _setp () {
 	local CC I CI
 	case "$CLE_CLR" in 
@@ -298,7 +312,6 @@ _setp () {
 }
 
 # prompt callback
-#: This is what you see...
 #: As _prompt function is executed *every* time you push enter key its code
 #: should be as simple as possible. In best case all commands here should be
 #: bash internals. Those don't invoke new processes and as such they are much
@@ -438,6 +451,11 @@ h () (
 )
 
 ## hh [opt] [srch] -- rich history viewer
+#: Rich history viewer is a stream of filters
+#: 1 - selects history records based on search criteria
+#: 2 - extracts required information from selected lines
+#: 3 - output (directly to stdout or to 'less')
+#: the code is ...i'd say ugly, to be honest
 hh () (
 	unset IFS	#: necessary if user manipulates with IFS value
 	while getopts "cstdlf" O;do
@@ -452,6 +470,8 @@ hh () (
 	esac;done
 	shift $((OPTIND-1))
 	F1=${*:-${NUM:-100}}	## hh [opt]        -- no search; print recent 100 items
+	#:
+	#: Filter #1 (search by options  -t -d and/or string)
 	grep -w "$THIS" $CLE_HIST | case $F1 in  #FILTER1 (search)
 	0)	## hh [opt] 0      -- print all
 		cat;;
@@ -461,17 +481,24 @@ hh () (
 	*)	## hh [opt] string -- search in history
 		grep "$*"
 	esac | while read -r D T U E P C;do #FILTER2 (format)
+	 #:
+	 #: Filter #2:
+	 #:  - process option -f (visited folders)
 	 if [ $FMODE ]; then
 		[[ $P =~ ^/ ]] && echo $P
 		continue
 	 fi
+	 #:  - process option -s (show only succeccsul commands)
 	 [ $E != 0 -a "$ONLY0" ] && continue
+	 #:  - colorize return code
 	 case $E in
 	 0)	EE=$_Cg;;
 	 @)	EE=$_Cc;;
 	 *)	EE=$_Cr
 	 esac
+	 #:  - hihglight commeted-out lines
 	 [[ "$C" =~ ^# ]] && { E='#';EE=$_Cy;C=$_Cy$C$_CN;}
+	 #:  - process option -c (otuput just command without other info)
 	 [ "$ONLYC" ] && { [ $E = @ ] || echo $C;} ||\
 		echo "$_Cb$D $T $_CB$U $EE$E $_CN$P $_CL$C$_CN"
 	done | eval "${OUTF:-cat}" #FILTER3 (output)
@@ -480,7 +507,6 @@ hh () (
 
 # rich history record
 #: used to record session init into rich history
-#: TODO: think and edit this function
 _rhlog () {
 	date "+$HISTTIMEFORMAT$CLE_USER-$$ @ $TTY [$*]" >>$CLE_HIST
 }
@@ -491,7 +517,7 @@ _rhlog () {
 
 # environment packer
 #: grab *active* resource file, tweak file, pack it to tarball and store
-#: into variable C64 as base64 encoded string (I've never owned that Commodore :-)
+#: into variable C64 as base64 encoded string.
 #: Argument ($1) may contain additional suffix to filenames
 #: Second outcome of _clepak is value in $RC - relative path to the resource 
 #: file that should be run on remote system (it may contain the suffix)
@@ -514,6 +540,7 @@ _clepak () {
 	fi
 	RCS="$RC $TW"
 	dbg_var RCS
+	#:  I've never owned this computer, I had Atari 800XL :)
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
 }
 
@@ -551,6 +578,7 @@ suu () (
 )
 
 ## ksuu [user]     -- ksu wrapper
+#: Kerberized version of 'su'
 ksuu () (
 	ksu ${1:-root} -a -c $CLE_RC
 )
@@ -562,7 +590,8 @@ ksuu () (
 #: join detached own session and/or join cooperative session with more
 #: participants.
 scrn () (
-	#: name of the screen to search and join
+	#: get name of the screen to search and join
+	#: base of session name is $CLE_USER and this can be extended
 	NM=$CLE_USER${1:+-$1}
 	[ "$1" = -j ] && NM=${2:-.}
 	#: list all screens with that name and find how many of them are there
@@ -570,13 +599,14 @@ scrn () (
 	NS=`wc -w <<<$SCRS`
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
-		#: prepare to start new session
+		#: No session with given name found, prepare to start new session
 		SCF=$CLE_D/screenrc
 		SN=$TTY-CLE.$NM
 		_rhlog screen -S $SN
 		_scrc >$SCF
 		screen -c $SCF -S $SN $CLE_RC
 	else
+		#: is there only one such session or more?
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
 			#: we found more screens with simiilar names, choose one!
@@ -587,7 +617,7 @@ scrn () (
 			done
 		fi
 		_rhlog screen -x $SN
-		#: first send message to other screen, then join the session
+		#: send message to other screen, then join the session
 		screen -S $SN -X echo "$CLE_USER joining"
 		screen -x $SN
 	fi
@@ -623,11 +653,14 @@ EOS
 _clexe /etc/profile
 _clexe $HOME/.bashrc
 
+#: Note that default aliases are always renewed
+#: That's because there are system dependencies
 _clexe $CLE_ALI
 _defalias
 
 PROMPT_DIRTRIM=2
 shopt -s checkwinsize
+#: Enhnace PATH by user's own bin folder
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 # completion
@@ -663,8 +696,9 @@ EOT
 ## ---------------------
 cle () {
 	local C I MM BRC NC
-	# find & run cle_* enhancement
 	C=$1;shift
+	#: find if there is additional function or module installed and
+	#: execute that code
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
 		return $?
@@ -672,6 +706,7 @@ cle () {
 		. $CLE_D/cle-$C $*
 		return $?
 	fi
+	#: execute 'cle' subcommand
 	case "$C" in
 	color)	## cle color COLOR -- set prompt color
 		CLE_CLR=$1
@@ -721,7 +756,8 @@ cle () {
 		cle reload;;
 	mod)	## cle mod         -- cle module management
 		#: this is just a fallback to initialize modularity
-		#: downloaded cle-mod overrides this code
+		#: downloaded cle-mod overrides this code (see the beginning
+		#: of 'cle' function)
 		ask Activate CLE modules? || return
 		I=cle-mod
 		MM=$CLE_D/$I
@@ -754,7 +790,7 @@ cle () {
 	esac
 }
 
-# remove disturbing stuff
+# remove temporary stuff
 unset SUDO_COMMAND _D _I _N _C
 fi
 # that's all folks...
