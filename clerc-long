@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-04-01 (Nova)
+#* version: 2018-04-20 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -574,7 +574,9 @@ sudd () (
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'sudd' instead
 suu () (
-	su -l ${1:-root} $CLE_RC
+	S=
+	[[ $OSTYPE =~ [Ll]inux ]] && S="-s $BASH"
+	eval su -l $S ${1:-root} $CLE_RC
 )
 
 ## ksuu [user]     -- ksu wrapper
