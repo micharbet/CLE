@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-04-20 (Nova)
+#* version: 2018-04-24 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -554,10 +554,11 @@ ssg () (
 	dbg_var S
 	_clepak $S
 	dbg_var RC
-	`command which ssh` -t $* "
+	command ssh -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
+		[ $OSTYPE = darwin ] && _D=D || _D=d
 		mkdir -m 755 -p \$_H; cd \$_H
-		echo -n $C64|base64 --decode|tar xzf -;
+		echo -n $C64|base64 -\$_D |tar xzf -;
 		exec $RC"
 )
 
