@@ -1,11 +1,11 @@
 ##
-## mod-alifun: bash aliases and functions management
-## -------------------------------------------------
-#* version: 2017-09-25
+## mod-alifun: more aliases and functions
+## --------------------------------------
+#* version: 2018-04-30
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2017 by Michael Arbet 
+#* Copyright (C) 2017,2018 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -14,13 +14,16 @@
 
 ## fed funcname       -- edit function
 fed () {
-	local FUNDIR=~/functions
-	local FF=$FUNDIR/f-$1
-
+	local FF=$CLE_D/fun-$1
 	[ $1 ] || { echo "fed: missing function_name"; return 1; }
-	mkdir -p $FUNDIR
 	declare -f $1 >$FF   # grab function
 	vi $FF               # edit
 	. $FF                # re-inplement
 }
+
+# load functions upon startup
+for F in $CLE_D/fun-*; do
+	_clexe $F
+done
+
 

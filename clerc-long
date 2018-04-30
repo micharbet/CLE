@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-04-24 (Nova)
+#* version: 2018-05-01 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -33,7 +33,7 @@
 # -use 'h' as a shortcut to classic history
 # -check out rich history feature with 'hh'
 # -built-in documentation: 'cle help'
-# -update from GIT source
+# -online update from GIT
 
 #: If you're reading this text, you probably downloaded commented version
 #: of CLE named clerc-long. That is basically fine if you want to check how
@@ -643,9 +643,9 @@ cat <<-EOS
 	# change window with ctrl-left/right
 	bindkey "^[[1;5D" prev
 	bindkey "^[[1;5C" next
-	defscrollback 3000
+	defscrollback 9000
 	hardstatus alwayslastline 
-	hardstatus string '%{= Kk} %-w%{+u KC}%n %t%{-u Kk}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
+	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
 	source $HOME/.screenrc
