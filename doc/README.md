@@ -17,7 +17,7 @@ CLE adds following functionalitiesi to bash:
  
 
 
-## CLE setup and usage
+## 1. CLE setup and basic usage
 
 All the mentioned functionality is encoded into _single file_ and no other
 executables are needed. Run this file either sourcing into the current shell
@@ -77,7 +77,7 @@ to switch between windows.
 Read HOWTO.md and other documents to find out more about this environment.
 
 
-## Compatibility
+## 2. Compatibility
 
 CLE has been tested on various systems containing bash version 3.x and 4.x
 and different flavors of basic utilities (GNU vs. BSD) High attention was paid
@@ -106,7 +106,7 @@ It also works well with at least following terminal emulators:
 
 
 
-## Requirements
+## 3. Requirements
 
 Generaly basic OS installation should be sufficient. Some systems might however
 require to add missing utilities. Those really necessary are:
@@ -119,7 +119,7 @@ require to add missing utilities. Those really necessary are:
 
 
 
-## Why 'CLE' and bit of history
+## 4. Why 'CLE' and bit of history
 
  CLE was developed over years of work in command line, where I always tried
 to have easily distinguished prompt. It has been possible to accomplish
@@ -158,7 +158,7 @@ source code.
 
 
 
-## LICENSE
+## 5. LICENSE
  This program is free software; you can redistribute it and/or
  modify it under the terms of the GNU General Public License
  as published by the Free Software Foundation; either version 2

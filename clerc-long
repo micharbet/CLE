@@ -709,7 +709,7 @@ cle () {
 		. $CLE_D/cle-$C $*
 		return $?
 	fi
-	#: execute 'cle' subcommand
+	#: execute built-in 'cle' subcommand
 	case "$C" in
 	color)	## cle color COLOR -- set prompt color
 		CLE_CLR=$1

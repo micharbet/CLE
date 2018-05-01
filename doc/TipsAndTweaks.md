@@ -8,7 +8,14 @@
 This document presents useful ideas how to customize CLE to your very own
 preferences. Some tips may require to install additional software.
 
-## Prompting
+## Content
+1. Prompting
+2. Installation tweaks
+3. Startup tweaks
+4. How to enhance CLE
+
+
+## 1. Prompting
 The first thing you may want to customize. Go beyond just color change!
 
 ### Nice double line prompt
@@ -66,7 +73,7 @@ below) and alter color table with following lines:
 ```
 
 
-## CLE setup tweaks
+## 2. Installation tweaks
 
 ### Deploying for user root
 
@@ -137,7 +144,7 @@ More about modules in dedicated document.
 
 
 
-## Startup tweaks
+## 3. Startup tweaks
 
 Always customize CLE using one of tweak files. Avoid editing .clerc whenever
 posible. Besides modules described in separate document, CLE finds and executes
@@ -264,7 +271,7 @@ Bash 3 and older. Keep that in mind.
 
 
 
-## How to enhance CLE
+## 4. How to enhance CLE
 
 CLE is highly extensible. Did I tell this? really? Well, you can add new
 fuctions, replace existing ones or add more functionality into 'cle'
