@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-05-01 (Nova)
+#* version: 2018-05-02 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -49,7 +49,7 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 
 # ensure bash session will be sourced with this rcfile
-[[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
+[[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
 
 # who I'm
 _N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
@@ -73,6 +73,7 @@ case $CLE_RC in
 	CLE_1=$_N/rc1
 	mkdir -m 755 -p $_N
 	cp $CLE_RC $CLE_1
+	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
 	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
 	;;
@@ -265,7 +266,6 @@ _prompt () {
 	_HO=$_H
 	IFS=$OI
 }
-PROMPT_COMMAND=_prompt
 
 # window title
 _setwt () {
@@ -512,14 +512,15 @@ EOS
 }
 
 # session startup
-_clexe /etc/profile
-_clexe $HOME/.bashrc
+[[ $0 =~ ^- ]] || { _clexe /etc/profile; _clexe $HOME/.bashrc; }
 
 _clexe $CLE_ALI
 _defalias
 
 PROMPT_DIRTRIM=2
+PROMPT_COMMAND=_prompt
 shopt -s checkwinsize
+
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 # completion
@@ -577,19 +578,18 @@ cle () {
 	title)	## cle title [off] -- toggle window title
 		[ "$1" = off ] && CLE_WT='' || _setwt;;
 	deploy) ## cle deploy      -- hook CLE into user's profile
+		cp $CLE_RC $CLE_D/rc
+		CLE_RC=$CLE_D/rc
+		unset CLE_1
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
 		grep -A1 "$I" $BRC && printb CLE is already hooked in .bashrc && return 1
 		ask "Do you want to add CLE to .bashrc?" || return
-		cp $CLE_RC $CLE_D/rc
-		CLE_RC=$CLE_D/rc
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $BRC
-		unset CLE_1
 		cle reload;;
 	update) ## cle update      -- install fresh version of CLE
 		NC=$CLE_D/rc.new
 		curl -k $CLE_SRC/clerc >$NC
-		chmod 755 $NC
 		C=`sed -n 's/^#\* version: //p' $NC`
 		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
