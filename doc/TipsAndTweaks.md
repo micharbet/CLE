@@ -206,9 +206,8 @@ with oyur own code. Doing this is easy and tricky at the same time. You need
 to ensure the new code serves the same purpose. 
 
 In this example you will override _defcf function that by default resets the
-prompt settings to scheme 'marley' Instead you might want to define your own
-default colors and strings in order to avoid manual prompt setup on each new
-account.
+prompt settings to scheme 'marley' You might want to define your own default
+colors and strings in order to avoid manual prompt setup on each new account.
 
 Add following code into the tweak file:
 ```

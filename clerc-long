@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-05-02 (Nova)
+#* version: 2018-05-11 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -102,11 +102,9 @@ _N=$HOME/.cle-$CLE_USER
 dbg_var _N
 CLE_TRANS=mv	# default transition method (move files)
 case $CLE_RC in
-*/clerc*)        # started manually from downloaded file
-	echo $CLE_VER
-	CLE_WS=$CLE_SHN
-	#: rc1 is temporarily used to prevent overwriting original rc file
-	#: CLE_1 is also used to indicate first run
+*/clerc*) # started manually from downloaded file
+	#: CLE_1 indicates first run (downloaded file started from comandline)
+	#: 'rc1' prevents accidental overwrite of deployed environment
 	CLE_1=$_N/rc1
 	mkdir -m 755 -p $_N
 	cp $CLE_RC $CLE_1
@@ -123,19 +121,12 @@ case $CLE_RC in
 	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
 	CLE_RC=$_N/rc # transition
 	mv $HOME/.cleusr-$CLE_USER $_N/tw.old && echo "CLE transition: found tweak file .cleusr-$CLE_USER, saved to $_N/tw.old (deactivated)."
-	CLE_WS=$CLE_HN # transition
 	# transition hack: change hook in .bashrc
 	cp .bashrc bashrc.bk	# transition: bashrc
 	sed "/\.clerc/s:.*:[ -f $CLE_RC ] \&\& . $CLE_RC:" .bashrc >bashrc.sed #transition
 	mv bashrc.sed .bashrc # transition
 	echo "CLE transition: .bashrc edited: "; grep -A1 "Command Live" .bashrc
 	;; # transition after update end
-*/rc-*)  # on remote
-	CLE_WS=
-	;;
-*/rc*)    # workstation, started upon login
-	CLE_WS=$CLE_SHN
-	;;
 esac
 #: $CLE_RH/$CLE_RD together gives folder with resource and tweak file
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
@@ -163,7 +154,8 @@ dbg_echo
 # tweak file with same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
-dbg_var _I
+CLE_WS=${_I:1}	#: remove first character that might be '1' or '-'
+dbg_var CLE_WS
 dbg_var CLE_TW
 
 # RedH to Nova transition hacks stage 2
@@ -233,8 +225,12 @@ EOT
 
 # default config
 _defcf () {
-	CLE_CLR=marley
-	[ $UID = 0 ] && CLE_CLR=red
+	case $USER@$CLE_WS in
+	root@)	CLE_CLR=red;;	#: root on workstation
+	root@*) CLE_CLR=RbB;;	#: root on remote session
+	*@) CLE_CLR=marley;;	#: user on workstation
+	*@*) CLE_CLR=blue;;	#: user on remote session
+	esac
 	CLE_P0='%e \A'
 	CLE_P1='\u'
 	CLE_P2='%h'
@@ -552,7 +548,8 @@ ssg () (
 	#: on CLE workstation, suffix to resource filename is added
 	#: this 1. prevents overwriting on destination accounts
 	#:  and 2. provides information about source of the session
-	S=${CLE_WS:+-$CLE_WS} # suffix to rc filename
+	S= #: resource suffix is empty on remote sessions...
+	[ $CLE_WS ] || S=-$CLE_SHN #: ...gains value only on WS
 	dbg_var S
 	_clepak $S
 	dbg_var RC

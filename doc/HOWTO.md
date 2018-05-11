@@ -207,11 +207,11 @@ and work in shell with its default/poor settings.
 ### Use following commands to initiate CLE sessions:
 
 - `ssg [ssh-options] [account@]remote.host`
-This command is in fact 'ssh' wrapper that packs whole CLE - copies rc file
-to remote host and runs bash session with the transferred environment.
-New folder is created on remote systems ($CLE_RD) where the rc itself (renamed
-to rc-$CLE_WS) and local configuration are stored. This folder is by default
-created in home directory but there might be a case where a user has no home.
+This command is in fact 'ssh' wrapper that packs whole CLE - creates copy of rc
+file on remote host and runs bash session with the transferred environment.
+New folder ($CLE_RD) is created on remote system with resource file renamed to
+to 'rc-$CLE_WS' plus local configuration. This folder is by default created
+in home directory however there might be a case where the user has no home.
 If so, the $CLE_RD is created in /tmp.
 By default the $CLE_RD is following: .cle-$CLE_USER
 
@@ -447,7 +447,7 @@ shows values in main variable set and following is their description:
 - `CLE_RH`    home directory part of path to resource file.
 - `CLE_TW`    custom tweak file
 - `CLE_CF`    path to configuration file
-- `CLE_WS`    contains hostname if started on workstation
+- `CLE_WS`    contains workstation's hostname on remote session
 - `CLE_CLR`   prompt color scheme
 - `CLE_Pn`    prompt-parts strings defined with command `cle p0 .. cle p3`
 - `CLE_WT`    string to be terminal window title

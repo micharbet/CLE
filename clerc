@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-05-02 (Nova)
+#* version: 2018-05-11 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -67,9 +67,7 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 _N=$HOME/.cle-$CLE_USER
 CLE_TRANS=mv	# default transition method (move files)
 case $CLE_RC in
-*/clerc*)        # started manually from downloaded file
-	echo $CLE_VER
-	CLE_WS=$CLE_SHN
+*/clerc*) # started manually from downloaded file
 	CLE_1=$_N/rc1
 	mkdir -m 755 -p $_N
 	cp $CLE_RC $CLE_1
@@ -84,19 +82,12 @@ case $CLE_RC in
 	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
 	CLE_RC=$_N/rc # transition
 	mv $HOME/.cleusr-$CLE_USER $_N/tw.old && echo "CLE transition: found tweak file .cleusr-$CLE_USER, saved to $_N/tw.old (deactivated)."
-	CLE_WS=$CLE_HN # transition
 	# transition hack: change hook in .bashrc
 	cp .bashrc bashrc.bk	# transition: bashrc
 	sed "/\.clerc/s:.*:[ -f $CLE_RC ] \&\& . $CLE_RC:" .bashrc >bashrc.sed #transition
 	mv bashrc.sed .bashrc # transition
 	echo "CLE transition: .bashrc edited: "; grep -A1 "Command Live" .bashrc
 	;; # transition after update end
-*/rc-*)  # on remote
-	CLE_WS=
-	;;
-*/rc*)    # workstation, started upon login
-	CLE_WS=$CLE_SHN
-	;;
 esac
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
 CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
@@ -111,6 +102,7 @@ mkdir -m 755 -p $CLE_D
 # tweak file with same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
+CLE_WS=${_I:1}	
 
 # RedH to Nova transition hacks stage 2
 [ -f $_D/.clecf-$CLE_USER ] && $CLE_TRANS -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: $CLE_TRANS config file
@@ -171,8 +163,12 @@ EOT
 
 # default config
 _defcf () {
-	CLE_CLR=marley
-	[ $UID = 0 ] && CLE_CLR=red
+	case $USER@$CLE_WS in
+	root@)	CLE_CLR=red;;	
+	root@*) CLE_CLR=RbB;;	
+	*@) CLE_CLR=marley;;	
+	*@*) CLE_CLR=blue;;	
+	esac
 	CLE_P0='%e \A'
 	CLE_P1='\u'
 	CLE_P2='%h'
@@ -436,7 +432,8 @@ _clepak () {
 ## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
-	S=${CLE_WS:+-$CLE_WS} # suffix to rc filename
+	S= 
+	[ $CLE_WS ] || S=-$CLE_SHN 
 	_clepak $S
 	command ssh -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
