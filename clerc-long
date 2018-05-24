@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-05-11 (Nova)
+#* version: 2018-05-24 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -667,8 +667,28 @@ shopt -s checkwinsize
 #: Enhnace PATH by user's own bin folder
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
-# completion
+# completions
+#: Command 'cle' completion
+#: as an addition, prompt strings are filled for convenience :)
+#: 'cle deploy' is hidden intentionaly as user should do it only on workstation
+_clecmp () {
+	local A=(color p1 p2 p3 time title mod env update reset reload doc help)
+	local C
+	COMPREPLY=()
+	case $3 in
+	p1) COMPREPLY="'$CLE_P1'";;
+	p2) COMPREPLY="'$CLE_P2'";;
+	p3) COMPREPLY="'$CLE_P3'";;
+	esac
+	[ $3 != $1 ] && return
+	for C in ${A[@]}; do
+		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
+	done
+	}
+complete -F _clecmp cle
+#: ssg uses the same completion as other network utilities
 declare -F _known_hosts >/dev/null && complete -F _known_hosts ssg
+
 
 # session record
 TTY=`tty|sed 's;[/dev];;g'`
