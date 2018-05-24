@@ -141,6 +141,9 @@ manual plus enhnacing percent escapes defined by CLE. Find their list below.
        cd /etc
        cd            # observe the $OLDPVD variable
 ```
+  HINT: `cle` uses completion and particularly for prompting it can insert
+    current prompt string so you don't have to define it from scratch or doing
+    copypaste. Just type e.g. following `cle p3` and press <TAB>
 
 - `cle color COLORCODE`
   Set prompt colors. Values of COLORCODE string can be chosen from predefined

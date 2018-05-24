@@ -530,7 +530,7 @@ _clecmp () {
 	p2) COMPREPLY="'$CLE_P2'";;
 	p3) COMPREPLY="'$CLE_P3'";;
 	esac
-	[ $3 != $1 ] && return
+	[ "$3" != "$1" ] && return
 	for C in ${A[@]}; do
 		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
 	done
