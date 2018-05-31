@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-05-24 (Nova)
+#* version: 2018-05-31 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -522,10 +522,11 @@ shopt -s checkwinsize
 
 # completions
 _clecmp () {
-	local A=(color p1 p2 p3 time title mod env update reset reload doc help)
+	local A=(color p0 p1 p2 p3 time title mod env update reset reload doc help)
 	local C
 	COMPREPLY=()
 	case $3 in
+	p0) COMPREPLY="'$CLE_P0'";;
 	p1) COMPREPLY="'$CLE_P1'";;
 	p2) COMPREPLY="'$CLE_P2'";;
 	p3) COMPREPLY="'$CLE_P3'";;
