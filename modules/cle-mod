@@ -1,7 +1,7 @@
 ##
 ## cle-mod: CLE module management
 ## ------------------------------
-#* version: 2018-03-30
+#* version: 2018-05-01
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -172,6 +172,8 @@ del)	## cle mod del [mod] -- delete module
 	printb ${_TU}CLE module management
 	echo "Repository:$_Cw $CLE_SRC$_CN"
 	echo "Local lib: $_Cw $CLE_D$_CN"
+	echo
+	cle help "cle mod"
 	;;
 help)
 	cle help "cle mod"

@@ -8,7 +8,14 @@
 This document presents useful ideas how to customize CLE to your very own
 preferences. Some tips may require to install additional software.
 
-## Prompting
+## Content
+1. Prompting
+2. Installation tweaks
+3. Startup tweaks
+4. How to enhance CLE
+
+
+## 1. Prompting
 The first thing you may want to customize. Go beyond just color change!
 
 ### Nice double line prompt
@@ -41,20 +48,19 @@ issue `cd -` or simple `-` to swap between PWD and OLDPWD.
 Add module 'git' and use new function 'gicwb':
 ```
    cle mod add git
-   cle p3 '\w%cy:$(gicwb) %cW>'
+   cle p3 '\w%cy:$(gicwb) %c3>'
 ```
-The `gicwb` simply executes `git symbolic-ref --short HEAD` whenever there
-is `.git` directory underneath. Note, this is not CLE feature! Pure bash is
-able to execute commands within prompt string if there is something like:
-`PS1='string $(the_command) other string'` In the example above there are 
-following items:
+New function `gicwb` simply executes `git symbolic-ref --short HEAD` whenever
+there is `.git` directory underneath. Following items are in the example above
 - `\w` stand for displaying of current working directory (regular bash)
 - `$cy` is CLE enhancement for switching to yellow color
 - `:` nothing more than a colon, just the character
 - `$(gicwb)` runs the function
-- `%cW` switch color to bright white
-- `>` prompt character, i do not like default dollar, feel free to use regular
-  bash's '\$' instead
+- `%c3` switch color back to defined for prompt part 3
+- `>` prompt character, instead default bash's '\$'
+
+Note, this is not CLE feature! Pure bash is able to execute commands within
+prompt string if the command is enclosed like following `$(cmd)`
 
 
 ### Change dark grey of status part
@@ -67,7 +73,7 @@ below) and alter color table with following lines:
 ```
 
 
-## CLE setup tweaks
+## 2. Installation tweaks
 
 ### Deploying for user root
 
@@ -138,7 +144,7 @@ More about modules in dedicated document.
 
 
 
-## Startup tweaks
+## 3. Startup tweaks
 
 Always customize CLE using one of tweak files. Avoid editing .clerc whenever
 posible. Besides modules described in separate document, CLE finds and executes
@@ -200,9 +206,8 @@ with oyur own code. Doing this is easy and tricky at the same time. You need
 to ensure the new code serves the same purpose. 
 
 In this example you will override _defcf function that by default resets the
-prompt settings to scheme 'marley' Instead you might want to define your own
-default colors and strings in order to avoid manual prompt setup on each new
-account.
+prompt settings to scheme 'marley' You might want to define your own default
+colors and strings in order to avoid manual prompt setup on each new account.
 
 Add following code into the tweak file:
 ```
@@ -265,7 +270,7 @@ Bash 3 and older. Keep that in mind.
 
 
 
-## How to enhance CLE
+## 4. How to enhance CLE
 
 CLE is highly extensible. Did I tell this? really? Well, you can add new
 fuctions, replace existing ones or add more functionality into 'cle'

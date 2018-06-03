@@ -1,6 +1,15 @@
 # Use modules to enhance CLE funcionality
 
-## What are modules
+## Content
+1. What are modules
+2. Module types
+3. How to use modules
+4. Modules repository
+5. List of basic available modules
+6. How to write your own cool stuff
+
+
+## 1. What are modules
 
 In addition to basic fuctionalities the CLE is in fact extensible framework.
 Various modules can be added to enhance or modify the environment. For example
@@ -16,7 +25,7 @@ Various types of modules can be found here as decribed in one of chapters
 below.
 
 
-## Module types
+## 2. Module types
 
 Two kinds of modules are available in CLE:
 - _mod-*_ this code is executed - sourced into bash upon each CLE sessio
@@ -44,7 +53,7 @@ Following chart provides overview of module types and their main properties
 ```
 
 
-## How to use modules
+## 3. How to use modules
 
 There is command `cle mod` that maintains modularity. This command is sort of
 special. When you inspect clerc you can find corresponding section within `case`
@@ -76,12 +85,12 @@ are still in memory of sessions started before removal. In other words, even
 if mod-something has been removed, full deactivation happens in new session.
 
 
-## Module repository
+## 4. Modules repository
 
 We've been talking about repository and downloading. There is variable 
 `$CLE_SRC` that points to the CLE repository. By default is is GitHub's
-URL's where everything about CLE is saved. You can however create your own
-repository and change value of `$CLE_RC` accordingly. Do this in following
+URL where everything around CLE is stored. You can however create your own
+repository and change value of `$CLE_SRC` accordingly. Do this in following
 cases:
 1. you have your own CLE development branch
 2. Copy of CLE is stored on different place. You can have protected
@@ -90,22 +99,22 @@ cases:
 3. anything else...
 
 Set the `$CLE_SRC` in one of following files:
-- `$HOME/.clerc-local` on each account you need to alter
-- `$HOME/.cleusr-YOURNAME` (remember this file is transferred and executed
-  over all ssg/su/sudo sessions, for this you might want to create 'if'
-  statement for this.)
-- /etc/clerc-system - global files for all CLE sessions on particular host
+- account's tweak `$HOME/.cle-local`
+- your personal tweak `$HOME/.cle-YOURNAME/tw` (remember this file is
+  transferred and executed over all ssg/su/sudo sessions. You might want to
+  create 'if' statement and ensure redirecting only on particular hosts.)
+- /etc/cle-systweak - global files for all CLE sessions on particular host
  (^^^ this needs to be done!)
 
-Downloading of modules is ensured with `curl` utility. Any URL valid for curl
+Downloading of modules is done with `curl` utility. Any URL valid for curl
 can be used. For this reason, the repository can be also a local folder when
-URL of tyle `file://....` is used.
+URL of style `file://....` is used.
 
 
-## List of basic available modules
+## 5. List of basic available modules
 
 ### cle-mod - the basic one
-This one covers installations and removal other modules. The modularity is
+This one allows installations and removal other modules. The modularity is
 built in CLE but module maintenace is kept in separate file. First request
 to 'cle mod [operation]' downloads and install this file and then performs
 the action. The 'cle-mod' is not required however. If you install/or create
@@ -126,16 +135,31 @@ as aliases, but why not to have this :-)
 This module makes it easy to move CLE installation folder to a different
 location. It's described in 'TipsAndTweks.md'.
 
+### cle-hist
+Rich history by default starts with using CLE and doesn't contain items
+from `.bash_history` file. This module is able to import old records.
+However the only information that may be contained in old history file is
+timestamp. No return code and other information may be restored. Imported
+records will be marked with session ID like 'username-OLD' and working
+directory will be shown as '/un/known' and they all will appear at the
+beginning of rich file. Use command `cle hist import`
+ Note: upon very first start of CLE on the account, the `.bash_history` is
+ copied into personal file `.history-username` so all regular seraching
+ methods like 'Ctrl-R' will work.
+Planned features of this modules are: removing selected entries, archiving
+and restoring.
+
 ### mod-git
 Functions / shortcuts to 'git' commands. Maybe the most useful is function
 `gicwb`. It simply prints out curren working branch (hence it's name) and is
-useful if you want to display that information in prompt. Documentr
-'TipsAndTweaks.md' provides an example of such use.
+useful if you want to display that information in prompt. Document
+'TipsAndTweaks.md' provides an example of such use. Find all added functions
+in built-in help (`cle help gi`)
 
 ### mod-example
 Template of module. Use it how it names.
 
 
-## How to write your own cool stuff
+## 6. How to write your own cool stuff
 (This section needs to be written)
 

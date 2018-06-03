@@ -1,17 +1,24 @@
 
 # How to live with CLE
 
-This document covers following areas:
-- installation
-- new prompt look, its philosophy and customization
-- session wrappers
-- working with aliases
-- rich history
-- related files
-- shell variables
+This document explains philosophy of the environment and provides all
+necessary details about its features and new commands. Chapters about
+files and varibles provide short insight to internals.
+
+## Content
+1. Run and Deploy
+2. Prompting
+3. CLE sessions (remote and local)
+4. Alias management
+5. History management
+6. Searching for help
+7. Keeping CLE fresh
+8. Files
+9. Variables
+10. Advanced features and tweaks
 
 
-## Run and Deploy
+## 1. Run and Deploy
 Issue following commands to first run and hook the environment into bash
 startup resource scripts.
 
@@ -20,7 +27,7 @@ startup resource scripts.
   cle deploy
 ```
 
-You can as well run clerc as a regular script e.g.:
+You can as well run clerc as a regular script with the same effect:
 
 ```
   chmod 755 clerc
@@ -41,7 +48,7 @@ login and still insist on that please kindly follow corresponding section
 in file TipsAndTweaks.md
 
 
-## Prompting
+## 2. Prompting
 
 First thing you notice when you start CLE is the prompt. It has new colours
 and provide more information. It is virtually divided into four parts p0 - p3
@@ -134,6 +141,9 @@ manual plus enhnacing percent escapes defined by CLE. Find their list below.
        cd /etc
        cd            # observe the $OLDPVD variable
 ```
+  HINT: `cle` uses completion and particularly for prompting it can insert
+    current prompt string so you don't have to define it from scratch or doing
+    copypaste. Just type e.g. following `cle p3` and press <TAB>
 
 - `cle color COLORCODE`
   Set prompt colors. Values of COLORCODE string can be chosen from predefined
@@ -182,7 +192,7 @@ with 'CLE_' e.g. If you configure prompt you can watch how CLE_CLR and CLE_Px
 changes.
 
 
-## CLE sessions (remote and local)
+## 3. CLE sessions (remote and local)
 
 Purpose of this environment is not only to be nice but also to be practical
 and useful. So it also seamlessly transfer itself from workstation to remote
@@ -200,11 +210,11 @@ and work in shell with its default/poor settings.
 ### Use following commands to initiate CLE sessions:
 
 - `ssg [ssh-options] [account@]remote.host`
-This command is in fact 'ssh' wrapper that packs whole CLE - copies rc file
-to remote host and runs bash session with the transferred environment.
-New folder is created on remote systems ($CLE_RD) where the rc itself (renamed
-to rc-$CLE_WS) and local configuration are stored. This folder is by default
-created in home directory but there might be a case where a user has no home.
+This command is in fact 'ssh' wrapper that packs whole CLE - creates copy of rc
+file on remote host and runs bash session with the transferred environment.
+New folder ($CLE_RD) is created on remote system with resource file renamed to
+to 'rc-$CLE_WS' plus local configuration. This folder is by default created
+in home directory however there might be a case where the user has no home.
 If so, the $CLE_RD is created in /tmp.
 By default the $CLE_RD is following: .cle-$CLE_USER
 
@@ -261,7 +271,7 @@ invoked with CLE. When '-j' is used, no new screen is started. instead the
 error message printed out if no session with given name is found.
 
 
-## Alias management
+## 4. Alias management
 
 CLE defines default aliases for basic commands like ls, mv, rm, and several cd
 enhancements. Some of them are system dependent - there are different options
@@ -310,7 +320,7 @@ definig aliases on remote sessions. Check out document _TipsAndTweaks.md_
 
 
 
-## History management
+## 5. History management
 
 Command line history in CLE is personalized in several ways:
 1. Each user on the system has its own bash managed history that is stored
@@ -375,7 +385,7 @@ Examples:
 - `hh 06-24`   - search all commands issued on 24th June, regardless the year
 
 
-## Searching for help
+## 6. Searching for help
 
 CLE contains built-in descriptions of its functions. Issue `cle help` to
 extract those information. You can also obtain information about particular
@@ -392,7 +402,7 @@ in .md (markdown) format and are passed through built-in function (mdfilter)
 that hilights formatted items.
 
 
-## Keeping CLE fresh
+## 7. Keeping CLE fresh
 
 `cle update`
 Downloads the most recent version of CLE from the original source. Changes can
@@ -401,7 +411,7 @@ meaningful only on the account where CLE has been deployed (CLE workstation).
 On remote sessions it would have just temporary effect and is not recommended..
 
 
-## Files
+## 8. Files
 
 The environment is by default installed into home directory within subfolder
 named `.cle-username` Technically speaking the folder with CLE is this:
@@ -426,7 +436,7 @@ The username is stored in the variable $CLE_USER - this is set upon login on
 workstation and the variable is passed further into subsequent sessions.
 See next section for details.
 
-## Variables
+## 9. Variables
 
 CLE defines it's own shell variables. Most important and interesting ones are
 named like $CLE_* There are also variables with shorter names beginning with
@@ -440,7 +450,7 @@ shows values in main variable set and following is their description:
 - `CLE_RH`    home directory part of path to resource file.
 - `CLE_TW`    custom tweak file
 - `CLE_CF`    path to configuration file
-- `CLE_WS`    contains hostname if started on workstation
+- `CLE_WS`    contains workstation's hostname on remote session
 - `CLE_CLR`   prompt color scheme
 - `CLE_Pn`    prompt-parts strings defined with command `cle p0 .. cle p3`
 - `CLE_WT`    string to be terminal window title
@@ -485,7 +495,7 @@ In plain bash you can place '\h' (hostname only) or '\H' (FQDN) into prompt.
 This is workaround - something in between.
 
 
-## Advanced features and tweaks
+## 10. Advanced features and tweaks
 
 CLE is modular. Modules are another scripts adding custom functionalities
 to the environment. Over the development it has revealed that not every 

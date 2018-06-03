@@ -1,7 +1,7 @@
 ##
 ## mod-cledk: functions to assist CLE development process
 ## -------------------------------------------------------
-#* version: 2018-03-31
+#* version: 2018-05-01
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -140,7 +140,7 @@ _cle_commit () (
 	# generate short version of CLE
 	cle short c d
 	# regenerate module index if necessary
-	NEWEST=`ls -rt $CLE_DK/modules|head -1`
+	NEWEST=`ls -t $CLE_DK/modules|head -1`
 	[ $NEWEST != modulist ] && cle modgen
 	gicom $1
 )

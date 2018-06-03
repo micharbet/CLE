@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-04-01 (Nova)
+#* version: 2018-05-31 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -33,7 +33,7 @@
 # -use 'h' as a shortcut to classic history
 # -check out rich history feature with 'hh'
 # -built-in documentation: 'cle help'
-# -update from GIT source
+# -online update from GIT
 
 
 # check running as interactive session otherwise CLE is not needed
@@ -49,7 +49,7 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 
 # ensure bash session will be sourced with this rcfile
-[[ "$0" =~ /bin/bash ]] || exec `command which bash` --rcfile $CLE_RC
+[[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
 
 # who I'm
 _N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
@@ -67,33 +67,27 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 _N=$HOME/.cle-$CLE_USER
 CLE_TRANS=mv	# default transition method (move files)
 case $CLE_RC in
-*/clerc*)        # started manually from downloaded file
-	echo $CLE_VER
-	CLE_WS=$CLE_SHN
+*/clerc*) # started manually from downloaded file
 	CLE_1=$_N/rc1
 	mkdir -m 755 -p $_N
 	cp $CLE_RC $CLE_1
+	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
 	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
 	;;
+# this section converts configuration files of older release upon transition to Nova
+# all lines containig the word 'transition' will be removed in next release
 */.clerc)	# started right after upgrade from older release - 'cle update' transition
 	mkdir -m 755 -p $_N # transition
 	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
 	CLE_RC=$_N/rc # transition
 	mv $HOME/.cleusr-$CLE_USER $_N/tw.old && echo "CLE transition: found tweak file .cleusr-$CLE_USER, saved to $_N/tw.old (deactivated)."
-	CLE_WS=$CLE_HN # transition
 	# transition hack: change hook in .bashrc
 	cp .bashrc bashrc.bk	# transition: bashrc
 	sed "/\.clerc/s:.*:[ -f $CLE_RC ] \&\& . $CLE_RC:" .bashrc >bashrc.sed #transition
 	mv bashrc.sed .bashrc # transition
 	echo "CLE transition: .bashrc edited: "; grep -A1 "Command Live" .bashrc
 	;; # transition after update end
-*/rc-*)  # on remote
-	CLE_WS=
-	;;
-*/rc*)    # workstation, started upon login
-	CLE_WS=$CLE_SHN
-	;;
 esac
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
 CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
@@ -108,6 +102,7 @@ mkdir -m 755 -p $CLE_D
 # tweak file with same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
+CLE_WS=${_I:1}	
 
 # RedH to Nova transition hacks stage 2
 [ -f $_D/.clecf-$CLE_USER ] && $CLE_TRANS -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: $CLE_TRANS config file
@@ -124,10 +119,11 @@ _CV=`tput rev`
 _I=0; for _N in k r g y b m c w; do
         _C=`tput setaf $_I`
         declare _C$_N=$_CN$_C
-        declare _C$(tr a-z A-Z <<<$_N)=$_CL$_C #bold
+        declare _C$(tr a-z A-Z <<<$_N)=$_CL$_C
         ((_I+=1))
 done
 _Ce=`tput setab 1;tput setaf 7` # err highlight
+
 
 #
 # Internal helper functions
@@ -159,16 +155,20 @@ cat <<EOT
 
    ___| |     ____|  Command Live Environment activated
   |     |     __|    ...bit of life to the command line
-  |     |     |      Learn more:$_CL cle help$_CN
- \____|_____|_____| $_CL less $CLE_RC$_CN to discover the magic
+  |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
+ \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
  
 EOT
 }
 
 # default config
 _defcf () {
-	CLE_CLR=marley
-	[ $UID = 0 ] && CLE_CLR=red
+	case $USER@$CLE_WS in
+	root@)	CLE_CLR=red;;	
+	root@*) CLE_CLR=RbB;;	
+	*@) CLE_CLR=marley;;	
+	*@*) CLE_CLR=blue;;	
+	esac
 	CLE_P0='%e \A'
 	CLE_P1='\u'
 	CLE_P2='%h'
@@ -194,7 +194,7 @@ _cle_r () {
 	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
 }
 
-# new prompt escapes
+# additional prompt escapes
 _pesc () (
 	C=_C$1
 	P=CLE_P$1
@@ -262,7 +262,6 @@ _prompt () {
 	_HO=$_H
 	IFS=$OI
 }
-PROMPT_COMMAND=_prompt
 
 # window title
 _setwt () {
@@ -433,12 +432,14 @@ _clepak () {
 ## ssg [user@]host -- access remote system and take CLE along
 ssg () (
 	[ "$1" ] || { cle help ssg;return 1;}
-	S=${CLE_WS:+-$CLE_WS} # suffix to rc filename
+	S= 
+	[ $CLE_WS ] || S=-$CLE_SHN 
 	_clepak $S
-	`command which ssh` -t $* "
+	command ssh -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
+		[ $OSTYPE = darwin ] && _D=D || _D=d
 		mkdir -m 755 -p \$_H; cd \$_H
-		echo -n $C64|base64 --decode|tar xzf -;
+		echo -n $C64|base64 -\$_D |tar xzf -;
 		exec $RC"
 )
 
@@ -449,7 +450,9 @@ sudd () (
 
 ## suu [user]      -- su wrapper
 suu () (
-	su -l ${1:-root} $CLE_RC
+	S=
+	[[ $OSTYPE =~ [Ll]inux ]] && S="-s $BASH"
+	eval su -l $S ${1:-root} $CLE_RC
 )
 
 ## ksuu [user]     -- ksu wrapper
@@ -496,9 +499,9 @@ cat <<-EOS
 	# change window with ctrl-left/right
 	bindkey "^[[1;5D" prev
 	bindkey "^[[1;5C" next
-	defscrollback 3000
+	defscrollback 9000
 	hardstatus alwayslastline 
-	hardstatus string '%{= Kk} %-w%{+u KC}%n %t%{-u Kk}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
+	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
 	source $HOME/.screenrc
@@ -506,18 +509,36 @@ EOS
 }
 
 # session startup
-_clexe /etc/profile
-_clexe $HOME/.bashrc
+[[ $0 =~ ^- ]] || { _clexe /etc/profile; _clexe $HOME/.bashrc; }
 
 _clexe $CLE_ALI
 _defalias
 
 PROMPT_DIRTRIM=2
+PROMPT_COMMAND=_prompt
 shopt -s checkwinsize
+
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
-# completion
+# completions
+_clecmp () {
+	local A=(color p0 p1 p2 p3 time title mod env update reset reload doc help)
+	local C
+	COMPREPLY=()
+	case $3 in
+	p0) COMPREPLY="'$CLE_P0'";;
+	p1) COMPREPLY="'$CLE_P1'";;
+	p2) COMPREPLY="'$CLE_P2'";;
+	p3) COMPREPLY="'$CLE_P3'";;
+	esac
+	[ "$3" != "$1" ] && return
+	for C in ${A[@]}; do
+		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
+	done
+	}
+complete -F _clecmp cle
 declare -F _known_hosts >/dev/null && complete -F _known_hosts ssg
+
 
 # session record
 TTY=`tty|sed 's;[/dev];;g'`
@@ -549,7 +570,6 @@ EOT
 ## ---------------------
 cle () {
 	local C I MM BRC NC
-	# find & run cle_* enhancement
 	C=$1;shift
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
@@ -572,19 +592,18 @@ cle () {
 	title)	## cle title [off] -- toggle window title
 		[ "$1" = off ] && CLE_WT='' || _setwt;;
 	deploy) ## cle deploy      -- hook CLE into user's profile
+		cp $CLE_RC $CLE_D/rc
+		CLE_RC=$CLE_D/rc
+		unset CLE_1
 		I='# Command Live Environment'
 		BRC=$HOME/.bashrc
 		grep -A1 "$I" $BRC && printb CLE is already hooked in .bashrc && return 1
 		ask "Do you want to add CLE to .bashrc?" || return
-		cp $CLE_RC $CLE_D/rc
-		CLE_RC=$CLE_D/rc
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $BRC
-		unset CLE_1
 		cle reload;;
 	update) ## cle update      -- install fresh version of CLE
 		NC=$CLE_D/rc.new
 		curl -k $CLE_SRC/clerc >$NC
-		chmod 755 $NC
 		C=`sed -n 's/^#\* version: //p' $NC`
 		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
@@ -633,7 +652,7 @@ cle () {
 	esac
 }
 
-# remove disturbing stuff
+# remove temporary stuff
 unset SUDO_COMMAND _D _I _N _C
 fi
 # that's all folks...

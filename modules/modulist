@@ -3,5 +3,6 @@ mod-fsps:2018-03-15:4fc7c33e634d5eada7a4d35048b83032:filesystem and processess u
 mod-git:2017-08-08:5bb12beec20cf3140674e9913b8cdf12:git helpers / shorcuts
 mod-mancolor:2018-03-29:6be5e81139eb392d3e3c3742be97ec0d:colorize man pages
 cle-ed:2018-03-30:00436ffc61e38c2574e37dafca99a955:tweak and config editor
-cle-mod:2018-03-30:7769554e26e26f89b38a630baa7ae68e:CLE module management
+cle-hist:2018-05-01:d900b56720f2a047361caa38d555167b:rich history manipulations
+cle-mod:2018-05-01:a57575839939fa5ad17885078a7e3df4:CLE module management
 cle-rcmove:2018-03-23:8fcb5d35d5da974400d7a9043f65d54c:move resource files to different folder
