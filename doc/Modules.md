@@ -87,8 +87,8 @@ if mod-something has been removed, full deactivation happens in new session.
 
 ## 4. Modules repository
 
-We've been talking about repository and downloading. There is variable 
-`$CLE_SRC` that points to the CLE repository. By default is is GitHub's
+We've been talking about repository and downloading. Two variables combo
+`$CLE_SRC/$CLE_REL` points to the CLE repository. By default it is GitHub's
 URL where everything around CLE is stored. You can however create your own
 repository and change value of `$CLE_SRC` accordingly. Do this in following
 cases:
@@ -96,7 +96,6 @@ cases:
 2. Copy of CLE is stored on different place. You can have protected
    infrastructure that has no access to GitHub but you want to have all
    resources available.
-3. anything else...
 
 Set the `$CLE_SRC` in one of following files:
 - account's tweak `$HOME/.cle-local`

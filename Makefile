@@ -1,10 +1,18 @@
 #
 # CLE installation for packaging purposes
 #
-BINDIR=${DESTDIR}/usr/bin
-SHAREDIR=${DESTDIR}/usr/share/cle
 
-install:
+DEST=pkg
+
+BINDIR=${DEST}/usr/bin
+SHAREDIR=${DEST}/usr/share/cle
+
+clerc: clerc-long
+	sed -e  '/^[[:space:]]*#:/d' -e 's/#:.*//' <clerc-long >clerc-t
+	grep -vi -e debug -e dbg_ -e transition clerc-t >clerc
+	rm clerc-t
+
+install: clerc
 	mkdir -p -m 0755 ${BINDIR}
 	mkdir -p -m 0755 ${SHAREDIR}
 	mkdir -p -m 0755 ${SHAREDIR}/modules
