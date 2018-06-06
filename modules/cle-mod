@@ -68,14 +68,14 @@ getinstalled () (
 
 # download list of available modules
 getindex () (
-	curl -ksS $CLE_SRC/modules/$LISTFILE >$MODULIST.tmp
+	curl -ksS $CLE_SRC/$CLE_REL/modules/$LISTFILE >$MODULIST.tmp
 	M=`head -1 $MODULIST.tmp`
 	# check if the file appears lik module index
 	if [[ $M =~ ..*:.*:.*:.* ]]; then
 		mv -f $MODULIST.tmp $MODULIST
 	else
 		rm -f $MODULIST.tmp
-		echo Module list could not be downloaded from $CLE_SRC
+		echo Module list could not be downloaded from $CLE_SRC/$CLE_REL
 		return 1
 	fi
 )
@@ -92,7 +92,7 @@ ls)	## cle mod ls        -- list installed modules
 	;;
 avail)	## cle mod avail     -- list modules available to install
 	getindex || return $?
-	printb ${_TU}Modules available in repository: $CLE_SRC
+	printb ${_TU}Modules available in repository: $CLE_SRC/$CLE_REL
 	cat $MODULIST | { IFS=:; while read MM MVER MSUM MDESC; do
 		printf "$_CW%-15s $_Cw[%10s] $_CN%s\n" $MM "$MVER" "$MDESC"
 	done; }
@@ -126,7 +126,7 @@ add)	## cle mod add [mod] -- install/upgrade module from repository
 	# module setup
 	printb "Downloading $MM"
 	DMM=$CLE_D/dl-$MM
-	curl -ksS $CLE_SRC/modules/$MM >$DMM
+	curl -ksS $CLE_SRC/$CLE_REL/modules/$MM >$DMM
 	# check module signature
 	# every regular cle module should have at least it's identification strings
 	# (comments at the beginning, see this file or mod-example)
@@ -170,7 +170,7 @@ del)	## cle mod del [mod] -- delete module
 	;;
 '')
 	printb ${_TU}CLE module management
-	echo "Repository:$_Cw $CLE_SRC$_CN"
+	echo "Repository:$_Cw $CLE_SRC/$CLE_REL$_CN"
 	echo "Local lib: $_Cw $CLE_D$_CN"
 	echo
 	cle help "cle mod"
