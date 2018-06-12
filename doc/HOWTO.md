@@ -462,6 +462,7 @@ shows values in main variable set and following is their description:
 - `CLE_SRC`   base of store for modules and documentation downloads
 - `CLE_REL`   release name, $CLE_SRC/$CLE_REL points to content above
 - `CLE_VER`   current environment version
+- `CLE_MOTD`  ensures displaying /etc/motd upon remote login
 
 ### More details about some variables
 
