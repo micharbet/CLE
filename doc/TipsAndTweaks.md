@@ -177,6 +177,16 @@ Try for example this:
 6. enjoy and tweak more!
 
 
+### Suppress /etc/motd (variable CLE_MOTD)
+
+Upon remote login (ssg) message of the day is displayed. This is ensured with
+variable `$CLE_MOTD`. Note the variable is empty when you're already in command
+prompt. This ensures /etc/motd will be displayed only once. The variable gains
+otuput of `uptime` while CLE is initiated and displays it after /etc/motd. This
+is normal behavior however you can add add `unset CLE_MOTD` to your tweak file
+and message of the day will never be shown.
+
+
 ### Tweaking only on particular accounts
 
 Some tweaks may be applicable only on particular hosts/accounts. Use 'case'

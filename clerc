@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-05-31 (Nova)
+#* version: 2018-06-12 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -48,6 +48,8 @@ CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 
+[ "$1" = '-m' ] && export CLE_MOTD=`uptime`
+
 # ensure bash session will be sourced with this rcfile
 [[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
 
@@ -60,8 +62,9 @@ CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space is CLE growing
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
+CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
 
 # check first run
 _N=$HOME/.cle-$CLE_USER
@@ -99,7 +102,7 @@ CLE_D=$_D/$CLE_RD
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
 
-# tweak file with same suffix as rc
+# tweak file has same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
 CLE_WS=${_I:1}	
@@ -150,7 +153,7 @@ ask () {
 }
 
 # banner
-_clebanner () {
+_banner () {
 cat <<EOT
 
    ___| |     ____|  Command Live Environment activated
@@ -271,7 +274,7 @@ _setwt () {
 	CLE_WT=$CLE_WT$USER@$CLE_SHN-$TTY
 }
 
-# filter for markdown files
+# markdown filter
 mdfilter () {
 	sed -e "s/^###\(.*\)/$_CL\1$_CN/"\
 	 -e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/"\
@@ -440,7 +443,7 @@ ssg () (
 		[ $OSTYPE = darwin ] && _D=D || _D=d
 		mkdir -m 755 -p \$_H; cd \$_H
 		echo -n $C64|base64 -\$_D |tar xzf -;
-		exec $RC"
+		exec $RC -m"
 )
 
 ## sudd [user]     -- sudo wrapper; root is the default account
@@ -552,10 +555,12 @@ done
 # config & tweaks
 _clexe $HOME/.cle-local
 _clexe $CLE_RH/$CLE_TW
-_clexe $CLE_CF || { _clebanner;_defcf;}
+_clexe $CLE_CF || { _banner;_defcf;}
 CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # transition fix for removed '%>'
 _setp
 _setwt
+
+[ "$CLE_MOTD" ] && { cat /etc/motd;echo;echo $CLE_MOTD;unset CLE_MOTD; }
 
 # check first run
 [ $CLE_1 ] && cat <<-EOT
@@ -603,7 +608,7 @@ cle () {
 		cle reload;;
 	update) ## cle update      -- install fresh version of CLE
 		NC=$CLE_D/rc.new
-		curl -k $CLE_SRC/clerc >$NC
+		curl -k $CLE_SRC/master/clerc >$NC	# always update from master branch
 		C=`sed -n 's/^#\* version: //p' $NC`
 		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
@@ -628,23 +633,23 @@ cle () {
 		ask Activate CLE modules? || return
 		I=cle-mod
 		MM=$CLE_D/$I
-		curl -k $CLE_SRC/modules/$I >$MM
+		curl -k $CLE_SRC/$CLE_REL/modules/$I >$MM
 		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
 		cle mod "$@";;
 	env)	## cle env         -- print CLE_* variables
 		for I in ${!CLE_*};do printf "$_CL%-12s$_CN%s\n" $I "${!I}";done;;
 	doc)	## cle doc         -- show documentation
-		I=`curl -sk $CLE_SRC/doc/index.md`
+		I=`curl -sk $CLE_SRC/$CLE_REL/doc/index.md`
 		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
 		PS3="$_CL doc # $_CN"
 		select C in $I;do
-			[ $C ] && curl -sk $CLE_SRC/doc/$C |mdfilter|less -r; break
+			[ $C ] && curl -sk $CLE_SRC/$CLE_REL/doc/$C |mdfilter|less -r; break
 		done;;
 	help)	## cle help [fnc]  -- show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
 		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C;;
-	"")	_clebanner
+	"")	_banner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 	*)	echo unimplemented: cle $C
 		echo check cle help

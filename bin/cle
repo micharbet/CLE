@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2018 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+
+# This script is not CLE itself. It's just firestarter activating the environment
+# instaled using the distribution package management.
+
+CLE_HERE=${DESTDIR}/usr/share/CLE
+
+
+case $* in
+"")
+	echo
+	if [ -d $HOME/.cle-$USER ]; then
+		echo "It seems you started CLE before. Please kindly consider istallation"
+		echo "into the .bashrc with command 'cle deploy'"
+	else
+		echo Starting CLE from command line
+	fi
+	echo
+	bash $CLE_HERE/clerc
+	echo
+	echo "Thank you for trying CLE :-)"
+	echo
+	;;
+*)
+	echo "Unknown command: cle $*"
+	echo "It might be the environment's fuction but CLE is not active"
+	echo "in this session. Start it with command 'cle' without any arguments"
+	echo "and consider 'cle deploy' for permanet use"
+	exit 1
+	;;
+esac
+
