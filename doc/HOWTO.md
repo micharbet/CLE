@@ -209,7 +209,7 @@ and work in shell with its default/poor settings.
 
 ### Use following commands to initiate CLE sessions:
 
-- `ssg [ssh-options] [account@]remote.host`
+- `lssh [ssh-options] [account@]remote.host`
 This command is in fact 'ssh' wrapper that packs whole CLE - creates copy of rc
 file on remote host and runs bash session with the transferred environment.
 New folder ($CLE_RD) is created on remote system with resource file renamed to
@@ -233,16 +233,16 @@ contain specific parts for various destinations. Find more information
 in file 'TipsAndTweaks.md'
 
 
-- `suu [account]`
-- `sudd [account]`
-- `ksuu [account]`
+- `lsu [account]`
+- `lsudo [account]`
+- `lksu [account]`
 Those are wrappers to su/sudo/ksu commands. Use appropriate one to switch user
 context for your particular purpose. CLE is not transferred but the originating
 $CLE_RC is re-used for switched session. Tweak file is executed too but prompt
-configuration is own. Exactly like in case of `ssg`.
+configuration is own. Exactly like in case of `lssh`.
 
 
-- `scrn [-j] [session_name]`
+- `lscreen [-j] [session_name]`
 GNU screen requires this wrappaer mainly on remote sessions, where CLE is not
 deployed and hooked into .bashrc. As added value screen is started with
 customized configuration file $CLE_D/screenrc. This configuration contains
@@ -469,7 +469,7 @@ shows values in main variable set and following is their description:
 Let's get back to the variable `$CLE_USER` - the most important variable here.
 You might notice how often is the variable mentioned here. Its value is set
 upon first login on the workstation and then it is passed further into all
-subsequent sessions (ssg, suu, sudd...) When CLE initializes, one of first
+subsequent sessions (lssh, lsu, lsudo...) When CLE initializes, one of first
 thing it has to do is to determine the username. Trick is that it doesn't
 necessarily follow value of regular variable $USER. Username here is part of
 the path to the resource file. E.g. if path is '/home/foo/.cle-mich/rc' the

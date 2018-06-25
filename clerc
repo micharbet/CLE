@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-06-12 (Nova)
+#* version: 2018-06-26 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -24,10 +24,10 @@
 #	$ . clerc
 #	$ cle deploy
 #
-# -use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
+# -use 'lssh' (ssh wrapper) to access remote system, CLE is seamlessly
 #  started without installation
-# -try suu/sudd (su/sudo wrappers) with same effect
-# -work in gnu screen using 'scrn'
+# -try lsu/lsudo (su/sudo wrappers) with same effect
+# -work in gnu screen using 'lscreen'
 # -alter settings with 'cle' command
 # -store and manage your aliases with 'aa' function
 # -use 'h' as a shortcut to classic history
@@ -316,6 +316,12 @@ _defalias () {
 	alias grep='grep --color=auto'
 	alias mv='mv -i'
 	alias rm='rm -i'
+	# aslias to old wrappers
+	alias ssg=lssh
+	alias ksuu=lksu
+	alias suu=lsu
+	alias sudd=lsudo
+	alias scrn=lscreen
 }
 
 # '-' must be function, alias was troublesome
@@ -358,7 +364,6 @@ HISTFILE=$_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
-HISTIGNORE="scrn*"
 CLE_HIST=$_D/.history-ALL
 
 ## h               -- bash 'history' wrapper
@@ -415,8 +420,8 @@ _rhlog () {
 }
 
 ##
-## Session wrappers
-## ----------------
+## Live session wrappers
+## ---------------------
 
 # environment packer
 _clepak () {
@@ -432,9 +437,9 @@ _clepak () {
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
 }
 
-## ssg [user@]host -- access remote system and take CLE along
-ssg () (
-	[ "$1" ] || { cle help ssg;return 1;}
+## lssh [usr@]host   -- access remote system and take CLE along
+lssh () (
+	[ "$1" ] || { cle help lssh;return 1;}
 	S= 
 	[ $CLE_WS ] || S=-$CLE_SHN 
 	_clepak $S
@@ -446,26 +451,26 @@ ssg () (
 		exec $RC -m"
 )
 
-## sudd [user]     -- sudo wrapper; root is the default account
-sudd () (
+## lsudo [user]      -- sudo wrapper; root is the default account
+lsudo () (
 	sudo -i -u ${1:-root} $CLE_RC
 )
 
-## suu [user]      -- su wrapper
-suu () (
+## lsu [user]        -- su wrapper
+lsu () (
 	S=
 	[[ $OSTYPE =~ [Ll]inux ]] && S="-s $BASH"
 	eval su -l $S ${1:-root} $CLE_RC
 )
 
-## ksuu [user]     -- ksu wrapper
-ksuu () (
+## lksu [user]       -- ksu wrapper
+lksu () (
 	ksu ${1:-root} -a -c $CLE_RC
 )
 
-## scrn [name]     -- gnu screen wrapper, join your recent session or start new
-## scrn -j [name]  -- join other screen sessions, ev. search by name
-scrn () (
+## lscreen [name]    -- gnu screen wrapper, join your recent session or start new
+## lscreen -j [name] -- join other screen sessions, ev. search by name
+lscreen () (
 	NM=$CLE_USER${1:+-$1}
 	[ "$1" = -j ] && NM=${2:-.}
 	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
@@ -540,7 +545,9 @@ _clecmp () {
 	done
 	}
 complete -F _clecmp cle
-declare -F _known_hosts >/dev/null && complete -F _known_hosts ssg
+
+declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
+declare -F _ssh >/dev/null && complete -F _ssh lssh
 
 
 # session record
