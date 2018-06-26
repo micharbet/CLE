@@ -317,11 +317,6 @@ _defalias () {
 	alias mv='mv -i'
 	alias rm='rm -i'
 	# aslias to old wrappers
-	alias ssg=lssh
-	alias ksuu=lksu
-	alias suu=lsu
-	alias sudd=lsudo
-	alias scrn=lscreen
 }
 
 # '-' must be function, alias was troublesome
@@ -515,6 +510,13 @@ cat <<-EOS
 	source $HOME/.screenrc
 EOS
 }
+
+# Transition warnings after rename
+ssg () { echo "Warning: ssg is deprecated, use 'lssh' instead"; sleep 1; lssh "$@"; }             # transition
+ksuu () { echo "Warning: ksuu is deprecated, use 'lksu' instead"; sleep 1; lksu "$@"; }           # transition
+suu () { echo "Warning: suu is deprecated, use 'lsu' instead"; sleep 1; lsu "$@"; }               # transition
+sudd () { echo "Warning: sudd is deprecated, use 'lsudo' instead"; sleep 1; lsudo "$@"; }         # transition
+scrn () { echo "Warning: scrn is deprecated, use 'lscreen' instead"; sleep 3; lscreen "$@"; }     # transition
 
 # session startup
 [[ $0 =~ ^- ]] || { _clexe /etc/profile; _clexe $HOME/.bashrc; }
