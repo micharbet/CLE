@@ -511,12 +511,12 @@ cat <<-EOS
 EOS
 }
 
-# Transition warnings after rename
-ssg () { echo "Warning: ssg is deprecated, use 'lssh' instead"; sleep 1; lssh "$@"; }             # transition
-ksuu () { echo "Warning: ksuu is deprecated, use 'lksu' instead"; sleep 1; lksu "$@"; }           # transition
-suu () { echo "Warning: suu is deprecated, use 'lsu' instead"; sleep 1; lsu "$@"; }               # transition
-sudd () { echo "Warning: sudd is deprecated, use 'lsudo' instead"; sleep 1; lsudo "$@"; }         # transition
-scrn () { echo "Warning: scrn is deprecated, use 'lscreen' instead"; sleep 3; lscreen "$@"; }     # transition
+# Transition warnings after wrappers rename
+ssg () { printb "Warning: ssg is deprecated, use 'lssh' instead"; sleep 1;lssh "$@"; }       # transition
+ksuu () { printb "Warning: ksuu is deprecated, use 'lksu' instead"; sleep 1; lksu "$@"; }    # transition
+suu () { printb "Warning: suu is deprecated, use 'lsu' instead"; sleep 1; lsu "$@"; }        # transition
+sudd () { printb "Warning: sudd is deprecated, use 'lsudo' instead"; sleep 1; lsudo "$@"; }  # transition
+scrn () { printb "Warning: scrn is deprecated, use 'lscreen' instead"; sleep 3; lscreen "$@"; }  # transition
 
 # session startup
 [[ $0 =~ ^- ]] || { _clexe /etc/profile; _clexe $HOME/.bashrc; }
