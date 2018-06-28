@@ -15,34 +15,34 @@
 # of the License, or (at your option) any later version.
 #
 # CLE provides:
-# -colorful prompt with hihglighted exit code
+# -a colorful prompt with highlighted exit code
 # -builtin aliases and functions
-# -history improved
+# -an improved command history
 #
 # 1. execute this file within your shell session
-# 2. integrate into your profile:
+# 2. integrate it into your profile:
 #	$ . clerc
 #	$ cle deploy
 #
-# -use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
+# -use 'ssg' (ssh wrapper) to access remote systems, CLE is seamlessly
 #  started without installation
-# -try suu/sudd (su/sudo wrappers) with same effect
+# -try suu/sudd (su/sudo wrappers) with same the effect
 # -work in gnu screen using 'scrn'
-# -alter settings with 'cle' command
-# -store and manage your aliases with 'aa' function
-# -use 'h' as a shortcut to classic history
-# -check out rich history feature with 'hh'
-# -built-in documentation: 'cle help'
-# -online update from GIT
+# -alter settings with the 'cle' command
+# -store and manage your aliases with the 'aa' function
+# -use 'h' as a shortcut to the classic shell history
+# -check out the rich history feature with 'hh'
+# -access built-in documentation with: 'cle help'
+# -online CLE updates from GIT
 
 
-# check running as interactive session otherwise CLE is not needed
-# also required for scp compattibility
+# check if the shell is running as an interactive session otherwise CLE is not needed
+# also required for scp compatibility
 if [ -t 0 -a -z "$CLE_EXE" -a -z "$BASH_EXECUTION_STRING" ];then
 # warning: magic inside!
 
 
-# a little bit complicated way to find absolute path
+# a little bit complicated way to find the absolute path
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
@@ -53,7 +53,7 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 # ensure bash session will be sourced with this rcfile
 [[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
 
-# who I'm
+# who I am
 _N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 
@@ -78,7 +78,7 @@ case $CLE_RC in
 	CLE_RC=$CLE_1
 	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
 	;;
-# this section converts configuration files of older release upon transition to Nova
+# this section converts configuration files of older releases upon transition to Nova
 # all lines containig the word 'transition' will be removed in next release
 */.clerc)	# started right after upgrade from older release - 'cle update' transition
 	mkdir -m 755 -p $_N # transition
