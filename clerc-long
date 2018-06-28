@@ -2,10 +2,9 @@
 #
 ## CLE : Command Live Environment
 #
-#* authors: Michael Arbet (marbet@redhat.com)
-#*          Jakub Arbet (arbetjakub@gmail.com)
+#* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-06-26 (Nova)
+#* version: 2018-06-28 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
