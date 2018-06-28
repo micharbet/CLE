@@ -5,7 +5,7 @@
 #* authors: Michael Arbet (marbet@redhat.com)
 #*          Jakub Arbet (arbetjakub@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-06-12 (Nova)
+#* version: 2018-06-26 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -15,25 +15,25 @@
 # of the License, or (at your option) any later version.
 #
 # CLE provides:
-# -colorful prompt with hihglighted exit code
+# -a colorful prompt with highlighted exit code
 # -builtin aliases and functions
-# -history improved
+# -an improved command history
 #
 # 1. execute this file within your shell session
-# 2. integrate into your profile:
+# 2. integrate it into your profile:
 #	$ . clerc
 #	$ cle deploy
 #
-# -use 'ssg' (ssh wrapper) to access remote system, CLE is seamlessly
+# -use 'lssh' (ssh wrapper) to access remote systemis, CLE is seamlessly
 #  started without installation
-# -try suu/sudd (su/sudo wrappers) with same effect
-# -work in gnu screen using 'scrn'
-# -alter settings with 'cle' command
-# -store and manage your aliases with 'aa' function
-# -use 'h' as a shortcut to classic history
-# -check out rich history feature with 'hh'
-# -built-in documentation: 'cle help'
-# -online update from GIT
+# -try lsu/lsudo (su/sudo wrappers) with the same effect
+# -work in gnu screen using 'lscreen'
+# -alter settings with the 'cle' command
+# -store and manage your aliases with the 'aa' function
+# -use 'h' as a shortcut to the classic shell history
+# -check out the rich history feature with 'hh'
+# -access built-in documentation: 'cle help'
+# -online CLE updates from GIT
 
 #: If you're reading this text, you probably downloaded commented version
 #: of CLE named clerc-long. That is basically fine if you want to check how
@@ -42,8 +42,8 @@
 #: Note other special comments - '##' introduces self documentation
 #: and '#*' denotes script header
 
-# check running as interactive session otherwise CLE is not needed
-# also required for scp compattibility
+# Check if the shell is running as an interactive session otherwise CLE is
+# not needed. This is required for scp compatibility
 #: Note: scp is sensitive to unexpected strings printed on stdout,
 #: that means you should avoid printing anything unnecessary onto
 #: non interactive sessions.
@@ -56,7 +56,7 @@ if [ -t 0 -a -z "$CLE_EXE" -a -z "$BASH_EXECUTION_STRING" ];then
 dbg_var () { [ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "${!1}" >/dev/tty; }
 dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }
 
-# a little bit complicated way to find absolute path
+# a little bit complicated way to find the absolute path
 #: cross-plattform compatible way to determine absolute path to rc file
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
@@ -81,9 +81,9 @@ dbg_var CLE_RC
 dbg_echo "-- afterexec --"
 dbg_echo CLE resource init begins!
 
-# who I'm
+# who I am
 #: determine username that will be inherited over the all
-#: subsquent sessions initiated with ssg and su* wrappers
+#: subsquent sessions initiated with lssh and su* wrappers
 #: the regexp extracts username from following patterns:
 #: - /any/folder/.cle-username/rcfile
 #: - /any/folder/.config/cle-username/rcfile
@@ -120,7 +120,7 @@ case $CLE_RC in
 	dbg_echo First run, changing some values:
 	dbg_var CLE_RC
 	;;
-# this section converts configuration files of older release upon transition to Nova
+# this section converts configuration files of older releases upon transition to Nova
 # all lines containig the word 'transition' will be removed in next release
 */.clerc)	# started right after upgrade from older release - 'cle update' transition
 	mkdir -m 755 -p $_N # transition
@@ -395,6 +395,7 @@ _defalias () {
 	alias grep='grep --color=auto'
 	alias mv='mv -i'
 	alias rm='rm -i'
+	# aslias to old wrappers
 }
 
 # '-' must be function, alias was troublesome
@@ -439,7 +440,6 @@ HISTFILE=$_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
-HISTIGNORE="scrn*"
 CLE_HIST=$_D/.history-ALL
 
 ## h               -- bash 'history' wrapper
@@ -511,8 +511,8 @@ _rhlog () {
 }
 
 ##
-## Session wrappers
-## ----------------
+## Live session wrappers
+## ---------------------
 
 # environment packer
 #: grab *active* resource file, tweak file, pack it to tarball and store
@@ -523,10 +523,10 @@ _rhlog () {
 #: Note: configuration is not packed in order to ensure unique cf on all
 #:  remote accounts.
 #: Note 2: _clepak is defined with curly brackets {} to pass variables RC and C64
-#:  On the other side ssg is defined with () enasirng execution in own context
-#:  where all new variables are local only to ssg (and _clepak)
+#:  On the other side lssh is defined with () enasirng execution in own context
+#:  where all new variables are local only to lssh (and _clepak)
 #: Note 3: _clepak is fuction even if it is used only once and could be
-#:  included directly into ssg. However, this allows to create any other
+#:  included directly into lssh. However, this allows to create any other
 #:  remote access wrapper
 _clepak () {
 	cd $CLE_RH
@@ -543,9 +543,9 @@ _clepak () {
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
 }
 
-## ssg [user@]host -- access remote system and take CLE along
-ssg () (
-	[ "$1" ] || { cle help ssg;return 1;}
+## lssh [usr@]host   -- access remote system and take CLE along
+lssh () (
+	[ "$1" ] || { cle help lssh;return 1;}
 	#: on CLE workstation, suffix to resource filename is added
 	#: this 1. prevents overwriting on destination accounts
 	#:  and 2. provides information about source of the session
@@ -564,33 +564,33 @@ ssg () (
 #: version 'ksu'. They are basically simple, you see. Environment is not
 #: packed and transferred when using them. Instead the original files from
 #: user's home folder are used.
-## sudd [user]     -- sudo wrapper; root is the default account
-sudd () (
+## lsudo [user]      -- sudo wrapper; root is the default account
+lsudo () (
 	sudo -i -u ${1:-root} $CLE_RC
 )
 
-## suu [user]      -- su wrapper
+## lsu [user]        -- su wrapper
 #: known issue - on debian systems controlling terminal is detached in case 
-#: a command ($CLE_RC) is specified, use 'sudd' instead
-suu () (
+#: a command ($CLE_RC) is specified, use 'lsudo' instead
+lsu () (
 	S=
 	[[ $OSTYPE =~ [Ll]inux ]] && S="-s $BASH"
 	eval su -l $S ${1:-root} $CLE_RC
 )
 
-## ksuu [user]     -- ksu wrapper
+## lksu [user]       -- ksu wrapper
 #: Kerberized version of 'su'
-ksuu () (
+lksu () (
 	ksu ${1:-root} -a -c $CLE_RC
 )
 
-## scrn [name]     -- gnu screen wrapper, join your recent session or start new
-## scrn -j [name]  -- join other screen sessions, ev. search by name
+## lscreen [name]    -- gnu screen wrapper, join your recent session or start new
+## lscreen -j [name] -- join other screen sessions, ev. search by name
 #: GNU screen wrapper is here 1) because of there was no way to tell screen
 #: program to start CLE on more than first window and, 2) to allow easily
 #: join detached own session and/or join cooperative session with more
 #: participants.
-scrn () (
+lscreen () (
 	#: get name of the screen to search and join
 	#: base of session name is $CLE_USER and this can be extended
 	NM=$CLE_USER${1:+-$1}
@@ -650,6 +650,13 @@ cat <<-EOS
 EOS
 }
 
+# Transition warnings after wrappers rename
+ssg () { printb "Warning: ssg is deprecated, use 'lssh' instead"; sleep 1;lssh "$@"; }       # transition
+ksuu () { printb "Warning: ksuu is deprecated, use 'lksu' instead"; sleep 1; lksu "$@"; }    # transition
+suu () { printb "Warning: suu is deprecated, use 'lsu' instead"; sleep 1; lsu "$@"; }        # transition
+sudd () { printb "Warning: sudd is deprecated, use 'lsudo' instead"; sleep 1; lsudo "$@"; }  # transition
+scrn () { printb "Warning: scrn is deprecated, use 'lscreen' instead"; sleep 3; lscreen "$@"; }  # transition
+
 # session startup
 #: run default resources only on non-login sessions
 [[ $0 =~ ^- ]] || { _clexe /etc/profile; _clexe $HOME/.bashrc; }
@@ -669,8 +676,10 @@ shopt -s checkwinsize
 # completions
 #: Command 'cle' completion
 #: as an addition, prompt strings are filled for convenience :)
-#: 'cle deploy' is hidden intentionaly as user should do it only on workstation
 _clecmp () {
+	#: list of subcommands, this might be reworked to have possibility of expansion
+	#: with modules (TODO)
+	#: 'cle deploy' is hidden intentionaly as user should do it only on when really needed
 	local A=(color p0 p1 p2 p3 time title mod env update reset reload doc help)
 	local C
 	COMPREPLY=()
@@ -686,8 +695,10 @@ _clecmp () {
 	done
 	}
 complete -F _clecmp cle
-#: ssg uses the same completion as other network utilities
-declare -F _known_hosts >/dev/null && complete -F _known_hosts ssg
+
+#: lssh there are two possibilities of ssh completion _known_hosts is more common, _ssh is better
+declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
+declare -F _ssh >/dev/null && complete -F _ssh lssh
 
 
 # session record
