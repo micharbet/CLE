@@ -100,7 +100,7 @@ cases:
 Set the `$CLE_SRC` in one of following files:
 - account's tweak `$HOME/.cle-local`
 - your personal tweak `$HOME/.cle-YOURNAME/tw` (remember this file is
-  transferred and executed over all ssg/su/sudo sessions. You might want to
+  transferred and executed over all lssh/lsu/lsudo sessions. You might want to
   create 'if' statement and ensure redirecting only on particular hosts.)
 - /etc/cle-systweak - global files for all CLE sessions on particular host
  (^^^ this needs to be done!)

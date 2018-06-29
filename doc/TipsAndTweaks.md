@@ -106,7 +106,7 @@ It's definitely possible! You need to be aware of following facts:
 2. Value of $CLE_USER is derived from the path, there must be either one
    of `cle-YOURNAME` or `cle/YOURNAME`. The word 'cle' and delimiter are
    important.
-3. The relative pathname will be used on remote sessions (ssg) and all folders
+3. The relative pathname will be used on remote sessions (lssh) and all folders
    will be created.
 4. All changes are yours own only, other users may happily use defaults.
 
@@ -154,7 +154,7 @@ following files:
 - `$HOME/.cle-YOURLOGIN/tw`
   This file is executed on CLE startup and moreover, it is packed, transferred
   and executed on remote account along with the main resource file everytime
-  new session is initiated with `ssg` or any of `su*` wrappers. Using this file
+  new session is initiated with `lssh` or any of `su*` wrappers. Using this file
   you can apply your own settings in just one single file that resides on your
   workstation. 
 
@@ -170,7 +170,7 @@ Try for example this:
 ```
 2. restart environment (`cle reload`) or start new terminal
 3. try new function: `psg bash`; you should see all running shells only
-4. go to different account: `ssg account@somewhere.else` and try new function
+4. go to different account: `lssh account@somewhere.else` and try new function
    there. It should work.
 5. bonus: you also created in-script help strings and you can see them in
    output of `cle help` and `cle help psg`
@@ -179,7 +179,7 @@ Try for example this:
 
 ### Suppress /etc/motd (variable CLE_MOTD)
 
-Upon remote login (ssg) message of the day is displayed. This is ensured with
+Upon remote login (lssh) message of the day is displayed. This is ensured with
 variable `$CLE_MOTD`. Note the variable is empty when you're already in command
 prompt. This ensures /etc/motd will be displayed only once. The variable gains
 otuput of `uptime` while CLE is initiated and displays it after /etc/motd. This
