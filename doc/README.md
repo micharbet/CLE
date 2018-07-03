@@ -43,25 +43,25 @@ as your working account read document 'TipsAndTweaks.md' and find corresponding
 section.
 
 
-### ssg utility (ssh wrapper)
+### lssh utility (ssh wrapper)
 
-The CLE is able to pass itself over ssh. Use `ssg` wrapper instead of regular
+The CLE is able to pass itself over ssh. Use `lssh` wrapper instead of regular
 'ssh' for login into remote account and CLE will be copied over then started
 seamlessly:
 
-    `ssg username@remote.host`
+    `lssh username@remote.host`
 
 
-### suu, sudd, ksuu utilities (su/sudo/ksu wrappers)
+### lsu, lsudo, lksu utilities (su/sudo/ksu wrappers)
 
 Those wrappers serve the same purpose like original su, sudo and ksu utilities
 however they add CLE to the sessions.
 
 
-### scrn - GNU screen wrapper
+### lscreen - GNU screen wrapper
 
 This wrapper is workaround to original GNU screen to allow using CLE inside
-screen session. By default `scrn` searches for _yours_ opened/detached session
+screen session. By default `lscreen` searches for _yours_ opened/detached session
 and jumps into it if finds one. Otherwise it creates new screen. Another added
 value is configuration file with nice status line and shortcut Ctrl-Left/Right
 to switch between windows.
@@ -115,7 +115,7 @@ require to add missing utilities. Those really necessary are:
 - base64
 - curl
 - ssh (note, no scp required, e.g no openssh-clients on RHEL)
-- GNU screen (only if you want to use 'scrn' wrapper)
+- GNU screen (only if you want to use 'lscreen' wrapper)
 
 
 
@@ -131,7 +131,7 @@ boxes and in scattered backup files. You all probably have something similar.
 
  Second version contained resource file itself and minimal set of
 utilities (scripts like 'cle', 'hlp', etc - some of them are part of different
-project 'rootils' now). This version worked without 'ssg' instead it required
+project 'rootils' now). This version worked without 'lssh' instead it required
 to be installed on each particular account. The setup was simplified with
 'cle' script but installation was necessary step. Also, those changes might be
 unwelcomed by other administrators. BTW, only in version 2, the current name,
@@ -146,7 +146,7 @@ The only thing you need is working CLE on your workstation from where you
 manage the world :-) Everywhere you go use the same and still customizable
 environment.
 
-Incorporating `ssg`, `su*` wrappers together with `cle` managment function into
+Incorporating `ssh`, `su*` wrappers together with `cle` managment function into
 one single resource file was just a natural evolution that gave the word 'Live'
 its true meaning -- the `clerc` now contains a mechanism of multiplication it's
 own DNA [1].
