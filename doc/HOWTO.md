@@ -209,7 +209,7 @@ and work in their shells with default/poor settings.
 
 ### Use following commands to initiate CLE sessions:
 
-- `ssg [ssh-options] [account@]remote.host`
+- `lssh [ssh-options] [account@]remote.host`
 This command is in fact an 'ssh' wrapper that packs the whole CLE - creates a copy
 of the rc file on a remote host and runs a bash session with the copied environment.
 A new folder ($CLE_RD) is created on the remote system with a resource file renamed
@@ -233,16 +233,16 @@ contain specific parts for various destinations. Find more information
 i then file 'TipsAndTweaks.md'.
 
 
-- `suu [account]`
-- `sudd [account]`
-- `ksuu [account]`
+- `lsu [account]`
+- `lsudo [account]`
+- `lksu [account]`
 Those are wrappers to su/sudo/ksu commands. Use the appropriate one to switch user
 context for your particular purpose. CLE is not transferred but the originating
 $CLE_RC is re-used for switched session. The tweak file is executed too but the
-prompt configuration is your own, exactly like in the case of `ssg`.
+prompt configuration is your own, exactly like in the case of `lssh`.
 
 
-- `scrn [-j] [session_name]`
+- `lscreen [-j] [session_name]`
 GNU screen requires this wrappaer mainly on remote sessions, where CLE is not
 deployed and hooked into .bashrc. As an added value screen is started with
 the customized configuration file $CLE_D/screenrc. This configuration contains
@@ -471,7 +471,7 @@ shows values in the main variable set. The following is their description:
 Let's get back to the variable `$CLE_USER` - the most important variable here.
 You might notice how often this variable is mentioned here. Its value is set
 upon first login on the workstation and then it is passed further into all
-subsequent sessions (ssg, suu, sudd...). When CLE initializes, one of the first
+subsequent sessions (lssh, lsu, lsudo...). When CLE initializes, one of the first
 things it has to do is to determine the username. The trick is that it doesn't
 necessarily follow value of the regular variable $USER. Username here is part of
 the path to the resource file. E.g. if path is '/home/foo/.cle-mich/rc' the

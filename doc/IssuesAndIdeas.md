@@ -25,7 +25,7 @@
 
 ## Features, not bugs!
 - rich history is updated after command finishes beacuse we need return codes!
-- `suu` on debian based systems starts shell without controlling terminal
+- `lsu` on debian based systems starts shell without controlling terminal
   This is a feature of the 'su' command there - it detaches terminal from process
   Check `man su` on debian.
 

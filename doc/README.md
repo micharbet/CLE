@@ -43,28 +43,42 @@ as your working account, please read the document 'TipsAndTweaks.md' and find th
 corresponding section.
 
 
-### ssg utility (ssh wrapper)
+### lssh utility (ssh wrapper)
 
+<<<<<<< HEAD
 The CLE is able to pass itself over ssh to a remote system. Use the ssh wrapper
 called `ssg` instead of the regular 'ssh' command for a login into a remote account
 and the CLE will be copied over and then started seamlessly:
+=======
+The CLE is able to pass itself over ssh. Use `lssh` wrapper instead of regular
+'ssh' for login into remote account and CLE will be copied over then started
+seamlessly:
+>>>>>>> 7e9ea2509ba181bbdd3c8678ae8a8eb02433fc11
 
-    `ssg username@remote.host`
+    `lssh username@remote.host`
 
 
-### suu, sudd, ksuu utilities (su/sudo/ksu wrappers)
+### lsu, lsudo, lksu utilities (su/sudo/ksu wrappers)
 
 Those wrappers serve the same purpose as the original su, sudo and ksu utilities,
 however they add CLE to the sessions.
 
 
-### scrn - GNU screen wrapper
+### lscreen - GNU screen wrapper
 
+<<<<<<< HEAD
 This wrapper is a workaround to the original GNU screen to allow using CLE inside
 a screen session. By default `scrn` searches for _yours_ opened/detached session
 and jumps into it if finds one. Otherwise it creates a new screen. Another added
 value is a configuration file with a nice status line and shortcuts enabled such as
 Ctrl-Left/Right to switch between windows.
+=======
+This wrapper is workaround to original GNU screen to allow using CLE inside
+screen session. By default `lscreen` searches for _yours_ opened/detached session
+and jumps into it if finds one. Otherwise it creates new screen. Another added
+value is configuration file with nice status line and shortcut Ctrl-Left/Right
+to switch between windows.
+>>>>>>> 7e9ea2509ba181bbdd3c8678ae8a8eb02433fc11
 
 
 ### Other utilities
@@ -115,8 +129,13 @@ might require you to add missing utilities. Truly necessary utilities are:
 - sed
 - base64
 - curl
+<<<<<<< HEAD
 - ssh (note: no scp required, e.g no openssh-clients on RHEL)
 - GNU screen (only if you want to use the 'scrn' wrapper)
+=======
+- ssh (note, no scp required, e.g no openssh-clients on RHEL)
+- GNU screen (only if you want to use 'lscreen' wrapper)
+>>>>>>> 7e9ea2509ba181bbdd3c8678ae8a8eb02433fc11
 
 
 
@@ -130,6 +149,7 @@ and account. The very first version was just a backup of my .kshrc (yes, long
 ago I used mainly the Korn Shell). This version probably still exists on some old
 boxes and in scattered backup files. You all probably have something similar.
 
+<<<<<<< HEAD
  The second version contained the resource file itself and a minimal set of
 utilities (scripts such as 'cle', 'hlp', etc - some of them are part of a different
 project 'rootils' now). This version worked without 'ssg', instead requiring
@@ -150,6 +170,28 @@ still customizable environment!
 Incorporating the `ssg` and `su*` wrappers together with the `cle` management function
 into one single resource file was just a natural evolution that gave the word 'Live'
 its true meaning -- the `clerc` now contains a mechanism for multiplying its
+=======
+ Second version contained resource file itself and minimal set of
+utilities (scripts like 'cle', 'hlp', etc - some of them are part of different
+project 'rootils' now). This version worked without 'lssh' instead it required
+to be installed on each particular account. The setup was simplified with
+'cle' script but installation was necessary step. Also, those changes might be
+unwelcomed by other administrators. BTW, only in version 2, the current name,
+he CLE was introduced as I considered it was bringing more live into poor,
+plain command line.
+
+ In third version I removed necessity to setup by ingenious way - passing
+resource file encoded with base64 through a shell variable to the remote
+system. To be honest, I was inspired by 'sshrc' project. Result is no setup,
+no tweaks on remote site and no harm to the current environment! Whoa!
+The only thing you need is working CLE on your workstation from where you
+manage the world :-) Everywhere you go use the same and still customizable
+environment.
+
+Incorporating `lssh`, `su*` wrappers together with `cle` managment function into
+one single resource file was just a natural evolution that gave the word 'Live'
+its true meaning -- the `clerc` now contains a mechanism of multiplication it's
+>>>>>>> 7e9ea2509ba181bbdd3c8678ae8a8eb02433fc11
 own DNA [1].
 
 [1] CLE is not a virus :-) It doesn't run itself on any host. Everything is
