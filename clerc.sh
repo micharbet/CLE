@@ -2,10 +2,9 @@
 #
 ## CLE : Command Live Environment
 #
-#* authors: Michael Arbet (marbet@redhat.com)
-#*          Jakub Arbet (arbetjakub@gmail.com)
+#* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-06-26 (Nova)
+#* version: 2018-07-30 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -15,25 +14,25 @@
 # of the License, or (at your option) any later version.
 #
 # CLE provides:
-# -colorful prompt with hihglighted exit code
+# -a colorful prompt with highlighted exit code
 # -builtin aliases and functions
-# -history improved
+# -an improved command history
 #
 # 1. execute this file within your shell session
-# 2. integrate into your profile:
+# 2. integrate it into your profile:
 #	$ . clerc
 #	$ cle deploy
 #
-# -use 'lssh' (ssh wrapper) to access remote system, CLE is seamlessly
+# -use 'lssh' (ssh wrapper) to access remote systemis, CLE is seamlessly
 #  started without installation
-# -try lsu/lsudo (su/sudo wrappers) with same effect
+# -try lsu/lsudo (su/sudo wrappers) with the same effect
 # -work in gnu screen using 'lscreen'
-# -alter settings with 'cle' command
-# -store and manage your aliases with 'aa' function
-# -use 'h' as a shortcut to classic history
-# -check out rich history feature with 'hh'
-# -built-in documentation: 'cle help'
-# -online update from GIT
+# -alter settings with the 'cle' command
+# -store and manage your aliases with the 'aa' function
+# -use 'h' as a shortcut to the classic shell history
+# -check out the rich history feature with 'hh'
+# -access built-in documentation: 'cle help'
+# -online CLE updates from GIT
 
 #: If you're reading this text, you probably downloaded commented version
 #: of CLE named clerc-long. That is basically fine if you want to check how
@@ -42,8 +41,8 @@
 #: Note other special comments - '##' introduces self documentation
 #: and '#*' denotes script header
 
-# check running as interactive session otherwise CLE is not needed
-# also required for scp compattibility
+# Check if the shell is running as an interactive session otherwise CLE is
+# not needed. This is required for scp compatibility
 #: Note: scp is sensitive to unexpected strings printed on stdout,
 #: that means you should avoid printing anything unnecessary onto
 #: non interactive sessions.
@@ -56,7 +55,7 @@ if [ -t 0 -a -z "$CLE_EXE" -a -z "$BASH_EXECUTION_STRING" ];then
 dbg_var () { [ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "${!1}" >/dev/tty; }
 dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }
 
-# a little bit complicated way to find absolute path
+# a little bit complicated way to find the absolute path
 #: cross-plattform compatible way to determine absolute path to rc file
 export CLE_RC=${BASH_SOURCE[0]}
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
@@ -81,7 +80,7 @@ dbg_var CLE_RC
 dbg_echo "-- afterexec --"
 dbg_echo CLE resource init begins!
 
-# who I'm
+# who I am
 #: determine username that will be inherited over the all
 #: subsquent sessions initiated with lssh and su* wrappers
 #: the regexp extracts username from following patterns:
@@ -120,7 +119,7 @@ case $CLE_RC in
 	dbg_echo First run, changing some values:
 	dbg_var CLE_RC
 	;;
-# this section converts configuration files of older release upon transition to Nova
+# this section converts configuration files of older releases upon transition to Nova
 # all lines containig the word 'transition' will be removed in next release
 */.clerc)	# started right after upgrade from older release - 'cle update' transition
 	mkdir -m 755 -p $_N # transition
@@ -809,10 +808,10 @@ cle () {
 		select C in $I;do
 			[ $C ] && curl -sk $CLE_SRC/$CLE_REL/doc/$C |mdfilter|less -r; break
 		done;;
-	help)	## cle help [fnc]  -- show help
+	help|-h|-help)	## cle help [fnc]  -- show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C;;
+		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | less -eFX;;
 	"")	_banner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 # DEBUG
