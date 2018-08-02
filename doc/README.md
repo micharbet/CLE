@@ -45,7 +45,7 @@ corresponding section.
 ### lssh utility (ssh wrapper)
 
 The CLE is able to pass itself over ssh to a remote system. Use the ssh wrapper
-called `ssg` instead of the regular 'ssh' command for a login into a remote account
+called `lssh` instead of the regular 'ssh' command for a login into a remote account
 and CLE will be copied over then started seamlessly:
 
     `lssh username@remote.host`
@@ -60,7 +60,7 @@ however they add CLE to the sessions.
 ### lscreen - GNU screen wrapper
 
 This wrapper is a workaround to the original GNU screen to allow using CLE inside
-a screen session. By default `scrn` searches for _yours_ opened/detached session
+a screen session. By default `lscreen` searches for _yours_ opened/detached session
 and jumps into it if finds one. Otherwise it creates a new screen. Another added
 value is a configuration file with a nice status line and shortcuts enabled such as
 Ctrl-Left/Right to switch between windows.
@@ -114,8 +114,8 @@ might require you to add missing utilities. Truly necessary utilities are:
 - sed
 - base64
 - curl
-- ssh (note: no scp required, e.g no openssh-clients on RHEL)
-- GNU screen (only if you want to use the 'scrn' wrapper)
+- ssh (note, no scp required, e.g no openssh-clients on RHEL)
+- GNU screen (only if you want to use 'lscreen' wrapper)
 
 
 
@@ -146,13 +146,9 @@ The only thing you need is a working CLE on your workstation from where you
 can manage the world :-) Everywhere you go you can now use the same basic and
 still customizable environment!
 
-Incorporating the `ssg` and `su*` wrappers together with the `cle` management function
+Incorporating the `lssh` and `lsu*` wrappers together with the `cle` management function
 into one single resource file was just a natural evolution that gave the word 'Live'
 its true meaning -- the `clerc` now contains a mechanism for multiplying its
-
-Incorporating `lssh`, `su*` wrappers together with `cle` managment function into
-one single resource file was just a natural evolution that gave the word 'Live'
-its true meaning -- the `clerc` now contains a mechanism of multiplication it's
 own DNA [1].
 
 [1] CLE is not a virus :-) It doesn't run itself on any host. Everything is

@@ -154,7 +154,7 @@ following files:
 - `$HOME/.cle-YOURLOGIN/tw`
   This file is executed on CLE startup and moreover, it is packed, transferred
   and executed on remote account along with the main resource file everytime
-  new session is initiated with `lssh` or any of `su*` wrappers. Using this file
+  new session is initiated with `lssh` or any of `lsu*` wrappers. Using this file
   you can apply your own settings in just one single file that resides on your
   workstation. 
 
