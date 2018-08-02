@@ -35,7 +35,7 @@ _modsum () (
 
 ## cle e [mod]   -- edit clerc file ev. specified module
 _cle_e () (
-	local F=$CLE_DK/clerc-long
+	local F=$CLE_DK/clerc.sh
 	[ -n "$1" ] && F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
 	case `wc -w <<<$F` in
 	0)
@@ -55,7 +55,7 @@ _cle_e () (
 
 ## cle short c|s|t  -- remove extended comments or debug ev. transtition stuff
 _cle_short () {
-	local F=$CLE_DK/clerc-long
+	local F=$CLE_DK/clerc.sh
 	local S=$CLE_DK/clerc
 	local T=$CLE_DK/clerc-t
 	cp $F $S
@@ -89,7 +89,7 @@ _cle_short () {
 
 ## cle cp        -- copy and run new development version of clerc
 _cle_cp() {
-	local CLERS="$CLE_DK/clerc-long $CLE_RC"
+	local CLERS="$CLE_DK/clerc.sh"
 	[ "$1" = s ] && CLERS="$CLE_DK/clerc $CLE_RC"
 	eval diff $CLERS
 	eval ls -lL $CLERS
@@ -135,7 +135,7 @@ cdc () {
 	git status
 }
 
-## cle commit   -- commit changes into git (also generate clerc from clerc-long)
+## cle commit   -- commit changes into git (also generate clerc from clerc.sh
 _cle_commit () (
 	# generate short version of CLE
 	cle short c d
