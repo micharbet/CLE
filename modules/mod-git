@@ -53,8 +53,24 @@ gidif () {
 	git diff
 }
 
+## giout            -- git checkout with branch selector
+giout ()
+(
+	if [ $1 ]; then
+		BR=$1
+	else
+		BRL=`git branch --list --no-color | sed 's/\*//'`
+		PS3="$_CL branch # $_CN"
+		select BR in $BRL; do
+			[ $BR ] && break
+		done
+	fi
+        git checkout $BR
+)
+
+
 ## gicwb            -- show current working branch name
-gicwb () (
+gitwb () (
 	# search all parent directories
 	while [ $PWD != / ]; do
 		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
