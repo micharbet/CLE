@@ -26,8 +26,8 @@ the current shell context using a trailing dot:
     `wget http://git.io/clerc`
     `. clerc`
 
-* Note, the `http://git.io/clerc' is shortcut. If not sure use real source
-  `https://raw.githubusercontent.com/micharbet/CLE`
+* Note, the `http://git.io/clerc` is shortcut. If not sure use real source
+  `https://raw.githubusercontent.com/micharbet/CLE/master/clerc`
 
 The CLE will be activated and you can configure this environment to be
 persistent with the command:
