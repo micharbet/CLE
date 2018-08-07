@@ -88,13 +88,13 @@ _cle_short () {
 }
 
 ## cle cp        -- copy and run new development version of clerc
-_cle_cp() {
-	local CLERS="$CLE_DK/clerc.sh"
+_cle_cp() (
+	[ $1 ] || CLERS="$CLE_DK/clerc.sh $CLE_RC"
 	[ "$1" = s ] && CLERS="$CLE_DK/clerc $CLE_RC"
 	eval diff $CLERS
 	eval ls -lL $CLERS
 	ask "replace clerc?" && { cp $CLE_RC $CLE_RC.bkdev; eval cp $CLERS; cle reload; }
-}
+)
 
 ## cle ls        -- list CLE related files
 _cle_ls () {

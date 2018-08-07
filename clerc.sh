@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-07-30 (Nova)
+#* version: 2018-07-08 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -277,8 +277,9 @@ _pesc () (
 #: compile PS1 string from values in $CLE_COLOR and $CLE_Px
 #: Note how this function is self-documented!
 _setp () {
-	local CC I CI
-	case "$CLE_CLR" in 
+	local CC I CI C
+	C=${1:-$CLE_CLR}
+	case "$C" in 
 	red)	CC=RrR;;
 	green)	CC=GgG;;
 	yellow)	CC=YyY;;
@@ -288,20 +289,20 @@ _setp () {
 	white|grey|gray) CC=NwW;;
 	tricolora) CC=RBW;;
 	marley)	CC=RYG;; # Bob Marley style :-) have a smoke and imagine...
-	???)	CC=$CLE_CLR;; # any 3 colors
+	???)	CC=$C;; # any 3 colors
 	*)	# print help on colors
 		printb "Unknown color '$CLE_CLR' Select one of predefined:"
 		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
 		echo Alternatively make your own 3-letter code using rgbcmykw/RGBCMYKW
 		echo E.g. cle color rgB
-		CC=NNN
+		return 1
 	esac
 	# decode colors and prompt strings
 	CC=K$CC
 	PS1=""
 	for I in {0..3};do
 		CI=_C${CC:$I:1}
-		[ -z "${!CI}" ] && printb "Wrong color code '${CC:$I:1}' in $CLE_CLR" && CI=_CN
+		[ -z "${!CI}" ] && printb "Wrong color code '${CC:$I:1}' in $C" && CI=_CN
 		eval _C$I="'${!CI}'"
 		PS1="$PS1`_pesc $I` "
 	done
@@ -745,8 +746,7 @@ cle () {
 	#: execute built-in 'cle' subcommand
 	case "$C" in
 	color)	## cle color COLOR -- set prompt color
-		CLE_CLR=$1
-		_setp;;
+		_setp $1 && CLE_CLR=$1;;
 	p?)	## cle p0-p3 [str] -- show/define prompt parts
 		I=CLE_P${C:1:1}
 		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
