@@ -746,7 +746,7 @@ cle () {
 	#: execute built-in 'cle' subcommand
 	case "$C" in
 	color)	## cle color COLOR -- set prompt color
-		_setp $1 && CLE_CLR=$1;;
+		[ $1 ]  && _setp $1 && CLE_CLR=$1;;
 	p?)	## cle p0-p3 [str] -- show/define prompt parts
 		I=CLE_P${C:1:1}
 		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
