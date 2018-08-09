@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-07-08 (Nova)
+#* version: 2018-08-08 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -96,7 +96,7 @@ dbg_var CLE_USER
 CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
-# where in the deep space is CLE growing
+# where in the deep space CLE grows
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
@@ -291,9 +291,9 @@ _setp () {
 	marley)	CC=RYG;; # Bob Marley style :-) have a smoke and imagine...
 	???)	CC=$C;; # any 3 colors
 	*)	# print help on colors
-		printb "Unknown color '$CLE_CLR' Select one of predefined:"
+		printb "Unknown color '$CLE_CLR' Select predefined scheme:"
 		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
-		echo Alternatively make your own 3-letter code using rgbcmykw/RGBCMYKW
+		echo Alternatively create your own 3-letter combo using rgbcmykw/RGBCMYKW
 		echo E.g. cle color rgB
 		return 1
 	esac
