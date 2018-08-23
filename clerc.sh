@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-08-23 (DEVEL)
+#* version: 2018-08-24 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -15,31 +15,30 @@
 #
 # CLE provides:
 # -a colorful prompt with highlighted exit code
-# -builtin aliases and functions
-# -an improved command history
+# -persistent alias store with command 'aa'
+# -rich command history using new command 'h' and 'hh'
+# -seamless remote CLE session using 'lssh' command, with no installation
+# -lsu/lsudo (su/sudo wrappers) with the same effect on localhost
+# -work in gnu screen using 'lscreen'
+# -connamd 'cle' with bash completion to alter settings
+# -integrated documentation: 'cle help' and 'cle doc'
+# -extensible framework enabling modules and further tweaks
+# -online updates
 #
-# 1. execute this file within your shell session
-# 2. integrate it into your profile:
+# Installation:
+# 1. Download and execute this file within your shell session
+# 2. Integrate it into your profile:
 #	$ . clerc
 #	$ cle deploy
-#
-# -use 'lssh' (ssh wrapper) to access remote systemis, CLE is seamlessly
-#  started without installation
-# -try lsu/lsudo (su/sudo wrappers) with the same effect
-# -work in gnu screen using 'lscreen'
-# -alter settings with the 'cle' command
-# -store and manage your aliases with the 'aa' function
-# -use 'h' as a shortcut to the classic shell history
-# -check out the rich history feature with 'hh'
-# -access built-in documentation: 'cle help'
-# -online CLE updates from GIT
+# 3. Enjoy!
 
 #: If you're reading this text, you probably downloaded commented version
-#: of CLE named clerc-long. That is basically fine if you want to check how
-#: the code is the same but the file is much longer. For general use there is
-#: shortened file that has all comments introduced with '#:' removed.
-#: Note other special comments - '##' introduces self documentation
-#: and '#*' denotes script header
+#: of CLE named ;clerc.sh' This is basically fine as the code is the same
+#: however contains extended comments introduce with '#:' plus debugging
+#: sequences. For this, th file is much longer. For general use there is
+#: shortened file with removed unnecessary parts.
+#: Note also other special comments - '##' denotes built-in documentation
+#: while '#*' introduces header lines
 
 # Check if the shell is running as an interactive session otherwise CLE is
 # not needed. This is required for scp compatibility
@@ -234,10 +233,10 @@ _cle_r () {
 	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
 }
 
-# additional prompt escapes
+# CLE prompt escapes
 #: library of enhanced prompt escape codes
 #: they are introduced with % sign
-_pesc () (
+_clesc () (
 	C=_C$1
 	P=CLE_P$1
 	printf "\\[\$$C\\]"
@@ -282,7 +281,7 @@ _setp () {
 		CI=_C${CC:$I:1}
 		[ -z "${!CI}" ] && printb "Wrong color code '${CC:$I:1}' in $C" && CI=_CN
 		eval _C$I="'${!CI}'"
-		PS1="$PS1`_pesc $I` "
+		PS1="$PS1`_clesc $I` "
 	done
 	PS1="$PS1\[\$_CN\]"
 	PS2="\[\$_C1\] >>>\[\$_CN\] "
@@ -360,7 +359,7 @@ esac
 alias mv='mv -i'
 alias rm='rm -i'
 
-## cd commands:
+## cd command additions:
 ## .. ...     -- up one or two levels
 ## -  (dash)  -- cd to recent dir
 - () { cd -;}
@@ -668,14 +667,13 @@ _clexe $CLE_AL
 _clexe $HOME/.cle-local
 _clexe $CLE_RH/$CLE_TW
 _clexe $CLE_CF || { _banner;_defcf;}
-CLE_P3=`sed 's/%>/\\\\\$/g' <<<$CLE_P3`  # transition fix for removed '%>'
 _setp
 _setwt
 
 [ "$CLE_MOTD" ] && { cat /etc/motd;echo;echo $CLE_MOTD;unset CLE_MOTD; }
 
 # check first run
-[ $CLE_1 ] && cat <<-EOT
+[ $CLE_1 ] && cat <<EOT
  It seems you started CLE running '$CLE_RC'
  Since this is the first run, consider setup in your profile.
  Following command will hook CLE in $HOME/.bashrc:
