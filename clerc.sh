@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-08-28 (DEVEL)
+#* version: 2018-08-23 (DEVEL)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -105,7 +105,6 @@ CLE_VER="$CLE_VER debug"
 # check first run
 #: check if CLE has been initiated manually from downloaded file
 _N=$HOME/.cle-$CLE_USER
-CLE_TRANS=mv	# default transition method (move files)
 case $CLE_RC in
 */clerc*) # started manually from downloaded file
 	#: CLE_1 indicates first run (downloaded file started from comandline)
@@ -115,23 +114,9 @@ case $CLE_RC in
 	cp $CLE_RC $CLE_1
 	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
-	CLE_TRANS=cp	# transition method (copy files, do not destroy previous environment)
 	dbg_echo First run, changing some values:
 	dbg_var CLE_RC
 	;;
-# this section converts configuration files of older releases upon transition to Nova
-# all lines containig the word 'transition' will be removed in next release
-*/.clerc)	# started right after upgrade from older release - 'cle update' transition
-	mkdir -m 755 -p $_N # transition
-	mv $CLE_RC $_N/rc && echo "CLE transition: moved .clerc into $_N/rc."
-	CLE_RC=$_N/rc # transition
-	mv $HOME/.cleusr-$CLE_USER $_N/tw.old && echo "CLE transition: found tweak file .cleusr-$CLE_USER, saved to $_N/tw.old (deactivated)."
-	# transition hack: change hook in .bashrc
-	cp .bashrc bashrc.bk	# transition: bashrc
-	sed "/\.clerc/s:.*:[ -f $CLE_RC ] \&\& . $CLE_RC:" .bashrc >bashrc.sed #transition
-	mv bashrc.sed .bashrc # transition
-	echo "CLE transition: .bashrc edited: "; grep -A1 "Command Live" .bashrc
-	;; # transition after update end
 esac
 #: $CLE_RH/$CLE_RD together gives folder with resource and tweak file
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
@@ -632,13 +617,6 @@ cat <<-EOS
 	source $HOME/.screenrc
 EOS
 }
-
-# Transition warnings after wrappers rename
-ssg () { printb "Warning: ssg is deprecated, use 'lssh' instead"; sleep 1;lssh "$@"; }       # transition
-ksuu () { printb "Warning: ksuu is deprecated, use 'lksu' instead"; sleep 1; lksu "$@"; }    # transition
-suu () { printb "Warning: suu is deprecated, use 'lsu' instead"; sleep 1; lsu "$@"; }        # transition
-sudd () { printb "Warning: sudd is deprecated, use 'lsudo' instead"; sleep 1; lsudo "$@"; }  # transition
-scrn () { printb "Warning: scrn is deprecated, use 'lscreen' instead"; sleep 3; lscreen "$@"; }  # transition
 
 #: Enhnace PATH by user's own bin folder
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
