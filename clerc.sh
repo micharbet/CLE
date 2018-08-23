@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-08-08 (Nova)
+#* version: 2018-08-28 (DEVEL)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -334,6 +334,10 @@ _prompt () {
 	_HO=$_H
 	IFS=$OI
 }
+PROMPT_DIRTRIM=2
+PROMPT_COMMAND=_prompt
+shopt -s checkwinsize
+
 
 # window title
 #: This is simple window title composer
@@ -364,63 +368,49 @@ mdfilter () {
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
-##
-## Default aliases and functions
-## -----------------------------
-_defalias () {
-	## ls commands aliases: l ll la lt llr l. lld
-	case $OSTYPE in
-	linux*) alias ls='ls --color=auto';;
-	darwin*) export CLICOLOR=1;export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
-	FreeBSD*) alias ls='ls -G';;
-	*) alias ls='ls -F' # at least some file type indication
-	esac
-	alias l='ls -l'
-	alias ll='ls -lL'
-	alias lt='ls -ltr'
-	alias la='ls -al'
-	alias llr='ls -lR'
-	alias lld='ls -ld'
-	alias l.='ls -ld .?*'
-	## cd command aliases:
-	## .. ...     -- up one or two levels
-	## cd-        -- cd to recent dir
-	## -  (dash)  -- cd to recent dir
-	alias ..='cd ..'
-	alias ...='cd ../..'
-	alias cd-='cd -'
-	## xx & cx    -- bookmark & use path; stored in $XX
-	alias xx='XX=`pwd`; echo path bookmark: XX=$XX'
-	alias cx='cd $XX'
-	alias grep='grep --color=auto'
-	alias mv='mv -i'
-	alias rm='rm -i'
-	# aslias to old wrappers
-}
+# colorize some commands
+case $OSTYPE in
+linux*)		alias ls='ls --color=auto';;
+darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
+FreeBSD*)	alias ls='ls -G "$@"';;
+*)		alias ls='ls -F';; # at least some file type indication
+esac
 
-# '-' must be function, alias was troublesome
+alias grep='grep --color=auto'
+alias mv='mv -i'
+alias rm='rm -i'
+
+## cd commands :
+## .. ...     -- up one or two levels
+## -  (dash)  -- cd to recent dir
 - () { cd -;}
+.. () { cd ..;}
+... () { cd ../..;}
+## xx & cx    -- bookmark $PWD & use later
+xx () { _XX=$PWD; echo path bookmark: $_XX; }
+cx () { cd $_XX; }
+
 
 ##
 ## Alias management
 ## ----------------
-CLE_ALI=$CLE_D/aliases # personalized aliases
+CLE_AL=$CLE_D/al # personalized aliases
 aa () {
-	local ABK=$CLE_ALI.bk TAL=$CLE_ALI.ed
+	local ABK=$CLE_AL.bk TAL=$CLE_AL.ed
 	case "$1" in
 	"")	## aa         -- show aliases
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
 	-s)	## aa -s      -- save current alias set
-		cp $CLE_ALI $ABK 2>/dev/null
-		alias >$CLE_ALI;;
+		cp $CLE_AL $ABK 2>/dev/null
+		alias >$CLE_AL;;
 	-l)	## aa -l      -- reload aliases
 		unalias -a
-		. $CLE_ALI;;
+		. $CLE_AL;;
 	-e)	## aa -e      -- edit and reload aliases
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
-		mv $TAL $CLE_ALI
+		mv $TAL $CLE_AL
 		aa -l
 		printb Backup in: $ABK;;
 	*=*)	## aa a='b'   -- create and save new alias
@@ -657,26 +647,13 @@ suu () { printb "Warning: suu is deprecated, use 'lsu' instead"; sleep 1; lsu "$
 sudd () { printb "Warning: sudd is deprecated, use 'lsudo' instead"; sleep 1; lsudo "$@"; }  # transition
 scrn () { printb "Warning: scrn is deprecated, use 'lscreen' instead"; sleep 3; lscreen "$@"; }  # transition
 
-# session startup
-#: run default resources only on non-login sessions
-[[ $0 =~ ^- ]] || { _clexe /etc/profile; _clexe $HOME/.bashrc; }
-
-#: Note that default aliases are always renewed
-#: That's because there are system dependencies
-_clexe $CLE_ALI
-_defalias
-
-PROMPT_DIRTRIM=2
-PROMPT_COMMAND=_prompt
-shopt -s checkwinsize
-
 #: Enhnace PATH by user's own bin folder
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 # completions
 #: Command 'cle' completion
 #: as an addition, prompt strings are filled for convenience :)
-_clecmp () {
+_compcle () {
 	#: list of subcommands, this might be reworked to have possibility of expansion
 	#: with modules (TODO)
 	#: 'cle deploy' is hidden intentionaly as user should do it only on when really needed
@@ -694,12 +671,16 @@ _clecmp () {
 		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
 	done
 	}
-complete -F _clecmp cle
+complete -F _compcle cle
 
 #: lssh there are two possibilities of ssh completion _known_hosts is more common, _ssh is better
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 declare -F _ssh >/dev/null && complete -F _ssh lssh
 
+
+# session startup
+_clexe $CLE_AL
+[[ $0 =~ ^- ]] || { _clexe /etc/profile; _clexe $HOME/.bashrc; }
 
 # session record
 TTY=`tty|sed 's;[/dev];;g'`
