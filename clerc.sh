@@ -158,13 +158,6 @@ _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
 CLE_WS=${_I:1}	#: remove first character that might be '1' or '-'
 
-# RedH to Nova transition hacks stage 2
-dbg_var CLE_TRANS # transition mode
-[ -f $_D/.clecf-$CLE_USER ] && $CLE_TRANS -f $_D/.clecf-$CLE_USER $CLE_D/cf && echo CLE transition: $CLE_TRANS config file
-[ -f $_D/.aliases-$CLE_USER ] && $CLE_TRANS -f $_D/.aliases-$CLE_USER $CLE_D/aliases && echo CLE transition: $CLE_TRANS aliases
-[ -d $_D/.cle -a $CLE_TRANS = 'mv' ] && mv -f $_D/.cle $_D/cle-old && echo CLE transition: found .cle - deactivated, saved into $HOME/dotcle-old
-[ $CLE_TRANS = 'mv' ] && rm -f $_D/.cleusr-$CLE_USER* $_D/.screenrc-$CLE_USER* $_D/.clerc-remote-$CLE_USER* $_D/.aliases-$CLE_USER* $_D/clerc-* 2>/dev/null # transition: debris removal
-
 # color table
 #: initialize $_C* variables with terminal compatible escape sequences
 #: following are basic ones:
@@ -380,7 +373,7 @@ alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
 
-## cd commands :
+## cd commands:
 ## .. ...     -- up one or two levels
 ## -  (dash)  -- cd to recent dir
 - () { cd -;}
@@ -679,10 +672,9 @@ declare -F _ssh >/dev/null && complete -F _ssh lssh
 
 
 # session startup
-_clexe $CLE_AL
-[[ $0 =~ ^- ]] || { _clexe /etc/profile; _clexe $HOME/.bashrc; }
+_clexe /etc/profile
+_clexe $HOME/.bashrc
 
-# session record
 TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
 
@@ -692,6 +684,7 @@ for _I in $CLE_D/mod-*;do
 done
 
 # config & tweaks
+_clexe $CLE_AL
 _clexe $HOME/.cle-local
 _clexe $CLE_RH/$CLE_TW
 _clexe $CLE_CF || { _banner;_defcf;}
