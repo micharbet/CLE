@@ -346,7 +346,8 @@ mdfilter () {
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
-# colorize some commands
+
+# colorize ls
 case $OSTYPE in
 linux*)		alias ls='ls --color=auto';;
 darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
@@ -354,7 +355,8 @@ FreeBSD*)	alias ls='ls -G "$@"';;
 *)		alias ls='ls -F';; # at least some file type indication
 esac
 
-alias grep='grep --color=auto'
+# do not colorize grep on busybox
+[ -L `which grep` ] || alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
 
