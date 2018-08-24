@@ -36,7 +36,7 @@
 # Check if the shell is running as an interactive session otherwise CLE is
 # not needed. This is required for scp compatibility
 if [ -t 0 -a -z "$CLE_EXE" -a -z "$BASH_EXECUTION_STRING" ];then
-# warning: magic inside!
+# Now it really starts, warning: magic inside!
 
 
 # a little bit complicated way to find the absolute path
@@ -49,6 +49,19 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 # ensure bash session will be sourced with this rcfile
 [[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
+
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1 ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	. $1
+}
+CLE_EXE=$CLE_RC
+
+_clexe /etc/profile
+_clexe $HOME/.bashrc
 
 # who I am
 _N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
@@ -103,20 +116,6 @@ _I=0; for _N in k r g y b m c w; do
 done
 _Ce=`tput setab 1;tput setaf 7` # err highlight
 
-
-#
-# Internal helper functions
-#
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1 ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	. $1
-}
-CLE_EXE=$CLE_RC
 
 # boldprint
 printb () { printf "$_CL$*$_CN\n";}
@@ -275,18 +274,19 @@ FreeBSD*)	alias ls='ls -G "$@"';;
 *)		alias ls='ls -F';; # at least some file type indication
 esac
 
-# do not colorize grep on busybox
-[ -L `which grep` ] || alias grep='grep --color=auto'
+# colorized grep except on busybox
+[ -L `command which grep` ] || alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
 
+unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
 ## cd command additions:
 ## .. ...     -- up one or two levels
 ## -  (dash)  -- cd to recent dir
 - () { cd -;}
 .. () { cd ..;}
 ... () { cd ../..;}
-## xx & cx    -- bookmark $PWD & use later
+## xx & cx   -- bookmark $PWD & use later
 xx () { _XX=$PWD; echo path bookmark: $_XX; }
 cx () { cd $_XX; }
 
@@ -306,14 +306,14 @@ aa () {
 	-l)	## aa -l      -- reload aliases
 		unalias -a
 		. $CLE_AL;;
-	-e)	## aa -e      -- edit and reload aliases
+	-e)	## aa -e      -- edit aliases
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
 		mv $TAL $CLE_AL
 		aa -l
 		printb Backup in: $ABK;;
-	*=*)	## aa a='b'   -- create and save new alias
+	*=*)	## aa a='b'   -- create new alias and save
 		alias "$*"
 		aa -s;;
 	*)	cle help aa
@@ -503,11 +503,7 @@ complete -F _compcle cle
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 declare -F _ssh >/dev/null && complete -F _ssh lssh
 
-
 # session startup
-_clexe /etc/profile
-_clexe $HOME/.bashrc
-
 TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
 

@@ -46,7 +46,7 @@
 #: that means you should avoid printing anything unnecessary onto
 #: non interactive sessions.
 if [ -t 0 -a -z "$CLE_EXE" -a -z "$BASH_EXECUTION_STRING" ];then
-# warning: magic inside!
+# Now it really starts, warning: magic inside!
 
 # debug stuff
 [ -f $HOME/NOCLE ] && { PS1="[NOCLE] $PS1"; return; }  # debug
@@ -79,6 +79,25 @@ dbg_var CLE_RC
 dbg_echo "-- afterexec --"
 dbg_echo CLE resource init begins!
 
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	dbg_echo clexe $*
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1 ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	. $1
+}
+CLE_EXE=$CLE_RC
+
+#: Run profile files as soon as possible.
+#: Things in /etc/profile.d can override some settings.
+#: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
+#: breaks rich history.
+_clexe /etc/profile
+_clexe $HOME/.bashrc
+#: ...also thinking how important is to run .profile or .bash_profile
+
 # who I am
 #: determine username that will be inherited over the all
 #: subsquent sessions initiated with lssh and su* wrappers
@@ -102,10 +121,9 @@ CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
 CLE_VER="$CLE_VER debug"
 
 # check first run
-#: check if CLE has been initiated manually from downloaded file
+#: prepare environment if CLE has been initiated manually from downloaded file
 _N=$HOME/.cle-$CLE_USER
-case $CLE_RC in
-*/clerc*) # started manually from downloaded file
+if [[ $CLE_RC =~ /clerc ]]; then
 	#: CLE_1 indicates first run (downloaded file started from comandline)
 	#: 'rc1' prevents accidental overwrite of deployed environment
 	CLE_1=$_N/rc1
@@ -115,8 +133,8 @@ case $CLE_RC in
 	CLE_RC=$CLE_1
 	dbg_echo First run, changing some values:
 	dbg_var CLE_RC
-	;;
-esac
+fi
+
 #: $CLE_RH/$CLE_RD together gives folder with resource and tweak file
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
 CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
@@ -162,21 +180,6 @@ done
 #: and... special color code for error highlight in prompt
 _Ce=`tput setab 1;tput setaf 7` # err highlight
 
-
-#
-# Internal helper functions
-#
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	dbg_echo clexe $*
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1 ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	. $1
-}
-CLE_EXE=$CLE_RC
 
 # boldprint
 printb () { printf "$_CL$*$_CN\n";}
@@ -346,6 +349,11 @@ mdfilter () {
 }
 
 
+#: CLE defines just basic aliases
+#: Previously there were bunch of them, just because I liked e.g. various
+#: 'ls' variants. However it revealed to be pushy and intrusive. Moreover
+#: when it all was enclosed in function rendering default aliases difficult
+#: to redefine.
 # colorize ls
 case $OSTYPE in
 linux*)		alias ls='ls --color=auto';;
@@ -354,20 +362,25 @@ FreeBSD*)	alias ls='ls -G "$@"';;
 *)		alias ls='ls -F';; # at least some file type indication
 esac
 
-# do not colorize grep on busybox
-[ -L `which grep` ] || alias grep='grep --color=auto'
+# colorized grep except on busybox
+#: busybox identified by symlinked 'grep' file
+[ -L `command which grep` ] || alias grep='grep --color=auto'
 alias mv='mv -i'
 alias rm='rm -i'
 
+#: Those are just nice and I believe don't hurt :)
+unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
 ## cd command additions:
 ## .. ...     -- up one or two levels
 ## -  (dash)  -- cd to recent dir
 - () { cd -;}
 .. () { cd ..;}
 ... () { cd ../..;}
-## xx & cx    -- bookmark $PWD & use later
+## xx & cx   -- bookmark $PWD & use later
 xx () { _XX=$PWD; echo path bookmark: $_XX; }
 cx () { cd $_XX; }
+#: Attempt to search for commands 'xx' and 'cx' on internet failed so I think
+#: it's safe to use them.
 
 
 ##
@@ -378,6 +391,7 @@ aa () {
 	local ABK=$CLE_AL.bk TAL=$CLE_AL.ed
 	case "$1" in
 	"")	## aa         -- show aliases
+		#: also meke the output nicer and more easy to read
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
 	-s)	## aa -s      -- save current alias set
 		cp $CLE_AL $ABK 2>/dev/null
@@ -385,14 +399,14 @@ aa () {
 	-l)	## aa -l      -- reload aliases
 		unalias -a
 		. $CLE_AL;;
-	-e)	## aa -e      -- edit and reload aliases
+	-e)	## aa -e      -- edit aliases
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
 		mv $TAL $CLE_AL
 		aa -l
 		printb Backup in: $ABK;;
-	*=*)	## aa a='b'   -- create and save new alias
+	*=*)	## aa a='b'   -- create new alias and save
 		alias "$*"
 		aa -s;;
 	*)	cle help aa
@@ -423,7 +437,8 @@ h () (
 #: 1 - selects history records based on search criteria
 #: 2 - extracts required information from selected lines
 #: 3 - output (directly to stdout or to 'less')
-#: the code is ...i'd say ugly, to be honest
+#: The code is ...i'd say ugly, to be honest
+#: Oh yeah, it's horrible code, I'll definitely rewrite it!
 hh () (
 	unset IFS	#: necessary if user manipulates with IFS value
 	while getopts "cstdlf" O;do
@@ -645,15 +660,13 @@ _compcle () {
 	}
 complete -F _compcle cle
 
-#: lssh there are two possibilities of ssh completion _known_hosts is more common, _ssh is better
+#: lssh completion
+#: there are two possibilities of ssh completion _known_hosts is more common
+#: while _ssh is better
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 declare -F _ssh >/dev/null && complete -F _ssh lssh
 
-
 # session startup
-_clexe /etc/profile
-_clexe $HOME/.bashrc
-
 TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
 
@@ -683,6 +696,15 @@ EOT
 ##
 ## CLE command & control
 ## ---------------------
+#: This function must be at the very end!
+#: The reason is to prevent it's redefine within modules and tweak files
+#: Remember, you can replace any internal function if you need!
+#: Regarding 'cle' itself, it contains check of existence '_cle_something'
+#: shell function and runs it instead of built-in code when invoked as command
+#: 'cle something'. This is how modularity has been implemented.
+#: That means you can replace parts of code or enhance 'cle' command by
+#: defining your own '_cle_something' bash functions
+#: 
 cle () {
 	local C I MM BRC NC
 	C=$1;shift
