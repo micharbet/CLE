@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-## CLE : Command Live Environment
+## ** CLE : Command Live Environment **
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
@@ -370,13 +370,13 @@ alias rm='rm -i'
 
 #: Those are just nice and I believe don't hurt :)
 unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
-## cd command additions:
-## .. ...     -- up one or two levels
-## -  (dash)  -- cd to recent dir
+## _cd command additions:_
+## `.. ...`     - up one or two levels
+## `-`  (dash)  - cd to recent dir
 - () { cd -;}
 .. () { cd ..;}
 ... () { cd ../..;}
-## xx & cx   -- bookmark $PWD & use later
+## `xx` & `cx`   - bookmark $PWD & use later
 xx () { _XX=$PWD; echo path bookmark: $_XX; }
 cx () { cd $_XX; }
 #: Attempt to search for commands 'xx' and 'cx' on internet failed so I think
@@ -384,29 +384,28 @@ cx () { cd $_XX; }
 
 
 ##
-## Alias management
-## ----------------
+## _Alias management_
 CLE_AL=$CLE_D/al # personalized aliases
 aa () {
 	local ABK=$CLE_AL.bk TAL=$CLE_AL.ed
 	case "$1" in
-	"")	## aa         -- show aliases
+	"")	## `aa`         - show aliases
 		#: also meke the output nicer and more easy to read
                 alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
-	-s)	## aa -s      -- save current alias set
+	-s)	## `aa -s`      - save current alias set
 		cp $CLE_AL $ABK 2>/dev/null
 		alias >$CLE_AL;;
-	-l)	## aa -l      -- reload aliases
+	-l)	## `aa -l`      - reload aliases
 		unalias -a
 		. $CLE_AL;;
-	-e)	## aa -e      -- edit aliases
+	-e)	## `aa -e`      - edit aliases
 		alias >$ABK
 		cp $ABK $TAL
 		vi $TAL
 		mv $TAL $CLE_AL
 		aa -l
 		printb Backup in: $ABK;;
-	*=*)	## aa a='b'   -- create new alias and save
+	*=*)	## `aa a='b'`   - create new alias and save
 		alias "$*"
 		aa -s;;
 	*)	cle help aa
@@ -415,8 +414,7 @@ aa () {
 }
 
 ##
-## History tools
-## -------------
+## _History tools_
 #: Following settings should not be edited, nor tweaked in other files.
 #: Mainly $HISTTIMEFORMAT - the rich history feature is dependent on it!
 HISTFILE=$_D/.history-$CLE_USER
@@ -425,14 +423,14 @@ HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
 CLE_HIST=$_D/.history-ALL
 
-## h               -- bash 'history' wrapper
+## `h`               - bash 'history' wrapper
 h () (
 	history "$@"|while read N D T C;do
 		echo "$_CB$N$_Cb $D $T $_CN$_CL$C$_CN"
 	done
 )
 
-## hh [opt] [srch] -- rich history viewer
+## `hh [opt] [srch]` - rich history viewer
 #: Rich history viewer is a stream of filters
 #: 1 - selects history records based on search criteria
 #: 2 - extracts required information from selected lines
@@ -443,25 +441,25 @@ hh () (
 	unset IFS	#: necessary if user manipulates with IFS value
 	while getopts "cstdlf" O;do
 		case $O in
-		s) ONLY0=1;; ## hh -s           -- print successful commands only
-		c) ONLYC=1;; ## hh -c           -- show just commands
-		d) THIS=`date +%Y-%m-%d`;; ## hh -d           -- today's commands
-		t) THIS=$CLE_USER-$$;; ## hh -t           -- commands from current session
-		f) FMODE=1;NUM=0;OUTF="sort|uniq";; ## hh -f           -- show working folder history
-		l) NUM=0; OUTF="less -r +G";; ## hh -l           -- show history with 'less'
+		s) ONLY0=1;; ## `hh -s`           - print successful commands only
+		c) ONLYC=1;; ## `hh -c`           - show just commands
+		d) THIS=`date +%Y-%m-%d`;; ## `hh -d`           - today's commands
+		t) THIS=$CLE_USER-$$;; ## `hh -t`           - commands from current session
+		f) FMODE=1;NUM=0;OUTF="sort|uniq";; ## `hh -f`           - show working folder history
+		l) NUM=0; OUTF="less -r +G";; ## `hh -l`           - show history with 'less'
 		\?) cle help hh;return
 	esac;done
 	shift $((OPTIND-1))
-	F1=${*:-${NUM:-100}}	## hh [opt]        -- no search; print recent 100 items
+	F1=${*:-${NUM:-100}}	## `hh [opt]`        - no search; print recent 100 items
 	#:
 	#: Filter #1 (search by options  -t -d and/or string)
 	grep -w "$THIS" $CLE_HIST | case $F1 in  #FILTER1 (search)
-	0)	## hh [opt] 0      -- print all
+	0)	## `hh [opt] 0`      - print all
 		cat;;
 	[1-9]|[1-9][0-9]|[1-9][0-9][0-9])
-		## hh [opt] number -- find last N entries
+		## `hh [opt] number` - find last N entries
 		tail -$F1;;
-	*)	## hh [opt] string -- search in history
+	*)	## `hh [opt] string` - search in history
 		grep "$*"
 	esac | while read -r D T U E P C;do #FILTER2 (format)
 	 #:
@@ -495,8 +493,7 @@ _rhlog () {
 }
 
 ##
-## Live session wrappers
-## ---------------------
+## _Live session wrappers_
 
 # environment packer
 #: grab *active* resource file, tweak file, pack it to tarball and store
@@ -527,7 +524,7 @@ _clepak () {
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
 }
 
-## lssh [usr@]host   -- access remote system and take CLE along
+## `lssh [usr@]host`   - access remote system and take CLE along
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	#: on CLE workstation, suffix to resource filename is added
@@ -548,12 +545,12 @@ lssh () (
 #: version 'ksu'. They are basically simple, you see. Environment is not
 #: packed and transferred when using them. Instead the original files from
 #: user's home folder are used.
-## lsudo [user]      -- sudo wrapper; root is the default account
+## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
 	sudo -i -u ${1:-root} $CLE_RC
 )
 
-## lsu [user]        -- su wrapper
+## `lsu [user]`        - su wrapper
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
@@ -562,14 +559,14 @@ lsu () (
 	eval su -l $S ${1:-root} $CLE_RC
 )
 
-## lksu [user]       -- ksu wrapper
+## `lksu [user]`       - ksu wrapper
 #: Kerberized version of 'su'
 lksu () (
 	ksu ${1:-root} -a -c $CLE_RC
 )
 
-## lscreen [name]    -- gnu screen wrapper, join your recent session or start new
-## lscreen -j [name] -- join other screen sessions, ev. search by name
+## `lscreen [name]`    - gnu screen wrapper, join your recent session or start new
+## `lscreen -j [name]` - join other screen sessions, ev. search by name
 #: GNU screen wrapper is here 1) because of there was no way to tell screen
 #: program to start CLE on more than first window and, 2) to allow easily
 #: join detached own session and/or join cooperative session with more
@@ -694,8 +691,7 @@ $_CL	cle deploy
 EOT
 
 ##
-## CLE command & control
-## ---------------------
+## _CLE command & control_
 #: This function must be at the very end!
 #: The reason is to prevent it's redefine within modules and tweak files
 #: Remember, you can replace any internal function if you need!
@@ -719,18 +715,18 @@ cle () {
 	fi
 	#: execute built-in 'cle' subcommand
 	case "$C" in
-	color)	## cle color COLOR -- set prompt color
+	color)	## `cle color COLOR` - set prompt color
 		[ $1 ]  && _setp $1 && CLE_CLR=$1;;
-	p?)	## cle p0-p3 [str] -- show/define prompt parts
+	p?)	## `cle p0-p3 [str]` - show/define prompt parts
 		I=CLE_P${C:1:1}
 		[ "$*" ] && eval "$I='$*'" || echo "$I='${!I}'"
 		_setp;;
-	time)	## cle time [off]  -- toggle server time in prompt
+	time)	## `cle time [off]`  - toggle server time in prompt
 		[ "$1" = off ] && CLE_P0=%e || CLE_P0='%e \A'
 		_setp;;
-	title)	## cle title [off] -- toggle window title
+	title)	## `cle title [off]` - toggle window title
 		[ "$1" = off ] && CLE_WT='' || _setwt;;
-	deploy) ## cle deploy      -- hook CLE into user's profile
+	deploy) ## `cle deploy`      - hook CLE into user's profile
 		cp $CLE_RC $CLE_D/rc
 		CLE_RC=$CLE_D/rc
 		unset CLE_1
@@ -740,7 +736,7 @@ cle () {
 		ask "Do you want to add CLE to .bashrc?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $BRC
 		cle reload;;
-	update) ## cle update      -- install fresh version of CLE
+	update) ## `cle update`      - install fresh version of CLE
 		NC=$CLE_D/rc.new
 		curl -k $CLE_SRC/master/clerc >$NC	# always update from master branch
 		C=`sed -n 's/^#\* version: //p' $NC`
@@ -756,14 +752,14 @@ cle () {
 		mv -f $NC $CLE_RC
 		cle reload
 		printb New CLE activated, backup saved here: $BRC;;
-	reload) ## cle reload      -- reload CLE
+	reload) ## `cle reload`      - reload CLE
 		unset CLE_EXE
 		. $CLE_RC
 		echo CLE $CLE_VER;;
-	reset)	## cle reset       -- reset configuration
+	reset)	## `cle reset`       - reset configuration
 		rm -f $CLE_CF
 		cle reload;;
-	mod)	## cle mod         -- cle module management
+	mod)	## `cle mod`         - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code (see the beginning
 		#: of 'cle' function)
@@ -773,19 +769,19 @@ cle () {
 		curl -k $CLE_SRC/$CLE_REL/modules/$I >$MM
 		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
 		cle mod "$@";;
-	env)	## cle env         -- print CLE_* variables
+	env)	## `cle env`         - print CLE_* variables
 		for I in ${!CLE_*};do printf "$_CL%-12s$_CN%s\n" $I "${!I}";done;;
-	doc)	## cle doc         -- show documentation
+	doc)	## `cle doc`         - show documentation
 		I=`curl -sk $CLE_SRC/$CLE_REL/doc/index.md`
 		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
 		PS3="$_CL doc # $_CN"
 		select C in $I;do
 			[ $C ] && curl -sk $CLE_SRC/$CLE_REL/doc/$C |mdfilter|less -r; break
 		done;;
-	help|-h|-help)	## cle help [fnc]  -- show help
+	help|-h|-help)	## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | less -eFX;;
+		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
 	"")	_banner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 # DEBUG
