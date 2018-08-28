@@ -370,7 +370,7 @@ alias rm='rm -i'
 
 #: Those are just nice and I believe don't hurt :)
 unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
-## _cd command additions:_
+## ** cd command additions **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
 - () { cd -;}
@@ -384,7 +384,7 @@ cx () { cd $_XX; }
 
 
 ##
-## _Alias management_
+## ** Alias management **
 CLE_AL=$CLE_D/al # personalized aliases
 aa () {
 	local ABK=$CLE_AL.bk TAL=$CLE_AL.ed
@@ -414,7 +414,7 @@ aa () {
 }
 
 ##
-## _History tools_
+## ** History tools **
 #: Following settings should not be edited, nor tweaked in other files.
 #: Mainly $HISTTIMEFORMAT - the rich history feature is dependent on it!
 HISTFILE=$_D/.history-$CLE_USER
@@ -493,7 +493,7 @@ _rhlog () {
 }
 
 ##
-## _Live session wrappers_
+## ** Live session wrappers **
 
 # environment packer
 #: grab *active* resource file, tweak file, pack it to tarball and store
@@ -691,7 +691,7 @@ $_CL	cle deploy
 EOT
 
 ##
-## _CLE command & control_
+## ** CLE command & control **
 #: This function must be at the very end!
 #: The reason is to prevent it's redefine within modules and tweak files
 #: Remember, you can replace any internal function if you need!
@@ -781,7 +781,7 @@ cle () {
 	help|-h|-help)	## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
+		sed -n 's/.*## \(.*\)/\1/p' ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
 	"")	_banner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 # DEBUG
