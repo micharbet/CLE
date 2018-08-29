@@ -1,7 +1,7 @@
 ##
-## cle-rcmove: move resource files to different folder
-## ---------------------------------------------------
-#* version: 2018-03-23
+## ** cle-rcmove: Move resource files to different folder **
+#
+#* version: 2018-08-29
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -12,7 +12,10 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
-## cle rcmove [dest]  --  move the environment files
+## `cle rcmove [dest]`  --  move the environment files
+## This module has probably one-time use.
+## You can safely remove it using `cle mod del rcmove`
+
 local BRC=$HOME/.bashrc
 local NOW=$CLE_RH/$CLE_RD
 

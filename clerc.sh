@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-08-24 (Nova)
+#* version: 2018-08-29 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -781,7 +781,7 @@ cle () {
 	help|-h|-help)	## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
-		sed -n 's/.*## \(.*\)/\1/p' ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
+		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
 	"")	_banner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 # DEBUG

@@ -1,8 +1,7 @@
 ##
-## cle-hist: rich history manipulations
-## ------------------------------------
-#* version: 2018-05-01
-#* author:  Michael Arbet (marbet@redhat.com)
+## ** cle-hist: Rich history manipulations **
+#
+#* version: 2018-08-29redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
 #* Copyright (C) 2018 by Michael Arbet 
@@ -13,7 +12,7 @@
 # of the License, or (at your option) any later version.
 
 case "$1" in
-import) ## cle hist import     -- import old .badh_history into rich file
+import) ## `cle hist import`   -- import old .badh_history into rich file
 	HF=$HOME/.bash_history
 	[ $2 ] && HF=$2 # another history file on cmdline
 	if grep "/un/known" $CLE_HIST >/dev/null; then
@@ -48,16 +47,16 @@ import) ## cle hist import     -- import old .badh_history into rich file
 	echo "Use command 'hh $CLE_USER-OLD' to search them"
 	unset HF HL HT
 	;;
-fix) ## cle hist fix        -- fix issues in rich history file
+fix) ## `cle hist fix`      -- fix issues in rich history file
 	echo TODO...
 	;;
-del) ## cle hist del STR    -- delete rich history records by search STR
+del) ## `cle hist del STR`  -- delete rich history records by search STR
 	echo TODO...
 	;;
-rest) ## cle hist rest       -- restore rich history from backup
+rest) ## `cle hist rest`     -- restore rich history from backup
 	echo TODO...
 	;;
-arch) ## cle hist arch       -- archive rich history file
+arch) ## `cle hist arch`     -- archive rich history file
 	echo TODO...
 	;;
 *)

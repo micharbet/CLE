@@ -1,11 +1,11 @@
 ##
-## mod-cledk: functions to assist CLE development process
-## -------------------------------------------------------
+## ** mod-cledk: functions to assist CLE development process **
+#
 #* version: 2018-05-01
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#*` Copyright (C) 2017-2018 by Michael Arbet
+#* Copyright (C) 2017-2018 by Michael Arbet
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@ _modsum () (
 )
 
 
-## cle e [mod]   -- edit clerc file ev. specified module
+## `cle e [mod]`   -- edit clerc file ev. specified module
 _cle_e () (
 	local F=$CLE_DK/clerc.sh
 	[ -n "$1" ] && F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
@@ -53,7 +53,7 @@ _cle_e () (
 	esac
 )
 
-## cle short c|s|t  -- remove extended comments or debug ev. transtition stuff
+## `cle short c|s|t`  -- remove extended comments or debug ev. transtition stuff
 _cle_short () {
 	local F=$CLE_DK/clerc.sh
 	local S=$CLE_DK/clerc
@@ -87,7 +87,7 @@ _cle_short () {
 	ask Wanna see diff? && diff -W $COLUMNS -y $F $S
 }
 
-## cle cp        -- copy and run new development version of clerc
+## `cle cp`        -- copy and run new development version of clerc
 _cle_cp() (
 	[ $1 ] || CLERS="$CLE_DK/clerc.sh $CLE_RC"
 	[ "$1" = s ] && CLERS="$CLE_DK/clerc $CLE_RC"
@@ -96,29 +96,29 @@ _cle_cp() (
 	ask "replace clerc?" && { cp $CLE_RC $CLE_RC.bkdev; eval cp $CLERS; cle reload; }
 )
 
-## cle ls        -- list CLE related files
+## `cle ls`        -- list CLE related files
 _cle_ls () {
 	ls -l ~/.history-* $CLE_D
 }
 
-## cle exe       -- show list of all files executed during CLE startup
+## `cle exe`       -- show list of all files executed during CLE startup
 _cle_exe () {
 	echo $CLE_EXE|tr : \\n
 }
 
-## cle func      -- list all current bash functions
+## `cle func`      -- list all current bash functions
 _cle_func () {
 	declare -f |sed -n '/.\+\s()/p'
 }
 
 
-## cle debug [on|off]  - debug mode ($CLE_DEBUG variable)
+## `cle debug [on|off]`  - debug mode ($CLE_DEBUG variable)
 _cle_debug () {
 	CLE_DEBUG=$1
 	echo CLE_DEBUG=$CLE_DEBUG
 }
 
-## cle modgen     -- generate module index
+## `cle modgen`     -- generate module index
 _cle_modgen () (
 	# find modules mod-* and cle-*
 	cd $CLE_DK/modules
@@ -128,14 +128,14 @@ _cle_modgen () (
 ) >$CLE_DK/modules/modulist
 
 
-## cdc      - shortcut into $HOME/d/cle
+## `cdc`      - shortcut into $HOME/d/cle
 cdc () {
 	cd $CLE_DK
 	printb CLE development kit: $PWD
 	git status
 }
 
-## cle commit   -- commit changes into git (also generate clerc from clerc.sh
+## `cle commit`   -- commit changes into git (also generate clerc from clerc.sh
 _cle_commit () (
 	# generate short version of CLE
 	cle short c d
@@ -145,7 +145,7 @@ _cle_commit () (
 	gicom $1
 )
 
-## cle modln    -- symlink module from $CLE_DK
+## `cle modln`    -- symlink module from $CLE_DK
 _cle_modln () (
 	F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
 	case `wc -w <<<$F` in

@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-08-24 (Nova)
+#* version: 2018-08-29 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -279,7 +279,7 @@ alias mv='mv -i'
 alias rm='rm -i'
 
 unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
-## _cd command additions:_
+## ** cd command additions **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
 - () { cd -;}
@@ -291,7 +291,7 @@ cx () { cd $_XX; }
 
 
 ##
-## _Alias management_
+## ** Alias management **
 CLE_AL=$CLE_D/al # personalized aliases
 aa () {
 	local ABK=$CLE_AL.bk TAL=$CLE_AL.ed
@@ -320,7 +320,7 @@ aa () {
 }
 
 ##
-## _History tools_
+## ** History tools **
 HISTFILE=$_D/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
@@ -381,7 +381,7 @@ _rhlog () {
 }
 
 ##
-## _Live session wrappers_
+## ** Live session wrappers **
 
 # environment packer
 _clepak () {
@@ -527,7 +527,7 @@ $_CL	cle deploy
 EOT
 
 ##
-## _CLE command & control_
+## ** CLE command & control **
 cle () {
 	local C I MM BRC NC
 	C=$1;shift
