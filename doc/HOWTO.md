@@ -273,17 +273,17 @@ error message printed out if no session with the given name is found.
 
 ## 4. Alias management
 
-CLE defines default aliases for basic commands like ls, mv, rm, and several cd
-enhancements. Some of them are system dependent - there are different options
-for colorful outputs in 'ls' etc. A user can define their own aliases and have
-them stored for future use.
+CLE defines basic aliases for coloring their output (ls,grep) and to ensure 
+sort of safety enforcing interactive mode (rm, mv). A user can define their
+own aliases and have, eventually override mentioned basic definitions. User's
+aliases are saved in a file and restored in each new session.
 
-Check the `cle help` - it contains a list of basic aliases defined indirectly in
-the environment. Also, you may issue a simple `aa` to see the current set of aliases.
+Use new command `aa` to review the current set of aliases. Read futher to learn
+more on how to use command `aa`
 
-Variable $CLE_ALI refers to the file where aliases are stored. This file is
-read upon environment initialization. It may not exist in cases where no more than
-basic aliases are set.
+Variable $CLE_AL refers to the file where aliases are stored. This file is
+read upon environment initialization. It may not exist in cases where no more
+than basic aliases are set.
 
 ### Alias definition and save
 Use the standard bash command `alias` and CLE function `aa` in the following way:
@@ -308,16 +308,18 @@ complex changes. Note that the current alias set is backed up first.
 
 
 ### Reload aliases
-Use `aa -l` in case of mismatch, if the working alias set has been unintentionally
-damaged, etc.
+Use `aa -l` in case of mismatch, e.g. if the working alias set has been
+unintentionally damaged, or if you have more CLE sessions opened and want
+to immediately use an alias newly defined in another window
 
 
-Remember: aliases are not inherited over sessions. They stay bound to
+Remember: aliases are not inherited over sessions. *) They stay bound to
 their accounts. The reason is that you may define special aliases on particlar
 servers that would not be useful elsewhere. Also there is no way of syncing
 newly defined aliases from a remote session to the workstation. However, there are
 ways of defining aliases on remote sessions. Check out _TipsAndTweaks.md_
 
+*) Subject of planned change in new release. No time schedule, though.
 
 
 ## 5. History management
@@ -426,7 +428,7 @@ The following files can be found there:
 - `tw`                  User's own tweaks, executed upon CLE startup and also
                       transferred along with the main resource, and executed
                       on remote sessions ($CLE_TW)
-- `aliases`             Saved user's set of aliases ($CLE_ALI)
+- `al`                  Saved user's set of aliases ($CLE_AL)
 - `mod-*` and `cle-*`   Modules enhancing CLE functionality.
 
 Some files however remain in the main home directory:
@@ -458,7 +460,7 @@ shows values in the main variable set. The following is their description:
 - `CLE_WT`    string to be terminal window title
 - `CLE_IP`    contains IP address in case of remote session
 - `CLE_SHN`   shortened hostname
-- `CLE_ALI`   user's aliases store
+- `CLE_AL`    user's aliases store
 - `CLE_HIST`  path to rich history file
 - `CLE_EXE`   colon separated log of scripts executed by CLE
 - `CLE_SRC`   base of store for modules and documentation downloads

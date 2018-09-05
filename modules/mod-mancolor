@@ -1,7 +1,7 @@
 ##
-## mod-mancolor: colorize man pages
-## -------------------------------------------------------
-#* version: 2018-03-29
+## ** mod-mancolor: Colorize man pages **
+#
+#* version: 2018-08-29
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -12,6 +12,7 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
+## No special functions, just altered manual page's color
 export LESS_TERMCAP_mb=$(tput bold; tput setaf 2) # green instead of blink
 export LESS_TERMCAP_md=$(tput bold; tput setaf 6) # yellow
 export LESS_TERMCAP_me=$(tput sgr0)

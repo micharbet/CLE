@@ -1,6 +1,6 @@
 ##
-## mod-alifun: more aliases and functions
-## --------------------------------------
+## ** mod-alifun: more aliases and functions **
+#
 #* version: 2018-04-30
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
@@ -12,7 +12,7 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
-## fed funcname       -- edit function
+## `fed funcname`       -- edit function
 fed () {
 	local FF=$CLE_D/fun-$1
 	[ $1 ] || { echo "fed: missing function_name"; return 1; }
