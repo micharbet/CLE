@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-08-29 (Nova)
+#* version: 2018-09-09 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -658,10 +658,16 @@ _compcle () {
 complete -F _compcle cle
 
 #: lssh completion
-#: there are two possibilities of ssh completion _known_hosts is more common
-#: while _ssh is better
+#: there are two possibilities of ssh completion _known_hosts is more common...
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-declare -F _ssh >/dev/null && complete -F _ssh lssh
+#: while _ssh is better
+#: The path is valid at least on fedora and debian with installed bash-completion package
+_C=/usr/share/bash-completion/completions/ssh 
+if [ -f $_C ]; then
+	. $_C
+	complete -F _ssh lssh
+fi
+
 
 # session startup
 TTY=`tty|sed 's;[/dev];;g'`
