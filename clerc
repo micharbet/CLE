@@ -54,7 +54,7 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 # also ensure the script will be executed only once
 _clexe () {
 	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1 ]] && return
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
 	CLE_EXE=$CLE_EXE:$1
 	. $1
 }
@@ -96,9 +96,10 @@ CLE_D=$_D/$CLE_RD
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
 
-# tweak file has same suffix as rc
+# tweak and alias files have same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
+CLE_ALW=$CLE_RD/al$_I
 CLE_WS=${_I:1}	
 
 # color table
@@ -265,6 +266,10 @@ mdfilter () {
 }
 
 
+
+# first load aliases inherited from CLE workstation
+[ $CLE_WS ] && _clexe $CLE_RH/$CLE_ALW
+
 # colorize ls
 case $OSTYPE in
 linux*)		alias ls='ls --color=auto';;
@@ -275,8 +280,6 @@ esac
 
 # colorized grep except on busybox
 [ -L `command which grep` ] || alias grep='grep --color=auto'
-alias mv='mv -i'
-alias rm='rm -i'
 
 unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
 ## ** cd command additions **
@@ -292,7 +295,7 @@ cx () { cd $_XX; }
 
 ##
 ## ** Alias management **
-CLE_AL=$CLE_D/al # personalized aliases
+CLE_AL=$CLE_D/al # this account's alias store
 aa () {
 	local ABK=$CLE_AL.bk TAL=$CLE_AL.ed
 	case "$1" in
@@ -388,12 +391,14 @@ _clepak () {
 	cd $CLE_RH
 	RC=$CLE_RD/`basename $CLE_RC`
 	TW=$CLE_TW
+	AL=$CLE_ALW
 	if [ $1 ];then
-		RC=$RC$1; TW=$TW$1
+		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
 		cp $CLE_TW $TW 2>/dev/null
+		cp $CLE_AL $AL 2>/dev/null
 	fi
-	RCS="$RC $TW"
+	RCS="$RC $TW $AL"
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
 }
 

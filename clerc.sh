@@ -84,7 +84,7 @@ dbg_echo CLE resource init begins!
 _clexe () {
 	dbg_echo clexe $*
 	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1 ]] && return
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
 	CLE_EXE=$CLE_EXE:$1
 	. $1
 }
@@ -135,6 +135,7 @@ if [[ $CLE_RC =~ /clerc ]]; then
 	dbg_var CLE_RC
 fi
 
+#: $CLE_RH - resource home dir may not be the same as $HOME in case lsu/lsudo sessions
 #: $CLE_RH/$CLE_RD together gives folder with resource and tweak file
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
 CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
@@ -155,9 +156,11 @@ CLE_D=$_D/$CLE_RD
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
 
-# tweak file has same suffix as rc
+# tweak and alias files have same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
+CLE_ALW=$CLE_RD/al$_I
+dbg_var CLE_ALW
 CLE_WS=${_I:1}	#: remove first character that might be '1' or '-'
 
 # color table
@@ -354,6 +357,11 @@ mdfilter () {
 #: 'ls' variants. However it revealed to be pushy and intrusive. Moreover
 #: when it all was enclosed in function rendering default aliases difficult
 #: to redefine.
+#: Here aliases 
+
+# first load aliases inherited from CLE workstation
+[ $CLE_WS ] && _clexe $CLE_RH/$CLE_ALW
+
 # colorize ls
 case $OSTYPE in
 linux*)		alias ls='ls --color=auto';;
@@ -365,8 +373,6 @@ esac
 # colorized grep except on busybox
 #: busybox identified by symlinked 'grep' file
 [ -L `command which grep` ] || alias grep='grep --color=auto'
-alias mv='mv -i'
-alias rm='rm -i'
 
 #: Those are just nice and I believe don't hurt :)
 unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
@@ -385,7 +391,7 @@ cx () { cd $_XX; }
 
 ##
 ## ** Alias management **
-CLE_AL=$CLE_D/al # personalized aliases
+CLE_AL=$CLE_D/al # this account's alias store
 aa () {
 	local ABK=$CLE_AL.bk TAL=$CLE_AL.ed
 	case "$1" in
@@ -504,7 +510,7 @@ _rhlog () {
 #: Note: configuration is not packed in order to ensure unique cf on all
 #:  remote accounts.
 #: Note 2: _clepak is defined with curly brackets {} to pass variables RC and C64
-#:  On the other side lssh is defined with () enasirng execution in own context
+#:  On the other side lssh is defined with () ensuring execution in its own context
 #:  where all new variables are local only to lssh (and _clepak)
 #: Note 3: _clepak is fuction even if it is used only once and could be
 #:  included directly into lssh. However, this allows to create any other
@@ -513,12 +519,14 @@ _clepak () {
 	cd $CLE_RH
 	RC=$CLE_RD/`basename $CLE_RC`
 	TW=$CLE_TW
+	AL=$CLE_ALW
 	if [ $1 ];then
-		RC=$RC$1; TW=$TW$1
+		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
 		cp $CLE_TW $TW 2>/dev/null
+		cp $CLE_AL $AL 2>/dev/null
 	fi
-	RCS="$RC $TW"
+	RCS="$RC $TW $AL"
 	dbg_var RCS
 	#:  I've never owned this computer, I had Atari 800XL :)
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
@@ -533,6 +541,7 @@ lssh () (
 	S= #: resource suffix is empty on remote sessions...
 	[ $CLE_WS ] || S=-$CLE_SHN #: ...gains value only on WS
 	_clepak $S
+	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzvf -
 	command ssh -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
 		[ $OSTYPE = darwin ] && _D=D || _D=d
@@ -794,6 +803,7 @@ cle () {
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;; #debug
 	debug)	CLE_DEBUG=$1; dbg_var CLE_DEBUG;; #debug
 	pak)	_clepak "$@" ; base64 -d <<<$C64| tar tzvf -;; #debug
+	exe)	echo $CLE_EXE|tr : \\n;; #debug
 # DEBUG
 	*)	echo unimplemented: cle $C
 		echo check cle help

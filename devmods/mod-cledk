@@ -101,21 +101,9 @@ _cle_ls () {
 	ls -l ~/.history-* $CLE_D
 }
 
-## `cle exe`       -- show list of all files executed during CLE startup
-_cle_exe () {
-	echo $CLE_EXE|tr : \\n
-}
-
 ## `cle func`      -- list all current bash functions
 _cle_func () {
 	declare -f |sed -n '/.\+\s()/p'
-}
-
-
-## `cle debug [on|off]`  - debug mode ($CLE_DEBUG variable)
-_cle_debug () {
-	CLE_DEBUG=$1
-	echo CLE_DEBUG=$CLE_DEBUG
 }
 
 ## `cle modgen`     -- generate module index
