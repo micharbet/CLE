@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-09 (Nova)
+#* version: 2018-09-11 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -94,6 +94,8 @@ CLE_EXE=$CLE_RC
 #: Things in /etc/profile.d can override some settings.
 #: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
 #: breaks rich history.
+#: Also alias & unalias must be available as builtins in this phase
+unset alias unalias
 _clexe /etc/profile
 _clexe $HOME/.bashrc
 #: ...also thinking how important is to run .profile or .bash_profile
@@ -360,7 +362,7 @@ mdfilter () {
 #: Here aliases 
 
 # first load aliases inherited from CLE workstation
-[ $CLE_WS ] && _clexe $CLE_RH/$CLE_ALW
+_clexe $CLE_RH/$CLE_ALW
 
 # colorize ls
 case $OSTYPE in
@@ -393,26 +395,20 @@ cx () { cd $_XX; }
 ## ** Alias management **
 CLE_AL=$CLE_D/al # this account's alias store
 aa () {
-	local ABK=$CLE_AL.bk TAL=$CLE_AL.ed
+	local AED=$CLE_AL.ed
 	case "$1" in
 	"")	## `aa`         - show aliases
 		#: also meke the output nicer and more easy to read
-                alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
-	-s)	## `aa -s`      - save current alias set
-		cp $CLE_AL $ABK 2>/dev/null
-		alias >$CLE_AL;;
-	-l)	## `aa -l`      - reload aliases
-		unalias -a
-		. $CLE_AL;;
+                builtin alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
+	-s)	## `aa -s`      - save aliases
+		builtin alias >$CLE_AL;;
 	-e)	## `aa -e`      - edit aliases
-		alias >$ABK
-		cp $ABK $TAL
-		vi $TAL
-		mv $TAL $CLE_AL
-		aa -l
-		printb Backup in: $ABK;;
+		builtin alias >$AED
+		vi $AED
+		builtin unalias -a
+		. $AED;;
 	*=*)	## `aa a='b'`   - create new alias and save
-		alias "$*"
+		builtin alias "$*"
 		aa -s;;
 	*)	cle help aa
 		return 1
@@ -688,12 +684,30 @@ for _I in $CLE_D/mod-*;do
 done
 
 # config & tweaks
-_clexe $CLE_AL
 _clexe $HOME/.cle-local
 _clexe $CLE_RH/$CLE_TW
+_clexe $CLE_AL
 _clexe $CLE_CF || { _banner;_defcf;}
 _setp
 _setwt
+
+# redefinei bash builtins
+#: those definitions must be here, only after config and tweaks not to mess
+#: with builtin shell functions during startup. This also speeds up the thing
+alias () {
+	if [ -n "$1" ]; then
+		aa "$@"
+	else
+		builtin alias
+	fi
+}
+
+unalias () {
+	[ "$1" = -a ] && cp $CLE_AL $CLE_AL.bk
+	builtin unalias "$@"
+	aa -s
+}
+
 
 [ "$CLE_MOTD" ] && { cat /etc/motd;echo;echo $CLE_MOTD;unset CLE_MOTD; }
 
