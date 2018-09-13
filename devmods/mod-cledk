@@ -1,7 +1,7 @@
 ##
 ## ** mod-cledk: functions to assist CLE development process **
 #
-#* version: 2018-05-01
+#* version: 2018-09-13
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -19,7 +19,7 @@ CLE_DK=$HOME/d/CLE
 # extract module description 
 _modesc () (
 	local M=`basename $1`
-	sed -n "s/^## $M:\s*//p" $1
+	sed -n "/^##/s/.*$M:\s*\([^*]*\)\**/\1/p" $1
 )
 
 # extract module version 

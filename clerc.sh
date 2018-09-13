@@ -810,7 +810,7 @@ cle () {
 	help|-h|-help)	## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/[\t ]## *$1|^## *$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
+		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
 	"")	_banner
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC;; # header
 # DEBUG
