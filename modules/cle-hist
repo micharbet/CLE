@@ -1,7 +1,8 @@
 ##
 ## ** cle-hist: Rich history manipulations **
 #
-#* version: 2018-08-29redhat.com)
+#* version: 2018-08-29
+#* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
 #* Copyright (C) 2018 by Michael Arbet 

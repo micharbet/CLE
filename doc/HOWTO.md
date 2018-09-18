@@ -194,17 +194,17 @@ changes.
 
 ## 3. CLE sessions (remote and local)
 
-The purpose of this environment is not only to be friendly but also to be practical
+The purpose of CLE is not only to be friendly but also to be practical
 and useful. It seamlessly transfers itself from workstation to remote
 sessions **without** any installation. At the same time it allows different
 users to work on the same remote account with personalized settings and/or
 different CLE versions. This is useful in multi-admin environments. All users,
-even on the same machine and account (e.g. root) are working within their own
-settings (prompt, aliases, history) separated with help of variable $CLE_USER
-that is inherited from the first login on the workstation through all subsequent
-sessions. At the same time, no default settings on the remote servers are
-altered so anyone who hates changes can still use default ssh, su and sudo
-and work in their shells with default/poor settings.
+even on the same machine and account (e.g. root@anyserver) are working within
+their own settings (prompt, aliases, history) separated with help of variable
+$CLE_USER that is inherited from the first login on the workstation through
+all subsequent sessions. At the same time, no default settings on the remote
+servers are altered so anyone who hates changes can still use default ssh, su
+and sudo and work in their shells with default/poor settings.
 
 
 ### Use following commands to initiate CLE sessions:
@@ -273,33 +273,35 @@ error message printed out if no session with the given name is found.
 
 ## 4. Alias management
 
-CLE defines basic aliases for coloring their output (ls,grep) and to ensure 
-sort of safety enforcing interactive mode (rm, mv). A user can define their
-own aliases and have, eventually override mentioned basic definitions. User's
-aliases are saved in a file and restored in each new session.
+CLE defines only basic aliases for coloring output of some commands (ls,grep).
+A user can define their own alias set that is saved in a file and restored in
+each new session. New function `aa` enhances possibilities 
 
-Use new command `aa` to review the current set of aliases. Read futher to learn
-more on how to use command `aa`
-
-Variable $CLE_AL refers to the file where aliases are stored. This file is
-read upon environment initialization. It may not exist in cases where no more
-than basic aliases are set.
+Use new command `aa` without any argument to review the current set of aliases.
+Use
 
 ### Alias definition and save
-Use the standard bash command `alias` and CLE function `aa` in the following way:
+Use the standard bash command `alias` or new CLE function `aa` in the following
+ways:
 ```
    alias newalias='command --opt1 --opt2'
-   unalias oldalias
-   aa -s
 ```
 
-Or, define and store a new alias in one step:
+Or, use shortened form:
 ```
    aa newalias='command --with options`
 ```
 
+Remove unwanted alias in known way:
+```
+   unalias oldalias
+```
+
 Now 'newalias' is saved into the alias store file and recalled on all future CLE
 startups. The 'oldalias' is deleted and will not appear in new sessions.
+All changes are automatically saved into file referenced in variable $CLE_AL
+This file is read upon environment initialization.
+
 
 
 ### Edit alias set
@@ -307,19 +309,18 @@ The `aa -e` function runs an editor on the current working alias set allowing mo
 complex changes. Note that the current alias set is backed up first.
 
 
-### Reload aliases
-Use `aa -l` in case of mismatch, e.g. if the working alias set has been
-unintentionally damaged, or if you have more CLE sessions opened and want
-to immediately use an alias newly defined in another window
+### Aliases and sessions
+Alias set on CLE workstation is copied over remote sessions. That means if
+you define `newalias` as previous example and use `lssh` to visit another host
+you will have `newalias` available also there. You can define new aliases on
+the remote account but they will of course not be transferred back to the
+workstation. Note that alias existence might not necessarily mean that it will
+work. Two such situation can occur and here is their troubleshooting:
 
-
-Remember: aliases are not inherited over sessions. *) They stay bound to
-their accounts. The reason is that you may define special aliases on particlar
-servers that would not be useful elsewhere. Also there is no way of syncing
-newly defined aliases from a remote session to the workstation. However, there are
-ways of defining aliases on remote sessions. Check out _TipsAndTweaks.md_
-
-*) Subject of planned change in new release. No time schedule, though.
+ 1. original command is missing - just ignore that alias
+ 2. the command on remote host has different options - override the inherited
+    definition either with vlid options or without them
+     `alias command='command'`
 
 
 ## 5. History management
@@ -359,10 +360,10 @@ additional information in square brackets.
 
 The function `h` is a simple shortcut for the regular 'history' command. Basically it
 just colorizes its output highlghting sequence number and the command itself.
-Use the `h` with the same parameters of the `history` command. This is simple a more
+Use the `h` with the same parameters of the `history` command. This is simply a more
 sophisticated alias.
 
-Then ew command `hh` works with the rich history.
+The new command `hh` works with the rich history.
 When issued without arguments it prints out the 100 recent records. However, you
 can alter its behavior or otherwise filter the output using options
 and arguments. Use the following basic filters:
