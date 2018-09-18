@@ -69,8 +69,8 @@ shortcuts enabled such as Ctrl-Left/Right to switch between windows.
 
 ### Other utilities
 - `aa`  manages aliases
-- `h`   colors regular history
-- `hh`  makes history searches easier
+- `h`   aidds colors regular history
+- `hh`  shows more information about recent commands and provides various searches
 - `cle` the most important one - this is the command and control center
       of the environment. Issue `cle help` to read more.
 

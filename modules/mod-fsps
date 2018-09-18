@@ -1,7 +1,7 @@
 ##
-## mod-fsps: filesystem and processess utilities
-## ---------------------------------------------
-#* version: 2018-03-15
+## ** mod-fsps: Filesystem and processess utilities **
+#
+#* version: 2018-08-29
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -15,10 +15,10 @@
 # in case there are aliases...
 unalias dfh dush dusk psg 2>/dev/null
 
-## dfh        -- df -h wrapper
+## `dfh`        -- df -h wrapper
 dfh () { df -h; }
 
-## dush, dusk -- du wrappers
+## `dush, dusk` -- du wrappers
 dush () {
 	if [ $# -eq 0 ]; then
 		du -sh * | sort -h
@@ -35,7 +35,7 @@ dusk () {
 	fi
 }
 
-## psg name   -- ps | grep
+## `psg name`   -- ps | grep
 psg () {
 	[ $1 ] || cle help psg && return 1
 	ps -ef | grep $1 | grep -v grep

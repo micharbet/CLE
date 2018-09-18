@@ -7,9 +7,10 @@ DEST=pkg
 BINDIR=${DEST}/usr/bin
 SHAREDIR=${DEST}/usr/share/cle
 
-clerc: clerc-long
-	sed -e  '/^[[:space:]]*#:/d' -e 's/#:.*//' <clerc-long >clerc-t
+clerc: clerc.sh
+	sed -e  '/^[[:space:]]*#:/d' -e 's/#:.*//' <clerc.sh >clerc-t
 	grep -vi -e debug -e dbg_ -e transition clerc-t >clerc
+	chmod 755 clerc
 	rm clerc-t
 
 install: clerc

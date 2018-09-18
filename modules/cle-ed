@@ -1,7 +1,7 @@
 ##
-## cle-ed: tweak and config editor
-## -------------------------------
-#* version: 2018-03-30
+## ** cle-ed: Tweak and config editor **
+#
+#* version: 2018-08-29
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -13,7 +13,7 @@
 # of the License, or (at your option) any later version.
 
 
-# cfe filename    -- edit file and keep backup
+## `cfe filename` -- edit file and keep backup
 cfe () {
 	[ $1 ] || { echo cfe: filename missing; return 1; }
 	cp $1 $1.bk
@@ -23,26 +23,26 @@ cfe () {
 local CLERESTART=""
 case "$1" in
 # CLE shortcuts
-tw)	## cle ed tw    -- edit the tweak file
+tw)	## `cle ed tw`    -- edit the tweak file
 	cfe $CLE_RH/$CLE_TW
 	CLERESTART=1
 	;;
-lcl)	## cle ed lcl   -- edit local account's tweak file
+lcl)	## `cle ed lcl`   -- edit local account's tweak file
 	cfe ~/.cle-local
 	CLERESTART=1
 	;;
-cf)	## cle ed cf    -- edit CLE configuration file
+cf)	## `cle ed cf`    -- edit CLE configuration file
 	cfe $CLE_CF
 	CLERESTART=1
 	;;
 # other shortcuts
-brc)	## cle ed brc   -- edit .bashrc
+brc)	## `cle ed brc`   -- edit .bashrc
 	cfe ~/.bashrc
 	;;
-sshcf)	## cle ed sshcf -- edit ssh config	
+sshcf)	## `cle ed sshcf` -- edit ssh config	
 	cfe ~/.ssh/config
 	;;
-sshkh)	## cle ed sshkh -- edit ssh known_hosts	
+sshkh)	## `cle ed sshkh` -- edit ssh known_hosts	
 	cfe ~/.ssh/known_hosts
 	;;
 *)

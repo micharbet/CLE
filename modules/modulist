@@ -1,8 +1,7 @@
-mod-example:0.0.prd:3e7bb5481ef0fc63651ac73c59e5e7d9:example / template module (this is module id string)
-mod-fsps:2018-03-15:4fc7c33e634d5eada7a4d35048b83032:filesystem and processess utilities
-mod-git:2017-08-08:7a4dadd7148ae988881106bfbc87fbdc:git helpers / shorcuts
-mod-mancolor:2018-03-29:6be5e81139eb392d3e3c3742be97ec0d:colorize man pages
-cle-ed:2018-03-30:00436ffc61e38c2574e37dafca99a955:tweak and config editor
-cle-hist:2018-05-01:d900b56720f2a047361caa38d555167b:rich history manipulations
-cle-mod:2018-06-06:034fdd235ca4b781b6de87f6f8d46536:CLE module management
-cle-rcmove:2018-03-23:8fcb5d35d5da974400d7a9043f65d54c:move resource files to different folder
+mod-fsps:2018-08-29:0aa89224d97093feda38216f8d1b1c23:Filesystem and processess utilities
+mod-git:2018-08-29:079ace37005cdf0a51c14bd910648ee4:GIT helpers / shorcuts
+mod-mancolor:2018-08-29:4e9fb06a52103051d811a36a53c598b7:Colorize man pages
+cle-ed:2018-08-29:ca1bc51fa5bbf0c0ee5d36f4ca306879:Tweak and config editor
+cle-hist:2018-08-29:4cc751bb2da800af3129a21a46c47a26:Rich history manipulations
+cle-mod:2018-08-29:c722621e1ed6bc5409f20d80b8f63ff5:CLE module management
+cle-rcmove:2018-08-29:efc02d15ac01edd08423403003cbf4d4:Move resource files to different folder
