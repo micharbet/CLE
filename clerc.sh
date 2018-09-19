@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-11 (Nova)
+#* version: 2018-09-19 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -138,11 +138,9 @@ if [[ $CLE_RC =~ /clerc ]]; then
 fi
 
 #: $CLE_RH - resource home dir may not be the same as $HOME in case lsu/lsudo sessions
-#: $CLE_RH/$CLE_RD together gives folder with resource and tweak file
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
-CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
-dbg_var CLE_RH
 dbg_var CLE_RD
+dbg_var CLE_RH
 dbg_var CLE_RC
 
 # find writable folder
@@ -152,9 +150,8 @@ dbg_var CLE_RC
 #: in different place than current home.
 #: Simply to say, this sequence ensures customized configuration for every
 #: account accessed with CLE.
-_D=$HOME
-[ -w $_D ] || _D=/tmp/$USER
-CLE_D=$_D/$CLE_RD
+[ -w $HOME ] || HOME=/tmp/$USER
+CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
 
@@ -362,7 +359,7 @@ mdfilter () {
 #: Here aliases 
 
 # first load aliases inherited from CLE workstation
-_clexe $CLE_RH/$CLE_ALW
+_clexe $CLE_ALW
 
 # colorize ls
 case $OSTYPE in
@@ -419,11 +416,11 @@ aa () {
 ## ** History tools **
 #: Following settings should not be edited, nor tweaked in other files.
 #: Mainly $HISTTIMEFORMAT - the rich history feature is dependent on it!
-HISTFILE=$_D/.history-$CLE_USER
+HISTFILE=$HOME/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
-CLE_HIST=$_D/.history-ALL
+CLE_HIST=$HOME/.history-ALL
 
 ## `h`               - bash 'history' wrapper
 h () (
@@ -513,9 +510,9 @@ _rhlog () {
 #:  remote access wrapper
 _clepak () {
 	cd $CLE_RH
-	RC=$CLE_RD/`basename $CLE_RC`
-	TW=$CLE_TW
-	AL=$CLE_ALW
+	RC=${CLE_RC/$CLE_RH\//}
+	TW=${CLE_TW/$CLE_RH\//}
+	AL=${CLE_ALW/$CLE_RH\//}
 	if [ $1 ];then
 		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
@@ -523,6 +520,7 @@ _clepak () {
 		cp $CLE_AL $AL 2>/dev/null
 	fi
 	RCS="$RC $TW $AL"
+	dbg_var PWD
 	dbg_var RCS
 	#:  I've never owned this computer, I had Atari 800XL :)
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
@@ -826,7 +824,7 @@ cle () {
 }
 
 # remove temporary stuff
-unset SUDO_COMMAND _D _I _N _C
+unset SUDO_COMMAND _I _N _C
 fi
 # that's all folks...
 

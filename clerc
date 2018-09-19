@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-11 (Nova)
+#* version: 2018-09-19 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -88,12 +88,10 @@ if [[ $CLE_RC =~ /clerc ]]; then
 fi
 
 CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
-CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 
 # find writable folder
-_D=$HOME
-[ -w $_D ] || _D=/tmp/$USER
-CLE_D=$_D/$CLE_RD
+[ -w $HOME ] || HOME=/tmp/$USER
+CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
 
@@ -269,7 +267,7 @@ mdfilter () {
 
 
 # first load aliases inherited from CLE workstation
-_clexe $CLE_RH/$CLE_ALW
+_clexe $CLE_ALW
 
 # colorize ls
 case $OSTYPE in
@@ -319,11 +317,11 @@ aa () {
 
 ##
 ## ** History tools **
-HISTFILE=$_D/.history-$CLE_USER
+HISTFILE=$HOME/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
-CLE_HIST=$_D/.history-ALL
+CLE_HIST=$HOME/.history-ALL
 
 ## `h`               - bash 'history' wrapper
 h () (
@@ -384,9 +382,9 @@ _rhlog () {
 # environment packer
 _clepak () {
 	cd $CLE_RH
-	RC=$CLE_RD/`basename $CLE_RC`
-	TW=$CLE_TW
-	AL=$CLE_ALW
+	RC=${CLE_RC/$CLE_RH\//}
+	TW=${CLE_TW/$CLE_RH\//}
+	AL=${CLE_ALW/$CLE_RH\//}
 	if [ $1 ];then
 		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
@@ -633,7 +631,7 @@ cle () {
 }
 
 # remove temporary stuff
-unset SUDO_COMMAND _D _I _N _C
+unset SUDO_COMMAND _I _N _C
 fi
 # that's all folks...
 

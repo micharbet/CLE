@@ -451,7 +451,7 @@ shows values in the main variable set. The following is their description:
 - `CLE_USER`  original user who first initiated the environment.
 - `CLE_D`     absolute path to folder with configuration files
 - `CLE_RC`    absolute path the CLE resource script itself
-- `CLE_RD`    relative path to folder containing resource files
+- `CLE_RD`    path to folder containing resource files
 - `CLE_RH`    home directory part of path to resource file.
 - `CLE_TW`    custom tweak file
 - `CLE_CF`    path to configuration file
@@ -462,6 +462,7 @@ shows values in the main variable set. The following is their description:
 - `CLE_IP`    contains IP address in case of remote session
 - `CLE_SHN`   shortened hostname
 - `CLE_AL`    user's aliases store
+- `CLE_ALW`   aliases store transferred from workstation
 - `CLE_HIST`  path to rich history file
 - `CLE_EXE`   colon separated log of scripts executed by CLE
 - `CLE_SRC`   base of store for modules and documentation downloads
