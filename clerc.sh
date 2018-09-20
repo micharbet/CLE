@@ -124,12 +124,12 @@ CLE_VER="$CLE_VER debug"
 
 # check first run
 #: prepare environment if CLE has been initiated manually from downloaded file
-_N=$HOME/.cle-$CLE_USER
 if [[ $CLE_RC =~ /clerc ]]; then
 	#: CLE_1 indicates first run (downloaded file started from comandline)
 	#: 'rc1' prevents accidental overwrite of deployed environment
-	CLE_1=$_N/rc1
-	mkdir -m 755 -p $_N
+	CLE_RD=$HOME/.cle-$CLE_USER
+	CLE_1=$CLE_RD/rc1
+	mkdir -m 755 -p $CLE_RD
 	cp $CLE_RC $CLE_1
 	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
@@ -137,8 +137,6 @@ if [[ $CLE_RC =~ /clerc ]]; then
 	dbg_var CLE_RC
 fi
 
-#: $CLE_RH - resource home dir may not be the same as $HOME in case lsu/lsudo sessions
-CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
 dbg_var CLE_RD
 dbg_var CLE_RH
 dbg_var CLE_RC
@@ -150,7 +148,7 @@ dbg_var CLE_RC
 #: in different place than current home.
 #: Simply to say, this sequence ensures customized configuration for every
 #: account accessed with CLE.
-[ -w $HOME ] || HOME=/tmp/$USER
+[ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
 CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
@@ -159,7 +157,6 @@ mkdir -m 755 -p $CLE_D
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
 CLE_ALW=$CLE_RD/al$_I
-dbg_var CLE_ALW
 CLE_WS=${_I:1}	#: remove first character that might be '1' or '-'
 
 # color table
@@ -509,10 +506,11 @@ _rhlog () {
 #:  included directly into lssh. However, this allows to create any other
 #:  remote access wrapper
 _clepak () {
-	cd $CLE_RH
-	RC=${CLE_RC/$CLE_RH\//}
-	TW=${CLE_TW/$CLE_RH\//}
-	AL=${CLE_ALW/$CLE_RH\//}
+	_H=`sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
+	cd $_H
+	RC=${CLE_RC/$_H\//}
+	TW=${CLE_TW/$_H\//}
+	AL=${CLE_ALW/$_H\//}
 	if [ $1 ];then
 		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
@@ -671,7 +669,6 @@ if [ -f $_C ]; then
 	complete -F _ssh lssh
 fi
 
-
 # session startup
 TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
@@ -683,7 +680,7 @@ done
 
 # config & tweaks
 _clexe $HOME/.cle-local
-_clexe $CLE_RH/$CLE_TW
+_clexe $CLE_TW
 _clexe $CLE_AL
 _clexe $CLE_CF || { _banner;_defcf;}
 _setp

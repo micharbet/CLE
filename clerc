@@ -78,19 +78,18 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
 
 # check first run
-_N=$HOME/.cle-$CLE_USER
 if [[ $CLE_RC =~ /clerc ]]; then
-	CLE_1=$_N/rc1
-	mkdir -m 755 -p $_N
+	CLE_RD=$HOME/.cle-$CLE_USER
+	CLE_1=$CLE_RD/rc1
+	mkdir -m 755 -p $CLE_RD
 	cp $CLE_RC $CLE_1
 	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
 fi
 
-CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
 
 # find writable folder
-[ -w $HOME ] || HOME=/tmp/$USER
+[ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
 CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
@@ -381,10 +380,11 @@ _rhlog () {
 
 # environment packer
 _clepak () {
-	cd $CLE_RH
-	RC=${CLE_RC/$CLE_RH\//}
-	TW=${CLE_TW/$CLE_RH\//}
-	AL=${CLE_ALW/$CLE_RH\//}
+	_H=`sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
+	cd $_H
+	RC=${CLE_RC/$_H\//}
+	TW=${CLE_TW/$_H\//}
+	AL=${CLE_ALW/$_H\//}
 	if [ $1 ];then
 		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
@@ -501,7 +501,6 @@ if [ -f $_C ]; then
 	complete -F _ssh lssh
 fi
 
-
 # session startup
 TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
@@ -513,7 +512,7 @@ done
 
 # config & tweaks
 _clexe $HOME/.cle-local
-_clexe $CLE_RH/$CLE_TW
+_clexe $CLE_TW
 _clexe $CLE_AL
 _clexe $CLE_CF || { _banner;_defcf;}
 _setp
