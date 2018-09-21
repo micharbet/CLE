@@ -48,7 +48,7 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 [ "$1" = '-m' ] && export CLE_MOTD=`uptime`
 
 # ensure bash session will be sourced with this rcfile
-[[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
+[[ $0 =~ bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
 
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
@@ -380,11 +380,10 @@ _rhlog () {
 
 # environment packer
 _clepak () {
-	_H=`sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
-	cd $_H
-	RC=${CLE_RC/$_H\//}
-	TW=${CLE_TW/$_H\//}
-	AL=${CLE_ALW/$_H\//}
+	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
+	RC=${CLE_RC/$PWD\//}
+	TW=${CLE_TW/$PWD\//}
+	AL=${CLE_ALW/$PWD\//}
 	if [ $1 ];then
 		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
@@ -458,6 +457,7 @@ lscreen () (
 # screenrc generator
 _scrc () {
 cat <<-EOS
+	source $HOME/.screenrc
 	altscreen on
 	autodetach on
 	# enables shift-PgUp/PgDn
@@ -470,7 +470,6 @@ cat <<-EOS
 	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
-	source $HOME/.screenrc
 EOS
 }
 

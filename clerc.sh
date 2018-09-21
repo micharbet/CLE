@@ -61,8 +61,8 @@ CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 dbg_echo "-- preexec --"
-dbg_echo '$0='$0
-dbg_echo '$1='$1
+dbg_echo '$0  = '$0
+dbg_echo '$1  = '$1
 dbg_var BASH_SOURCE[0]
 dbg_var CLE_RC
 
@@ -75,7 +75,7 @@ dbg_var CLE_RC
 #: CLE can be executed as a regular script but such it would just exit without
 #: effect. Following code recognizes this condition and re-executes bash with
 #: the same file as resource script
-[[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
+[[ $0 =~ bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
 dbg_echo "-- afterexec --"
 dbg_echo CLE resource init begins!
 
@@ -138,7 +138,6 @@ if [[ $CLE_RC =~ /clerc ]]; then
 fi
 
 dbg_var CLE_RD
-dbg_var CLE_RH
 dbg_var CLE_RC
 
 # find writable folder
@@ -506,12 +505,14 @@ _rhlog () {
 #:  included directly into lssh. However, this allows to create any other
 #:  remote access wrapper
 _clepak () {
-	_H=`sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
-	cd $_H
-	RC=${CLE_RC/$_H\//}
-	TW=${CLE_TW/$_H\//}
-	AL=${CLE_ALW/$_H\//}
+	#: anything up to first dotted folder is home for .cle folder
+	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
+	RC=${CLE_RC/$PWD\//}
+	TW=${CLE_TW/$PWD\//}
+	AL=${CLE_ALW/$PWD\//}
 	if [ $1 ];then
+		#: change names and copy files when adding suffix
+		#: this happens when doing lssh (from CLE ws)
 		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
 		cp $CLE_TW $TW 2>/dev/null
@@ -531,7 +532,7 @@ lssh () (
 	#: this 1. prevents overwriting on destination accounts
 	#:  and 2. provides information about source of the session
 	S= #: resource suffix is empty on remote sessions...
-	[ $CLE_WS ] || S=-$CLE_SHN #: ...gains value only on WS
+	[ $CLE_WS ] || S=-$CLE_SHN #: adding suffix when running on WS
 	_clepak $S
 	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzvf -
 	command ssh -t $* "
@@ -616,6 +617,7 @@ lscreen () (
 #: mentioned features are cool but this part is the important one)
 _scrc () {
 cat <<-EOS
+	source $HOME/.screenrc
 	altscreen on
 	autodetach on
 	# enables shift-PgUp/PgDn
@@ -628,7 +630,6 @@ cat <<-EOS
 	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
-	source $HOME/.screenrc
 EOS
 }
 

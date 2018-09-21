@@ -443,16 +443,16 @@ See the next section for details.
 
 ## 9. Variables
 
-CLE defines its own shell variables. The most important and interesting ones are
-named starting with "$CLE_*". There are also variables with shorter names beginning with
-underscore, e.g color table ($_C*) or internal $_H, $_E, etc. Command `cle env`
-shows values in the main variable set. The following is their description:
+CLE defines its own shell variables. The most important and interesting ones
+are named starting with "$CLE_*". There are also variables with shorter names
+beginning with underscore, e.g color table ($_C*) or internal $_H, $_E, etc.
+Command `cle env` shows values in the main variable set. The following is their
+descriptions:
 
 - `CLE_USER`  original user who first initiated the environment.
-- `CLE_D`     absolute path to folder with configuration files
 - `CLE_RC`    absolute path the CLE resource script itself
 - `CLE_RD`    path to folder containing resource files
-- `CLE_RH`    home directory part of path to resource file.
+- `CLE_D`     absolute path to _writable_ folder with configuration files
 - `CLE_TW`    custom tweak file
 - `CLE_CF`    path to configuration file
 - `CLE_WS`    contains workstation's hostname on remote session
@@ -461,8 +461,8 @@ shows values in the main variable set. The following is their description:
 - `CLE_WT`    string to be terminal window title
 - `CLE_IP`    contains IP address in case of remote session
 - `CLE_SHN`   shortened hostname
-- `CLE_AL`    user's aliases store
 - `CLE_ALW`   aliases store transferred from workstation
+- `CLE_AL`    user's aliases store that remains local only
 - `CLE_HIST`  path to rich history file
 - `CLE_EXE`   colon separated log of scripts executed by CLE
 - `CLE_SRC`   base of store for modules and documentation downloads
