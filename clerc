@@ -605,7 +605,7 @@ cle () {
 		I=cle-mod
 		MM=$CLE_D/$I
 		curl -k $CLE_SRC/$CLE_REL/modules/$I >$MM
-		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
+		grep -q "# .* $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`         - print CLE_* variables
 		for I in ${!CLE_*};do printf "$_CL%-12s$_CN%s\n" $I "${!I}";done;;

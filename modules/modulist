@@ -1,7 +1,7 @@
 mod-fsps:2018-08-29:0aa89224d97093feda38216f8d1b1c23:Filesystem and processess utilities
-mod-git:2018-08-29:079ace37005cdf0a51c14bd910648ee4:GIT helpers / shorcuts
+mod-git:2018-08-29:70534ad4d2989fbc9a0863615294a58a:GIT helpers / shorcuts
 mod-mancolor:2018-08-29:4e9fb06a52103051d811a36a53c598b7:Colorize man pages
-cle-ed:2018-08-29:ca1bc51fa5bbf0c0ee5d36f4ca306879:Tweak and config editor
+cle-ed:2018-09-23:a79bd97b170f5641c06e55ae5f9bf25c:Tweak and config editor
 cle-hist:2018-08-29:4cc751bb2da800af3129a21a46c47a26:Rich history manipulations
-cle-mod:2018-08-29:c722621e1ed6bc5409f20d80b8f63ff5:CLE module management
-cle-rcmove:2018-08-29:efc02d15ac01edd08423403003cbf4d4:Move resource files to different folder
+cle-mod:2018-08-29:48facc2e05136156a98772d02010c4bf:CLE module management
+cle-rcmove:2018-09-23:c00dc60dddf2366e64cf44b36b7e208d:Move resource files to different folder
