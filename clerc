@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-11 (Nova)
+#* version: 2018-09-19 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -48,7 +48,7 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 [ "$1" = '-m' ] && export CLE_MOTD=`uptime`
 
 # ensure bash session will be sourced with this rcfile
-[[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
+[[ $0 =~ bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
 
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
@@ -78,22 +78,19 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
 
 # check first run
-_N=$HOME/.cle-$CLE_USER
 if [[ $CLE_RC =~ /clerc ]]; then
-	CLE_1=$_N/rc1
-	mkdir -m 755 -p $_N
+	CLE_RD=$HOME/.cle-$CLE_USER
+	CLE_1=$CLE_RD/rc1
+	mkdir -m 755 -p $CLE_RD
 	cp $CLE_RC $CLE_1
 	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
 fi
 
-CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
-CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 
 # find writable folder
-_D=$HOME
-[ -w $_D ] || _D=/tmp/$USER
-CLE_D=$_D/$CLE_RD
+[ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
+CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
 
@@ -269,7 +266,7 @@ mdfilter () {
 
 
 # first load aliases inherited from CLE workstation
-_clexe $CLE_RH/$CLE_ALW
+_clexe $CLE_ALW
 
 # colorize ls
 case $OSTYPE in
@@ -319,11 +316,11 @@ aa () {
 
 ##
 ## ** History tools **
-HISTFILE=$_D/.history-$CLE_USER
+HISTFILE=$HOME/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
-CLE_HIST=$_D/.history-ALL
+CLE_HIST=$HOME/.history-ALL
 
 ## `h`               - bash 'history' wrapper
 h () (
@@ -383,10 +380,10 @@ _rhlog () {
 
 # environment packer
 _clepak () {
-	cd $CLE_RH
-	RC=$CLE_RD/`basename $CLE_RC`
-	TW=$CLE_TW
-	AL=$CLE_ALW
+	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
+	RC=${CLE_RC/$PWD\//}
+	TW=${CLE_TW/$PWD\//}
+	AL=${CLE_ALW/$PWD\//}
 	if [ $1 ];then
 		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
@@ -460,6 +457,7 @@ lscreen () (
 # screenrc generator
 _scrc () {
 cat <<-EOS
+	source $HOME/.screenrc
 	altscreen on
 	autodetach on
 	# enables shift-PgUp/PgDn
@@ -472,7 +470,6 @@ cat <<-EOS
 	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
-	source $HOME/.screenrc
 EOS
 }
 
@@ -503,7 +500,6 @@ if [ -f $_C ]; then
 	complete -F _ssh lssh
 fi
 
-
 # session startup
 TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
@@ -515,7 +511,7 @@ done
 
 # config & tweaks
 _clexe $HOME/.cle-local
-_clexe $CLE_RH/$CLE_TW
+_clexe $CLE_TW
 _clexe $CLE_AL
 _clexe $CLE_CF || { _banner;_defcf;}
 _setp
@@ -609,7 +605,7 @@ cle () {
 		I=cle-mod
 		MM=$CLE_D/$I
 		curl -k $CLE_SRC/$CLE_REL/modules/$I >$MM
-		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
+		grep -q "# .* $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`         - print CLE_* variables
 		for I in ${!CLE_*};do printf "$_CL%-12s$_CN%s\n" $I "${!I}";done;;
@@ -633,7 +629,7 @@ cle () {
 }
 
 # remove temporary stuff
-unset SUDO_COMMAND _D _I _N _C
+unset SUDO_COMMAND _I _N _C
 fi
 # that's all folks...
 

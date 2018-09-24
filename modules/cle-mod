@@ -84,20 +84,20 @@ getindex () (
 local M MM MODS DMM MDESC MSRC MVER
 
 case "$1" in
-ls)	## `cle mod ls`        -- list installed modules
+ls)	## `cle mod ls`        - list installed modules
 	printb ${_TU}Modules installed in $CLE_D:
 	for M in `getinstalled`; do
 		modet $M
 	done
 	;;
-avail)	## `cle mod avail`     -- list modules available to install
+avail)	## `cle mod avail`     - list modules available to install
 	getindex || return $?
 	printb ${_TU}Modules available in repository: $CLE_SRC/$CLE_REL
 	cat $MODULIST | { IFS=:; while read MM MVER MSUM MDESC; do
 		printf "$_CW%-15s $_Cw[%10s] $_CN%s\n" $MM "$MVER" "$MDESC"
 	done; }
 	;;
-add)	## `cle mod add [mod]` -- install/upgrade module from repository
+add)	## `cle mod add [mod]` - install/upgrade module from repository
 	getindex || return $?
 
 	# get matching modules
@@ -147,7 +147,7 @@ add)	## `cle mod add [mod]` -- install/upgrade module from repository
 		return 1
 	fi
 	;;
-del)	## `cle mod del [mod]` -- delete module
+del)	## `cle mod del [mod]` - delete module
 	MODS=`getinstalled | grep "$2"`
 	[ "$MODS" ] || { echo Nothing like $2 to remove; return 1; }
 	MODN=`wc -w <<<$MODS`

@@ -1,7 +1,7 @@
 ##
 ## ** cle-rcmove: Move resource files to different folder **
 #
-#* version: 2018-08-29
+#* version: 2018-09-23
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -12,40 +12,59 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
-## `cle rcmove [dest]`  --  move the environment files
-## This module has probably one-time use.
-## You can safely remove it using `cle mod del rcmove`
+## `cle rcmove .dest`   -  move the environment files to $HOME/.dest/cle-name
+##   This module has probably one-time use if you want to have the environment
+##   installed in .config directory issue `cle rcmove .config`
+##   Revert back to default directory with `cle rcmove ~`
+##   You can safely remove it later using `cle mod del rcmove`
 
 local BRC=$HOME/.bashrc
-local NOW=$CLE_RH/$CLE_RD
+local NEWRD
 
 # test if this is initial CLE session
-if [ -z "$CLE_WS" -o $NOW != $CLE_D ]; then
-	echo "Moving CLE folder is meaningless on subsquent sessions!"
+if [ -n "$CLE_WS" -o $CLE_RD != $CLE_D ]; then
+	echo "Moving CLE folder is meaningless on live sessions!"
 	return 1
 fi
 
-if [[ "$1" =~ ^\. ]]; then
-	local THEN=$HOME/$1/cle-$CLE_USER
-	[ $1 = . ] && THEN=$HOME/.cle-$CLE_USER
-	local NEWRC=$THEN/rc
-	printb "moving folder: $NOW -> $THEN"
-	mkdir -p -m 755 $HOME/$1 || return 1	# this fails in case $1 is a file
-	mv $NOW $THEN
+case "$1" in 
+.?*)
+	NEWRD=$HOME/$1/cle-$CLE_USER
+	mkdir -p -m 755 $(basename $NEWRD) || return 1	# this fails in case $1 is a file
+	;;
+$HOME)
+	NEWRD=$HOME/.cle-$CLE_USER
+	;;
+*)	
+	cle help "cle rcmove"
+	echo "The '.dest' must be either '$HOME' (~) or dotted folder name "
+	return 1
+esac
 
-	# replace paths in .bashrc hook
-	printb "editing .bashrc:"
-	sed "s;$CLE_RC;$NEWRC;g" $BRC >$BRC.sed
-	mv -f $BRC.sed $BRC
-	command grep -A1 "Command Live Environment" $BRC
-
-	# restart the environment to fix the rest values
-	printb "cle reload"
-	CLE_RC=$NEWRC
-	cle reload
-else
-	# yes, the destination folder must be hidden one
-	echo destination folder must start with dot!
+# Sanity checks
+if [ $CLE_RD = $NEWRD ]; then
+	echo "Error: destination folder is the same as current"
 	return 1
 fi
+
+if [ -e $NEWRD ]; then
+	echo "Error: destination $NEWRD exists."
+	echo " As there might be another CLE installed I can't move to this folder"
+	return 1
+fi
+
+# Do it!
+ask "moving folder: $CLE_RD -> $NEWRD ?"
+mv $CLE_RD $NEWRD
+
+# replace paths in .bashrc hook
+local NEWRC=$NEWRD/rc
+printb "editing .bashrc:"
+sed -i "s;$CLE_RC;$NEWRC;g" $BRC
+command grep -A1 "Command Live Environment" $BRC
+
+# restart the environment to fix the rest values
+printb "cle reload"
+CLE_RC=$NEWRC
+cle reload
 
