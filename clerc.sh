@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-11 (Nova)
+#* version: 2018-09-19 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -61,8 +61,8 @@ CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 dbg_echo "-- preexec --"
-dbg_echo '$0='$0
-dbg_echo '$1='$1
+dbg_echo '$0  = '$0
+dbg_echo '$1  = '$1
 dbg_var BASH_SOURCE[0]
 dbg_var CLE_RC
 
@@ -75,7 +75,7 @@ dbg_var CLE_RC
 #: CLE can be executed as a regular script but such it would just exit without
 #: effect. Following code recognizes this condition and re-executes bash with
 #: the same file as resource script
-[[ $0 = bash || $0 = -bash || $0 =~ /bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
+[[ $0 =~ bash || $0 = -su ]] || exec /usr/bin/env bash --rcfile $CLE_RC
 dbg_echo "-- afterexec --"
 dbg_echo CLE resource init begins!
 
@@ -124,12 +124,12 @@ CLE_VER="$CLE_VER debug"
 
 # check first run
 #: prepare environment if CLE has been initiated manually from downloaded file
-_N=$HOME/.cle-$CLE_USER
 if [[ $CLE_RC =~ /clerc ]]; then
 	#: CLE_1 indicates first run (downloaded file started from comandline)
 	#: 'rc1' prevents accidental overwrite of deployed environment
-	CLE_1=$_N/rc1
-	mkdir -m 755 -p $_N
+	CLE_RD=$HOME/.cle-$CLE_USER
+	CLE_1=$CLE_RD/rc1
+	mkdir -m 755 -p $CLE_RD
 	cp $CLE_RC $CLE_1
 	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
@@ -137,11 +137,6 @@ if [[ $CLE_RC =~ /clerc ]]; then
 	dbg_var CLE_RC
 fi
 
-#: $CLE_RH - resource home dir may not be the same as $HOME in case lsu/lsudo sessions
-#: $CLE_RH/$CLE_RD together gives folder with resource and tweak file
-CLE_RH=`sed 's:\(/.*\)/\..*/.*:\1:' <<<$CLE_RC`
-CLE_RD=`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
-dbg_var CLE_RH
 dbg_var CLE_RD
 dbg_var CLE_RC
 
@@ -152,9 +147,8 @@ dbg_var CLE_RC
 #: in different place than current home.
 #: Simply to say, this sequence ensures customized configuration for every
 #: account accessed with CLE.
-_D=$HOME
-[ -w $_D ] || _D=/tmp/$USER
-CLE_D=$_D/$CLE_RD
+[ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
+CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
 
@@ -162,7 +156,6 @@ mkdir -m 755 -p $CLE_D
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$_I
 CLE_ALW=$CLE_RD/al$_I
-dbg_var CLE_ALW
 CLE_WS=${_I:1}	#: remove first character that might be '1' or '-'
 
 # color table
@@ -362,7 +355,7 @@ mdfilter () {
 #: Here aliases 
 
 # first load aliases inherited from CLE workstation
-_clexe $CLE_RH/$CLE_ALW
+_clexe $CLE_ALW
 
 # colorize ls
 case $OSTYPE in
@@ -419,11 +412,11 @@ aa () {
 ## ** History tools **
 #: Following settings should not be edited, nor tweaked in other files.
 #: Mainly $HISTTIMEFORMAT - the rich history feature is dependent on it!
-HISTFILE=$_D/.history-$CLE_USER
+HISTFILE=$HOME/.history-$CLE_USER
 [ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
-CLE_HIST=$_D/.history-ALL
+CLE_HIST=$HOME/.history-ALL
 
 ## `h`               - bash 'history' wrapper
 h () (
@@ -512,17 +505,21 @@ _rhlog () {
 #:  included directly into lssh. However, this allows to create any other
 #:  remote access wrapper
 _clepak () {
-	cd $CLE_RH
-	RC=$CLE_RD/`basename $CLE_RC`
-	TW=$CLE_TW
-	AL=$CLE_ALW
+	#: anything up to first dotted folder is home for .cle folder
+	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
+	RC=${CLE_RC/$PWD\//}
+	TW=${CLE_TW/$PWD\//}
+	AL=${CLE_ALW/$PWD\//}
 	if [ $1 ];then
+		#: change names and copy files when adding suffix
+		#: this happens when doing lssh (from CLE ws)
 		RC=$RC$1; TW=$TW$1; AL=$AL$1
 		cp $CLE_RC $RC
 		cp $CLE_TW $TW 2>/dev/null
 		cp $CLE_AL $AL 2>/dev/null
 	fi
 	RCS="$RC $TW $AL"
+	dbg_var PWD
 	dbg_var RCS
 	#:  I've never owned this computer, I had Atari 800XL :)
 	C64=`tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
@@ -535,7 +532,7 @@ lssh () (
 	#: this 1. prevents overwriting on destination accounts
 	#:  and 2. provides information about source of the session
 	S= #: resource suffix is empty on remote sessions...
-	[ $CLE_WS ] || S=-$CLE_SHN #: ...gains value only on WS
+	[ $CLE_WS ] || S=-$CLE_SHN #: adding suffix when running on WS
 	_clepak $S
 	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzvf -
 	command ssh -t $* "
@@ -620,6 +617,7 @@ lscreen () (
 #: mentioned features are cool but this part is the important one)
 _scrc () {
 cat <<-EOS
+	source $HOME/.screenrc
 	altscreen on
 	autodetach on
 	# enables shift-PgUp/PgDn
@@ -632,7 +630,6 @@ cat <<-EOS
 	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
-	source $HOME/.screenrc
 EOS
 }
 
@@ -673,7 +670,6 @@ if [ -f $_C ]; then
 	complete -F _ssh lssh
 fi
 
-
 # session startup
 TTY=`tty|sed 's;[/dev];;g'`
 _rhlog ${STY:-${SSH_CONNECTION:-$CLE_RC}}
@@ -685,7 +681,7 @@ done
 
 # config & tweaks
 _clexe $HOME/.cle-local
-_clexe $CLE_RH/$CLE_TW
+_clexe $CLE_TW
 _clexe $CLE_AL
 _clexe $CLE_CF || { _banner;_defcf;}
 _setp
@@ -796,7 +792,7 @@ cle () {
 		I=cle-mod
 		MM=$CLE_D/$I
 		curl -k $CLE_SRC/$CLE_REL/modules/$I >$MM
-		grep -q "# $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
+		grep -q "# .* $I:" $MM || { printb Module download failed; rm -f $MM; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`         - print CLE_* variables
 		for I in ${!CLE_*};do printf "$_CL%-12s$_CN%s\n" $I "${!I}";done;;
@@ -826,7 +822,7 @@ cle () {
 }
 
 # remove temporary stuff
-unset SUDO_COMMAND _D _I _N _C
+unset SUDO_COMMAND _I _N _C
 fi
 # that's all folks...
 
