@@ -1,0 +1,33 @@
+##
+## ** cle-prompt: pre-configured prompt themes **
+#
+#* version: 2018-09-13
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2018 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+case "$1" in
+rh)		## `cle prompt rh`       - RH colorful
+	cle p0 '%c3['
+	cle p1 '\u@%h'
+	cle p2 '\w'
+	cle p3 '] \$'
+	cle color gGg
+	;;
+twoline)	 ## `cle prompt twoline`  - two line prompt
+	cle p0 '\n %e'
+	cle p1 '\u'
+	cle p2 '%h ${CLE_IP:+(%i)}'
+	cle p3 '\n%cK\A %c3\w \$'
+	cle color Ggy
+	;;
+"")
+	cle help "cle prompt"
+esac
+
