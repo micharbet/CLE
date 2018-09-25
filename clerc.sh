@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-19 (Nova)
+#* version: 2018-09-25 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -367,10 +367,23 @@ esac
 
 # colorized grep except on busybox
 #: busybox identified by symlinked 'grep' file
-[ -L `command which grep` ] || alias grep='grep --color=auto'
+if [ -L `command which grep` ];then
+	#: Fedora defines this mess :(
+	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep
+else
+	alias grep='grep --color=auto'
+fi
+
+# Remove alias 'which' if there is no version supporting extended options
+#: This weird construction ensures the 'which' will work even in case an
+#: aliased version with extended options (e.g. --read-alias on Fedora) was
+#: defined on workstation and copied to remote session  
+alias|command which -i which >/dev/null 2>&1 || unalias which
+
+#: transition - remove aliases defined in previous versions
+unalias .. ... xx cx >/dev/null 2>&1 # transition
 
 #: Those are just nice and I believe don't hurt :)
-unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
 ## ** cd command additions **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
