@@ -426,7 +426,7 @@ aa () {
 #: Following settings should not be edited, nor tweaked in other files.
 #: Mainly $HISTTIMEFORMAT - the rich history feature is dependent on it!
 HISTFILE=$HOME/.history-$CLE_USER
-[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
+[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE 2>/dev/null
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
 CLE_HIST=$HOME/.history-ALL
