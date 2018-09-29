@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-19 (Nova)
+#* version: 2018-09-25 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -277,9 +277,17 @@ FreeBSD*)	alias ls='ls -G "$@"';;
 esac
 
 # colorized grep except on busybox
-[ -L `command which grep` ] || alias grep='grep --color=auto'
+if [ -L `command which grep` ];then
+	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep
+else
+	alias grep='grep --color=auto'
+fi
 
-unalias .. ... xx cx >/dev/null 2>&1 # transition might be needed in special cases
+# Remove alias 'which' if there is no version supporting extended options
+alias|command which -i which >/dev/null 2>&1 || unalias which
+
+unalias .. ... xx cx >/dev/null 2>&1 # transition
+
 ## ** cd command additions **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
