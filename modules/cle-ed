@@ -24,7 +24,7 @@ local CLERESTART=""
 case "$1" in
 # CLE shortcuts
 tw)	## `cle ed tw`    -- edit the tweak file
-	vii $CLE_RD/$CLE_TW
+	vii $CLE_TW
 	CLERESTART=1
 	;;
 lcl)	## `cle ed lcl`   -- edit local account's tweak file

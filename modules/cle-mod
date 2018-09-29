@@ -1,7 +1,7 @@
 ##
 ## ** cle-mod: CLE module management **
 #
-#* version: 2018-08-29
+#* version: 2018-09-24
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -130,7 +130,7 @@ add)	## `cle mod add [mod]` - install/upgrade module from repository
 	# check module signature
 	# every regular cle module should have at least it's identification strings
 	# (comments at the beginning, see this file or mod-example)
-	if grep -q "## *$MM: ..*" $DMM ; then
+	if grep -q "## *.*$MM: ..*" $DMM ; then
 		mv -f $DMM $CLE_D/$MM
 		if [[ $MM =~ 'mod-' ]]; then
 			# now include the module
