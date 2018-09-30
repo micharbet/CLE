@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-25 (Nova)
+#* version: 2018-09-30 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -350,12 +350,14 @@ mdfilter () {
 #: CLE defines just basic aliases
 #: Previously there were bunch of them, just because I liked e.g. various
 #: 'ls' variants. However it revealed to be pushy and intrusive. Moreover
-#: when it all was enclosed in function rendering default aliases difficult
+#: they all were enclosed in a function rendering default aliases difficult
 #: to redefine.
-#: Here aliases 
 
 # first load aliases inherited from CLE workstation
-_clexe $CLE_ALW
+#: On workstation: ensure executing aliases only once
+#: On live sessions: read inherited aliases first, allow redefining locally
+CLE_AL=$CLE_D/al # this account's alias store
+[ $CLE_AL != $CLE_ALW ] && _clexe $CLE_ALW
 
 # colorize ls
 case $OSTYPE in
@@ -399,7 +401,6 @@ cx () { cd $_XX; }
 
 ##
 ## ** Alias management **
-CLE_AL=$CLE_D/al # this account's alias store
 aa () {
 	local AED=$CLE_AL.ed
 	case "$1" in
@@ -694,8 +695,8 @@ done
 
 # config & tweaks
 _clexe $HOME/.cle-local
-_clexe $CLE_TW
 _clexe $CLE_AL
+_clexe $CLE_TW
 _clexe $CLE_CF || { _banner;_defcf;}
 _setp
 _setwt
