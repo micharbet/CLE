@@ -285,7 +285,7 @@ else
 fi
 
 # Remove alias 'which' if there is no version supporting extended options
-alias|command which -i which >/dev/null 2>&1 || unalias which
+{ alias|command which -i which || unalias which; } >/dev/null 2>&1
 
 unalias .. ... xx cx >/dev/null 2>&1 # transition
 
