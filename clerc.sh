@@ -380,7 +380,7 @@ fi
 #: This weird construction ensures the 'which' will work even in case an
 #: aliased version with extended options (e.g. --read-alias on Fedora) was
 #: defined on workstation and copied to remote session  
-alias|command which -i which >/dev/null 2>&1 || unalias which
+{ alias|command which -i which || unalias which; } >/dev/null 2>&1
 
 #: transition - remove aliases defined in previous versions
 unalias .. ... xx cx >/dev/null 2>&1 # transition
