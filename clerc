@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-25 (Nova)
+#* version: 2018-09-30 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet 
 #
@@ -266,7 +266,8 @@ mdfilter () {
 
 
 # first load aliases inherited from CLE workstation
-_clexe $CLE_ALW
+CLE_AL=$CLE_D/al # this account's alias store
+[ $CLE_AL != $CLE_ALW ] && _clexe $CLE_ALW
 
 # colorize ls
 case $OSTYPE in
@@ -301,7 +302,6 @@ cx () { cd $_XX; }
 
 ##
 ## ** Alias management **
-CLE_AL=$CLE_D/al # this account's alias store
 aa () {
 	local AED=$CLE_AL.ed
 	case "$1" in
@@ -325,7 +325,7 @@ aa () {
 ##
 ## ** History tools **
 HISTFILE=$HOME/.history-$CLE_USER
-[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE
+[ -f $HISTFILE ] || cp $HOME/.bash_history $HISTFILE 2>/dev/null
 HISTCONTROL=ignoredups
 HISTTIMEFORMAT="%Y-%m-%d %T "
 CLE_HIST=$HOME/.history-ALL
@@ -519,8 +519,8 @@ done
 
 # config & tweaks
 _clexe $HOME/.cle-local
-_clexe $CLE_TW
 _clexe $CLE_AL
+_clexe $CLE_TW
 _clexe $CLE_CF || { _banner;_defcf;}
 _setp
 _setwt
