@@ -1,12 +1,15 @@
 #!/bin/sh
 #
-# zsh/bash startup
+## ** CLE : Command Live Environment **
 #
-# Note #1: first start must be as a script, not sourcing
-#          the moment it is sourcing means session startup
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* version: 2018-10-01 (Zodiac)
+#* license: GNU GPL v2
+#* Copyright (C) 2016-2018 by Michael Arbet
 
 echo
-echo "COMBINED: '$ZSH_ARGZERO:$0:$BASH_SOURCE'"
+echo "COMBINED: '$ZSH_NAME$BASH:$0'"
 
 # First check how is this script executed
 #  - in case of a shell resource, this will be interactive session,
@@ -15,40 +18,43 @@ echo "COMBINED: '$ZSH_ARGZERO:$0:$BASH_SOURCE'"
 #    as a resource
 # Main task is to run interactive shell session with this file as init resource
 # and the $CLE_RC variable must contain full path to the file
-case $ZSH_ARGZERO:$0:$BASH_SOURCE in
-:*bash:*/rc*)	# bash session resource
+case $ZSH_NAME$BASH:$0 in
+*bash:*)	# bash session resource
 	echo sourcing to BASH
-	CLE_RC=${BASH_SOURCE[0]}
+	CLE_RC=$BASH_SOURCE
 	;;
-*zsh:*zsh:)	# zsh session resource (started AS TEMPORARY .zshrc)
+*zsh:*zsh)	# zsh session resource (started AS TEMPORARY .zshrc)
 	echo sourcing to ZSH - from command
 	# we know value of CLE_RC
 	unset ZDOTDIR
 	;;
-*zsh:*/rc*:)	# started FROM .zshrc
+*zsh:*/rc*)	# started FROM .zshrc
 	echo sourcing to ZSH - from .zshrc
 	CLE_RC=$0
 	;;
-*/rc*:*/rc*)	# executed as a command
+:/*/rc*)	# executed as a command
+	# code in this section must be strict POSIX compatible with /bin/sh
 	# Now we're looking for suitable shell
 	# zsh is first to try, bash is fallback
 	echo executing as script, looking for shell
+	export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
 	ZS=`which zsh 2>/dev/null`
 	if [ -n "$ZS" -a "$1" != bash ]; then
-		export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
+		echo foound: $ZS
 		export ZDOTDIR=/tmp/$USER
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
 	elif which bash 2>/dev/null; then
-	
+		echo found: `which bash`
 		exec bash --rcfile $0
 	else
 		echo "CLE needs bash or zsh. Giving up..."
 		exit 1
 	fi
 	;;
-*zcle*)	# first run!
+:*zcle*)	# first run!
+	# code in this section must be strict POSIX compatible with /bin/sh
 	echo First run
 	RD=$HOME/.zcle-$USER
 	export CLE_1=$RD/rc1
