@@ -44,7 +44,7 @@ case $ZSH_ARGZERO:$0:$BASH_SOURCE in
 	
 		exec bash --rcfile $0
 	else
-		echo "CLE needs bash or zsh"
+		echo "CLE needs bash or zsh. Giving up..."
 		exit 1
 	fi
 	;;
@@ -81,11 +81,34 @@ dbg_echo
 dbg_echo --------------
 dbg_echo Resource starts
 
-# No we know CLE_RC, but it can be relative path, make it full
+
+# CLE_RC can be relative path, make it full
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 dbg_var CLE_RC
 dbg_var CLE_RD
+
+# who I am
+#: determine username that will be inherited over the all
+#: subsquent sessions initiated with lssh and su* wrappers
+#: the regexp extracts username from following patterns:
+#: - /any/folder/.cle-username/rcfile
+#: - /any/folder/.config/cle-username/rcfile
+#: - /any/folder/.config/cle/username/rcfile
+#: important is the dot (hidden folder), word 'cle' and darh or slash
+_N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
+export CLE_USER=${CLE_USER:-${_N:-$USER}}
+dbg_var CLE_USER
+
+# short hostname: remove domain, keep subdomains
+CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
+CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
+
+# where in the deep space CLE grows
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE
+CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
+CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
+CLE_VER="$CLE_VER debug"
 
 _clexe () {
 	[ -f "$1" ] || return 1
