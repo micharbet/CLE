@@ -1,0 +1,119 @@
+#!/bin/sh
+#
+# zsh/bash startup
+#
+# Note #1: first start must be as a script, not sourcing
+#          the moment it is sourcing means session startup
+
+echo
+echo "COMBINED: '$ZSH_ARGZERO:$0:$BASH_SOURCE'"
+
+# First check how is this script executed
+#  - in case of a shell resource, this will be interactive session,
+#    prepare basic environment variables and do the shell specific tasks
+#  - in case of start as a command, open a shell (zsh or bash) and push this file
+#    as a resource
+# Main task is to run interactive shell session with this file as init resource
+# and the $CLE_RC variable must contain full path to the file
+case $ZSH_ARGZERO:$0:$BASH_SOURCE in
+:*bash:*/rc*)	# bash session resource
+	echo sourcing to BASH
+	CLE_RC=${BASH_SOURCE[0]}
+	;;
+*zsh:*zsh:)	# zsh session resource (started AS TEMPORARY .zshrc)
+	echo sourcing to ZSH - from command
+	# we know value of CLE_RC
+	unset ZDOTDIR
+	;;
+*zsh:*/rc*:)	# started FROM .zshrc
+	echo sourcing to ZSH - from .zshrc
+	CLE_RC=$0
+	;;
+*/rc*:*/rc*)	# executed as a command
+	# Now we're looking for suitable shell
+	# zsh is first to try, bash is fallback
+	echo executing as script, looking for shell
+	ZS=`which zsh 2>/dev/null`
+	if [ -n "$ZS" -a "$1" != bash ]; then
+		export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
+		export ZDOTDIR=/tmp/$USER
+		mkdir -p $ZDOTDIR
+		ln -sf $CLE_RC $ZDOTDIR/.zshrc
+		exec zsh
+	elif which bash 2>/dev/null; then
+	
+		exec bash --rcfile $0
+	else
+		echo "CLE needs bash or zsh"
+		exit 1
+	fi
+	;;
+*zcle*)	# first run!
+	echo First run
+	RD=$HOME/.zcle-$USER
+	export CLE_1=$RD/rc1
+	mkdir -p $RD
+	cp $0 $CLE_1
+	chmod 755 $CLE_1
+	exec $CLE_1 "$@"
+	;;
+*)	echo something unknown;;
+esac
+
+#
+# Reaching this point means the script is running as a resource
+# to the interactive bash or zsh session.
+# Further code must be compatible with both shells!
+#
+
+[ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; echo CLE DEBUG ON; }
+dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }
+dbg_var () (
+	[ $ZSH_NAME ] && V=${(P)1} || V=${!1}
+	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty
+)
+# ^^^ This was first bit of zsh/bash compatible code
+
+# boldprint
+printb () { printf "$_CL$*$_CN\n";}
+
+dbg_echo
+dbg_echo --------------
+dbg_echo Resource starts
+
+# No we know CLE_RC, but it can be relative path, make it full
+CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
+CLE_RC=$CLE_RD/`basename $CLE_RC`
+dbg_var CLE_RC
+dbg_var CLE_RD
+
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	printb _clexe $1
+	source $1
+}
+CLE_EXE=$CLE_RC
+
+alias l='ls -l'
+# color table
+#: initialize $_C* variables with terminal compatible escape sequences
+#: following are basic ones:
+_CN=`tput sgr0`
+_CL=`tput bold`
+_CU=`tput smul`;_Cu=`tput rmul`
+_CD=`tput dim`
+_CV=`tput rev`
+
+## ** cd command additions **
+## `.. ...`     - up one or two levels
+## `-`  (dash)  - cd to recent dir
+- () { cd -;}
+.. () { cd ..;}
+... () { cd ../..;}
+
+# heh, my stuff here!
+_clexe $HOME/.cle-local
+_clexe ~/.cle-mich/al
+
