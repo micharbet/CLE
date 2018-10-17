@@ -4,43 +4,54 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-10-01 (Zodiac)
+#* version: 2018-10-18 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 
 echo
 echo "COMBINED: '$ZSH_NAME$BASH:$0'"
 
-# First check how is this script executed
-#  - in case of a shell resource, this will be interactive session,
-#    prepare basic environment variables and do the shell specific tasks
-#  - in case of start as a command, open a shell (zsh or bash) and push this file
-#    as a resource
-# Main task is to run interactive shell session with this file as init resource
-# and the $CLE_RC variable must contain full path to the file
+# Startup sequence
+#: First check how is this script executed
+#:  - in case of a shell resource, this will be interactive session,
+#:    prepare basic environment variables and do the shell specific tasks
+#:  - in case of start as a command, open a shell (zsh or bash) and push this file
+#:    as a resource
+#: Main task is to run interactive shell session with this file as init resource
+#: and the $CLE_RC variable must contain full path to the file
 case $ZSH_NAME$BASH:$0 in
-*bash:*)	# bash session resource
+*bash:*) # bash session resource
 	echo sourcing to BASH
 	CLE_RC=$BASH_SOURCE
 	;;
-*zsh:*zsh)	# zsh session resource (started AS TEMPORARY .zshrc)
+*zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
 	echo sourcing to ZSH - from command
 	# we know value of CLE_RC
 	unset ZDOTDIR
 	;;
-*zsh:*/rc*)	# started FROM .zshrc
+*zsh:*/rc*) # started FROM .zshrc
 	echo sourcing to ZSH - from .zshrc
 	CLE_RC=$0
 	;;
-:/*/rc*)	# executed as a command
-	# code in this section must be strict POSIX compatible with /bin/sh
-	# Now we're looking for suitable shell
-	# zsh is first to try, bash is fallback
+:/*/rc*) # executed as a command
+	#: code in this section must be strictly POSIX compatible with /bin/sh
+	#: Now we're looking for suitable shell: zsh first, fallback to bash
 	echo executing as script, looking for shell
 	export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
-	ZS=`which zsh 2>/dev/null`
-	if [ -n "$ZS" -a "$1" != bash ]; then
+	ZS=`which zsh 2>/dev/null` # check zsh
+	#: process command line options
+	while [ $1 ]; do
+		case $1 in
+		-b)	ZS= ;;	# force bash
+		-m)	CLE_MOTD=`uptime`
+			export CLE_MOTD;;
+		*)	echo "$0: unknown option '$1'"; exit 1;;
+		esac
+		shift
+	done
+	if [ $ZS ]; then
 		echo foound: $ZS
+		#: prepare startup environment in zsh way
 		export ZDOTDIR=/tmp/$USER
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
@@ -54,7 +65,7 @@ case $ZSH_NAME$BASH:$0 in
 	fi
 	;;
 :*zcle*)	# first run!
-	# code in this section must be strict POSIX compatible with /bin/sh
+	#: code in this section must be strictly POSIX compatible with /bin/sh
 	echo First run
 	RD=$HOME/.zcle-$USER
 	export CLE_1=$RD/rc1
@@ -66,26 +77,45 @@ case $ZSH_NAME$BASH:$0 in
 *)	echo something unknown;;
 esac
 
-#
-# Reaching this point means the script is running as a resource
-# to the interactive bash or zsh session.
-# Further code must be compatible with both shells!
-#
+#: Reaching this point means that the script is running as a resource
+#: to the interactive session. Further code must be bash & zsh compatible!
 
-[ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; echo CLE DEBUG ON; }
-dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }
-dbg_var () (
-	[ $ZSH_NAME ] && V=${(P)1} || V=${!1}
-	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty
-)
-# ^^^ This was first bit of zsh/bash compatible code
+echo ---------------
+echo Resource starts
+echo ---------------
+
+
+# Debugging helpers							# dbg
+[ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; echo CLE DEBUG ON; }		# dbg
+dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
+dbg_var () (								# dbg
+	[ $ZSH_NAME ] && V=${(P)1} || V=${!1}				# dbg
+	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty	# dbg
+)									# dbg
+#: ^^^ This was first bit of zsh/bash compatible code			# dbg
 
 # boldprint
 printb () { printf "$_CL$*$_CN\n";}
 
-dbg_echo
-dbg_echo --------------
-dbg_echo Resource starts
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	dbg_echo _clexe $1
+	source $1
+}
+CLE_EXE=$CLE_RC
+
+# color table
+#: initialize $_C* variables with terminal compatible escape sequences
+#: following are basic ones:
+_CN=`tput sgr0`
+_CL=`tput bold`
+_CU=`tput smul`;_Cu=`tput rmul`
+_CD=`tput dim`
+_CV=`tput rev`
 
 
 # CLE_RC can be relative path, make it full
@@ -100,9 +130,8 @@ dbg_var CLE_RD
 #: the regexp extracts username from following patterns:
 #: - /any/folder/.cle-username/rcfile
 #: - /any/folder/.config/cle-username/rcfile
-#: - /any/folder/.config/cle/username/rcfile
-#: important is the dot (hidden folder), word 'cle' and darh or slash
-_N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
+#: important is the dot (hidden folder), word 'cle' with dash
+_N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_var CLE_USER
 
@@ -115,25 +144,15 @@ CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
 CLE_VER="$CLE_VER debug"
+CLE_SH=`basename $BASH$ZSH_NAME`
 
-_clexe () {
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1[:$] ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	printb _clexe $1
-	source $1
-}
-CLE_EXE=$CLE_RC
-
-alias l='ls -l'
-# color table
-#: initialize $_C* variables with terminal compatible escape sequences
-#: following are basic ones:
-_CN=`tput sgr0`
-_CL=`tput bold`
-_CU=`tput smul`;_Cu=`tput rmul`
-_CD=`tput dim`
-_CV=`tput rev`
+# print MOTD + more
+if [ "$CLE_MOTD" ]; then
+	[ -f /etc/motd ] && cat /etc/motd
+	printf "\n$CLE_MOTD"
+	printb "\n CLE/$CLE_SH $CLE_VER\n"
+	unset CLE_MOTD
+fi
 
 ## ** cd command additions **
 ## `.. ...`     - up one or two levels
@@ -146,3 +165,16 @@ _CV=`tput rev`
 _clexe $HOME/.cle-local
 _clexe ~/.cle-mich/al
 
+cle () {
+case $1 in
+env)
+	set |sed -n "s/^\(CLE_.*\)=\(.*\)/$_CL \1 $_CN \t\2/p"
+	;;
+*)
+	echo nothing else here...
+	;;
+esac
+}
+
+#: final cleanup
+unset _N
