@@ -8,8 +8,17 @@
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 
-echo
-echo "COMBINED: '$ZSH_NAME$BASH:$0'"
+# Debugging helpers							# dbg
+dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
+dbg_var () (								# dbg
+	[ $ZSH_NAME ] && V=${(P)1} || V=${!1}				# dbg
+	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty	# dbg
+)									# dbg
+#: ^^^ This was first bit of zsh/bash compatible code			# dbg
+[ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
+#CLE_DEBUG=1	# force debugging on or comment this line		# dbg
+dbg_echo; dbg_echo CLE pid:$$ DEBUG ON;					# dbg
+
 
 # Startup sequence
 #: First check how is this script executed
@@ -19,24 +28,25 @@ echo "COMBINED: '$ZSH_NAME$BASH:$0'"
 #:    as a resource
 #: Main task is to run interactive shell session with this file as init resource
 #: and the $CLE_RC variable must contain full path to the file
+dbg_echo "startup case: '$ZSH_NAME$BASH:$0'"
 case $ZSH_NAME$BASH:$0 in
 *bash:*) # bash session resource
-	echo sourcing to BASH
+	dbg_echo sourcing to BASH
 	CLE_RC=$BASH_SOURCE
 	;;
 *zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
-	echo sourcing to ZSH - from command
+	dbg_echo sourcing to ZSH - from command
 	# we know value of CLE_RC
 	unset ZDOTDIR
 	;;
 *zsh:*/rc*) # started FROM .zshrc
-	echo sourcing to ZSH - from .zshrc
+	dbg_echo sourcing to ZSH - from .zshrc
 	CLE_RC=$0
 	;;
 *:/*/rc*) # executed as a command
 	#: code in this section must be strictly POSIX compatible with /bin/sh
 	#: Now we're looking for suitable shell: zsh first, fallback to bash
-	echo executing as script, looking for shell
+	dbg_echo executing as script, looking for shell
 	export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
 	ZS=`which zsh 2>/dev/null` # check zsh
 	#: process command line options
@@ -50,14 +60,14 @@ case $ZSH_NAME$BASH:$0 in
 		shift
 	done
 	if [ $ZS ]; then
-		echo foound: $ZS
+		dbg_echo foound: $ZS
 		#: prepare startup environment in zsh way
 		export ZDOTDIR=/tmp/$USER
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
 	elif which bash >/dev/null 2>&1; then
-		echo found: `which bash`
+		dbg_echo found: `which bash`
 		exec bash --rcfile $0
 	else
 		echo "CLE needs bash or zsh. Giving up..."
@@ -66,7 +76,7 @@ case $ZSH_NAME$BASH:$0 in
 	;;
 *:*zclerc*)	# first run!
 	#: code in this section must be strictly POSIX compatible with /bin/sh
-	echo First run
+	dbg_echo First run
 	RD=$HOME/.zcle-$USER
 	export CLE_1=$RD/rc1
 	mkdir -p $RD
@@ -80,19 +90,10 @@ esac
 #: Reaching this point means that the script is running as a resource
 #: to the interactive session. Further code must be bash & zsh compatible!
 
-echo ---------------
-echo Resource starts
-echo ---------------
+dbg_echo ---------------
+dbg_echo Resource starts
+dbg_echo ---------------
 
-
-# Debugging helpers							# dbg
-[ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; echo CLE DEBUG ON; }		# dbg
-dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
-dbg_var () (								# dbg
-	[ $ZSH_NAME ] && V=${(P)1} || V=${!1}				# dbg
-	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty	# dbg
-)									# dbg
-#: ^^^ This was first bit of zsh/bash compatible code			# dbg
 
 # boldprint
 printb () { printf "$_CL$*$_CN\n";}
