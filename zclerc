@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-10-18 (Zodiac)
+#* version: 2018-10-24 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 
@@ -170,6 +170,7 @@ CLE_ALW=$CLE_RD/al$CLE_WS
 #: Also alias & unalias must be available as builtins in this phase
 unset -f alias unalias 2>/dev/null
 _clexe /etc/profile
+_clexe $HOME/.${CLE_SH}rc
 
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
