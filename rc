@@ -162,9 +162,29 @@ fi
 .. () { cd ..;}
 ... () { cd ../..;}
 
+#: Following are su* wrappers of different kinds including kerberos
+#: version 'ksu'. They are basically simple, you see. Environment is not
+#: packed and transferred when using them. Instead the original files from
+#: user's home folder are used.
+## `lsudo [user]`      - sudo wrapper; root is the default account
+lsudo () (
+        sudo -i -u ${1:-root} $CLE_RC
+)
+
+## `lsu [user]`        - su wrapper
+#: known issue - on debian systems controlling terminal is detached in case 
+#: a command ($CLE_RC) is specified, use 'lsudo' instead
+lsu () (
+        S=
+        [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
+        eval su -l $S -c $CLE_RC ${1:-root}
+)
+
 # heh, my stuff here!
 _clexe $HOME/.cle-local
 _clexe ~/.cle-mich/al
+
+PS1="(CLE/$CLE_SH $CLE_USER->$USERNAME) $PS1"
 
 cle () {
 case $1 in
