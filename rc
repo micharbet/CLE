@@ -147,6 +147,25 @@ CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
 CLE_VER="$CLE_VER debug"
 CLE_SH=`basename $BASH$ZSH_NAME`
 
+# find writable folder
+#: there can be real situation where a remote account is restricted and have no
+#: home folder. In such case CLE can be started from /tmp. Also, after su*
+#: wrapper the folder containing main resource file can be and usually will be
+#: in different place than current home.
+#: Simply to say, this sequence ensures customized configuration for every
+#: account accessed with CLE.
+[ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
+CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+mkdir -m 755 -p $CLE_D
+
+# config, tweak, etc...
+CLE_CF=$CLE_D/cf
+CLE_AL=$CLE_D/al
+CLE_WS=`sed 's:.*/rc1*::' <<<$CLE_RC`
+CLE_TW=$CLE_RD/tw$CLE_WS
+CLE_ALW=$CLE_RD/al$CLE_WS
+
+
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
@@ -182,9 +201,11 @@ lsu () (
 
 # heh, my stuff here!
 _clexe $HOME/.cle-local
-_clexe ~/.cle-mich/al
+_clexe ~mich/.cle-mich/al
 
-PS1="(CLE/$CLE_SH $CLE_USER->$USERNAME) $PS1"
+# zsh doesn't know '\n' as escape sequence
+[ $ZSH_NAME ] && NL=$'\n' || NL='\n'
+PS1="$NL(CLE/$CLE_SH $$ $CLE_USER->$USERNAME) $PS1"
 
 cle () {
 case $1 in
