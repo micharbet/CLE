@@ -78,11 +78,11 @@ case $ZSH_NAME$BASH:$0 in
 	#: code in this section must be strictly POSIX compatible with /bin/sh
 	dbg_echo First run
 	RD=$HOME/.zcle-$USER
-	export CLE_1=$RD/rc1
+	export CLE_1=$0
 	mkdir -p $RD
-	cp $0 $CLE_1
-	chmod 755 $CLE_1
-	exec $CLE_1 "$@"
+	cp $0 $RD/rc1
+	chmod 755 $RD/rc1
+	exec $RD/rc1 "$@"
 	;;
 *)	echo something unknown;;
 esac
@@ -95,6 +95,26 @@ dbg_echo ---------------
 
 # boldprint
 printb () { printf "$_CL$*$_CN\n";}
+
+# simple question
+ask () {
+	local PR="$_CL$* (y/N) $_CN"
+	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
+	echo ${REPLY:=n}
+	[ "$REPLY" = "y" ]
+}
+
+_banner () {
+cat <<EOT
+
+   ___| |     ____|  Command Live Environment activated
+  |     |     __|    ...bit of life to the command line
+  |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
+ \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
+
+EOT
+}
+
 
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
@@ -163,12 +183,15 @@ CLE_WS=`sed 's:.*/rc1*::' <<<$CLE_RC`
 CLE_TW=$CLE_RD/tw$CLE_WS
 CLE_ALW=$CLE_RD/al$CLE_WS
 
+# Use alias built-ins
+#: alias & unalias must be available in their natural form now
+#: and will be redefined at the end of resource
+unset -f alias unalias 2>/dev/null
+
 #: Run profile files
 #: Things in /etc/profile.d can override some settings.
 #: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
 #: breaks rich history.
-#: Also alias & unalias must be available as builtins in this phase
-unset -f alias unalias 2>/dev/null
 _clexe /etc/profile
 _clexe $HOME/.${CLE_SH}rc
 
@@ -227,8 +250,8 @@ aa () {
 	local Z=${ZSH_NAME:+-L}
 	case "$1" in
 	"")	## `aa`         - show aliases
-		#: also meke the output nicer and more easy to read
-		builtin alias $Z|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN\t\2/";;
+		#: also make the output nicer and more easy to read
+		builtin alias $Z|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN\t\2/";;
 	-s)	## `aa -s`      - save aliases
 		builtin alias $Z >$CLE_AL;;
 	-e)	## `aa -e`      - edit aliases
@@ -307,9 +330,16 @@ case $1 in
 env)
 	set |sed -n "s/^\(CLE_.*\)=\(.*\)/$_CL \1 $_CN \t\2/p"
 	;;
-*)
-	echo nothing else here...
+"")
+	_banner
+	sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
 	;;
+*)
+	echo unimplemented: cle $C;
+	#echo check cle help;
+	return 1
+	;;
+
 esac
 }
 
