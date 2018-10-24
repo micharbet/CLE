@@ -135,6 +135,19 @@ _CL=`tput bold`
 _CU=`tput smul`;_Cu=`tput rmul`
 _CD=`tput dim`
 _CV=`tput rev`
+#: The loop creates table of color codes r, g, b...
+#: lower case is for dim variant, upper case stands for bright
+#: try e.g 'echo $_Cg green $_CY bright yellow'
+_I=0; for _N in k r g y b m c w; do
+	_C=`tput setaf $_I`
+	declare _C$_N=$_CN$_C
+	declare _C$(tr a-z A-Z <<<$_N)=$_CL$_C
+	((_I+=1))
+done
+#: and... special color code for error highlight in prompt
+_Ce=`tput setab 1;tput setaf 7` # err highlight
+
+
 
 
 # CLE_RC can be relative path, make it full
@@ -179,9 +192,10 @@ mkdir -m 755 -p $CLE_D
 # config, tweak, etc...
 CLE_CF=$CLE_D/cf
 CLE_AL=$CLE_D/al
-CLE_WS=`sed 's:.*/rc1*::' <<<$CLE_RC`
-CLE_TW=$CLE_RD/tw$CLE_WS
-CLE_ALW=$CLE_RD/al$CLE_WS
+_N=`sed 's:.*/rc1*::' <<<$CLE_RC` # workstation name
+CLE_WS=${_N/-/}
+CLE_TW=$CLE_RD/tw$_N
+CLE_ALW=$CLE_RD/al$_N
 
 # Use alias built-ins
 #: alias & unalias must be available in their natural form now
