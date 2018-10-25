@@ -417,8 +417,9 @@ aa () {
 	*=*)	## `aa a='b'`   - create new alias and save
 		builtin alias "$*"
 		aa -s;;
-	*)	cle help aa
-		return 1
+	-h)	## `aa -h`      - show this help
+		cle help aa;;
+	*)	builtin alias "$*";;
 	esac
 }
 

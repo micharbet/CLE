@@ -287,7 +287,6 @@ fi
 # Remove alias 'which' if there is no version supporting extended options
 { alias|command which -i which || unalias which; } >/dev/null 2>&1
 
-unalias .. ... xx cx >/dev/null 2>&1 # transition
 
 ## ** cd command additions **
 ## `.. ...`     - up one or two levels
@@ -317,8 +316,9 @@ aa () {
 	*=*)	## `aa a='b'`   - create new alias and save
 		builtin alias "$*"
 		aa -s;;
-	*)	cle help aa
-		return 1
+	-h)	## `aa -h`      - show this help
+		cle help aa;;
+	*)	builtin alias "$*";;
 	esac
 }
 
