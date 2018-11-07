@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-10-01 (Zodiac)
+#* version: 2018-11-07 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 #
@@ -112,8 +112,13 @@ _N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_var CLE_USER
 
+# FQDN hack
+#: In case the hostname is an alias for a domain `hostname -f` returns
+#: domain part only, no hostname! Use the longer string
+CLE_FHN=`hostname -f`
+[ ${#CLE_FHN} -lt ${#HOSTNAME} ] && CLE_FHN=$HOSTNAME
 # short hostname: remove domain, leave subdomains
-CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
+CLE_SHN=`sed 's;\.[^.]*\.[^.]*$;;' <<<$CLE_FHN`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space CLE grows
@@ -244,10 +249,12 @@ _clesc () (
 	sed <<<${!P}\
 	 -e "s/%i/$CLE_IP/g"\
 	 -e "s/%h/$CLE_SHN/g"\
+	 -e "s/%H/$CLE_FHN/g"\
 	 -e "s/%u/$CLE_USER/g"\
 	 -e "s/%e/\\\[\$_CE\\\][\$_E]\\\[\$_CN\$$C\\\]/g"\
 	 -e "s/%c\(.\)/\\\[\\\$_C\1\\\]/g"\
-	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"
+	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
+	 -e "s/%%/%/g"
 )
 
 # prompt composer
@@ -405,7 +412,7 @@ aa () {
 	local AED=$CLE_AL.ed
 	case "$1" in
 	"")	## `aa`           - show aliases
-		#: also meke the output nicer and more easy to read
+		#: also meke the output nice and easier to read
                 builtin alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
 	-s)	## `aa -s`        - save aliases
 		builtin alias >$CLE_AL;;
@@ -415,12 +422,12 @@ aa () {
 		builtin unalias -a
 		. $AED;;
 	*=*)	## `aa a='b'`     - create new alias and save
-		builtin alias "$*"
+		builtin alias "$@"
 		aa -s;;
 	-h)	## `aa -h`        - show this help
 		cle help aa;;
-	*)	## `aa aliasname` - show definition of alias aliasthatexists
-		builtin alias "$*";;
+	*)	## `aa aliasname` - show definition of existing alias
+		builtin alias "$@";;
 	esac
 }
 
@@ -819,7 +826,7 @@ cle () {
 		select C in $I;do
 			[ $C ] && curl -sk $CLE_SRC/$CLE_REL/doc/$C |mdfilter|less -r; break
 		done;;
-	help|-h|-help)	## `cle help [fnc]`  - show help
+	help|-h|--help)	## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
