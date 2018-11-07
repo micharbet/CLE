@@ -4,9 +4,9 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-30 (Nova)
+#* version: 2018-11-07 (Nova)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2018 by Michael Arbet 
+#* Copyright (C) 2016-2018 by Michael Arbet
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -112,8 +112,13 @@ _N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_var CLE_USER
 
+# FQDN hack
+#: In case the hostname is an alias for a domain `hostname -f` returns
+#: domain part only, no hostname! Use the longer string
+CLE_FHN=`hostname -f`
+[ ${#CLE_FHN} -lt ${#HOSTNAME} ] && CLE_FHN=$HOSTNAME
 # short hostname: remove domain, leave subdomains
-CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
+CLE_SHN=`sed 's;\.[^.]*\.[^.]*$;;' <<<$CLE_FHN`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space CLE grows
@@ -197,7 +202,7 @@ cat <<EOT
   |     |     __|    ...bit of life to the command line
   |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
  \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
- 
+
 EOT
 }
 
@@ -244,10 +249,12 @@ _clesc () (
 	sed <<<${!P}\
 	 -e "s/%i/$CLE_IP/g"\
 	 -e "s/%h/$CLE_SHN/g"\
+	 -e "s/%H/$CLE_FHN/g"\
 	 -e "s/%u/$CLE_USER/g"\
 	 -e "s/%e/\\\[\$_CE\\\][\$_E]\\\[\$_CN\$$C\\\]/g"\
 	 -e "s/%c\(.\)/\\\[\\\$_C\1\\\]/g"\
-	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"
+	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
+	 -e "s/%%/%/g"
 )
 
 # prompt composer
@@ -257,7 +264,7 @@ _clesc () (
 _setp () {
 	local CC I CI C
 	C=${1:-$CLE_CLR}
-	case "$C" in 
+	case "$C" in
 	red)	CC=RrR;;
 	green)	CC=GgG;;
 	yellow)	CC=YyY;;
@@ -270,7 +277,7 @@ _setp () {
 	???)	CC=$C;; # any 3 colors
 	*)	# print help on colors
 		printb "Unknown color '$CLE_CLR' Select predefined scheme:"
-		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
+		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p'
 		echo Alternatively create your own 3-letter combo using rgbcmykw/RGBCMYKW
 		echo E.g. cle color rgB
 		return 1
@@ -379,7 +386,7 @@ fi
 # Remove alias 'which' if there is no version supporting extended options
 #: This weird construction ensures the 'which' will work even in case an
 #: aliased version with extended options (e.g. --read-alias on Fedora) was
-#: defined on workstation and copied to remote session  
+#: defined on workstation and copied to remote session
 { alias|command which -i which || unalias which; } >/dev/null 2>&1
 
 #: transition - remove aliases defined in previous versions
@@ -404,21 +411,23 @@ cx () { cd $_XX; }
 aa () {
 	local AED=$CLE_AL.ed
 	case "$1" in
-	"")	## `aa`         - show aliases
-		#: also meke the output nicer and more easy to read
+	"")	## `aa`           - show aliases
+		#: also meke the output nice and easier to read
                 builtin alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
-	-s)	## `aa -s`      - save aliases
+	-s)	## `aa -s`        - save aliases
 		builtin alias >$CLE_AL;;
-	-e)	## `aa -e`      - edit aliases
+	-e)	## `aa -e`        - edit aliases
 		builtin alias >$AED
 		vi $AED
 		builtin unalias -a
 		. $AED;;
-	*=*)	## `aa a='b'`   - create new alias and save
-		builtin alias "$*"
+	*=*)	## `aa a='b'`     - create new alias and save
+		builtin alias "$@"
 		aa -s;;
-	*)	cle help aa
-		return 1
+	-h)	## `aa -h`        - show this help
+		cle help aa;;
+	*)	## `aa aliasname` - show definition of existing alias
+		builtin alias "$@";;
 	esac
 }
 
@@ -508,7 +517,7 @@ _rhlog () {
 #: grab *active* resource file, tweak file, pack it to tarball and store
 #: into variable C64 as base64 encoded string.
 #: Argument ($1) may contain additional suffix to filenames
-#: Second outcome of _clepak is value in $RC - relative path to the resource 
+#: Second outcome of _clepak is value in $RC - relative path to the resource
 #: file that should be run on remote system (it may contain the suffix)
 #: Note: configuration is not packed in order to ensure unique cf on all
 #:  remote accounts.
@@ -567,7 +576,7 @@ lsudo () (
 )
 
 ## `lsu [user]`        - su wrapper
-#: known issue - on debian systems controlling terminal is detached in case 
+#: known issue - on debian systems controlling terminal is detached in case
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
 	S=
@@ -640,7 +649,7 @@ cat <<-EOS
 	bindkey "^[[1;5D" prev
 	bindkey "^[[1;5C" next
 	defscrollback 9000
-	hardstatus alwayslastline 
+	hardstatus alwayslastline
 	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
@@ -678,7 +687,7 @@ complete -F _compcle cle
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 #: while _ssh is better
 #: The path is valid at least on fedora and debian with installed bash-completion package
-_C=/usr/share/bash-completion/completions/ssh 
+_C=/usr/share/bash-completion/completions/ssh
 if [ -f $_C ]; then
 	. $_C
 	complete -F _ssh lssh
@@ -739,7 +748,7 @@ EOT
 #: 'cle something'. This is how modularity has been implemented.
 #: That means you can replace parts of code or enhance 'cle' command by
 #: defining your own '_cle_something' bash functions
-#: 
+#:
 cle () {
 	local C I MM BRC NC
 	C=$1;shift
@@ -817,7 +826,7 @@ cle () {
 		select C in $I;do
 			[ $C ] && curl -sk $CLE_SRC/$CLE_REL/doc/$C |mdfilter|less -r; break
 		done;;
-	help|-h|-help)	## `cle help [fnc]`  - show help
+	help|-h|--help)	## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;

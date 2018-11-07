@@ -4,9 +4,9 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-09-30 (Nova)
+#* version: 2018-11-07 (Nova)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2018 by Michael Arbet 
+#* Copyright (C) 2016-2018 by Michael Arbet
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -68,8 +68,11 @@ _clexe $HOME/.bashrc
 _N=`sed -n 's;.*cle[/-]\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 
+# FQDN hack
+CLE_FHN=`hostname -f`
+[ ${#CLE_FHN} -lt ${#HOSTNAME} ] && CLE_FHN=$HOSTNAME
 # short hostname: remove domain, leave subdomains
-CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
+CLE_SHN=`sed 's;\.[^.]*\.[^.]*$;;' <<<$CLE_FHN`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space CLE grows
@@ -133,7 +136,7 @@ cat <<EOT
   |     |     __|    ...bit of life to the command line
   |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
  \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
- 
+
 EOT
 }
 
@@ -178,17 +181,19 @@ _clesc () (
 	sed <<<${!P}\
 	 -e "s/%i/$CLE_IP/g"\
 	 -e "s/%h/$CLE_SHN/g"\
+	 -e "s/%H/$CLE_FHN/g"\
 	 -e "s/%u/$CLE_USER/g"\
 	 -e "s/%e/\\\[\$_CE\\\][\$_E]\\\[\$_CN\$$C\\\]/g"\
 	 -e "s/%c\(.\)/\\\[\\\$_C\1\\\]/g"\
-	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"
+	 -e "s/%v\([[:alnum:]]*\)/\1=\$\1/g"\
+	 -e "s/%%/%/g"
 )
 
 # prompt composer
 _setp () {
 	local CC I CI C
 	C=${1:-$CLE_CLR}
-	case "$C" in 
+	case "$C" in
 	red)	CC=RrR;;
 	green)	CC=GgG;;
 	yellow)	CC=YyY;;
@@ -201,7 +206,7 @@ _setp () {
 	???)	CC=$C;; # any 3 colors
 	*)	# print help on colors
 		printb "Unknown color '$CLE_CLR' Select predefined scheme:"
-		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p' 
+		declare -f _setp|sed -n 's/\(\<[a-z |]*\)).*/\1/p'
 		echo Alternatively create your own 3-letter combo using rgbcmykw/RGBCMYKW
 		echo E.g. cle color rgB
 		return 1
@@ -305,20 +310,22 @@ cx () { cd $_XX; }
 aa () {
 	local AED=$CLE_AL.ed
 	case "$1" in
-	"")	## `aa`         - show aliases
+	"")	## `aa`           - show aliases
                 builtin alias|sed "s/^alias \(.*\)='\(.*\)'/$_CL\1$_CN	\2/";;
-	-s)	## `aa -s`      - save aliases
+	-s)	## `aa -s`        - save aliases
 		builtin alias >$CLE_AL;;
-	-e)	## `aa -e`      - edit aliases
+	-e)	## `aa -e`        - edit aliases
 		builtin alias >$AED
 		vi $AED
 		builtin unalias -a
 		. $AED;;
-	*=*)	## `aa a='b'`   - create new alias and save
-		builtin alias "$*"
+	*=*)	## `aa a='b'`     - create new alias and save
+		builtin alias "$@"
 		aa -s;;
-	*)	cle help aa
-		return 1
+	-h)	## `aa -h`        - show this help
+		cle help aa;;
+	*)	## `aa aliasname` - show definition of existing alias
+		builtin alias "$@";;
 	esac
 }
 
@@ -474,7 +481,7 @@ cat <<-EOS
 	bindkey "^[[1;5D" prev
 	bindkey "^[[1;5C" next
 	defscrollback 9000
-	hardstatus alwayslastline 
+	hardstatus alwayslastline
 	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
@@ -502,7 +509,7 @@ _compcle () {
 complete -F _compcle cle
 
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-_C=/usr/share/bash-completion/completions/ssh 
+_C=/usr/share/bash-completion/completions/ssh
 if [ -f $_C ]; then
 	. $_C
 	complete -F _ssh lssh
@@ -624,7 +631,7 @@ cle () {
 		select C in $I;do
 			[ $C ] && curl -sk $CLE_SRC/$CLE_REL/doc/$C |mdfilter|less -r; break
 		done;;
-	help|-h|-help)	## `cle help [fnc]`  - show help
+	help|-h|--help)	## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		_C=`ls $CLE_D/cle-* 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $_C | mdfilter | less -erFX;;
