@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-11-07 (Nova)
+#* version: 2018-11-13 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 #
