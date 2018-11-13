@@ -728,7 +728,7 @@ unalias () {
 }
 
 
-[ "$CLE_MOTD" ] && { cat /etc/motd;echo;echo $CLE_MOTD;unset CLE_MOTD; }
+[ "$CLE_MOTD" ] && { cat /etc/motd 2>/dev/null;echo;echo $CLE_MOTD;unset CLE_MOTD; }
 
 # check first run
 [ $CLE_1 ] && cat <<EOT
