@@ -332,10 +332,8 @@ shopt -s checkwinsize
 #: -make decision based on different environments (shell window, text console,
 #:  screen session, maybe termux, etc...)
 _setwt () {
-	CLE_WT=''
 	[[ $TERM =~ linux ]] && return # no tits on console
-	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_USER -> "
-	CLE_WT=$CLE_WT$USER@$CLE_SHN-$TTY
+	CLE_WT=$USER@$CLE_SHN
 }
 
 # markdown filter
