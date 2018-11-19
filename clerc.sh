@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-11-07 (Nova)
+#* version: 2018-11-13 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 #
@@ -332,10 +332,8 @@ shopt -s checkwinsize
 #: -make decision based on different environments (shell window, text console,
 #:  screen session, maybe termux, etc...)
 _setwt () {
-	CLE_WT=''
 	[[ $TERM =~ linux ]] && return # no tits on console
-	[[ $CLE_RC =~ remote ]] && CLE_WT="$CLE_USER -> "
-	CLE_WT=$CLE_WT$USER@$CLE_SHN-$TTY
+	CLE_WT=$USER@$CLE_SHN
 }
 
 # markdown filter
@@ -728,7 +726,7 @@ unalias () {
 }
 
 
-[ "$CLE_MOTD" ] && { cat /etc/motd;echo;echo $CLE_MOTD;unset CLE_MOTD; }
+[ "$CLE_MOTD" ] && { cat /etc/motd 2>/dev/null;echo;echo $CLE_MOTD;unset CLE_MOTD; }
 
 # check first run
 [ $CLE_1 ] && cat <<EOT
