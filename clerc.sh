@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-11-13 (Nova)
+#* version: 2018-11-21 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 #
@@ -154,8 +154,9 @@ dbg_var CLE_RC
 #: account accessed with CLE.
 [ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
 CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
-CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
+CLE_CF=$CLE_D/cf-$CLE_FHN
+[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF # transition to multihost/nfs shared folders
 
 # tweak and alias files have same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
