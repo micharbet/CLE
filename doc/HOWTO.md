@@ -89,9 +89,14 @@ manual plus enhnacing percent-sign escapes defined by CLE. Find their list below
   can be backslash escapes described in `man bash` like e.g. \w, \u, \A, etc
   and following percent enhancements defined in CLE:
 
-   %h ... shortened hostname, removed toplevel and subdomain, retaining other
+   %h ... shortened hostname - the value of $CLE_SHN
+          by default it contains removed top and subdomain, retaining other
           levels. E.g. six1.lab.brq.redhat.com would appear 'six1.lab.brq'
-          (the value of $CLE_SHN)
+          (refer to hostname shortening and $CLE_SRE for more options)
+
+   %H ... full host name - the value of $CLE_FHN. Ideally should be FQDN but
+          it depends on system configuration. CLE makes best effort to obtain
+          all domain information and reconstruct the hostname.
 
    %i ... remote host IP
 
@@ -460,7 +465,9 @@ descriptions:
 - `CLE_Pn`    prompt-parts strings defined with command `cle p0 .. cle p3`
 - `CLE_WT`    string to be terminal window title
 - `CLE_IP`    contains IP address in case of remote session
+- `CLE_FHN`   full hostname, ideally but not necessarily FQDN
 - `CLE_SHN`   shortened hostname
+- `CLE_SRE`   hostname shortening regular expression - can be set in tweak file
 - `CLE_ALW`   aliases store transferred from workstation
 - `CLE_AL`    user's aliases store that remains local only
 - `CLE_HIST`  path to rich history file
@@ -472,6 +479,7 @@ descriptions:
 
 ### More details about some variables
 
+### $CLE_USER
 Let's get back to the variable `$CLE_USER` - the most important variable here.
 You might notice how often this variable is mentioned here. Its value is set
 upon first login on the workstation and then it is passed further into all
@@ -485,6 +493,7 @@ string **'mich'** will be extracted and stored in $CLE_USER. Such CLE ensures:
 2. custom tweaks and command line histories will be available
 3. accountability
 
+### $CLE_SHN, $CLE_SRE - hostname shortening
 Another thing that might seem strange: `$CLE_SHN` - what does 'shortened hostname'
 mean? For example, let's say you are working in a company 'example.com' where
 internal infrastructure contains subdomains such as:
@@ -499,9 +508,26 @@ and what will appear in the prompt when you use `%h`:
 - mail.prod.intranet
 - mail.stage.intranet
 - mail.world
-In plain bash you can place '\h' (hostname only) or '\H' (FQDN) into the prompt.
-This is a workaround - something in between.
 
+In plain bash you can place '\h' (hostname only) or '\H' (FQDN) into the prompt.
+CLE introduces shortened hostname that keeps part of hostname. As said above it
+removes domain name by default. There is however option to change this behavior
+if you define variable `$CLE_SRE` in tweak file. This variable should contain
+correct regular expression that would be passed as an argument to `sed` utility.
+For example:
+- only topmost domain removal: `CLE_SRE='s/\.[^.]*$//'`
+- highlight (uppercase) the environment: `CLE_SRE='s/prod\|stage\|dev/\U&/'`
+- combination: `CLE_SRE="-e 's/\.[^.]*\.[^.]*$//' -e 's/prod\|stage\|dev/\U&/'"`
+Shorten hostnames to your taste! Just keep in mind you need to `cle restart`
+after defining the variable - preferrably in tweak file so it will be applied
+on remote sessions.
+
+To debug shortening regexp use following sequence with the same command as
+called from resource:
+```
+   CLE_SRE="-e 's/your/replace/'"
+   eval sed "$CLE_SRE" <<<$CLE_FHN
+```
 
 ## 10. Advanced features and tweaks
 
