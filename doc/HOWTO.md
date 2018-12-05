@@ -361,6 +361,7 @@ working directory contains the terminal name and instead of the command there is
 additional information in square brackets.
 
 
+
 ### Searching through history
 
 The function `h` is a simple shortcut for the regular 'history' command. Basically it
@@ -394,6 +395,7 @@ Examples:
 - `hh 06-24`   - search all commands issued on 24th June, regardless of the year
 
 
+
 ## 6. Searching for help
 
 CLE contains built-in descriptions of its functions. Issue `cle help` to
@@ -411,40 +413,55 @@ Files are written in .md (markdown) format and are passed through a built-in fun
 (mdfilter) that highlights formatted items.
 
 
+
 ## 7. Keeping CLE fresh
 
 `cle update`
-Downloads the most recent version of CLE from the original source. Changes to files
-can be reviewed before replacement. All steps must be acknowledged by the user.
+Issue this command from occasionaly  or if you know that updated resource
+is available. It downloads the most recent version of CLE from the original
+source. Changes can be reviewed before replacement and replacement must be
+acknowledged by the user.
+
 Additionally, the update is only applied to the account where CLE has been deployed,
 the CLE workstation. On remote sessions an upgrade would just have a temporary effect
 and is not recommended.
 
 
+
 ## 8. Files
 
-The environment is installed by default into the home directory within a subfolder
-named `.cle-username`. Technically speaking the folder containing CLE is this:
+The environment is stored by default into a subfolder named `.cle-username`
+within the home directory. Technically speaking the folder containing CLE
+is this:
 
    `$HOME/.cle-$CLE_USER`
 
-The following files can be found there:
-- `rc`                  The CLE itself ($CLE_RC)
-- `cf`                  Configuration file ($CLE_CF)
-- `tw`                  User's own tweaks, executed upon CLE startup and also
-                      transferred along with the main resource, and executed
-                      on remote sessions ($CLE_TW)
-- `al`                  Saved user's set of aliases ($CLE_AL)
+Adding username seem to be redundant but enables independent environment
+settings when used on a server by several administrators. Note the $CLE_USER
+variable keeps the first login name from your workstation along all subsequent
+sessions.
+
+The following files can be found there, variables contain absolute paths:
+- `rc`   $CLE_RC      The CLE itself
+- `cf`   $CLE_CF      Configuration file
+- `tw`   $CLE_TW      User's own tweaks, executed upon CLE startup and also
+                    transferred along with the main resource, and executed
+                    on remote sessions
+- `al`   $CLE_AL      Saved user's set of aliases
 - `mod-*` and `cle-*`   Modules enhancing CLE functionality.
+
+The `rc`, `tw` and `al` files might have suffix '-hostname'. If not they are
+used locally as a CLE workstation. The suffix presence indicates the origin
+of those three files or in other words, from which workstation they have been
+copied. On the other hand config file name contains local FQDN to allow
+individual settings within NFS shared home folders.
 
 Some files however remain in the main home directory:
 - `.cle-local`          Local account's tweak file
 - `.history-username `  Personal history file, managed by bash
 - `.history-ALL`        Rich history file ($CLE_HIST)
 
-The username is stored in the variable $CLE_USER - this is set upon login to the
-workstation and the variable is passed further into subsequent sessions.
-See the next section for details.
+
 
 ## 9. Variables
 
@@ -477,9 +494,12 @@ descriptions:
 - `CLE_VER`   current environment version
 - `CLE_MOTD`  ensures displaying /etc/motd upon remote login
 
+
 ### More details about some variables
 
+
 ### $CLE_USER
+
 Let's get back to the variable `$CLE_USER` - the most important variable here.
 You might notice how often this variable is mentioned here. Its value is set
 upon first login on the workstation and then it is passed further into all
@@ -493,7 +513,9 @@ string **'mich'** will be extracted and stored in $CLE_USER. Such CLE ensures:
 2. custom tweaks and command line histories will be available
 3. accountability
 
+
 ### $CLE_SHN, $CLE_SRE - hostname shortening
+
 Another thing that might seem strange: `$CLE_SHN` - what does 'shortened hostname'
 mean? For example, let's say you are working in a company 'example.com' where
 internal infrastructure contains subdomains such as:
@@ -528,6 +550,19 @@ called from resource:
    CLE_SRE="-e 's/your/replace/'"
    eval sed "$CLE_SRE" <<<$CLE_FHN
 ```
+
+
+### $CLE_AL and $CLE_ALW - two alias stores
+
+On the workstation both point to the same file. Things are different in live
+sessions. The `$CLE_ALW` points to a file with aliases copied from the
+worktation and is executed first. This ensures you can use your aliases on
+all sessions. The second one, `$CLE_AL` points to local store with aliases
+used just on this particular account. This ensures you can redefine some of
+inherited aliases or create new ones just for this system. Note. the local
+definitions are not copied back to the workstation.
+
+
 
 ## 10. Advanced features and tweaks
 
