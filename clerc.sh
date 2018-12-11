@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-11-13 (Nova)
+#* version: 2018-12-12 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 #
@@ -117,8 +117,6 @@ dbg_var CLE_USER
 #: domain part only, no hostname! Use the longer string
 CLE_FHN=`hostname -f`
 [ ${#CLE_FHN} -lt ${#HOSTNAME} ] && CLE_FHN=$HOSTNAME
-# short hostname: remove domain, leave subdomains
-CLE_SHN=`sed 's;\.[^.]*\.[^.]*$;;' <<<$CLE_FHN`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space CLE grows
@@ -154,8 +152,9 @@ dbg_var CLE_RC
 #: account accessed with CLE.
 [ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
 CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
-CLE_CF=$CLE_D/cf
 mkdir -m 755 -p $CLE_D
+CLE_CF=$CLE_D/cf-$CLE_FHN
+[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF # transition to multihost/nfs shared folders
 
 # tweak and alias files have same suffix as rc
 _I=`sed 's:.*/rc::' <<<$CLE_RC`
@@ -553,7 +552,7 @@ lssh () (
 	#: this 1. prevents overwriting on destination accounts
 	#:  and 2. provides information about source of the session
 	S= #: resource suffix is empty on remote sessions...
-	[ $CLE_WS ] || S=-$CLE_SHN #: adding suffix when running on WS
+	[ $CLE_WS ] || S=-$CLE_FHN #: adding suffix when running on WS
 	_clepak $S
 	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzvf -
 	command ssh -t $* "
@@ -701,14 +700,19 @@ for _I in $CLE_D/mod-*;do
 done
 
 # config & tweaks
-_clexe $HOME/.cle-local
 _clexe $CLE_AL
+_clexe $HOME/.cle-local
 _clexe $CLE_TW
 _clexe $CLE_CF || { _banner;_defcf;}
+
+# short hostname: by default remove domain, leave subdomains
+# Eventually apply CLE_SRE as sed regexp for custom shortening
+CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
+
 _setp
 _setwt
 
-# redefinei bash builtins
+# redefine bash builtins
 #: those definitions must be here, only after config and tweaks not to mess
 #: with builtin shell functions during startup. This also speeds up the thing
 alias () {

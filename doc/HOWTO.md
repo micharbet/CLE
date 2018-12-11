@@ -89,9 +89,14 @@ manual plus enhnacing percent-sign escapes defined by CLE. Find their list below
   can be backslash escapes described in `man bash` like e.g. \w, \u, \A, etc
   and following percent enhancements defined in CLE:
 
-   %h ... shortened hostname, removed toplevel and subdomain, retaining other
+   %h ... shortened hostname - the value of $CLE_SHN
+          by default it contains removed top and subdomain, retaining other
           levels. E.g. six1.lab.brq.redhat.com would appear 'six1.lab.brq'
-          (the value of $CLE_SHN)
+          (refer to hostname shortening and $CLE_SRE for more options)
+
+   %H ... full host name - the value of $CLE_FHN. Ideally should be FQDN but
+          it depends on system configuration. CLE makes best effort to obtain
+          all domain information and reconstruct the hostname.
 
    %i ... remote host IP
 
@@ -356,6 +361,7 @@ working directory contains the terminal name and instead of the command there is
 additional information in square brackets.
 
 
+
 ### Searching through history
 
 The function `h` is a simple shortcut for the regular 'history' command. Basically it
@@ -389,6 +395,7 @@ Examples:
 - `hh 06-24`   - search all commands issued on 24th June, regardless of the year
 
 
+
 ## 6. Searching for help
 
 CLE contains built-in descriptions of its functions. Issue `cle help` to
@@ -406,40 +413,55 @@ Files are written in .md (markdown) format and are passed through a built-in fun
 (mdfilter) that highlights formatted items.
 
 
+
 ## 7. Keeping CLE fresh
 
 `cle update`
-Downloads the most recent version of CLE from the original source. Changes to files
-can be reviewed before replacement. All steps must be acknowledged by the user.
+Issue this command from occasionaly  or if you know that updated resource
+is available. It downloads the most recent version of CLE from the original
+source. Changes can be reviewed before replacement and replacement must be
+acknowledged by the user.
+
 Additionally, the update is only applied to the account where CLE has been deployed,
 the CLE workstation. On remote sessions an upgrade would just have a temporary effect
 and is not recommended.
 
 
+
 ## 8. Files
 
-The environment is installed by default into the home directory within a subfolder
-named `.cle-username`. Technically speaking the folder containing CLE is this:
+The environment is stored by default into a subfolder named `.cle-username`
+within the home directory. Technically speaking the folder containing CLE
+is this:
 
    `$HOME/.cle-$CLE_USER`
 
-The following files can be found there:
-- `rc`                  The CLE itself ($CLE_RC)
-- `cf`                  Configuration file ($CLE_CF)
-- `tw`                  User's own tweaks, executed upon CLE startup and also
-                      transferred along with the main resource, and executed
-                      on remote sessions ($CLE_TW)
-- `al`                  Saved user's set of aliases ($CLE_AL)
+Adding username seem to be redundant but enables independent environment
+settings when used on a server by several administrators. Note the $CLE_USER
+variable keeps the first login name from your workstation along all subsequent
+sessions.
+
+The following files can be found there, variables contain absolute paths:
+- `rc`   $CLE_RC      The CLE itself
+- `cf`   $CLE_CF      Configuration file
+- `tw`   $CLE_TW      User's own tweaks, executed upon CLE startup and also
+                    transferred along with the main resource, and executed
+                    on remote sessions
+- `al`   $CLE_AL      Saved user's set of aliases
 - `mod-*` and `cle-*`   Modules enhancing CLE functionality.
+
+The `rc`, `tw` and `al` files might have suffix '-hostname'. If not they are
+used locally as a CLE workstation. The suffix presence indicates the origin
+of those three files or in other words, from which workstation they have been
+copied. On the other hand config file name contains local FQDN to allow
+individual settings within NFS shared home folders.
 
 Some files however remain in the main home directory:
 - `.cle-local`          Local account's tweak file
 - `.history-username `  Personal history file, managed by bash
 - `.history-ALL`        Rich history file ($CLE_HIST)
 
-The username is stored in the variable $CLE_USER - this is set upon login to the
-workstation and the variable is passed further into subsequent sessions.
-See the next section for details.
+
 
 ## 9. Variables
 
@@ -460,7 +482,9 @@ descriptions:
 - `CLE_Pn`    prompt-parts strings defined with command `cle p0 .. cle p3`
 - `CLE_WT`    string to be terminal window title
 - `CLE_IP`    contains IP address in case of remote session
+- `CLE_FHN`   full hostname, ideally but not necessarily FQDN
 - `CLE_SHN`   shortened hostname
+- `CLE_SRE`   hostname shortening regular expression - can be set in tweak file
 - `CLE_ALW`   aliases store transferred from workstation
 - `CLE_AL`    user's aliases store that remains local only
 - `CLE_HIST`  path to rich history file
@@ -470,7 +494,11 @@ descriptions:
 - `CLE_VER`   current environment version
 - `CLE_MOTD`  ensures displaying /etc/motd upon remote login
 
+
 ### More details about some variables
+
+
+### $CLE_USER
 
 Let's get back to the variable `$CLE_USER` - the most important variable here.
 You might notice how often this variable is mentioned here. Its value is set
@@ -484,6 +512,9 @@ string **'mich'** will be extracted and stored in $CLE_USER. Such CLE ensures:
    root is accessed by multiple users)
 2. custom tweaks and command line histories will be available
 3. accountability
+
+
+### $CLE_SHN, $CLE_SRE - hostname shortening
 
 Another thing that might seem strange: `$CLE_SHN` - what does 'shortened hostname'
 mean? For example, let's say you are working in a company 'example.com' where
@@ -499,8 +530,38 @@ and what will appear in the prompt when you use `%h`:
 - mail.prod.intranet
 - mail.stage.intranet
 - mail.world
+
 In plain bash you can place '\h' (hostname only) or '\H' (FQDN) into the prompt.
-This is a workaround - something in between.
+CLE introduces shortened hostname that keeps part of hostname. As said above it
+removes domain name by default. There is however option to change this behavior
+if you define variable `$CLE_SRE` in tweak file. This variable should contain
+correct regular expression that would be passed as an argument to `sed` utility.
+For example:
+- only topmost domain removal: `CLE_SRE='s/\.[^.]*$//'`
+- highlight (uppercase) the environment: `CLE_SRE='s/prod\|stage\|dev/\U&/'`
+- combination: `CLE_SRE="-e 's/\.[^.]*\.[^.]*$//' -e 's/prod\|stage\|dev/\U&/'"`
+Shorten hostnames to your taste! Just keep in mind you need to `cle restart`
+after defining the variable - preferrably in tweak file so it will be applied
+on remote sessions.
+
+To debug shortening regexp use following sequence with the same command as
+called from resource:
+```
+   CLE_SRE="-e 's/your/replace/'"
+   eval sed "$CLE_SRE" <<<$CLE_FHN
+```
+
+
+### $CLE_AL and $CLE_ALW - two alias stores
+
+On the workstation both point to the same file. Things are different in live
+sessions. The `$CLE_ALW` points to a file with aliases copied from the
+worktation and is executed first. This ensures you can use your aliases on
+all sessions. The second one, `$CLE_AL` points to local store with aliases
+used just on this particular account. This ensures you can redefine some of
+inherited aliases or create new ones just for this system. Note. the local
+definitions are not copied back to the workstation.
+
 
 
 ## 10. Advanced features and tweaks
