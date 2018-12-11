@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-11-21 (Nova)
+#* version: 2018-12-12 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 #
@@ -71,8 +71,6 @@ export CLE_USER=${CLE_USER:-${_N:-$USER}}
 # FQDN hack
 CLE_FHN=`hostname -f`
 [ ${#CLE_FHN} -lt ${#HOSTNAME} ] && CLE_FHN=$HOSTNAME
-# short hostname: remove domain, leave subdomains
-CLE_SHN=`sed 's;\.[^.]*\.[^.]*$;;' <<<$CLE_FHN`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space CLE grows
@@ -412,7 +410,7 @@ _clepak () {
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	S= 
-	[ $CLE_WS ] || S=-$CLE_SHN 
+	[ $CLE_WS ] || S=-$CLE_FHN 
 	_clepak $S
 	command ssh -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
@@ -524,14 +522,19 @@ for _I in $CLE_D/mod-*;do
 done
 
 # config & tweaks
-_clexe $HOME/.cle-local
 _clexe $CLE_AL
+_clexe $HOME/.cle-local
 _clexe $CLE_TW
 _clexe $CLE_CF || { _banner;_defcf;}
+
+# short hostname: by default remove domain, leave subdomains
+# Eventually apply CLE_SRE as sed regexp for custom shortening
+CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
+
 _setp
 _setwt
 
-# redefinei bash builtins
+# redefine bash builtins
 alias () {
 	if [ -n "$1" ]; then
 		aa "$@"

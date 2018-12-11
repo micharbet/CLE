@@ -4,7 +4,7 @@
 #
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2018-12-04 (Nova)
+#* version: 2018-12-12 (Nova)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2018 by Michael Arbet
 #
@@ -700,8 +700,8 @@ for _I in $CLE_D/mod-*;do
 done
 
 # config & tweaks
-_clexe $HOME/.cle-local
 _clexe $CLE_AL
+_clexe $HOME/.cle-local
 _clexe $CLE_TW
 _clexe $CLE_CF || { _banner;_defcf;}
 
