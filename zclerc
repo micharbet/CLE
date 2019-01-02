@@ -290,6 +290,42 @@ aa () {
 ##
 ## ** Live session wrappers **
 
+# environment packer
+#: grab *active* resource file, tweak file, pack it to tarball and store
+#: into variable C64 as base64 encoded string.
+#: Argument ($1) may contain additional suffix to filenames
+#: Second outcome of _clepak is value in $RC - relative path to the resource
+#: file that should be run on remote system (it may contain the suffix)
+#: Note: configuration is not packed in order to ensure unique cf on all
+#:  remote accounts.
+#: Note 2: _clepak is defined with curly brackets {} to pass variables RC and C64
+#:  On the other side lssh is defined with () ensuring execution in its own context
+#:  where all new variables are local only to lssh (and _clepak)
+#: Note 3: _clepak is fuction even if it is used only once and could be
+#:  included directly into lssh. However, this allows to create any other
+#:  remote access wrapper
+_clepak () {
+	#: anything up to first dotted folder is home for .cle folder
+	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
+	RC=${CLE_RC/$PWD\//}
+	TW=${CLE_TW/$PWD\//}
+	AL=${CLE_ALW/$PWD\//}
+	if [ $1 ];then
+		#: change names and copy files when adding suffix
+		#: this happens when doing lssh (from CLE ws)
+		RC=$RC$1; TW=$TW$1; AL=$AL$1
+		cp $CLE_RC $RC
+		cp $CLE_TW $TW 2>/dev/null
+		cp $CLE_AL $AL 2>/dev/null
+	fi
+	RCS="$RC $TW $AL"
+	dbg_var PWD
+	dbg_var RCS
+	#:  I've never owned this computer, I had Atari 800XL :)
+	C64=`eval tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
+	#: 'eval' required due to zsh.
+}
+
 #: Following are su* wrappers of different kinds including kerberos
 #: version 'ksu'. They are basically simple, you see. Environment is not
 #: packed and transferred when using them. Instead the original files from
