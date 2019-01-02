@@ -15,7 +15,7 @@
 # Debugging helpers							# dbg
 dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
-	[ $ZSH_NAME ] && V=${(P)1} || V=${!1}				# dbg
+	eval '[ $ZSH_NAME ] && V=${(P)1} || V=${!1}'			# dbg
 	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
@@ -325,6 +325,24 @@ _clepak () {
 	C64=`eval tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
 	#: 'eval' required due to zsh.
 }
+
+## `lssh [usr@]host`   - access remote system and take CLE along
+lssh () (
+	[ "$1" ] || { cle help lssh;return 1;}
+	#: on CLE workstation, suffix to resource filename is added
+	#: this 1. prevents overwriting on destination accounts
+	#:  and 2. provides information about source of the session
+	S= #: resource suffix is empty on remote sessions...
+	[ $CLE_WS ] || S=-$CLE_SHN #: adding suffix when running on WS
+	_clepak $S
+	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzvf -
+	command ssh -t $* "
+		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
+		[ $OSTYPE = darwin ] && _D=D || _D=d
+		mkdir -m 755 -p \$_H; cd \$_H
+		echo -n $C64|base64 -\$_D |tar xzf -;
+		exec $RC -m $CLE_ARG"
+)
 
 #: Following are su* wrappers of different kinds including kerberos
 #: version 'ksu'. They are basically simple, you see. Environment is not
