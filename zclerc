@@ -134,27 +134,43 @@ _clexe () {
 }
 CLE_EXE=$CLE_RC
 
-# color table
+# Dump variables in reusable way, bash/zsh compatible
+#: it was difficult to create this shot function and make it working
+#: in both zsh and bash because:
+#:  - in bash 'set' displays also functions - this is why there's 
+#:    first awk command: "/.* \(\)/ {exit}"
+#:  - zsh dereferences variable differently
+#:  - zsh on debian doesn't quote escape strings and 'mawk' stops
+#:    processing on special characters, gawk is required!
+_vars () {
+	set 2>/dev/null | awk -F= "/.* \(\)/{exit} /^($1)=/ {print \$1}" | while read N
+	do
+		[ $ZSH_NAME ] && V=${(P)N} || V=${!N}
+		printf %s=%q\\n $N $V
+	done
+}
+
+# Create color table
 #: initialize $_C* variables with terminal compatible escape sequences
 #: following are basic ones:
-_CN=`tput sgr0`
-_CL=`tput bold`
-_CU=`tput smul`;_Cu=`tput rmul`
-_CD=`tput dim`
-_CV=`tput rev`
-#: The loop creates table of color codes r, g, b...
-#: lower case is for dim variant, upper case stands for bright
-#: try e.g 'echo $_Cg green $_CY bright yellow'
-_I=0; for _N in k r g y b m c w; do
-	_C=`tput setaf $_I`
-	declare _C$_N=$_CN$_C
-	declare _C$(tr a-z A-Z <<<$_N)=$_CL$_C
-	((_I+=1))
-done
-#: and... special color code for error highlight in prompt
-_Ce=`tput setab 1;tput setaf 7` # err highlight
-
-
+_clecolors () {
+	_CN=`tput sgr0`
+	_CL=`tput bold`
+	_CU=`tput smul`;_Cu=`tput rmul`
+	_CD=`tput dim`
+	_CV=`tput rev`
+	#: The loop creates table of color codes r, g, b...
+	#: lower case is for dim variant, upper case stands for bright
+	#: try e.g 'echo $_Cg green $_CY bright yellow'
+	_I=0; for _N in k r g y b m c w; do
+		_C=`tput setaf $_I`
+		declare -g _C$_N=$_CN$_C
+		declare -g _C$(tr a-z A-Z <<<$_N)=$_CL$_C
+		((_I+=1))
+	done
+	#: and... special color code for error highlight in prompt
+	_Ce=`tput setab 1;tput setaf 7` # err highlight
+}
 
 
 # CLE_RC can be relative path, make it full
@@ -203,6 +219,7 @@ _N=`sed 's:.*/rc1*::' <<<$CLE_RC` # workstation name
 CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ALW=$CLE_RD/al$_N
+CLE_ENV=$CLE_RD/env$_N
 
 # Use alias built-ins
 #: alias & unalias must be available in their natural form now
@@ -306,19 +323,22 @@ aa () {
 #:  remote access wrapper
 _clepak () {
 	#: anything up to first dotted folder is home for .cle folder
+	_vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
 	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
 	RC=${CLE_RC/$PWD\//}
 	TW=${CLE_TW/$PWD\//}
 	AL=${CLE_ALW/$PWD\//}
+	EN=${CLE_ENV/$PWD\//}
 	if [ $1 ];then
 		#: change names and copy files when adding suffix
 		#: this happens when doing lssh (from CLE ws)
-		RC=$RC$1; TW=$TW$1; AL=$AL$1
+		RC=$RC$1; TW=$TW$1; AL=$AL$1; EN=$EN$1
 		cp $CLE_RC $RC
 		cp $CLE_TW $TW 2>/dev/null
 		cp $CLE_AL $AL 2>/dev/null
+		cp $CLE_ENV $EN
 	fi
-	RCS="$RC $TW $AL"
+	RCS="$RC $TW $AL $EN"
 	dbg_var PWD
 	dbg_var RCS
 	#:  I've never owned this computer, I had Atari 800XL :)
@@ -350,6 +370,7 @@ lssh () (
 #: user's home folder are used.
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
+	_vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
         sudo -i -u ${1:-root} $CLE_RC $CLE_ARG
 )
 
@@ -357,6 +378,7 @@ lsudo () (
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
+	_vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
         S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -c \"$CLE_RC $CLE_ARG\" -l ${1:-root}
@@ -365,12 +387,15 @@ lsu () (
 # heh, my stuff here!
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
+_clexe $CLE_ENV
+_clexe $CLE_CF
+[ $_CN ] || _clecolors
 
 # just a simple prompt for now
 # zsh doesn't know '\n' as escape sequence
 [ $ZSH_NAME ] && NL=$'\n' || NL='\n'
-PS1="$NL(CLE/$CLE_SH $$ $CLE_USER->$USER) $PS1"
-
+PS1="$NL\$_CG(CLE/$CLE_SH p:\$\$ \$(date +%H:%M:%S) \$CLE_USER->\$USER) $PS1\$_CN"
+[ $ZSH_NAME ] && setopt PROMPT_SUBST
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess
@@ -403,7 +428,7 @@ EOT
 cle () {
 case $1 in
 env)
-	set |sed -n "s/^\(CLE_.*\)=\(.*\)/$_CL \1 $_CN \t\2/p"
+	set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}"
 	;;
 "")
 	_banner
