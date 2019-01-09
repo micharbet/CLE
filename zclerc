@@ -221,6 +221,22 @@ CLE_TW=$CLE_RD/tw$_N
 CLE_ALW=$CLE_RD/al$_N
 CLE_ENV=$CLE_RD/env$_N
 
+# prompt colors
+_cleclr () {
+	_C0=$_CK
+	[ $USER = root ] && _C1=$_CR || _C1=$_CG
+	[ $CLE_WS ] && _C2=$_Cb || _C2=$_Cg
+	_C3=$_Cy
+}
+
+# just a simple prompt for now
+_cleps () {
+	# zsh doesn't know '\n' as escape sequence
+	[ $ZSH_NAME ] && NL=$'\n' || NL='\n'
+	PS1="$NL\${_C0}CLE/$CLE_SH p:\$\$ \$(date +%H:%M:%S) \$_C1(\$CLE_USER->\$USER)\$_C2 $PS1\$_CN"
+	[ $ZSH_NAME ] && setopt PROMPT_SUBST
+}
+
 # Use alias built-ins
 #: alias & unalias must be available in their natural form now
 #: and will be redefined at the end of resource
@@ -391,11 +407,9 @@ _clexe $CLE_ENV
 _clexe $CLE_CF
 [ $_CN ] || _clecolors
 
-# just a simple prompt for now
-# zsh doesn't know '\n' as escape sequence
-[ $ZSH_NAME ] && NL=$'\n' || NL='\n'
-PS1="$NL\$_CG(CLE/$CLE_SH p:\$\$ \$(date +%H:%M:%S) \$CLE_USER->\$USER) $PS1\$_CN"
-[ $ZSH_NAME ] && setopt PROMPT_SUBST
+# set prompt string
+_cleclr
+_cleps
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess
