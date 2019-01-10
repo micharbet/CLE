@@ -190,8 +190,11 @@ _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
 export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_var CLE_USER
 
-# short hostname: remove domain, keep subdomains
-CLE_SHN=`hostname|sed 's;\.[^.]*\.[^.]*$;;'`
+# FQDN hack
+#: In case the hostname is an alias for a domain `hostname -f` returns
+#: domain part only, no hostname! Use the longer string
+CLE_FHN=`hostname -f`
+[ ${#CLE_FHN} -lt ${#HOSTNAME} ] && CLE_FHN=$HOSTNAME
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space CLE grows
@@ -231,7 +234,7 @@ _cleclr () {
 
 # just a simple prompt for now
 _cleps () {
-	# zsh doesn't know '\n' as escape sequence
+	# zsh doesn't know '\n' as escape sequence! WTF?
 	[ $ZSH_NAME ] && NL=$'\n' || NL='\n'
 	PS1="$NL\${_C0}CLE/$CLE_SH p:\$\$ \$(date +%H:%M:%S) \$_C1(\$CLE_USER->\$USER)\$_C2 $PS1\$_CN"
 	[ $ZSH_NAME ] && setopt PROMPT_SUBST
@@ -369,7 +372,7 @@ lssh () (
 	#: this 1. prevents overwriting on destination accounts
 	#:  and 2. provides information about source of the session
 	S= #: resource suffix is empty on remote sessions...
-	[ $CLE_WS ] || S=-$CLE_SHN #: adding suffix when running on WS
+	[ $CLE_WS ] || S=-$CLE_FHN #: adding suffix when running on WS
 	_clepak $S
 	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzvf -
 	command ssh -t $* "
@@ -403,9 +406,13 @@ lsu () (
 # heh, my stuff here!
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
-_clexe $CLE_ENV
+[ $CLE_USER != $USER ] && _clexe $CLE_ENV # execute environment only on live session
 _clexe $CLE_CF
 [ $_CN ] || _clecolors
+
+# short hostname: by default remove domain, leave subdomains
+# Eventually apply CLE_SRE as sed regexp for custom shortening
+CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 
 # set prompt string
 _cleclr
