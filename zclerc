@@ -191,9 +191,9 @@ export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_var CLE_USER
 
 # FQDN hack
-#: In case the hostname is an alias for a domain `hostname -f` returns
-#: domain part only, no hostname! Use the longer string
-CLE_FHN=`hostname -f`
+#: `hostname -f` in some cases returns domain part only, without hostname!
+#: Use the longer string. Also try `hostname' in case -f is't accepted (BSD) 
+CLE_FHN=`hostname -f 2>/dev/null || hostname`
 [ ${#CLE_FHN} -lt ${#HOSTNAME} ] && CLE_FHN=$HOSTNAME
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
