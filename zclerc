@@ -12,6 +12,8 @@
 ## This code is in super early development stage.
 ## Do not use, otherwise a puppy or kitten may die!
 
+#:------------------------------------------------------------:#
+
 # Debugging helpers							# dbg
 dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
@@ -23,6 +25,7 @@ dbg_var () (								# dbg
 #CLE_DEBUG=1	# force debugging on or comment this line		# dbg
 dbg_echo; dbg_echo CLE pid:$$ DEBUG ON;					# dbg
 
+#:------------------------------------------------------------:#
 
 # Startup sequence
 #: First check how is this script executed
@@ -100,78 +103,8 @@ dbg_echo ---------------
 dbg_echo Resource starts
 dbg_echo ---------------
 
-# boldprint
-printb () { printf "$_CL$*$_CN\n";}
-
-# simple question
-ask () {
-	local PR="$_CL$* (y/N) $_CN"
-	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
-	echo ${REPLY:=n}
-	[ "$REPLY" = "y" ]
-}
-
-_banner () {
-cat <<EOT
-
-   ___| |     ____|  Command Live Environment activated
-  |     |     __|    ...bit of life to the command line
-  |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
- \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
-
-EOT
-}
-
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1[:$] ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	dbg_echo _clexe $1
-	source $1
-}
-CLE_EXE=$CLE_RC
-
-# Dump variables in reusable way, bash/zsh compatible
-#: it was difficult to create this shot function and make it working
-#: in both zsh and bash because:
-#:  - in bash 'set' displays also functions - this is why there's 
-#:    first awk command: "/.* \(\)/ {exit}"
-#:  - zsh dereferences variable differently
-#:  - zsh on debian doesn't quote escape strings and 'mawk' stops
-#:    processing on special characters, gawk is required!
-_vars () {
-	set 2>/dev/null | awk -F= "/.* \(\)/{exit} /^($1)=/ {print \$1}" | while read N
-	do
-		[ $ZSH_NAME ] && V=${(P)N} || V=${!N}
-		printf %s=%q\\n $N $V
-	done
-}
-
-# Create color table
-#: initialize $_C* variables with terminal compatible escape sequences
-#: following are basic ones:
-_clecolors () {
-	_CN=`tput sgr0`
-	_CL=`tput bold`
-	_CU=`tput smul`;_Cu=`tput rmul`
-	_CD=`tput dim`
-	_CV=`tput rev`
-	#: The loop creates table of color codes r, g, b...
-	#: lower case is for dim variant, upper case stands for bright
-	#: try e.g 'echo $_Cg green $_CY bright yellow'
-	_I=0; for _N in k r g y b m c w; do
-		_C=`tput setaf $_I`
-		declare -g _C$_N=$_CN$_C
-		declare -g _C$(tr a-z A-Z <<<$_N)=$_CL$_C
-		((_I+=1))
-	done
-	#: and... special color code for error highlight in prompt
-	_Ce=`tput setab 1;tput setaf 7` # err highlight
-}
-
+#:------------------------------------------------------------:#
+# Variables init
 
 # CLE_RC can be relative path, make it full
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
@@ -194,7 +127,7 @@ dbg_var CLE_USER
 #: `hostname -f` in some cases returns domain part only, without hostname!
 #: Use the longer string. Also try `hostname' in case -f is't accepted (BSD) 
 CLE_FHN=`hostname -f 2>/dev/null || hostname`
-[ ${#CLE_FHN} -lt ${#HOSTNAME} ] && CLE_FHN=$HOSTNAME
+[ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space CLE grows
@@ -224,7 +157,65 @@ CLE_TW=$CLE_RD/tw$_N
 CLE_ALW=$CLE_RD/al$_N
 CLE_ENV=$CLE_RD/env$_N
 
-# prompt colors
+#:------------------------------------------------------------:#
+# Internal functions
+
+_clebnr () {
+cat <<EOT
+
+   ___| |     ____|  Command Live Environment activated
+  |     |     __|    ...bit of life to the command line
+  |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
+ \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
+
+EOT
+}
+
+# boldprint
+printb () { printf "$_CL$*$_CN\n";}
+
+# simple question
+ask () {
+	local PR="$_CL$* (y/N) $_CN"
+	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
+	echo ${REPLY:=n}
+	[ "$REPLY" = "y" ]
+}
+
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	dbg_echo _clexe $1
+	source $1
+}
+CLE_EXE=$CLE_RC
+
+# Create color table
+#: initialize $_C* variables with terminal compatible escape sequences
+#: following are basic ones:
+_cletable () {
+	_CN=`tput sgr0`
+	_CL=`tput bold`
+	_CU=`tput smul`;_Cu=`tput rmul`
+	_CD=`tput dim`
+	_CV=`tput rev`
+	#: The loop creates table of color codes r, g, b...
+	#: lower case is for dim variant, upper case stands for bright
+	#: try e.g 'echo $_Cg green $_CY bright yellow'
+	_I=0; for _N in k r g y b m c w; do
+		_C=`tput setaf $_I`
+		declare -g _C$_N=$_CN$_C
+		declare -g _C$(tr a-z A-Z <<<$_N)=$_CL$_C
+		((_I+=1))
+	done
+	#: and... special color code for error highlight in prompt
+	_Ce=`tput setab 1;tput setaf 7` # err highlight
+}
+
+# set prompt colors
 _cleclr () {
 	_C0=$_CK
 	[ $USER = root ] && _C1=$_CR || _C1=$_CG
@@ -232,15 +223,39 @@ _cleclr () {
 	_C3=$_Cy
 }
 
-# just a simple prompt for now
+# create prompt string
 _cleps () {
-	# zsh doesn't know '\n' as escape sequence! WTF?
-	[ $ZSH_NAME ] && NL=$'\n' || NL='\n'
-	PS1="$NL\${_C0}CLE/$CLE_SH p:\$\$ \$(date +%H:%M:%S) \$_C1(\$CLE_USER->\$USER)\$_C2 $PS1\$_CN"
+	local NL ESC ESS
+	# shell dependent strings
+	if [ $ZSH_NAME ]; then
+		NL=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
+		ESC='%{'; ESS='%}'
+	else
+		NL='\n'
+		ESC='\['; ESS='\]'
+	fi
+
+	# just a simple prompt for now
+	PS1="$NL$ESC\$_C0${ESS}CLE/$CLE_SH $CLE_P0 $ESC\$_C1$ESS$CLE_P1 $ESC\$_C2$ESS$CLE_P2 $ESC\$_CN$ESS"
 	[ $ZSH_NAME ] && setopt PROMPT_SUBST
 }
 
-# Use alias built-ins
+# default prompt settings
+_cledefp () {
+	if [ $ZSH_NAME ]; then
+		CLE_P0='[%?] %T'
+		CLE_P1='%n@$CLE_SHN'
+		CLE_P2='%2~ %#'
+	else
+		CLE_P0='[$?] \A'
+		CLE_P1='\u@$CLE_SHN'
+		CLE_P2='\w \$'
+		PROMPT_DIRTRIM=2
+	fi
+}
+
+
+# Use alias built-ins for startup
 #: alias & unalias must be available in their natural form now
 #: and will be redefined at the end of resource
 unset -f alias unalias 2>/dev/null
@@ -323,6 +338,23 @@ aa () {
 	esac
 }
 
+## `vars 'regexp'`   - dump variables in reusable way, bash/zsh compatible
+#: it was difficult to create this shot function and make it working
+#: in both zsh and bash because:
+#:  - in bash 'set' displays also functions - this is why there's 
+#:    first awk command: "/.* \(\)/ {exit}"
+#:  - zsh dereferences variable differently
+#:  - zsh on debian doesn't quote escape strings and 'mawk' stops
+#:    processing on special characters, gawk is required!
+#: This function might be useful also as command thus named without underscore
+vars () {
+	set 2>/dev/null | awk -F= "/.* \(\)/{exit} /^($1)=/ {print \$1}" | while read N
+	do
+		[ $ZSH_NAME ] && V=${(P)N} || V=${!N}
+		printf %s=%q\\n $N $V
+	done
+}
+
 ##
 ## ** Live session wrappers **
 
@@ -342,7 +374,7 @@ aa () {
 #:  remote access wrapper
 _clepak () {
 	#: anything up to first dotted folder is home for .cle folder
-	_vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
 	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
 	RC=${CLE_RC/$PWD\//}
 	TW=${CLE_TW/$PWD\//}
@@ -389,7 +421,7 @@ lssh () (
 #: user's home folder are used.
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	_vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
         sudo -i -u ${1:-root} $CLE_RC $CLE_ARG
 )
 
@@ -397,22 +429,23 @@ lsudo () (
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
-	_vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
         S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -c \"$CLE_RC $CLE_ARG\" -l ${1:-root}
 )
 
-# heh, my stuff here!
+# config, tweaks, env
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
-[ $CLE_USER != $USER ] && _clexe $CLE_ENV # execute environment only on live session
-_clexe $CLE_CF
-[ $_CN ] || _clecolors
-
-# short hostname: by default remove domain, leave subdomains
+[ $CLE_USER != $USER -o -n "$CLE_WS" ] && _clexe $CLE_ENV #: read environment only on live session
+_clexe $CLE_TW
+# shorten hostname: by default remove domain, leave subdomains
 # Eventually apply CLE_SRE as sed regexp for custom shortening
 CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
+_clexe $CLE_CF || { _clebnr;_cledefp;}
+[ $_CN ] || _cletable #: initialize color table only if necessary, don't waste cycles
+
 
 # set prompt string
 _cleclr
