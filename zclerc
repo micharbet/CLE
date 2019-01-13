@@ -213,6 +213,7 @@ _cletable () {
 	done
 	#: and... special color code for error highlight in prompt
 	_Ce=`tput setab 1;tput setaf 7` # err highlight
+	_NL=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
 }
 
 # set prompt colors
@@ -252,6 +253,39 @@ _cledefp () {
 		CLE_P2='\w \$'
 		PROMPT_DIRTRIM=2
 	fi
+}
+
+# CLE prompt escapes
+#: library of enhanced prompt escape codes
+#: they are introduced with ^ sign
+_clesc () {
+	# bash/zsh specific sequences
+	if [ $ZSH_NAME ]; then
+		_ESC='%{'; _ESE='%}'
+		SHESC='-e "s/\\\\n/\$_NL/g"
+		 -e "s/\^U/%n/g"
+		 -e "s/\^[$%#]/%#/g"
+		'
+	else
+		_ESC='\\['; _ESE='\\]'
+		SHESC="
+		 -e 's/\^U/\\\\u/g'
+		 -e 's/\^[$%#]/\\\\\$/g'
+		"
+	fi
+	EXTESC="
+	 -e 's/\^i/\$CLE_IP/g'
+	 -e 's/\^h/\$CLE_SHN/g'
+	 -e 's/\^H/\$CLE_FHN/g'
+	 -e 's/\^u/\$CLE_USER/g'
+	 -e 's/\^e/$_ESC\$_CE$_ESE\[\$_E\]$_ESC\$_CN$_ESE/g'
+	 -e 's/\^c\(.\)/$_ESC\\\$_C\1$_ESE/g'
+	 -e 's/\^v\([[:alnum:]]*\)/\1=\$\1/g'
+	 -e 's/\^\^/\^/g'
+	"
+
+	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
+	eval sed "$SUBS" <<<"$1"
 }
 
 
