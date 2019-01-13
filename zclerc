@@ -226,52 +226,39 @@ _cleclr () {
 
 # create prompt string
 _cleps () {
-	local NL ESC ESS
-	# shell dependent strings
-	if [ $ZSH_NAME ]; then
-		NL=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
-		ESC='%{'; ESS='%}'
-	else
-		NL='\n'
-		ESC='\['; ESS='\]'
-	fi
-
-	# just a simple prompt for now
-	PS1="$NL$ESC\$_C0${ESS}CLE/$CLE_SH $CLE_P0 $ESC\$_C1$ESS$CLE_P1 $ESC\$_C2$ESS$CLE_P2 $ESC\$_CN$ESS"
+	PS1=`_clesc "^c0$CLE_P0 ^c1$CLE_P1 ^c2$CLE_P2 ^c3$CLE_P3 ^cN"`
 	[ $ZSH_NAME ] && setopt PROMPT_SUBST
 }
 
 # default prompt settings
 _cledefp () {
-	if [ $ZSH_NAME ]; then
-		CLE_P0='[%?] %T'
-		CLE_P1='%n@$CLE_SHN'
-		CLE_P2='%2~ %#'
-	else
-		CLE_P0='[$?] \A'
-		CLE_P1='\u@$CLE_SHN'
-		CLE_P2='\w \$'
-		PROMPT_DIRTRIM=2
-	fi
+	CLE_P0='^e ^t'
+	CLE_P1='^u'
+	CLE_P2='^h'
+	CLE_P3='^w ^$'
 }
 
 # CLE prompt escapes
 #: library of enhanced prompt escape codes
 #: they are introduced with ^ sign
-_clesc () {
+_clesc () (
 	# bash/zsh specific sequences
 	if [ $ZSH_NAME ]; then
 		_ESC='%{'; _ESE='%}'
 		SHESC='-e "s/\\\\n/\$_NL/g"
 		 -e "s/\^U/%n/g"
+		 -e "s/\^w/%3~/g"
+		 -e "s/\^t/%*/g"
 		 -e "s/\^[$%#]/%#/g"
 		'
 	else
 		_ESC='\\['; _ESE='\\]'
-		SHESC="
-		 -e 's/\^U/\\\\u/g'
-		 -e 's/\^[$%#]/\\\\\$/g'
-		"
+		SHESC='
+		 -e "s/\^U/\\\\u/g"
+		 -e "s/\^w/\\\\w/g"
+		 -e "s/\^t/\\\\A/g"
+		 -e "s/\^[$%#]/\\\\\$/g"
+		'
 	fi
 	EXTESC="
 	 -e 's/\^i/\$CLE_IP/g'
@@ -286,7 +273,7 @@ _clesc () {
 
 	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
 	eval sed "$SUBS" <<<"$1"
-}
+)
 
 
 # Use alias built-ins for startup
