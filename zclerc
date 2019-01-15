@@ -230,13 +230,26 @@ _cleps () {
 	[ $ZSH_NAME ] && setopt PROMPT_SUBST
 }
 
-# default prompt settings
+# define prompt settings
 _cledefp () {
+	local I SH=B
+	[ $ZSH_NAME ] && SH=Z
+	# default settings
 	CLE_P0='^e ^t'
 	CLE_P1='^u'
 	CLE_P2='^h'
 	CLE_P3='^w ^$'
+	# override by conf
+	for I in 0 1 2 3; do
+		eval "CLE_P$I=\${CLE_P$SH$I:-\$CLE_P$I}"
+	done
 }
+
+# save configuration
+_clesave () (
+	vars "CLE_CLR|CLE_PB.|CLE_PZ."
+	date +"# CLE/$CLE_REL %Y-%m-%d %H:%M:%S"
+) >$CLE_CF
 
 # CLE prompt escapes
 #: library of enhanced prompt escape codes
@@ -275,6 +288,9 @@ _clesc () (
 	eval sed "$SUBS" <<<"$1"
 )
 
+_clepf () {
+	_E=$?
+}
 
 # Use alias built-ins for startup
 #: alias & unalias must be available in their natural form now
@@ -368,13 +384,13 @@ aa () {
 #:  - zsh on debian doesn't quote escape strings and 'mawk' stops
 #:    processing on special characters, gawk is required!
 #: This function might be useful also as command thus named without underscore
-vars () {
+vars () (
 	set 2>/dev/null | awk -F= "/.* \(\)/{exit} /^($1)=/ {print \$1}" | while read N
 	do
 		[ $ZSH_NAME ] && V=${(P)N} || V=${!N}
-		printf %s=%q\\n $N $V
+		printf %s=%q\\n $N "$V"
 	done
-}
+)
 
 ##
 ## ** Live session wrappers **
@@ -464,13 +480,15 @@ _clexe $CLE_TW
 # shorten hostname: by default remove domain, leave subdomains
 # Eventually apply CLE_SRE as sed regexp for custom shortening
 CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
-_clexe $CLE_CF || { _clebnr;_cledefp;}
+_clexe $CLE_CF || _clebnr
 [ $_CN ] || _cletable #: initialize color table only if necessary, don't waste cycles
 
 
 # set prompt string
 _cleclr
+_cledefp
 _cleps
+PROMPT_COMMAND=_clepf
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess
@@ -505,6 +523,8 @@ case $1 in
 env)
 	set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}"
 	;;
+cf)
+	cat $CLE_CF 2>/dev/null || echo Default;;
 "")
 	_banner
 	sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
