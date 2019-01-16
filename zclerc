@@ -22,7 +22,7 @@ dbg_var () (								# dbg
 )									# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
-#CLE_DEBUG=1	# force debugging on or comment this line		# dbg
+CLE_DEBUG=1	# force debugging on or comment this line		# dbg
 dbg_echo; dbg_echo CLE pid:$$ DEBUG ON;					# dbg
 
 #:------------------------------------------------------------:#
@@ -288,8 +288,25 @@ _clesc () (
 	eval sed "$SUBS" <<<"$1"
 )
 
-_clepf () {
-	_E=$?
+
+# prompt function and history settings
+[ $ZSH_NAME ] && CLE_HCMD='fc -lt $HISTTIMEFORMAT -1' || CLE_HCMD='history 1'
+CLE_HIST=$HOME/.clehistory
+precmd () {
+	_E=$? # save return code
+	local H N D T C OI=$IFS
+	unset IFS
+	H=`eval $CLE_HCMD`
+	read -r N D T C <<<$H
+	dbg_var C
+	dbg_var _OLDC
+	if [ "$_E$C" != "$_OLDC" -a -n "$_OLDC" ]; then
+		echo "$D $T $CLE_USER $_E $PWD $C"
+	fi
+	_OLDC=$_E$C
+	# highlight error code
+	[ $_E = 0 ] && _CE="" || _CE="$_Ce"
+	IFS=$OI
 }
 
 # Use alias built-ins for startup
@@ -488,7 +505,15 @@ _clexe $CLE_CF || _clebnr
 _cleclr
 _cledefp
 _cleps
-PROMPT_COMMAND=_clepf
+PROMPT_COMMAND=precmd
+PROMPT_DIRTRIM=3
+shopt -s checkwinsize
+
+
+#unset HISTCONTROL
+HISTCONTROL=ignoredups
+HISTFILE=$HOME/.history-$CLE_USER
+HISTTIMEFORMAT='%Y-%m-%d %T '
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess
