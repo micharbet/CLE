@@ -70,7 +70,7 @@ case $ZSH_NAME$BASH:$0 in
 		shift
 	done
 	if [ $ZS ]; then
-		dbg_echo foound: $ZS
+		dbg_echo found: $ZS
 		#: prepare startup environment in zsh way
 		export ZDOTDIR=/tmp/$USER
 		mkdir -p $ZDOTDIR
@@ -231,10 +231,10 @@ _cleclr () {
 	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
 	???)    C=$1;; # any 3 colors
 	*)      # print help on colors
-		printb "Unknown color '$CLE_CLR' Select predefined scheme:"
-		declare -f _cleclr|sed -n 's/\(\<[a-z |]*\)).*/\1/p'
+		printb "Unknown color '$1' Select predefined scheme:"
+		declare -f _cleclr|sed -n 's/[ \t]*(*\(\<[a-z |]*\)).*/  \1/p'
 		echo Alternatively create your own 3-letter combo using rgbcmykw/RGBCMYKW
-		echo E.g. cle color rgB
+		echo E.g. $_CL cle color rgB
 		return 1
 	esac
 	# decode colors and prompt strings
@@ -322,7 +322,7 @@ _clesc () (
 )
 
 
-# prompt function and history settings
+# prompt function
 [ $ZSH_NAME ] && CLE_HCMD='fc -lt $HISTTIMEFORMAT -1' || CLE_HCMD='history 1'
 CLE_HIST=$HOME/.clehistory
 precmd () {
@@ -332,7 +332,7 @@ precmd () {
 	H=`eval $CLE_HCMD`
 	read -r N D T C <<<$H
 	if [ "$_E$C" != "$_OLDC" -a -n "$_OLDC" ]; then
-		echo "$D $T $CLE_USER $_E $PWD $C" >$CLE_HIST
+		echo "$D $T $CLE_USER $_E $PWD $C" >>$CLE_HIST
 	fi
 	_OLDC=$_E$C
 	# highlight error code
