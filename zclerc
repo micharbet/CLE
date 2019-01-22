@@ -17,8 +17,8 @@
 # Debugging helpers							# dbg
 dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
-	eval '[ $ZSH_NAME ] && V=${(P)1} || V=${!1}'			# dbg
-	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty	# dbg
+	eval "V=\$$1"
+	[ $CLE_DEBUG ] && printf "%-16s = %q\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
@@ -218,10 +218,32 @@ _cletable () {
 
 # set prompt colors
 _cleclr () {
-	_C0=$_CK
-	[ $USER = root ] && _C1=$_CR || _C1=$_CG
-	[ $CLE_WS ] && _C2=$_Cb || _C2=$_Cg
-	_C3=$_Cy
+	local C I CI
+	case "$1" in
+	red)    C=RrR;;
+	green)  C=GgG;;
+	yellow) C=YyY;;
+	blue)   C=BbB;;
+	cyan)   C=CcC;;
+	magenta) C=MmM;;
+	white|grey|gray) C=NwW;;
+	tricolora) C=RBW;;
+	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
+	???)    C=$1;; # any 3 colors
+	*)      # print help on colors
+		printb "Unknown color '$CLE_CLR' Select predefined scheme:"
+		declare -f _cleclr|sed -n 's/\(\<[a-z |]*\)).*/\1/p'
+		echo Alternatively create your own 3-letter combo using rgbcmykw/RGBCMYKW
+		echo E.g. cle color rgB
+		return 1
+	esac
+	# decode colors and prompt strings
+	C=K$C
+	for I in {0..3};do
+		eval "CI=\$_C${C:$I:1}"
+		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
+		eval "_C$I=\$CI"
+	done
 }
 
 # create prompt string
@@ -230,19 +252,29 @@ _cleps () {
 	[ $ZSH_NAME ] && setopt PROMPT_SUBST
 }
 
-# define prompt settings
+# prompt strings and colors
+#: define default values and override them with configured ones if they exist
 _cledefp () {
 	local I SH=B
+	# default prompt strings
 	[ $ZSH_NAME ] && SH=Z
-	# default settings
 	CLE_P0='^e ^t'
 	CLE_P1='^u'
 	CLE_P2='^h'
 	CLE_P3='^w ^$'
-	# override by conf
+	# override by config
+	#: separate variables for bash/zsh, eg. CLE_PB1 vs CLE_PZ1
 	for I in 0 1 2 3; do
 		eval "CLE_P$I=\${CLE_P$SH$I:-\$CLE_P$I}"
 	done
+
+	# default colors
+	case "$USER-$CLE_WS" in
+	root-)	_DEFC=red;;
+	*-)	_DEFC=marley;;
+	root-*)	_DEFC=RbB;;
+	*-*)	_DEFC=blue;;
+	esac
 }
 
 # save configuration
@@ -259,7 +291,7 @@ _clesc () (
 	if [ $ZSH_NAME ]; then
 		_ESC='%{'; _ESE='%}'
 		SHESC='-e "s/\\\\n/\$_NL/g"
-		 -e "s/\^U/%n/g"
+		 -e "s/\^u/%n/g"
 		 -e "s/\^w/%3~/g"
 		 -e "s/\^t/%*/g"
 		 -e "s/\^[$%#]/%#/g"
@@ -267,7 +299,7 @@ _clesc () (
 	else
 		_ESC='\\['; _ESE='\\]'
 		SHESC='
-		 -e "s/\^U/\\\\u/g"
+		 -e "s/\^u/\\\\u/g"
 		 -e "s/\^w/\\\\w/g"
 		 -e "s/\^t/\\\\A/g"
 		 -e "s/\^[$%#]/\\\\\$/g"
@@ -277,13 +309,14 @@ _clesc () (
 	 -e 's/\^i/\$CLE_IP/g'
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
-	 -e 's/\^u/\$CLE_USER/g'
-	 -e 's/\^e/$_ESC\$_CE$_ESE\[\$_E\]$_ESC\$_CN$_ESE/g'
+	 -e 's/\^U/\$CLE_USER/g'
+	 -e 's/\^e/$_ESC\$_CE$_ESE\[\$_E\]$_ESC\$_CN\$_C0$_ESE/g'
 	 -e 's/\^c\(.\)/$_ESC\\\$_C\1$_ESE/g'
 	 -e 's/\^v\([[:alnum:]]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
 
+	#: compose substitute command, remove unwanted characters
 	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
 	eval sed "$SUBS" <<<"$1"
 )
@@ -298,10 +331,8 @@ precmd () {
 	unset IFS
 	H=`eval $CLE_HCMD`
 	read -r N D T C <<<$H
-	dbg_var C
-	dbg_var _OLDC
 	if [ "$_E$C" != "$_OLDC" -a -n "$_OLDC" ]; then
-		echo "$D $T $CLE_USER $_E $PWD $C"
+		echo "$D $T $CLE_USER $_E $PWD $C" >$CLE_HIST
 	fi
 	_OLDC=$_E$C
 	# highlight error code
@@ -404,7 +435,7 @@ aa () {
 vars () (
 	set 2>/dev/null | awk -F= "/.* \(\)/{exit} /^($1)=/ {print \$1}" | while read N
 	do
-		[ $ZSH_NAME ] && V=${(P)N} || V=${!N}
+		eval "V=\$$N"
 		printf %s=%q\\n $N "$V"
 	done
 )
@@ -428,7 +459,7 @@ vars () (
 #:  remote access wrapper
 _clepak () {
 	#: anything up to first dotted folder is home for .cle folder
-	vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P.*|_C.|$CLE_VARS" >$CLE_ENV
 	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
 	RC=${CLE_RC/$PWD\//}
 	TW=${CLE_TW/$PWD\//}
@@ -475,7 +506,7 @@ lssh () (
 #: user's home folder are used.
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P.*|_C.|$CLE_VARS" >$CLE_ENV
         sudo -i -u ${1:-root} $CLE_RC $CLE_ARG
 )
 
@@ -483,7 +514,7 @@ lsudo () (
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
-	vars "CLE_P.|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P.*|_C.|$CLE_VARS" >$CLE_ENV
         S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -c \"$CLE_RC $CLE_ARG\" -l ${1:-root}
@@ -501,16 +532,16 @@ _clexe $CLE_CF || _clebnr
 [ $_CN ] || _cletable #: initialize color table only if necessary, don't waste cycles
 
 
-# set prompt string
-_cleclr
+# craft the prompt
 _cledefp
-_cleps
+_cleclr ${CLE_CLR:-$_DEFC}
+unset _DEFC
 PROMPT_COMMAND=precmd
 PROMPT_DIRTRIM=3
+_cleps
 shopt -s checkwinsize
 
 
-#unset HISTCONTROL
 HISTCONTROL=ignoredups
 HISTFILE=$HOME/.history-$CLE_USER
 HISTTIMEFORMAT='%Y-%m-%d %T '
@@ -544,23 +575,29 @@ EOT
 ##
 ## ** CLE command & control **
 cle () {
-case $1 in
-env)
-	set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}"
-	;;
-cf)
-	cat $CLE_CF 2>/dev/null || echo Default;;
-"")
-	_banner
-	sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
-	;;
-*)
-	echo unimplemented: cle $C;
-	#echo check cle help;
-	return 1
-	;;
-
-esac
+	local C I
+	C="$1" 
+	[ "$2" ] && shift
+	case $C in
+	env)	## `cle env`         - inspect variables
+		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}"
+		;;
+	cf)	## `cle cf`          - view configuration
+		## `cle cf ed`       - edit configuration
+		[ "$1" = ed ] && vi $CLE_CF  && . $CLE_RC
+		cat $CLE_CF 2>/dev/null || echo Default;;
+	color)  ## `cle color COLOR` - set prompt color
+		[ $1 ]  && _cleclr $1 && CLE_CLR=$1 && _clesave;;
+	"")
+		_clebnr
+		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
+		;;
+	*)
+		echo unimplemented: cle $C;
+		echo check cle help;
+		return 1
+		;;
+	esac
 }
 
 #: final cleanup
