@@ -160,6 +160,7 @@ CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ALW=$CLE_RD/al$_N
 CLE_ENV=$CLE_RD/env$_N
+CLE_TTY=`tty|tr -d '/dev'`
 
 #:------------------------------------------------------------:#
 # Internal functions
@@ -427,6 +428,8 @@ aa () {
 	esac
 }
 
+##
+## ** Not-just-internal tools **
 ## `vars 'regexp'`   - dump variables in reusable way, bash/zsh compatible
 #: it was difficult to create this shot function and make it working
 #: in both zsh and bash because:
@@ -444,8 +447,8 @@ vars () (
 	done
 )
 
-# markdown filter
-#: "Highly sophisticated" highlighter :-D
+## `mdfilter`        - markdown acsii highlighter
+#: Highly sophisticated filter :-D
 #: Just replaces special strings in markdown files and augments the output
 #: with escape codes to highlight.
 #: Not perfect, but it helps and is simple, isn't it?
@@ -460,6 +463,7 @@ mdfilter () {
 }
 
 
+#:------------------------------------------------------------:#
 ##
 ## ** Live session wrappers **
 
@@ -540,7 +544,83 @@ lsu () (
         eval su $S -c \"$CLE_RC $CLE_ARG\" -l ${1:-root}
 )
 
+## `lksu [user]`       - ksu wrapper
+#: Kerberized version of 'su'
+lksu () (
+	vars "CLE_P.*|_C.|$CLE_VARS" >$CLE_ENV
+        ksu ${1:-root} -a -c $CLE_RC
+)
+
+## `lscreen [name]`    - gnu screen wrapper, join your recent session or start new
+## `lscreen -j [name]` - join other screen sessions, ev. search by name
+#: GNU screen wrapper is here 1) because of there was no way to tell screen
+#: program to start CLE on more than first window and, 2) to allow easily
+#: join detached own session and/or join cooperative session with more
+#: participants.
+lscreen () (
+	#: get name of the screen to search and join
+	#: base of session name is $CLE_USER and this can be extended
+	NM=$CLE_USER${1:+-$1}
+	[ "$1" = -j ] && NM=${2:-.}
+	#: list all screens with that name and find how many of them are there
+	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
+	NS=`wc -w <<<$SCRS`
+	if [ $NS = 0 ]; then
+		[ "$1" = -j ] && echo "No screen to join" && return 1
+		#: No session with given name found, prepare to start new session
+		SCF=$CLE_D/screenrc
+		SN=$CLE_TTY-CLE.$NM
+#		_rhlog screen -S $SN
+		_clescrc >$SCF
+		screen -c $SCF -S $SN $CLE_RC
+	else
+		#: is there only one such session or more?
+		if [ $NS = 1 ]; then SN=$SCRS
+		else
+			#: we found more screens with simiilar names, choose one!
+			printb "${_CU}Current '$NM' sessions:"
+			PS3="$_CL choose # to join: $_CN"
+			select SN in $SCRS;do
+				[ $SN ] && break
+			done
+		fi
+#		_rhlog screen -x $SN
+		#: send message to other screen, then join the session
+		screen -S $SN -X echo "$CLE_USER joining"
+		screen -x $SN
+	fi
+)
+
+# screenrc generator
+#: This generates nice configuration file with cool features:
+#:  - always visible status line with list of windows, hostname and clock
+#:  - feature to quickly switch using Ctrl+Left/Right Arrows
+#:  - reads good old $HOME/.screenrc
+#: Own screenrc file is necessary because otherwise it wouldn't start CLE in
+#: subsequent windows created with 'C-a C-c' (note the bind commands, above
+#: mentioned features are cool but this part is the important one)
+_clescrc () {
+cat <<-EOS
+	source $HOME/.screenrc
+	altscreen on
+	autodetach on
+	# enables shift-PgUp/PgDn
+	termcapinfo xterm* ti@:te@
+	# change window with ctrl-left/right
+	bindkey "^[[1;5D" prev
+	bindkey "^[[1;5C" next
+	defscrollback 9000
+	hardstatus alwayslastline
+	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
+	bind c screen $CLE_RC
+	bind ^c screen $CLE_RC
+EOS
+}
+
+
+#:------------------------------------------------------------:#
 # config, tweaks, env
+
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 [ $CLE_USER != $USER -o -n "$CLE_WS" ] && _clexe $CLE_ENV #: read environment only on live session
