@@ -696,7 +696,7 @@ cle () {
 		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}"
 		;;
 	cf)	## `cle cf [ed]`     - view/edit configuration
-		[ "$1" = ed ] && vi $CLE_CF  && . $CLE_RC
+		[ "$2" = ed ] && vi $CLE_CF  && . $CLE_RC
 		cat $CLE_CF 2>/dev/null || echo Default;;
 	color)  ## `cle color COLOR` - set prompt color
 		[ $2 ]  && _cleclr $2 && CLE_CLR=$2 && _clesave;;
@@ -711,9 +711,18 @@ cle () {
 			P=CLE_P$I
 			eval "echo $P=\'\$$P\'"
 		fi;;
-	title)	## `cle title [off]` - toggle window title
-		[ "$2" = off ] && CLE_WT='' || CLE_WT='title'
+	title)	## `cle title off`   - turn off window title
+		## `cle title [str]` - set title string
+		[ "$2" = off ] && CLE_PT='' || CLE_PT=${2:-'$CLE_SH: ^u@^H'}
 		_cleps;;
+	reload) ## `cle reload`      - reload CLE
+		for I in 0 1 2 3 T; do unset CLE_PB$I CLE_PZ$I; done
+		unset CLE_EXE CLE_CLR
+		. $CLE_RC
+		echo CLE $CLE_VER;;
+	reset)	## `cle reset`       - clear config and reload
+		rm -f $CLE_CF
+		cle reload;;
 	help|-h|--help) ## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
