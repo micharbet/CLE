@@ -218,7 +218,6 @@ _cletable () {
 	done
 	#: and... special color code for error highlight in prompt
 	_Ce=`tput setab 1;tput setaf 7` # err highlight
-	_NL=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
 }
 
 # set prompt colors
@@ -251,6 +250,42 @@ _cleclr () {
 	done
 }
 
+# CLE prompt escapes
+#: library of enhanced prompt escape codes introduced with ^ sign
+#:  bash uses backslash while zsh percent sign for their prompt escapes
+_clesc () (
+	# bash/zsh specific sequences
+	if [ $ZSH_NAME ]; then
+		SHESC='-e "s/[\^]n/\$_PN/g"
+		 -e "s/\^u/%n/g"
+		 -e "s/\^w/%3~/g"
+		 -e "s/\^t/%*/g"
+		 -e "s/\^[$%#]/%#/g"
+		'
+	else
+		SHESC='-e "s/\^n/\\\\n/g"
+		 -e "s/\^u/\\\\u/g"
+		 -e "s/\^w/\\\\w/g"
+		 -e "s/\^t/\\\\A/g"
+		 -e "s/\^[$%#]/\\\\\$/g"
+		'
+	fi
+	EXTESC="
+	 -e 's/\^i/\$CLE_IP/g'
+	 -e 's/\^h/\$CLE_SHN/g'
+	 -e 's/\^H/\$CLE_FHN/g'
+	 -e 's/\^U/\$CLE_USER/g'
+	 -e 's/\^e/\\$_PE\$_CE\\$_Pe\[\$_E\]\\$_PE\$_CN\$_C0\\$_Pe/g'
+	 -e 's/\^c\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
+	 -e 's/\^v\([[:alnum:]]*\)/\1=\$\1/g'
+	 -e 's/\^\^/\^/g'
+	"
+
+	#: compose substitute command, remove unwanted characters
+	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
+	eval sed "$SUBS" <<<"$*"
+)
+
 # create prompt string
 _cleps () {
 	local I
@@ -259,8 +294,8 @@ _cleps () {
 	for I in 0 1 2 3; do
 		eval "CLE_P$I=\${CLE_P$CLE_SP$I:-\$CLE_P$I}"
 	done
-	PS1=`_clesc "^c0$CLE_P0 ^c1$CLE_P1 ^c2$CLE_P2 ^c3$CLE_P3 ^cN"`
-	[ $ZSH_NAME ] && setopt PROMPT_SUBST
+	[ "$CLE_PT" ] && PS1="$_PE\${_CT}$(_clesc $CLE_PT)\${_Ct}$_Pe" || PS1=''
+	PS1=$PS1`_clesc "^c0$CLE_P0 ^c1$CLE_P1 ^c2$CLE_P2 ^c3$CLE_P3 ^cN"`
 }
 
 # default prompt strings and colors
@@ -270,6 +305,7 @@ _cledefp () {
 	CLE_P1='^u'
 	CLE_P2='^h'
 	CLE_P3='^w ^$'
+	CLE_PT='$CLE_SH: ^u@^H'
 	# default colors
 	case "$USER-$CLE_WS" in
 	root-)	_DEFC=red;;
@@ -285,44 +321,6 @@ _clesave () (
 	date +"# CLE/$CLE_REL %Y-%m-%d %H:%M:%S"
 ) >$CLE_CF
 
-# CLE prompt escapes
-#: library of enhanced prompt escape codes introduced with ^ sign
-#:  bash uses backslash while zsh percent sign for their prompt escapes
-_clesc () (
-	# bash/zsh specific sequences
-	if [ $ZSH_NAME ]; then
-		_ESC='%{'; _ESE='%}'
-		SHESC='-e "s/\\\\n/\$_NL/g"
-		 -e "s/\^u/%n/g"
-		 -e "s/\^w/%3~/g"
-		 -e "s/\^t/%*/g"
-		 -e "s/\^[$%#]/%#/g"
-		'
-	else
-		_ESC='\\['; _ESE='\\]'
-		SHESC='
-		 -e "s/\^u/\\\\u/g"
-		 -e "s/\^w/\\\\w/g"
-		 -e "s/\^t/\\\\A/g"
-		 -e "s/\^[$%#]/\\\\\$/g"
-		'
-	fi
-	EXTESC="
-	 -e 's/\^i/\$CLE_IP/g'
-	 -e 's/\^h/\$CLE_SHN/g'
-	 -e 's/\^H/\$CLE_FHN/g'
-	 -e 's/\^U/\$CLE_USER/g'
-	 -e 's/\^e/$_ESC\$_CE$_ESE\[\$_E\]$_ESC\$_CN\$_C0$_ESE/g'
-	 -e 's/\^c\(.\)/$_ESC\\\$_C\1$_ESE/g'
-	 -e 's/\^v\([[:alnum:]]*\)/\1=\$\1/g'
-	 -e 's/\^\^/\^/g'
-	"
-
-	#: compose substitute command, remove unwanted characters
-	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
-	eval sed "$SUBS" <<<"$1"
-)
-
 
 # prompt callback function
 #: As precmd function is executed *every* time you push enter key its code
@@ -334,7 +332,7 @@ precmd () {
 	_E=$? # save return code
 	local H N D T C OI=$IFS
 	unset IFS
-	[ $ZSH_NAME ] && H=`fc -lt $HISTTIMEFORMAT -1` || H=`history 1`
+	[ $ZSH_NAME ] && H=`fc -lt "$HISTTIMEFORMAT" -1` || H=`history 1`
 	read -r N D T C <<<$H
 	if [ "$_E$C" != "$_OLDC" -a -n "$_OLDC" ]; then
 		echo "$D $T $CLE_USER-$CLE_SP$$ $_E $PWD $C" >>$CLE_HIST
@@ -638,9 +636,26 @@ _cleclr ${CLE_CLR:-$_DEFC}
 unset _DEFC
 PROMPT_COMMAND=precmd
 PROMPT_DIRTRIM=3
-_cleps
-#shopt -s checkwinsize
 
+# termnal specific
+case $TERM in
+linux)	 CLE_PT='';;	# no tits on console
+screen*) CLE_PT='^u'
+	_CT=$'\ek'; _Ct=$'\e\\';;
+*)	_CT=$'\e]0;'; _Ct=$'\007';;
+esac
+
+# shell specific settings
+if [ $ZSH_NAME ]; then
+	setopt PROMPT_SUBST SH_WORD_SPLIT
+	_PE='%{'; _Pe='%}'
+	_PN=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
+else
+	shopt -s checkwinsize
+	_PE='\['; _Pe='\]'
+fi
+
+_cleps
 
 HISTCONTROL=ignoredups
 HISTFILE=$HOME/.history-$CLE_USER
@@ -680,8 +695,8 @@ cle () {
 	env)	## `cle env`         - inspect variables
 		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}"
 		;;
-		## `cle cf [ed]`     - view/edit configuration
-	cf)	[ "$1" = ed ] && vi $CLE_CF  && . $CLE_RC
+	cf)	## `cle cf [ed]`     - view/edit configuration
+		[ "$1" = ed ] && vi $CLE_CF  && . $CLE_RC
 		cat $CLE_CF 2>/dev/null || echo Default;;
 	color)  ## `cle color COLOR` - set prompt color
 		[ $2 ]  && _cleclr $2 && CLE_CLR=$2 && _clesave;;
@@ -695,8 +710,10 @@ cle () {
 		else
 			P=CLE_P$I
 			eval "echo $P=\'\$$P\'"
-		fi
-		;;
+		fi;;
+	title)	## `cle title [off]` - toggle window title
+		[ "$2" = off ] && CLE_WT='' || CLE_WT='title'
+		_cleps;;
 	help|-h|--help) ## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
@@ -713,5 +730,6 @@ cle () {
 	esac
 }
 
+##
 #: final cleanup
 unset _N
