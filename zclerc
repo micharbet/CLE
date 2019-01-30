@@ -321,7 +321,7 @@ _clesave () (
 ) >$CLE_CF
 
 
-# prompt callback function
+# prompt callback functions
 #: As precmd function is executed *every* time you push enter key its code
 #: should be as simple as possible. In best case all commands here should be
 #: bash internals. Those don't invoke new processes and as such they are much
@@ -339,6 +339,25 @@ precmd () {
 	_OLDC=$_E$C
 	# highlight error code
 	[ $_E = 0 ] && _CE="" || _CE="$_Ce"
+	[ $BASH ] && trap _clepreex DEBUG
+}
+
+# run this function before the command
+preexec () {
+	echo PREEXEC $# args
+	for i in "$@"; do
+		echo "- '$i'"
+	done
+	echo SECONDS=$SECONDS
+	echo '---'
+}
+
+# Bash hack
+#: zsh supports preexec function naturaly
+#: This is bash's workaround
+_clepreex () {
+	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
+	preexec "$BASH_COMMAND"
 }
 
 # Use alias built-ins for startup
@@ -607,7 +626,7 @@ cat <<-EOS
 	bindkey "^[[1;5C" next
 	defscrollback 9000
 	hardstatus alwayslastline
-	hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{KY} %c'
+	hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b G}$CLE_SHN%{Y} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
 EOS
