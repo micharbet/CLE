@@ -18,12 +18,11 @@
 # Debugging helpers							# dbg
 dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
-	eval "V=\$$1"
+	eval "V=\$$1"							# dbg
 	[ $CLE_DEBUG ] && printf "%-16s = %q\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
-CLE_DEBUG=1	# force debugging on or comment this line		# dbg
 dbg_echo; dbg_echo CLE pid:$$ DEBUG ON;					# dbg
 
 #:------------------------------------------------------------:#
@@ -330,7 +329,7 @@ _clesave () (
 CLE_HIST=$HOME/.clehistory
 precmd () {
 	_E=$? # save return code
-	local H N D T C OI=$IFS
+	local H N D T C
 	unset IFS
 	[ $ZSH_NAME ] && H=`fc -lt "$HISTTIMEFORMAT" -1` || H=`history 1`
 	read -r N D T C <<<$H
@@ -340,7 +339,6 @@ precmd () {
 	_OLDC=$_E$C
 	# highlight error code
 	[ $_E = 0 ] && _CE="" || _CE="$_Ce"
-	IFS=$OI
 }
 
 # Use alias built-ins for startup
@@ -609,7 +607,7 @@ cat <<-EOS
 	bindkey "^[[1;5C" next
 	defscrollback 9000
 	hardstatus alwayslastline
-	hardstatus string '%{= Kk}%-w%{+u KC}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{Kg} %c'
+	hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{KG}$CLE_SHN%{KY} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
 EOS
@@ -692,12 +690,6 @@ EOT
 cle () {
 	local C I P
 	case $1 in
-	env)	## `cle env`         - inspect variables
-		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}"
-		;;
-	cf)	## `cle cf [ed]`     - view/edit configuration
-		[ "$2" = ed ] && vi $CLE_CF  && . $CLE_RC
-		cat $CLE_CF 2>/dev/null || echo Default;;
 	color)  ## `cle color COLOR` - set prompt color
 		[ $2 ]  && _cleclr $2 && CLE_CLR=$2 && _clesave;;
 	p?)	## `cle p0-p3 [str]` - show/define prompt parts
@@ -723,6 +715,15 @@ cle () {
 	reset)	## `cle reset`       - clear config and reload
 		rm -f $CLE_CF
 		cle reload;;
+	env)	## `cle env`         - inspect variables
+		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+	cf)	## `cle cf [ed]`     - view/edit configuration
+		[ "$2" = ed ] && vi $CLE_CF  && . $CLE_RC
+		cat $CLE_CF 2>/dev/null || echo Default;;
+	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
+	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
+	debug)	[ "$2" = off ] && CLE_DEBUG='' || CLE_DEBUG=${2:-on}				# dbg
+		dbg_var CLE_DEBUG ;;								# dbg
 	help|-h|--help) ## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
