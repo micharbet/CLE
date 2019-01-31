@@ -232,7 +232,7 @@ _cleclr () {
 	white|grey|gray) C=NwW;;
 	tricolora) C=RBW;;
 	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
-	???)    C=$1;; # any 3 colors
+	???|????)    C=$1;; # any 3/4 colors
 	*)      # print help on colors
 		printb "Unknown color '$1' Select predefined scheme:"
 		declare -f _cleclr|sed -n 's/[ \t]*(*\(\<[a-z |]*\)).*/  \1/p'
@@ -241,8 +241,8 @@ _cleclr () {
 		return 1
 	esac
 	# decode colors and prompt strings
-	C=K$C
-	for I in {0..3};do
+	C=K${C}L
+	for I in {0..4};do
 		eval "CI=\$_C${C:$I:1}"
 		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
 		eval "_C$I=\$CI"
@@ -294,7 +294,7 @@ _cleps () {
 		eval "CLE_P$I=\${CLE_P$CLE_SP$I:-\$CLE_P$I}"
 	done
 	[ "$CLE_PT" ] && PS1="$_PE\${_CT}$(_clesc $CLE_PT)\${_Ct}$_Pe" || PS1=''
-	PS1=$PS1`_clesc "^c0$CLE_P0 ^c1$CLE_P1 ^c2$CLE_P2 ^c3$CLE_P3 ^cN"`
+	PS1=$PS1`_clesc "^c0$CLE_P0 ^c1$CLE_P1 ^c2$CLE_P2 ^c3$CLE_P3 ^cN^c4"`
 }
 
 # default prompt strings and colors
@@ -329,27 +329,26 @@ _clesave () (
 CLE_HIST=$HOME/.clehistory
 precmd () {
 	_E=$? # save return code
-	local H N D T C
-	unset IFS
-	[ $ZSH_NAME ] && H=`fc -lt "$HISTTIMEFORMAT" -1` || H=`history 1`
-	read -r N D T C <<<$H
-	if [ "$_E$C" != "$_OLDC" -a -n "$_OLDC" ]; then
-		echo "$D $T $CLE_USER-$CLE_SP$$ $_E $PWD $C" >>$CLE_HIST
+	if [ $_SST ]; then
+		# this code will be executed only after an issued command
+		( unset IFS #: enclosed, no 'local' statement needed and IFS remains unaltered
+		 S=$((SECONDS-_SST))
+		 [ $ZSH_NAME ] && H=`fc -lt "$HISTTIMEFORMAT" -1` || H=`history 1`
+		 read -r N D T C <<<$H
+		 echo "$D $T $CLE_USER-$CLE_SP$$ $S $_E $PWD $C" >>$CLE_HIST; )
+		# highlight error code
+		[ $_E = 0 ] && _CE="" || _CE="$_Ce"
+		_SST=
+	else
+		_CE=''; _E=0 #: highlight the error only once
 	fi
-	_OLDC=$_E$C
-	# highlight error code
-	[ $_E = 0 ] && _CE="" || _CE="$_Ce"
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
 # run this function before the command
 preexec () {
-	echo PREEXEC $# args
-	for i in "$@"; do
-		echo "- '$i'"
-	done
-	echo SECONDS=$SECONDS
-	echo '---'
+	_SST=$SECONDS #: start timer
+	echo -n $_CN  #: reset tty colors
 }
 
 # Bash hack
@@ -359,6 +358,7 @@ _clepreex () {
 	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
 	preexec "$BASH_COMMAND"
 }
+
 
 # Use alias built-ins for startup
 #: alias & unalias must be available in their natural form now
@@ -380,7 +380,7 @@ if [ "$CLE_MOTD" ]; then
 	unset CLE_MOTD
 fi
 
-# Alias works
+# Aliasing
 # first load aliases inherited from CLE workstation
 #: On workstation: load aliases later
 #: On live sessions: read inherited aliases first, allow redefining locally
