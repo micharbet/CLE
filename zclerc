@@ -285,39 +285,38 @@ _clesc () (
 	eval sed "$SUBS" <<<"$*"
 )
 
-# create prompt string
+# craft the prompt from defined strings
 _cleps () {
 	local I
 	# override prompt strings with configured values
 	#: use different variables for bash/zsh, eg. CLE_PB1 vs CLE_PZ1
-	for I in 0 1 2 3; do
+	for I in 0 1 2 3 T; do
 		eval "CLE_P$I=\${CLE_P$CLE_SP$I:-\$CLE_P$I}"
 	done
 	[ "$CLE_PT" ] && PS1="$_PE\${_CT}$(_clesc $CLE_PT)\${_Ct}$_Pe" || PS1=''
 	PS1=$PS1`_clesc "^c0$CLE_P0 ^c1$CLE_P1 ^c2$CLE_P2 ^c3$CLE_P3 ^cN^c4"`
+	PS2=`_clesc "^c3>>> ^cN^c4"`
 }
 
 # default prompt strings and colors
 _cledefp () {
-	# default prompt strings
 	CLE_P0='^e ^t'
 	CLE_P1='^u'
 	CLE_P2='^h'
 	CLE_P3='^w ^$'
 	CLE_PT='$CLE_SH: ^u@^H'
-	# default colors
 	case "$USER-$CLE_WS" in
-	root-)	_DEFC=red;;
-	*-)	_DEFC=marley;;
-	root-*)	_DEFC=RbB;;
-	*-*)	_DEFC=blue;;
+	root-)	_DEFC=red;;	#: root@workstation
+	*-)	_DEFC=marley;;	#: user's basic color scheme
+	root-*)	_DEFC=RbB;;	#: root@remote
+	*-*)	_DEFC=blue;;	#: user@remote
 	esac
 }
 
 # save configuration
 _clesave () (
-	vars "CLE_CLR|CLE_PB.|CLE_PZ."
 	date +"# CLE/$CLE_REL %Y-%m-%d %H:%M:%S"
+	vars "CLE_CLR|CLE_PB.|CLE_PZ."
 ) >$CLE_CF
 
 
@@ -498,7 +497,7 @@ mdfilter () {
 #:  remote access wrapper
 _clepak () {
 	#: anything up to first dotted folder is home for .cle folder
-	vars "CLE_P.*|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
 	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
 	RC=${CLE_RC/$PWD\//}
 	TW=${CLE_TW/$PWD\//}
@@ -545,7 +544,7 @@ lssh () (
 #: user's home folder are used.
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	vars "CLE_P.*|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         sudo -i -u ${1:-root} $CLE_RC $CLE_ARG
 )
 
@@ -553,7 +552,7 @@ lsudo () (
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
-	vars "CLE_P.*|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -c \"$CLE_RC $CLE_ARG\" -l ${1:-root}
@@ -562,7 +561,7 @@ lsu () (
 ## `lksu [user]`       - ksu wrapper
 #: Kerberized version of 'su'
 lksu () (
-	vars "CLE_P.*|_C.|$CLE_VARS" >$CLE_ENV
+	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         ksu ${1:-root} -a -c $CLE_RC
 )
 
@@ -638,23 +637,34 @@ EOS
 
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
-[ $CLE_USER != $USER -o -n "$CLE_WS" ] && _clexe $CLE_ENV #: read environment only on live session
 _clexe $CLE_TW
-# shorten hostname: by default remove domain, leave subdomains
-# Eventually apply CLE_SRE as sed regexp for custom shortening
+
+# shorten hostname
+#: by default remove domain, leave subdomains
+#: eventually apply CLE_SRE as sed regexp for custom shortening
 CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
-_clexe $CLE_CF || _clebnr
-[ $_CN ] || _cletable #: initialize color table only if necessary, don't waste cycles
 
-
-# craft the prompt
+# create the prompt in several steps
+# 1. default prompt strings
 _cledefp
-_cleclr ${CLE_CLR:-$_DEFC}
-unset _DEFC
-PROMPT_COMMAND=precmd
-PROMPT_DIRTRIM=3
+if [ $CLE_USER != $USER -o -n "$CLE_WS" ]; then
+	# 2. overrice with inherited strings
+	_clexe $CLE_ENV
+	for I in 0 1 2 3 T; do
+		#: Copy and discard inherited values.
+		#: This ensures the inherited values will not be stored in
+		#: local configuration unless redefined in the session
+		eval "CLE_P$I=\${CLE_P$CLE_SP$I:-\$CLE_P$I}"
+		unset CLE_PB$I CLE_PZ$I
+	done
+fi
 
-# termnal specific
+# 3. get values from config file
+_clexe $CLE_CF || _clebnr
+
+# 4. termnal specific
+#: $_CT and $_Ct are codes to create window title
+#: also in screen the title should be short and obviously no title on text console
 case $TERM in
 linux)	 CLE_PT='';;	# no tits on console
 screen*) CLE_PT='^u'
@@ -662,20 +672,30 @@ screen*) CLE_PT='^u'
 *)	_CT=$'\e]0;'; _Ct=$'\007';;
 esac
 
-# shell specific settings
-if [ $ZSH_NAME ]; then
+# 5. shell specific
+#: $_PE nad $_Pe keep strings to enclose ansi control charaters in prompt
+if [ $BASH ]; then
+	shopt -s checkwinsize
+	_PE='\['; _Pe='\]'
+else
 	setopt PROMPT_SUBST SH_WORD_SPLIT
 	_PE='%{'; _Pe='%}'
 	_PN=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
-else
-	shopt -s checkwinsize
-	_PE='\['; _Pe='\]'
 fi
 
+# 6. initialize color table
+[ $_CN ] || _cletable #: only if necessary, don't waste cycles
+
+# 7. craft the prompt string
 _cleps
+_cleclr ${CLE_CLR:-$_DEFC}
+unset _DEFC
+
+PROMPT_COMMAND=precmd
+PROMPT_DIRTRIM=3
 
 HISTCONTROL=ignoredups
-HISTFILE=$HOME/.history-$CLE_USER
+HISTFILE=$CLE_D/history-$CLE_SH
 HISTTIMEFORMAT='%Y-%m-%d %T '
 
 # redefine alias builtins
