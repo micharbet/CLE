@@ -152,7 +152,7 @@ CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
-CLE_CF=$CLE_D/cf
+CLE_CF=$CLE_D/cf-$CLE_FHN
 CLE_AL=$CLE_D/al
 _N=`sed 's:.*/rc1*::' <<<$CLE_RC` # workstation name
 CLE_WS=${_N/-/}
@@ -443,6 +443,22 @@ aa () {
 }
 
 ##
+## ** History tools **
+## `h`               - shell 'history' wrapper
+h () (
+	([ $BASH ] && history "$@" || fc -lt "$HISTTIMEFORMAT" "$@")|while read N D T C;do
+		echo "$_CB$N$_Cb $D $T $_CN$_CL$C$_CN"
+	done
+)
+
+## `hh [opt] [srch]` - rich history viewer
+## REWORKING RICH HISTORY FROM SCRATCH
+hh () (
+	tail -20 $CLE_HIST
+)
+
+
+##
 ## ** Not-just-internal tools **
 ## `vars 'regexp'`   - dump variables in reusable way, bash/zsh compatible
 #: it was difficult to create this shot function and make it working
@@ -639,6 +655,9 @@ _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
 
+#: Enhnace PATH by user's own bin folder
+[[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
+
 # shorten hostname
 #: by default remove domain, leave subdomains
 #: eventually apply CLE_SRE as sed regexp for custom shortening
@@ -697,6 +716,46 @@ PROMPT_DIRTRIM=3
 HISTCONTROL=ignoredups
 HISTFILE=$CLE_D/history-$CLE_SH
 HISTTIMEFORMAT='%Y-%m-%d %T '
+
+# completions
+#: Command 'cle' completion
+#: as an addition, prompt strings are filled for convenience :)
+if [ $BASH ]; then
+	echo BASH COMPL
+	_clecomp () {
+		#: list of subcommands, this might be reworked to have possibility of expansion
+		#: with modules (TODO)
+		#: 'cle deploy' is hidden intentionaly as user should do it only on when really needed
+		local A=(color p0 p1 p2 p3 time title mod env update reset reload doc help)
+		local C
+		COMPREPLY=()
+		case $3 in
+		p0) COMPREPLY="'$CLE_P0'";;
+		p1) COMPREPLY="'$CLE_P1'";;
+		p2) COMPREPLY="'$CLE_P2'";;
+		p3) COMPREPLY="'$CLE_P3'";;
+		esac
+		[ "$3" != "$1" ] && return
+		for C in ${A[@]}; do
+			[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
+		done
+		}
+	complete -F _clecomp cle
+
+	#: lssh completion
+	#: there are two possibilities of ssh completion _known_hosts is more common...
+	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
+	#: while _ssh is better
+	#: The path is valid at least on fedora and debian with installed bash-completion package
+	_C=/usr/share/bash-completion/completions/ssh
+	if [ -f $_C ]; then
+		. $_C
+		complete -F _ssh lssh
+	fi
+else
+	# ZSH completion here
+	echo NO ZSH COMPLETION
+fi
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess
@@ -758,7 +817,12 @@ cle () {
 		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	cf)	## `cle cf [ed]`     - view/edit configuration
 		[ "$2" = ed ] && vi $CLE_CF  && . $CLE_RC
-		cat $CLE_CF 2>/dev/null || echo Default;;
+		printb $CLE_CF:
+		if [ -f $CLE_CF ]; then
+			cat $CLE_CF
+		else
+			echo Default/Inherited configuration
+		fi;;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	[ "$2" = off ] && CLE_DEBUG='' || CLE_DEBUG=${2:-on}				# dbg
