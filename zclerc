@@ -274,7 +274,7 @@ _clesc () (
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
-	 -e 's/\^e/\\$_PE\$_CE\\$_Pe\[\$_E\]\\$_PE\$_CN\$_C0\\$_Pe/g'
+	 -e 's/\^e/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
 	 -e 's/\^c\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
 	 -e 's/\^v\([[:alnum:]]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
@@ -327,25 +327,30 @@ _clesave () (
 #: easier to system resources.
 CLE_HIST=$HOME/.clehistory
 precmd () {
-	_E=$? # save return code
-	if [ $_SST ]; then
+	_EC=$? # save return code
+	local IFS S DT C H N
+	[ $BASH ] && H=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || H=`fc -lt ";$CLE_HTF;" -1`
+	IFS=';' read N DT C <<<$H
+	IFS=' ' read C <<<$C #: remove leading whitespaces (zsh!)
+	if [[ $C =~ ^# ]]; then
+		#: record notes to rich history
+		echo "$DT;$CLE_USER-$CLE_SP$$;0;#;$PWD;$C" >>$CLE_HIST;
+	elif [ $_SST ]; then
 		# this code will be executed only after an issued command
-		( unset IFS #: enclosed, no 'local' statement needed and IFS remains unaltered
-		 S=$((SECONDS-_SST))
-		 [ $ZSH_NAME ] && H=`fc -lt "$HISTTIMEFORMAT" -1` || H=`history 1`
-		 read -r N D T C <<<$H
-		 echo "$D $T $CLE_USER-$CLE_SP$$ $S $_E $PWD $C" >>$CLE_HIST; )
+		S=$((SECONDS-_SST))
+		echo "$DT;$CLE_USER-$CLE_SP$$;$S;$_EC;$PWD;$C" >>$CLE_HIST;
 		# highlight error code
-		[ $_E = 0 ] && _CE="" || _CE="$_Ce"
+		[ $_EC = 0 ] && _CE="" || _CE="$_Ce"
 		_SST=
 	else
-		_CE=''; _E=0 #: highlight the error only once
+		_CE=''; _EC=0 #: highlight the error only once
 	fi
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
 # run this function before the command
 preexec () {
+	echo preexec "$@"
 	_SST=$SECONDS #: start timer
 	echo -n $_CN  #: reset tty colors
 }
@@ -355,6 +360,7 @@ preexec () {
 #: This is bash's workaround
 _clepreex () {
 	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
+	trap "" DEBUG
 	preexec "$BASH_COMMAND"
 }
 
@@ -445,18 +451,53 @@ aa () {
 ##
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
+CLE_HTF=
 h () (
-	([ $BASH ] && history "$@" || fc -lt "$HISTTIMEFORMAT" "$@")|while read N D T C;do
-		echo "$_CB$N$_Cb $D $T $_CN$_CL$C$_CN"
-	done
+	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read N DT C;do
+		echo "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
+	done;) 
 )
 
 ## `hh [opt] [srch]` - rich history viewer
 ## REWORKING RICH HISTORY FROM SCRATCH
 hh () (
-	tail -20 $CLE_HIST
+	#: Compose read filter
+	case "$1" in
+	'')	SEARCH="tail -100 $CLE_HIST"
+		;;
+	*[!0-9]*)
+		SEARCH="grep '$1' $CLE_HIST"
+		;;
+	*)	SEARCH="tail -$1 $CLE_HIST"
+		;;
+	esac
+
+	#: execute filters
+	eval $SEARCH | _clehhout
 )
 
+# rich history output filter
+_clehhout () {
+	IFS=';'
+	while read DT SID SEC EC D C; do
+		case $EC in
+		 0) CE=$_Cg; CC=$_CC;;
+		 '#'|$) CE=$_CY; CC=$CE;;
+		 *) CE=$_Cr; CC=$_CR;;
+		esac
+		printf "$_CB%s $_Cb%s $_CB%3ss $CE%-3s $_Cc%s  $CC%s$_CN\n" $DT $SID $SEC $EC "$D" "$C"
+	done
+}
+
+## `vv VARNAME`     - print content of variable and record the same into rich history
+vv () (
+	eval "V=\$$1"
+	echo "$1=$_CL'$V'$_CN"
+	echo "`date \"+$CLE_HTF\"`;$CLE_USER-$CLE_SP$$;0;$;$PWD;$1='$V'" >>$CLE_HIST;
+)
+
+# zsh hack to accept notes on cmdline
+[ $ZSH_NAME ] && '#' () { true; }
 
 ##
 ## ** Not-just-internal tools **
@@ -667,11 +708,11 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 # 1. default prompt strings
 _cledefp
 if [ $CLE_USER != $USER -o -n "$CLE_WS" ]; then
-	# 2. overrice with inherited strings
+	# 2. override with inherited strings
 	_clexe $CLE_ENV
 	for I in 0 1 2 3 T; do
 		#: Copy and discard inherited values.
-		#: This ensures the inherited values will not be stored in
+		#: This ensures the inherited values will not be saved into
 		#: local configuration unless redefined in the session
 		eval "CLE_P$I=\${CLE_P$CLE_SP$I:-\$CLE_P$I}"
 		unset CLE_PB$I CLE_PZ$I
@@ -715,7 +756,7 @@ PROMPT_DIRTRIM=3
 
 HISTCONTROL=ignoredups
 HISTFILE=$CLE_D/history-$CLE_SH
-HISTTIMEFORMAT='%Y-%m-%d %T '
+CLE_HTF='%Y-%m-%d %T'
 
 # completions
 #: Command 'cle' completion
