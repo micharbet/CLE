@@ -332,6 +332,8 @@ precmd () {
 	[ $BASH ] && H=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || H=`fc -lt ";$CLE_HTF;" -1`
 	IFS=';' read N DT C <<<$H
 	IFS=' ' read C <<<$C #: remove leading whitespaces (zsh!)
+	echo "H='$H'"
+	echo "C='$C'"
 	if [[ $C =~ ^# ]]; then
 		#: record notes to rich history
 		_clerh  "$DT" 0 \# note "$C"
@@ -365,19 +367,21 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT
-	#: exclude marked commands
+	local DT EXC
+	#: ignore marked commands
 	[ $_NORH ] && unset _NORH && return
+	# exclude regexp
 	#: `vv` generates its record
 	#: folder is visible so no need to record `cd`
-	[[ $4 =~ ^vv\ |^cd\ |^cd$|^-$ ]] && return
-	#: check timestamp
+	EXC="^vv\ |^cd\ |^cd$|^-$"
+	#: check timestamp and create if missing
 	if [ $# = 5 ]; then
 		DT=$1
 		shift
 	else
 		DT=`date "+$CLE_HTF"`
 	fi
+	[[ $4 =~ $EXC ]] && return
 	echo "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4"
 } >>$CLE_HIST
 
@@ -467,6 +471,7 @@ aa () {
 
 ##
 ## ** History tools **
+## REWORKING RICH HISTORY FROM SCRATCH
 ## `h`               - shell 'history' wrapper
 CLE_HTF=
 h () {
@@ -477,7 +482,6 @@ h () {
 }
 
 ## `hh [opt] [srch]` - rich history viewer
-## REWORKING RICH HISTORY FROM SCRATCH
 hh () {
 	#: Compose read filter
 	case "$1" in
@@ -490,26 +494,32 @@ hh () {
 		;;
 	esac
 
+	OUTF=_clehhout
+	# commands only
+	#OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;[^;]*;\(.*\)/\1/p'"
+	# directories
+	#OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;\([^;]*\);.*/\1/p'"
+
 	#: execute filters
-	eval $SEARCH | _clehhout
+	eval "$SEARCH | $OUTF"
 	_NORH=1
 }
 
-# rich history output filter
+# rich history colorful output filter
 _clehhout () (
 	IFS=';'
 	while read DT SID SEC EC D C; do
 		case $EC in
-		 0) CE=$_Cg; CC=$_Cc;;
+		 0) CE=$_Cg; CC=$_Cw;;
 		 @) CE=$_Cg; CC=$_Cg;;
 		 '#'|$) CE=$_CY; CC=$_Cy;;
-		 *) CE=$_Cr; CC=$_Cr;;
+		 *) CE=$_Cr; CC=$_Cw;;
 		esac
 		printf "$_CB%s $_Cb%s $_CB%3ss $CE%-3s $CC%s  $_CL%s$_CN\n" $DT $SID $SEC $EC "$D" "$C"
 	done
 )
 
-## `vv VARNAME`     - print content of variable and record the same into rich history
+## `vv VARNAME`      - show variable details and record them into rich history
 vv () (
 	eval "V=\$$1"
 	echo "$1=$_CL'$V'$_CN"
@@ -845,7 +855,7 @@ $_CL    cle deploy
 EOT
 
 # record this startup into rich history
-_clerh 0 @ $CLE_TTY ${STY:-${SSH_CONNECTION:-$CLE_RC}}
+_clerh 0 @ $CLE_TTY "[${STY:-${CLE_WS:-cleWS}}] $CLE_RC $CLE_VER"
 
 ##
 ## ** CLE command & control **
