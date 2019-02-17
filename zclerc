@@ -328,12 +328,13 @@ _clesave () (
 CLE_HIST=$HOME/.clehistory
 precmd () {
 	_EC=$? # save return code
-	local IFS S DT C H N
-	[ $BASH ] && H=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || H=`fc -lt ";$CLE_HTF;" -1`
-	IFS=';' read N DT C <<<$H
-	IFS=' ' read C <<<$C #: remove leading whitespaces (zsh!)
-	echo "H='$H'"
-	echo "C='$C'"
+	local IFS S DT C
+	unset IFS
+	[ $BASH ] && C=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || C=`fc -lt ";$CLE_HTF;" -1`
+	C=${C#*;}
+	DT=${C%;*}
+	C=${C/*;}
+	read C <<<$C
 	if [[ $C =~ ^# ]]; then
 		#: record notes to rich history
 		_clerh  "$DT" 0 \# note "$C"
@@ -345,7 +346,7 @@ precmd () {
 		[ $_EC = 0 ] && _CE="" || _CE="$_Ce"
 		_SST=
 	else
-		_CE=''; _EC=0 #: highlight the error only once
+		_CE=''; _EC=0 #: reset error code
 	fi
 	[ $BASH ] && trap _clepreex DEBUG
 }
@@ -375,11 +376,11 @@ _clerh () {
 	#: folder is visible so no need to record `cd`
 	EXC="^vv\ |^cd\ |^cd$|^-$"
 	#: check timestamp and create if missing
-	if [ $# = 5 ]; then
+	if [ $# -lt 5 ]; then
+		DT=`date "+$CLE_HTF"`
+	else
 		DT=$1
 		shift
-	else
-		DT=`date "+$CLE_HTF"`
 	fi
 	[[ $4 =~ $EXC ]] && return
 	echo "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4"
