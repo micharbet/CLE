@@ -331,19 +331,18 @@ precmd () {
 	local IFS S DT C
 	unset IFS
 	[ $BASH ] && C=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || C=`fc -lt ";$CLE_HTF;" -1`
-	C=${C#*;}
-	DT=${C%;*}
-	C=${C/*;}
-	read C <<<$C
+	C=${C#*;}	#: strip sequence number
+	DT=${C%;*}	#: extract date
+	C=${C/*;}	#: extract command
+	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
+	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 	if [[ $C =~ ^# ]]; then
-		#: record notes to rich history
-		_clerh  "$DT" 0 \# note "$C"
+		_clerh  "$DT" 0 \# note "$C" #: record notes to rich history
 	elif [ $_SST ]; then
-		# this code will be executed only after an issued command
+		#: this code will be executed only after an valid command
 		S=$((SECONDS-_SST))
 		_clerh "$DT" $S $_EC $PWD "$C"
-		# highlight error code
-		[ $_EC = 0 ] && _CE="" || _CE="$_Ce"
+		[ $_EC = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
 		_SST=
 	else
 		_CE=''; _EC=0 #: reset error code
@@ -351,15 +350,14 @@ precmd () {
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
-# run this function before the command
+# run this function before the issued command
 preexec () {
 	_SST=$SECONDS #: start timer
 	echo -n $_CN  #: reset tty colors
 }
 
 # Bash hack
-#: zsh supports preexec function naturaly
-#: This is bash's workaround
+#: Zsh supports preexec function naturaly. This is bash's workaround.
 _clepreex () {
 	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
 	trap "" DEBUG
@@ -511,10 +509,10 @@ _clehhout () (
 	IFS=';'
 	while read DT SID SEC EC D C; do
 		case $EC in
-		 0) CE=$_Cg; CC=$_Cw;;
+		 0) CE=$_Cg; CC=$_CN;;
 		 @) CE=$_Cg; CC=$_Cg;;
 		 '#'|$) CE=$_CY; CC=$_Cy;;
-		 *) CE=$_Cr; CC=$_Cw;;
+		 *) CE=$_Cr; CC=$_CN;;
 		esac
 		printf "$_CB%s $_Cb%s $_CB%3ss $CE%-3s $CC%s  $_CL%s$_CN\n" $DT $SID $SEC $EC "$D" "$C"
 	done
@@ -644,7 +642,7 @@ lsu () (
 	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
-        eval su $S -c \"$CLE_RC $CLE_ARG\" -l ${1:-root}
+        eval su $S -l ${1:-root} $CLE_RC
 )
 
 ## `lksu [user]`       - ksu wrapper
@@ -673,7 +671,7 @@ lscreen () (
 		#: No session with given name found, prepare to start new session
 		SCF=$CLE_D/screenrc
 		SN=$CLE_TTY-CLE.$NM
-		_clerh \> @ $CLE_TTY screen -S $SN
+		_clerh \> @ $CLE_TTY "screen -S $SN"
 		_clescrc >$SCF
 		screen -c $SCF -S $SN $CLE_RC
 	else
@@ -687,7 +685,7 @@ lscreen () (
 				[ $SN ] && break
 			done
 		fi
-		_clerh \> @ $CLE_TTY screen -x $SN
+		_clerh \> @ $CLE_TTY "screen -x $SN"
 		#: send message to other screen, then join the session
 		screen -S $SN -X echo "$CLE_USER joining"
 		screen -x $SN
@@ -855,8 +853,10 @@ unalias () {
 $_CL    cle deploy
 EOT
 
+[ -r . ] || cd #: go home if this is unreadable directory
+
 # record this startup into rich history
-_clerh 0 @ $CLE_TTY "[${STY:-${CLE_WS:-cleWS}}] $CLE_RC $CLE_VER"
+_clerh 0 @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC  $CLE_VER"
 
 ##
 ## ** CLE command & control **
