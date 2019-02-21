@@ -337,7 +337,7 @@ precmd () {
 	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 	if [[ $C =~ ^# ]]; then
-		_clerh  "$DT" 0 \# note "$C" #: record notes to rich history
+		_clerh  "$DT" '' \# note "$C" #: record notes to rich history
 	elif [ $_SST ]; then
 		#: this code will be executed only after an valid command
 		S=$((SECONDS-_SST))
@@ -372,7 +372,7 @@ _clerh () {
 	# exclude regexp
 	#: `vv` generates its record
 	#: folder is visible so no need to record `cd`
-	EXC="^vv\ |^cd\ |^cd$|^-$"
+	EXC="^vv\ |^cd\ |^cd$|^-$|^xx$|^aa$|^lscreen"
 	#: check timestamp and create if missing
 	if [ $# -lt 5 ]; then
 		DT=`date "+$CLE_HTF"`
@@ -442,7 +442,7 @@ fi
 .. () { cd ..;}
 ... () { cd ../..;}
 ## `xx` & `cx`   - bookmark $PWD & use later
-xx () { _XX=$PWD; echo path bookmark: $_XX; }
+xx () { _XX=$PWD;_clerh '' '*' $PWD ''; echo path bookmark: $_XX; }
 cx () { cd $_XX; }
 
 ##
@@ -511,19 +511,20 @@ _clehhout () (
 		case $EC in
 		 0) CE=$_Cg; CC=$_CN;;
 		 @) CE=$_Cg; CC=$_Cg;;
-		 '#'|$) CE=$_CY; CC=$_Cy;;
+		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
 		 *) CE=$_Cr; CC=$_CN;;
 		esac
-		printf "$_CB%s $_Cb%s $_CB%3ss $CE%-3s $CC%s  $_CL" $DT $SID $SEC $EC "$D"
+		printf "$_CB%s $_Cb%s $_CB%4s $CE%-3s $CC%s  $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
 		cat <<<$C #: this cannot be part of printf above to keep possible backslashes
 	done
 )
 
 ## `vv VARNAME`      - show variable details and record them into rich history
 vv () (
+	[ $1 ] || return
 	V=`typeset -p $1` || return
 	echo -E $V
-	_clerh 0 \$ var "$V"
+	_clerh '' \$ var "`tr '\n' ' ' <<<$V`"
 )
 
 
@@ -672,7 +673,7 @@ lscreen () (
 		#: No session with given name found, prepare to start new session
 		SCF=$CLE_D/screenrc
 		SN=$CLE_TTY-CLE.$NM
-		_clerh \> @ $CLE_TTY "screen -S $SN"
+		_clerh '' @ $CLE_TTY "screen -S $SN"
 		_clescrc >$SCF
 		screen -c $SCF -S $SN $CLE_RC
 	else
@@ -686,7 +687,7 @@ lscreen () (
 				[ $SN ] && break
 			done
 		fi
-		_clerh \> @ $CLE_TTY "screen -x $SN"
+		_clerh '' @ $CLE_TTY "screen -x $SN"
 		#: send message to other screen, then join the session
 		screen -S $SN -X echo "$CLE_USER joining"
 		screen -x $SN
@@ -857,7 +858,7 @@ EOT
 [ -r . ] || cd #: go home if this is unreadable directory
 
 # record this startup into rich history
-_clerh 0 @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC  $CLE_VER"
+_clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC  $CLE_VER"
 
 ##
 ## ** CLE command & control **
