@@ -156,6 +156,7 @@ CLE_CF=$CLE_D/cf-$CLE_FHN
 CLE_AL=$CLE_D/al
 _N=`sed 's:.*/rc1*::' <<<$CLE_RC` # workstation name
 CLE_WS=${_N/-/}
+[ $CLE_USER != $USER -o -n "$CLE_WS" ] && CLE_LS=1
 CLE_TW=$CLE_RD/tw$_N
 CLE_ALW=$CLE_RD/al$_N
 CLE_ENV=$CLE_RD/env$_N
@@ -633,7 +634,7 @@ lssh () (
 #: user's home folder are used.
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
+	[ $CLE_LS ] || vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         sudo -i -u ${1:-root} $CLE_RC $CLE_ARG
 )
 
@@ -641,7 +642,7 @@ lsudo () (
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
-	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
+	[ $CLE_LS ] || vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -l ${1:-root} $CLE_RC
@@ -650,7 +651,7 @@ lsu () (
 ## `lksu [user]`       - ksu wrapper
 #: Kerberized version of 'su'
 lksu () (
-	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
+	[ $CLE_LS ] || vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         ksu ${1:-root} -a -c $CLE_RC
 )
 
@@ -739,7 +740,7 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 # create the prompt in several steps
 # 1. default prompt strings
 _cledefp
-if [ $CLE_USER != $USER -o -n "$CLE_WS" ]; then
+if [ $CLE_LS ]; then
 	# 2. override with inherited strings
 	_clexe $CLE_ENV
 	for I in 0 1 2 3 T; do
