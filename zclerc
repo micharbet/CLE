@@ -382,7 +382,6 @@ _clerh () {
 	fi
 	[[ $4 =~ $EXC ]] && return
 	echo -E "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4" >>$CLE_HIST
-	echo -E "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4"
 }
 
 
@@ -522,9 +521,9 @@ _clehhout () (
 
 ## `vv VARNAME`      - show variable details and record them into rich history
 vv () (
-	eval "V=\$$1"
-	echo "$1=$_CL'$V'$_CN"
-	_clerh 0 \$ var "$1='$V'"
+	V=`typeset -p $1` || return
+	echo -E $V
+	_clerh 0 \$ var "$V"
 )
 
 
