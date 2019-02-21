@@ -332,8 +332,8 @@ precmd () {
 	unset IFS
 	[ $BASH ] && C=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || C=`fc -lt ";$CLE_HTF;" -1`
 	C=${C#*;}	#: strip sequence number
-	DT=${C%;*}	#: extract date
-	C=${C/*;}	#: extract command
+	DT=${C/;*}	#: extract date
+	C=${C/$DT;}	#: extract command
 	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 	if [[ $C =~ ^# ]]; then
@@ -381,8 +381,9 @@ _clerh () {
 		shift
 	fi
 	[[ $4 =~ $EXC ]] && return
-	echo "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4"
-} >>$CLE_HIST
+	echo -E "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4" >>$CLE_HIST
+	echo -E "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4"
+}
 
 
 # Use alias built-ins for startup
@@ -474,8 +475,8 @@ aa () {
 ## `h`               - shell 'history' wrapper
 CLE_HTF=
 h () {
-	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read N DT C;do
-		echo "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
+	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
+		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
 	done;) 
 	_NORH=1
 }
@@ -507,14 +508,15 @@ hh () {
 # rich history colorful output filter
 _clehhout () (
 	IFS=';'
-	while read DT SID SEC EC D C; do
+	while read -r DT SID SEC EC D C; do
 		case $EC in
 		 0) CE=$_Cg; CC=$_CN;;
 		 @) CE=$_Cg; CC=$_Cg;;
 		 '#'|$) CE=$_CY; CC=$_Cy;;
 		 *) CE=$_Cr; CC=$_CN;;
 		esac
-		printf "$_CB%s $_Cb%s $_CB%3ss $CE%-3s $CC%s  $_CL%s$_CN\n" $DT $SID $SEC $EC "$D" "$C"
+		printf "$_CB%s $_Cb%s $_CB%3ss $CE%-3s $CC%s  $_CL" $DT $SID $SEC $EC "$D"
+		cat <<<$C #: this cannot be part of printf above to keep possible backslashes
 	done
 )
 
