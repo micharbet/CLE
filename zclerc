@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-02-00 (Zodiac)
+#* version: 2019-02-22 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -12,6 +12,11 @@
 ## This code is in super early development stage.
 ## Do not use, otherwise a puppy or kitten may die!
 ##
+
+# Check if the shell is interactive session and CLE not yet started
+# This is required for scp compatibility
+[ -t 0 -a -z "$CLE_EXE" ] || return
+# Now it really starts, warning: magic inside!
 
 #:------------------------------------------------------------:#
 
@@ -753,7 +758,7 @@ if [ $CLE_LS ]; then
 fi
 
 # 3. get values from config file
-_clexe $CLE_CF || _clebnr
+_clexe $CLE_CF
 
 # 4. termnal specific
 #: $_CT and $_Ct are codes to create window title
@@ -795,7 +800,6 @@ CLE_HTF='%Y-%m-%d %T'
 #: Command 'cle' completion
 #: as an addition, prompt strings are filled for convenience :)
 if [ $BASH ]; then
-	echo BASH COMPL
 	_clecomp () {
 		#: list of subcommands, this might be reworked to have possibility of expansion
 		#: with modules (TODO)
@@ -828,7 +832,7 @@ if [ $BASH ]; then
 	fi
 else
 	# ZSH completion here
-	echo NO ZSH COMPLETION
+	echo NO ZSH COMPLETION YET
 fi
 
 # redefine alias builtins
@@ -905,6 +909,9 @@ cle () {
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	[ "$2" = off ] && CLE_DEBUG='' || CLE_DEBUG=${2:-on}				# dbg
 		dbg_var CLE_DEBUG ;;								# dbg
+	cp)	cp ~/d/CLE/zclerc $CLE_RC							# dbg
+		cle reload									# dbg
+		;;										# dbg
 	help|-h|--help) ## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
@@ -924,3 +931,6 @@ cle () {
 ##
 #: final cleanup
 unset _N
+
+# that's all, folks...
+
