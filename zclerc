@@ -887,6 +887,32 @@ cle () {
 		## `cle title [str]` - set title string
 		[ "$2" = off ] && CLE_PT='' || CLE_PT=${2:-'$CLE_SH: ^u@^H'}
 		_cleps;;
+	deploy) ## `cle deploy`      - hook CLE into user's profile
+		cp $CLE_RC $CLE_D/rc
+		CLE_RC=$CLE_D/rc
+		unset CLE_1
+		I='# Command Live Environment'
+		SHRC=$HOME/.${CLE_SH}rc
+		grep -A1 "$I" $SHRC && printb CLE is already hooked in $SHRC && return 1
+		ask "Do you want to add CLE to $SHRC?" || return
+		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $SHRC
+		cle reload;;
+	update) ## `cle update`      - install fresh version of CLE
+		NC=$CLE_D/rc.new
+		curl -k $CLE_SRC/master/clerc >$NC      # always update from master branch
+		C=`sed -n 's/^#\* version: //p' $NC`
+		[ "$C" ] || { echo "Download error"; return 1; }
+		echo current: $CLE_VER
+		echo "new:     $C"
+		MM=`diff $CLE_RC $NC` && { echo No difference; return 1;}
+		ask Do you want to see diff? && cat <<<"$MM"
+		ask Do you want to install new version? || return
+		BRC=$CLE_D/rc.bk
+		cp $CLE_RC $BRC
+		chmod 755 $NC
+		mv -f $NC $CLE_RC
+		cle reload
+		printb New CLE activated, backup saved here: $BRC;;
 	reload) ## `cle reload`      - reload CLE
 		for I in 0 1 2 3 T; do unset CLE_PB$I CLE_PZ$I; done
 		unset CLE_EXE CLE_CLR
