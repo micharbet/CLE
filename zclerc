@@ -136,9 +136,8 @@ CLE_FHN=`hostname -f 2>/dev/null || hostname`
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 
 # where in the deep space CLE grows
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
-CLE_REL=`sed 's/.*(\(.*\)).*/\1/' <<<$CLE_VER`
 CLE_VER="$CLE_VER debug"
 
 # current shell and shell prefix
@@ -322,7 +321,7 @@ _cledefp () {
 
 # save configuration
 _clesave () (
-	date +"# CLE/$CLE_REL %Y-%m-%d %H:%M:%S"
+	date +"# CLE/$CLE_VER %Y-%m-%d %H:%M:%S"
 	vars "CLE_CLR|CLE_PB.|CLE_PZ."
 ) >$CLE_CF
 
@@ -911,7 +910,7 @@ cle () {
 		cle reload;;
 	update) ## `cle update`      - install fresh version of CLE
 		NC=$CLE_D/rc.new
-		curl -k $CLE_SRC/master/clerc >$NC      # always update from master branch
+		curl -k $CLE_SRC/zclerc >$NC      # always update from master branch
 		C=`sed -n 's/^#\* version: //p' $NC`
 		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
@@ -947,9 +946,6 @@ cle () {
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	[ "$2" = off ] && CLE_DEBUG='' || CLE_DEBUG=${2:-on}				# dbg
 		dbg_var CLE_DEBUG ;;								# dbg
-	cp)	cp ~/d/CLE/zclerc $CLE_RC							# dbg
-		cle reload									# dbg
-		;;										# dbg
 	help|-h|--help) ## `cle help [fnc]`  - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
