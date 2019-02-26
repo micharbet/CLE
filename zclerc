@@ -125,7 +125,7 @@ dbg_var CLE_RD
 #: - /any/folder/.config/cle-username/rcfile
 #: important is the dot (hidden folder), word 'cle' with dash
 _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
-export CLE_USER=${CLE_USER:-${_N:-$USER}}
+export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 dbg_var CLE_USER
 
 # FQDN hack
@@ -744,6 +744,9 @@ EOS
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
+for M in $CLE_RD/mod-*; do
+	_clexe $M
+done
 
 #: Enhnace PATH by user's own bin folder
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
