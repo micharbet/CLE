@@ -55,7 +55,7 @@ case $ZSH_NAME$BASH:$0 in
 	dbg_echo sourcing to ZSH - from .zshrc
 	CLE_RC=$0
 	;;
-*:/*/rc*) # executed as a command
+*:/*/rc*) # executed as a command from .cle directory
 	#: code in this section must be strictly POSIX compatible with /bin/sh
 	#: Now we're looking for suitable shell: zsh first, fallback to bash
 	dbg_echo executing as script, looking for shell
@@ -64,8 +64,10 @@ case $ZSH_NAME$BASH:$0 in
 	#: process command line options
 	while [ $1 ]; do
 		case $1 in
-		-b)	ZS= 	# force bash
+		-b*)	ZS= 	# force bash
 			export CLE_ARG='-b'
+			;;
+		-z*)	export CLE_ARG='-z'
 			;;
 		-m)	CLE_MOTD=`uptime`
 			export CLE_MOTD
@@ -882,16 +884,16 @@ EOT
 [ -r . ] || cd #: go home if this is unreadable directory
 
 # record this startup into rich history
-_clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC  $CLE_VER"
+_clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
 
 ##
 ## ** CLE command & control **
 cle () {
 	local C I P
 	case $1 in
-	color)  ## `cle color COLOR`   - set prompt color
+	color)  ## `cle color COLOR`       - set prompt color
 		[ $2 ]  && _cleclr $2 && CLE_CLR=$2 && _clesave;;
-	p?)	## `cle p0-p3 [str]`   - show/define prompt parts
+	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
 		I=${1:1:1}
 		if [ "$2" ]; then
 			shift
@@ -902,11 +904,10 @@ cle () {
 			P=CLE_P$I
 			eval "echo $P=\'\$$P\'"
 		fi;;
-	title)	## `cle title off`     - turn off window title
-		## `cle title [str]`   - set title string
+	title)	## `cle title off|string`  - turn off window title or set the string
 		[ "$2" = off ] && CLE_PT='' || CLE_PT=${2:-'$CLE_SH: ^u@^H'}
 		_cleps;;
-	deploy) ## `cle deploy`        - hook CLE into user's profile
+	deploy) ## `cle deploy`            - hook CLE into user's profile
 		cp $CLE_RC $CLE_D/rc
 		CLE_RC=$CLE_D/rc
 		unset CLE_1
@@ -916,7 +917,7 @@ cle () {
 		ask "Do you want to add CLE to $SHRC?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $SHRC
 		cle reload;;
-	update) ## `cle update`        - install fresh version of CLE
+	update) ## `cle update`            - install fresh version of CLE
 		NC=$CLE_D/rc.new
 		curl -k $CLE_SRC/zclerc >$NC      # always update from master branch
 		C=`sed -n 's/^#\* version: //p' $NC`
@@ -932,14 +933,18 @@ cle () {
 		mv -f $NC $CLE_RC
 		cle reload
 		printb New CLE activated, backup saved here: $BRC;;
-	reload) ## `cle reload`        - reload CLE
-		for I in 0 1 2 3 T; do unset CLE_PB$I CLE_PZ$I; done
-		unset CLE_EXE CLE_CLR
-		. $CLE_RC
-		echo CLE $CLE_VER;;
-	env)	## `cle env`           - inspect variables
+	reload) ## `cle reload [bash|zsh]` - reload CLE
+		SH=${2:-$CLE_SH}
+		exec $CLE_RC -$SH
+		case $SH in
+		bash)	exec bash --rcfile $CLE_RC;;
+		zsh)	exec zsh -c $CLE_RC;;
+		*)	echo no such shell: $2
+			return 1;;
+		esac;;
+	env)	## `cle env`  -            - inspect variables
 		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	cf)	## `cle cf [ed|reset]` - view/edit/reset/revert configuration
+	cf)	## `cle cf [ed|reset]`     - view/edit/reset/revert configuration
 		case "$2" in
 		ed)	vi $CLE_CF  && . $CLE_RC;;
 		reset)	mv $CLE_CF $CLE_CF-bk;;
@@ -958,7 +963,7 @@ cle () {
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	[ "$2" = off ] && CLE_DEBUG='' || CLE_DEBUG=${2:-on}				# dbg
 		dbg_var CLE_DEBUG ;;								# dbg
-	help|-h|--help) ## `cle help [fnc]`    - show help
+	help|-h|--help) ## `cle help [fnc]`  -     - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$2|^## *\`*$2/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
