@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-02-26 (Zodiac)
+#* version: 2019-03-01 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -206,20 +206,23 @@ CLE_EXE=$CLE_RC
 #: initialize $_C* variables with terminal compatible escape sequences
 #: following are basic ones:
 _cletable () {
+	dbg_echo "_cletable updating color table"
+	_C_=$TERM	#: save terminal type of this table
 	_CN=`tput sgr0`
 	_CL=`tput bold`
 	_CU=`tput smul`;_Cu=`tput rmul`
-	_CD=`tput dim`
 	_CV=`tput rev`
-	#: The loop creates table of color codes r, g, b...
-	#: lower case is for dim variant, upper case stands for bright
-	#: try e.g 'echo $_Cg green $_CY bright yellow'
-	_I=0; for _N in k r g y b m c w; do
-		_C=`tput setaf $_I`
-		declare -g _C$_N=$_CN$_C
-		declare -g _C$(tr a-z A-Z <<<$_N)=$_CL$_C
-		((_I+=1))
-	done
+	#: Note: dim and italic not available everywhere (e.g. RHEL)
+	_CI=`tput sitm`;_Ci=`tput ritm`
+	_CD=`tput dim`
+	_Ck=$_CN$(tput setaf 0);_CK=$_Ck$_CL
+	_Cr=$_CN$(tput setaf 1);_CR=$_Cr$_CL
+	_Cg=$_CN$(tput setaf 2);_CG=$_Cg$_CL
+	_Cy=$_CN$(tput setaf 3);_CY=$_Cy$_CL
+	_Cb=$_CN$(tput setaf 4);_CB=$_Cb$_CL
+	_Cm=$_CN$(tput setaf 5);_CM=$_Cm$_CL
+	_Cc=$_CN$(tput setaf 6);_CC=$_Cc$_CL
+	_Cw=$_CN$(tput setaf 7);_CW=$_Cw$_CL
 	#: and... special color code for error highlight in prompt
 	_Ce=`tput setab 1;tput setaf 7` # err highlight
 }
@@ -731,7 +734,7 @@ cat <<-EOS
 	bindkey "^[[1;5C" next
 	defscrollback 9000
 	hardstatus alwayslastline
-	hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b G}$CLE_SHN%{Y} %c'
+	hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b Y}$CLE_SHN%{G} %c'
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
 EOS
@@ -744,6 +747,7 @@ EOS
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
+[ $ZSH_NAME ] && setopt +o NOMATCH #: stop annoying zsh error when '*' doesn't match any file
 for M in $CLE_RD/mod-*; do
 	_clexe $M
 done
@@ -769,6 +773,10 @@ if [ $CLE_LS ]; then
 		eval "CLE_P$I=\${CLE_P$CLE_SP$I:-\$CLE_P$I}"
 		unset CLE_PB$I CLE_PZ$I
 	done
+	[ $TERM != $_C_ ] && _cletable #: changed terminal type, reinitilaize color table
+else
+	# initialize color table on workstation
+	_cletable
 fi
 
 # 3. get values from config file
@@ -795,10 +803,7 @@ else
 	_PN=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
 fi
 
-# 6. initialize color table
-[ $_CN ] || _cletable #: only if necessary, don't waste cycles
-
-# 7. craft the prompt string
+# 6. craft the prompt string
 _cleps
 _cleclr ${CLE_CLR:-$_DEFC}
 unset _DEFC
@@ -884,9 +889,9 @@ _clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC  $CLE_VER"
 cle () {
 	local C I P
 	case $1 in
-	color)  ## `cle color COLOR` - set prompt color
+	color)  ## `cle color COLOR`   - set prompt color
 		[ $2 ]  && _cleclr $2 && CLE_CLR=$2 && _clesave;;
-	p?)	## `cle p0-p3 [str]` - show/define prompt parts
+	p?)	## `cle p0-p3 [str]`   - show/define prompt parts
 		I=${1:1:1}
 		if [ "$2" ]; then
 			shift
@@ -897,11 +902,11 @@ cle () {
 			P=CLE_P$I
 			eval "echo $P=\'\$$P\'"
 		fi;;
-	title)	## `cle title off`   - turn off window title
-		## `cle title [str]` - set title string
+	title)	## `cle title off`     - turn off window title
+		## `cle title [str]`   - set title string
 		[ "$2" = off ] && CLE_PT='' || CLE_PT=${2:-'$CLE_SH: ^u@^H'}
 		_cleps;;
-	deploy) ## `cle deploy`      - hook CLE into user's profile
+	deploy) ## `cle deploy`        - hook CLE into user's profile
 		cp $CLE_RC $CLE_D/rc
 		CLE_RC=$CLE_D/rc
 		unset CLE_1
@@ -911,7 +916,7 @@ cle () {
 		ask "Do you want to add CLE to $SHRC?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $SHRC
 		cle reload;;
-	update) ## `cle update`      - install fresh version of CLE
+	update) ## `cle update`        - install fresh version of CLE
 		NC=$CLE_D/rc.new
 		curl -k $CLE_SRC/zclerc >$NC      # always update from master branch
 		C=`sed -n 's/^#\* version: //p' $NC`
@@ -927,29 +932,33 @@ cle () {
 		mv -f $NC $CLE_RC
 		cle reload
 		printb New CLE activated, backup saved here: $BRC;;
-	reload) ## `cle reload`      - reload CLE
+	reload) ## `cle reload`        - reload CLE
 		for I in 0 1 2 3 T; do unset CLE_PB$I CLE_PZ$I; done
 		unset CLE_EXE CLE_CLR
 		. $CLE_RC
 		echo CLE $CLE_VER;;
-	reset)	## `cle reset`       - clear config and reload
-		rm -f $CLE_CF
-		cle reload;;
-	env)	## `cle env`         - inspect variables
+	env)	## `cle env`           - inspect variables
 		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	cf)	## `cle cf [ed]`     - view/edit configuration
-		[ "$2" = ed ] && vi $CLE_CF  && . $CLE_RC
-		if [ -f $CLE_CF ]; then
-			printb $_CU$CLE_CF:
-			cat $CLE_CF
-		else
-			echo Default/Inherited configuration
-		fi;;
+	cf)	## `cle cf [ed|reset]` - view/edit/reset/revert configuration
+		case "$2" in
+		ed)	vi $CLE_CF  && . $CLE_RC;;
+		reset)	mv $CLE_CF $CLE_CF-bk;;
+		revert)	cp $CLE_CF-bk $CLE_CF;;
+		"")
+			if [ -f $CLE_CF ]; then
+				printb $_CU$CLE_CF:
+				cat $CLE_CF
+			else
+				echo Default/Inherited configuration
+			fi
+			return;;
+		esac
+		cle reload;;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	[ "$2" = off ] && CLE_DEBUG='' || CLE_DEBUG=${2:-on}				# dbg
 		dbg_var CLE_DEBUG ;;								# dbg
-	help|-h|--help) ## `cle help [fnc]`  - show help
+	help|-h|--help) ## `cle help [fnc]`    - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$2|^## *\`*$2/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
