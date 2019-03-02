@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-01 (Zodiac)
+#* version: 2019-03-03 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -264,21 +264,21 @@ _cleclr () {
 #:  bash uses backslash while zsh percent sign for their prompt escapes
 _clesc () (
 	# bash/zsh specific sequences
+	#: not so much backslashes due to multiple string expansions and eval at the end
 	if [ $ZSH_NAME ]; then
-		SHESC='-e "s/[\^]n/\$_PN/g"
-		 -e "s/\^u/%n/g"
-		 -e "s/\^w/%3~/g"
-		 -e "s/\^t/%*/g"
+		#: bash/zsh escapes compatibility
+		SHESC='-e "s/\\\\n/\$_PN/g"
 		 -e "s/\^[$%#]/%#/g"
+		 -e "s/\\\\t/%*/g"
+		 -e "s/\\\\w/%3~/g"
+		 -e "s/\\\\u/%n/g"
 		'
+		# ^^^ TODO: add rest of bash escxapes
 	else
-		SHESC='-e "s/\^n/\\\\n/g"
-		 -e "s/\^u/\\\\u/g"
-		 -e "s/\^w/\\\\w/g"
-		 -e "s/\^t/\\\\A/g"
-		 -e "s/\^[$%#]/\\\\\$/g"
+		SHESC='-e "s/\^[$%#]/\\\\\$/g"
 		'
 	fi
+	#: CLE extensions escapes
 	EXTESC="
 	 -e 's/\^i/\$CLE_IP/g'
 	 -e 's/\^h/\$CLE_SHN/g'
@@ -296,14 +296,20 @@ _clesc () (
 	eval sed "$SUBS" <<<"$*"
 )
 
+# override default prompt strings with configured values
+_clepcp () {
+	local I
+	#: use CLE_PBx values and override with CLE_PZx for zsh
+	#: check function _clesc that transforms bash escapes into zsh
+	for I in 0 1 2 3 T; do
+		eval "CLE_P$I=\${CLE_PB$I:-\$CLE_P$I}"
+		[ $ZSH_NAME ] && eval "CLE_P$I=\${CLE_PZ$I:-\$CLE_P$I}"
+		[ $1 ] && unset CLE_P{B,Z}$I
+	done
+}
+
 # craft the prompt from defined strings
 _cleps () {
-	local I
-	# override prompt strings with configured values
-	#: use different variables for bash/zsh, eg. CLE_PB1 vs CLE_PZ1
-	for I in 0 1 2 3 T; do
-		eval "CLE_P$I=\${CLE_P$CLE_SP$I:-\$CLE_P$I}"
-	done
 	[ "$CLE_PT" ] && PS1="$_PE\${_CT}$(_clesc $CLE_PT)\${_Ct}$_Pe" || PS1=''
 	PS1=$PS1`_clesc "^c0$CLE_P0 ^c1$CLE_P1 ^c2$CLE_P2 ^c3$CLE_P3 ^cN^c4"`
 	PS2=`_clesc "^c3>>> ^cN^c4"`
@@ -311,11 +317,11 @@ _cleps () {
 
 # default prompt strings and colors
 _cledefp () {
-	CLE_P0='^e ^t'
-	CLE_P1='^u'
+	CLE_P0='^e \t'
+	CLE_P1='\u'
 	CLE_P2='^h'
-	CLE_P3='^w ^$'
-	CLE_PT='$CLE_SH: ^u@^H'
+	CLE_P3='\w ^$'
+	CLE_PT='$CLE_SH: \u@^H'
 	case "$USER-$CLE_WS" in
 	root-)	_DEFC=red;;	#: root@workstation
 	*-)	_DEFC=marley;;	#: user's basic color scheme
@@ -561,7 +567,7 @@ vars () (
 	done
 )
 
-## `gitwb`            - show current working branch name
+## `gitwb`           - show current working branch name
 gitwb () (
 	# search all parent directories
 	while [ $PWD != / ]; do
@@ -768,13 +774,7 @@ _cledefp
 if [ $CLE_LS ]; then
 	# 2. override with inherited strings
 	_clexe $CLE_ENV
-	for I in 0 1 2 3 T; do
-		#: Copy and discard inherited values.
-		#: This ensures the inherited values will not be saved into
-		#: local configuration unless redefined in the session
-		eval "CLE_P$I=\${CLE_P$CLE_SP$I:-\$CLE_P$I}"
-		unset CLE_PB$I CLE_PZ$I
-	done
+	_clepcp x
 	[ $TERM != $_C_ ] && _cletable #: changed terminal type, reinitilaize color table
 else
 	# initialize color table on workstation
@@ -806,6 +806,7 @@ else
 fi
 
 # 6. craft the prompt string
+_clepcp
 _cleps
 _cleclr ${CLE_CLR:-$_DEFC}
 unset _DEFC
@@ -897,9 +898,12 @@ cle () {
 		I=${1:1:1}
 		if [ "$2" ]; then
 			shift
-			P=CLE_P$CLE_SP$I   #: save to shell-corresponding variable
-			eval "$P='$*'"
-			_cleps;_clesave
+			#: obtain shell prefix
+			#: if the propmt string is bash compatible, store it into $CLE_PBx
+			#: otherwise use $CLE_PZx
+			P=B; [[ $* =~ % && -n "$ZSH_NAME" ]] && P=Z || unset CLE_PZ$I
+			eval "CLE_P$P$I='$*'"
+			_clepcp;_cleps;_clesave
 		else
 			P=CLE_P$I
 			eval "echo $P=\'\$$P\'"
@@ -907,6 +911,21 @@ cle () {
 	title)	## `cle title off|string`  - turn off window title or set the string
 		[ "$2" = off ] && CLE_PT='' || CLE_PT=${2:-'$CLE_SH: ^u@^H'}
 		_cleps;;
+	cf)	## `cle cf [ed|reset]`     - view/edit/reset/revert configuration
+		case "$2" in
+		ed)	vi $CLE_CF  && . $CLE_RC;;
+		reset)	mv $CLE_CF $CLE_CF-bk;;
+		revert)	cp $CLE_CF-bk $CLE_CF;;
+		"")
+			if [ -f $CLE_CF ]; then
+				printb $_CU$CLE_CF:
+				cat $CLE_CF
+			else
+				echo Default/Inherited configuration
+			fi
+			return;;
+		esac
+		cle reload;;
 	deploy) ## `cle deploy`            - hook CLE into user's profile
 		cp $CLE_RC $CLE_D/rc
 		CLE_RC=$CLE_D/rc
@@ -942,28 +961,13 @@ cle () {
 		*)	echo no such shell: $2
 			return 1;;
 		esac;;
-	env)	## `cle env`  -            - inspect variables
+	env)	## `cle env`               - inspect variables
 		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	cf)	## `cle cf [ed|reset]`     - view/edit/reset/revert configuration
-		case "$2" in
-		ed)	vi $CLE_CF  && . $CLE_RC;;
-		reset)	mv $CLE_CF $CLE_CF-bk;;
-		revert)	cp $CLE_CF-bk $CLE_CF;;
-		"")
-			if [ -f $CLE_CF ]; then
-				printb $_CU$CLE_CF:
-				cat $CLE_CF
-			else
-				echo Default/Inherited configuration
-			fi
-			return;;
-		esac
-		cle reload;;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	[ "$2" = off ] && CLE_DEBUG='' || CLE_DEBUG=${2:-on}				# dbg
 		dbg_var CLE_DEBUG ;;								# dbg
-	help|-h|--help) ## `cle help [fnc]`  -     - show help
+	help|-h|--help) ## `cle help [fnc]`        - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$2|^## *\`*$2/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
