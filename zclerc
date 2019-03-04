@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-03 (Zodiac)
+#* version: 2019-03-04 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -79,7 +79,7 @@ case $ZSH_NAME$BASH:$0 in
 	if [ $ZS ]; then
 		dbg_echo found: $ZS
 		#: prepare startup environment in zsh way
-		export ZDOTDIR=/tmp/$USER
+		export ZDOTDIR=/tmp/`whoami`
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
@@ -94,7 +94,7 @@ case $ZSH_NAME$BASH:$0 in
 *:*zclerc*)	# first run!
 	#: code in this section must be strictly POSIX compatible with /bin/sh
 	dbg_echo First run
-	RD=$HOME/.zcle-$USER
+	RD=$HOME/.zcle-`whoami`
 	export CLE_1=$0
 	mkdir -p $RD
 	cp $0 $RD/rc1
@@ -165,7 +165,6 @@ _N=`sed 's:.*/rc1*::' <<<$CLE_RC` # workstation name
 CLE_WS=${_N/-/}
 [ $CLE_USER != $USER -o -n "$CLE_WS" ] && CLE_LS=1
 CLE_TW=$CLE_RD/tw$_N
-CLE_ALW=$CLE_RD/al$_N
 CLE_ENV=$CLE_RD/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
 
@@ -334,7 +333,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	date +"# CLE/$CLE_VER %Y-%m-%d %H:%M:%S"
-	vars "CLE_CLR|CLE_PB.|CLE_PZ."
+	vv "CLE_CLR|CLE_PB.|CLE_PZ."
 ) >$CLE_CF
 
 
@@ -423,11 +422,8 @@ if [ "$CLE_MOTD" ]; then
 	unset CLE_MOTD
 fi
 
-# Aliasing
-# first load aliases inherited from CLE workstation
-#: On workstation: load aliases later
-#: On live sessions: read inherited aliases first, allow redefining locally
-[ $CLE_AL != $CLE_ALW ] && _clexe $CLE_ALW
+# read inherited environment
+[ $CLE_LS ] && _clexe $CLE_ENV
 
 # colorize LS
 case $OSTYPE in
@@ -538,23 +534,6 @@ _clehhout () (
 )
 
 ## `vv VARNAME`      - show variable details and record them into rich history
-vv () (
-	[ $1 ] || return
-	IFS='=' read N V <<<$(typeset -p $1)
-	[ "$N" ]  || return 1
-	#: in bash we need to remove quotes and canoncalize the value
-	[[ $V =~  && -n $BASH ]] && V=${V%\"} printf -v V %q "${V#\"}"
-	echo -E $N=$V
-	_clerh '' \$ var "$N=$V"
-)
-
-
-# zsh hack to accept notes on cmdline
-[ $ZSH_NAME ] && '#' () { true; }
-
-##
-## ** Not-just-internal tools **
-## `vars 'regexp'`   - dump variables in reusable way, bash/zsh compatible
 #: it was difficult to create this shot function and make it working
 #: in both zsh and bash because:
 #:  - in bash 'set' displays also functions - this is why there's 
@@ -563,15 +542,27 @@ vv () (
 #:  - zsh on debian doesn't quote escape strings and 'mawk' stops
 #:    processing on special characters, gawk is required!
 #: This function might be useful also as command thus named without underscore
-vars () (
-	set 2>/dev/null | awk -F= "/.* \(\)/{exit} /^($1)=/ {print \$1}" | while read N
-	do
-		eval "V=\"\$$N\""
-		#: check if value contains ESC or \n and output accordingly
-		[[ $V =~ [] ]] && printf "$N=%q\n" "$V" || echo -E "$N='$V'"
-	done
+vv-old () (
+	[ $1 ] || return
+	IFS='=' read N V <<<$(typeset -p $1)
+	[ "$N" ]  || return 1
+	#: in bash we need to remove quotes and canoncalize the value
+	[[ $V =~  && -n $BASH ]] && V=${V%\"} printf -v V %q "${V#\"}"
+	echo -E $N=$V
+	#_clerh '' \$ var "$N=$V"
 )
 
+## `vv 'regexp'`   - dump variables in reusable way
+vv () (
+	typeset 2>/dev/null | awk "/.* \(\)/{exit} /^($1)=/ {print}"
+)
+
+
+# zsh hack to accept notes on cmdline
+[ $ZSH_NAME ] && '#' () { true; }
+
+##
+## ** Not-just-internal tools **
 ## `gitwb`           - show current working branch name
 gitwb () (
 	# search all parent directories
@@ -619,22 +610,17 @@ mdfilter () {
 #:  remote access wrapper
 _clepak () {
 	#: anything up to first dotted folder is home for .cle folder
-	vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
 	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
-	RC=${CLE_RC/$PWD\//}
-	TW=${CLE_TW/$PWD\//}
-	AL=${CLE_ALW/$PWD\//}
-	EN=${CLE_ENV/$PWD\//}
-	if [ $1 ];then
-		#: change names and copy files when adding suffix
-		#: this happens when doing lssh (from CLE ws)
-		RC=$RC$1; TW=$TW$1; AL=$AL$1; EN=$EN$1
-		cp $CLE_RC $RC
-		cp $CLE_TW $TW 2>/dev/null
-		cp $CLE_AL $AL 2>/dev/null
-		cp $CLE_ENV $EN
-	fi
-	RCS="$RC $TW $AL $EN"
+	RC=${CLE_RC/$PWD\//}-$1
+	TW=${CLE_TW/$PWD\//}-$1
+	cp $CLE_RC $RC
+	cp $CLE_TW $TW 2>/dev/null
+	EN=${CLE_ENV/$PWD\//}-$1
+	echo "# evironment $CLE_USER@$CLE_FHN" >$EN
+	vv "CLE_P..|_C." >>$EN
+	vv "$CLE_VARS" >>$EN
+	alias >>$EN
+	RCS="$RC $TW $EN"
 	dbg_var PWD
 	dbg_var RCS
 	#:  I've never owned this computer, I had Atari 800XL :)
@@ -649,7 +635,7 @@ lssh () (
 	#: this 1. prevents overwriting on destination accounts
 	#:  and 2. provides information about source of the session
 	S= #: resource suffix is empty on remote sessions...
-	[ $CLE_WS ] || S=-$CLE_FHN #: adding suffix when running on WS
+	[ $CLE_WS ] || S=$CLE_FHN #: adding suffix when running on WS
 	_clepak $S
 	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzf -
 	command ssh -t $* "
@@ -666,7 +652,7 @@ lssh () (
 #: user's home folder are used.
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	[ $CLE_LS ] || vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
+	[ $CLE_LS ] || vv "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         sudo -i -u ${1:-root} $CLE_RC $CLE_ARG
 )
 
@@ -674,7 +660,7 @@ lsudo () (
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
-	[ $CLE_LS ] || vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
+	[ $CLE_LS ] || vv "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -l ${1:-root} $CLE_RC
@@ -683,7 +669,7 @@ lsu () (
 ## `lksu [user]`       - ksu wrapper
 #: Kerberized version of 'su'
 lksu () (
-	[ $CLE_LS ] || vars "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
+	[ $CLE_LS ] || vv "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
         ksu ${1:-root} -a -c $CLE_RC
 )
 
@@ -778,20 +764,18 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 # create the prompt in several steps
 # 1. default prompt strings
 _cledefp
-if [ $CLE_LS ]; then
-	# 2. override with inherited strings
-	_clexe $CLE_ENV
-	_clepcp x
-	[ $TERM != $_C_ ] && _cletable #: changed terminal type, reinitilaize color table
-else
-	# initialize color table on workstation
-	_cletable
-fi
 
-# 3. get values from config file
+# 2. override with inherited strings
+[ $CLE_LS ] && _clepcp x
+
+# 3. create color table if necessary
+[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
+
+# 4. get values from config file
 _clexe $CLE_CF
+_clepcp
 
-# 4. termnal specific
+# 5. termnal specific
 #: $_CT and $_Ct are codes to create window title
 #: also in screen the title should be short and obviously no title on text console
 case $TERM in
@@ -801,7 +785,7 @@ screen*) CLE_PT='\u'
 *)	_CT=$'\e]0;'; _Ct=$'\007';;
 esac
 
-# 5. shell specific
+# 6. shell specific
 #: $_PE nad $_Pe keep strings to enclose ansi control charaters in prompt
 if [ $BASH ]; then
 	shopt -s checkwinsize
@@ -812,11 +796,9 @@ else
 	_PN=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
 fi
 
-# 6. craft the prompt string
-_clepcp
+# 7. craft the prompt string
 _cleps
 _cleclr ${CLE_CLR:-$_DEFC}
-unset _DEFC
 
 PROMPT_COMMAND=precmd
 PROMPT_DIRTRIM=3
@@ -921,7 +903,7 @@ cle () {
 			eval "CLE_P$P$I='$*'"
 			_clepcp;_cleps;_clesave
 		else
-			vars CLE_P$I
+			vv CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
 		[ "$1" = off ] && CLE_PT='' || CLE_PT=${1:-'$CLE_SH: ^u@^H'}
@@ -977,7 +959,7 @@ cle () {
 			return 1;;
 		esac;;
 	env)	## `cle env`               - inspect variables
-		vars 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+		vv 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	[ "$1" = off ] && CLE_DEBUG='' || CLE_DEBUG=${1:-on}				# dbg
@@ -1000,7 +982,7 @@ cle () {
 
 ##
 #: final cleanup
-unset _N
+unset _N _DEFC
 
 # that's all, folks...
 
