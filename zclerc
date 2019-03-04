@@ -136,6 +136,7 @@ dbg_var CLE_USER
 CLE_FHN=`hostname -f 2>/dev/null || hostname`
 [ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
 CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
+CLE_IP=${CLE_IP:-`hostname -i`}
 
 # where in the deep space CLE grows
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
@@ -389,7 +390,7 @@ _clerh () {
 	# exclude regexp
 	#: `vv` generates its record
 	#: folder is visible so no need to record `cd`
-	EXC="^vv\ |^cd\ |^cd$|^-$|^xx$|^aa$|^lscreen"
+	EXC="^vv\ |^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^xx$|^aa$|^lscreen"
 	#: check timestamp and create if missing
 	if [ $# -lt 5 ]; then
 		DT=`date "+$CLE_HTF"`
@@ -539,9 +540,12 @@ _clehhout () (
 ## `vv VARNAME`      - show variable details and record them into rich history
 vv () (
 	[ $1 ] || return
-	V=`typeset -p $1` || return
-	echo -E $V
-	_clerh '' \$ var "`tr '\n' ' ' <<<$V`"
+	IFS='=' read N V <<<$(typeset -p $1)
+	[ "$N" ]  || return 1
+	#: in bash we need to remove quotes and canoncalize the value
+	[[ $V =~  && -n $BASH ]] && V=${V%\"} printf -v V %q "${V#\"}"
+	echo -E $N=$V
+	_clerh '' \$ var "$N=$V"
 )
 
 
@@ -562,8 +566,9 @@ vv () (
 vars () (
 	set 2>/dev/null | awk -F= "/.* \(\)/{exit} /^($1)=/ {print \$1}" | while read N
 	do
-		eval "V=\$$N"
-		printf %s=%q\\n $N "$V"
+		eval "V=\"\$$N\""
+		#: check if value contains ESC or \n and output accordingly
+		[[ $V =~ [] ]] && printf "$N=%q\n" "$V" || echo -E "$N='$V'"
 	done
 )
 
@@ -646,12 +651,12 @@ lssh () (
 	S= #: resource suffix is empty on remote sessions...
 	[ $CLE_WS ] || S=-$CLE_FHN #: adding suffix when running on WS
 	_clepak $S
-	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzvf -
+	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzf -
 	command ssh -t $* "
 		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
 		[ $OSTYPE = darwin ] && _D=D || _D=d
 		mkdir -m 755 -p \$_H; cd \$_H
-		echo -n $C64|base64 -\$_D |tar xzf -;
+		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null;
 		exec $RC -m $CLE_ARG"
 )
 
@@ -703,6 +708,7 @@ lscreen () (
 		SN=$CLE_TTY-CLE.$NM
 		_clerh '' @ $CLE_TTY "screen -S $SN"
 		_clescrc >$SCF
+		printf "$_CT screen: $CLE_FHN$_Ct"
 		screen -c $SCF -S $SN $CLE_RC
 	else
 		#: is there only one such session or more?
@@ -717,6 +723,7 @@ lscreen () (
 		fi
 		_clerh '' @ $CLE_TTY "screen -x $SN"
 		#: send message to other screen, then join the session
+		printf "$_CT screen: joined to $SN$_Ct"
 		screen -S $SN -X echo "$CLE_USER joining"
 		screen -x $SN
 	fi
@@ -789,7 +796,7 @@ _clexe $CLE_CF
 #: also in screen the title should be short and obviously no title on text console
 case $TERM in
 linux)	 CLE_PT='';;	# no tits on console
-screen*) CLE_PT='^u'
+screen*) CLE_PT='\u'
 	_CT=$'\ek'; _Ct=$'\e\\';;
 *)	_CT=$'\e]0;'; _Ct=$'\007';;
 esac
@@ -821,41 +828,43 @@ CLE_HTF='%Y-%m-%d %T'
 # completions
 #: Command 'cle' completion
 #: as an addition, prompt strings are filled for convenience :)
-if [ $BASH ]; then
-	_clecomp () {
-		#: list of subcommands, this might be reworked to have possibility of expansion
-		#: with modules (TODO)
-		#: 'cle deploy' is hidden intentionaly as user should do it only on when really needed
-		local A=(color p0 p1 p2 p3 time title mod env update reset reload doc help)
-		local C
-		COMPREPLY=()
-		case $3 in
-		p0) COMPREPLY="'$CLE_P0'";;
-		p1) COMPREPLY="'$CLE_P1'";;
-		p2) COMPREPLY="'$CLE_P2'";;
-		p3) COMPREPLY="'$CLE_P3'";;
-		esac
-		[ "$3" != "$1" ] && return
-		for C in ${A[@]}; do
-			[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
-		done
-		}
-	complete -F _clecomp cle
+#: And, thanks to nice people on stackoverflow.com I know it can be used in both shells
+#: https://stackoverflow.com/questions/3249432/can-a-bash-tab-completion-script-be-used-in-zsh
+_clecomp () {
+	#: list of subcommands, this might be reworked to have possibility of expansion
+	#: with modules (TODO)
+	#: 'cle deploy' is hidden intentionaly as user should do it only on when really needed
+	local A=(color p0 p1 p2 p3 cf title mod env update reload doc help)
+	local C
+	COMPREPLY=()
+	case $3 in
+	p0) COMPREPLY="'$CLE_P0'";;
+	p1) COMPREPLY="'$CLE_P1'";;
+	p2) COMPREPLY="'$CLE_P2'";;
+	p3) COMPREPLY="'$CLE_P3'";;
+	#'') COMPREPLY=$A;;
+	esac
+	[ "$3" != "$1" ] && return
+	for C in ${A[@]}; do
+		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
+	done
+}
 
-	#: lssh completion
+if [ $BASH ]; then
+	# lssh completion
 	#: there are two possibilities of ssh completion _known_hosts is more common...
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
 	_C=/usr/share/bash-completion/completions/ssh
-	if [ -f $_C ]; then
-		. $_C
-		complete -F _ssh lssh
-	fi
+	[ -f $_C ] && . $_C && complete -F _ssh lssh
 else
-	# ZSH completion here
-	echo NO ZSH COMPLETION YET
+	# ZSH completions
+	autoload compinit && compinit
+	autoload bashcompinit && bashcompinit
+	compdef lssh=ssh
 fi
+complete -F _clecomp cle
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess
@@ -891,13 +900,20 @@ _clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
 ## ** CLE command & control **
 cle () {
 	local C I P
-	case $1 in
+	C=$1;shift
+	if declare -f _cle_$C >/dev/null;then
+		_cle_$C $*
+		return $?
+	elif [ -f $CLE_D/cle-$C ]; then
+		. $CLE_D/cle-$C $*
+		return $?
+	fi
+	case $C in
 	color)  ## `cle color COLOR`       - set prompt color
-		[ $2 ]  && _cleclr $2 && CLE_CLR=$2 && _clesave;;
+		[ $1 ]  && _cleclr $1 && CLE_CLR=$1 && _clesave;;
 	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
-		I=${1:1:1}
-		if [ "$2" ]; then
-			shift
+		I=${C:1:1}
+		if [ "$1" ]; then
 			#: obtain shell prefix
 			#: if the propmt string is bash compatible, store it into $CLE_PBx
 			#: otherwise use $CLE_PZx
@@ -905,14 +921,13 @@ cle () {
 			eval "CLE_P$P$I='$*'"
 			_clepcp;_cleps;_clesave
 		else
-			P=CLE_P$I
-			eval "echo $P=\'\$$P\'"
+			vars CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
-		[ "$2" = off ] && CLE_PT='' || CLE_PT=${2:-'$CLE_SH: ^u@^H'}
+		[ "$1" = off ] && CLE_PT='' || CLE_PT=${1:-'$CLE_SH: ^u@^H'}
 		_cleps;;
 	cf)	## `cle cf [ed|reset]`     - view/edit/reset/revert configuration
-		case "$2" in
+		case "$1" in
 		ed)	vi $CLE_CF  && . $CLE_RC;;
 		reset)	mv $CLE_CF $CLE_CF-bk;;
 		revert)	cp $CLE_CF-bk $CLE_CF;;
@@ -953,30 +968,30 @@ cle () {
 		cle reload
 		printb New CLE activated, backup saved here: $BRC;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
-		SH=${2:-$CLE_SH}
+		SH=${1:-$CLE_SH}
 		exec $CLE_RC -$SH
 		case $SH in
 		bash)	exec bash --rcfile $CLE_RC;;
 		zsh)	exec zsh -c $CLE_RC;;
-		*)	echo no such shell: $2
+		*)	echo no such shell: $1
 			return 1;;
 		esac;;
 	env)	## `cle env`               - inspect variables
-		set|awk -F= "/.* \(\)/{exit}  /^CLE.*=/ {printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+		vars 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
-	debug)	[ "$2" = off ] && CLE_DEBUG='' || CLE_DEBUG=${2:-on}				# dbg
+	debug)	[ "$1" = off ] && CLE_DEBUG='' || CLE_DEBUG=${1:-on}				# dbg
 		dbg_var CLE_DEBUG ;;								# dbg
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
-		awk -F# "/[\t ]## *\`*$2|^## *\`*$2/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
+		awk -F# "/[\t ]## *\`*$1|^## *\`*12/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
 	"")
 		_clebnr
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
 		;;
 	*)
-		echo unimplemented: cle $C;
+		echo unimplemented: cle $1;
 		echo check cle help;
 		return 1
 		;;
