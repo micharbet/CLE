@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-04 (Zodiac)
+#* version: 2019-03-07 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -21,14 +21,14 @@
 #:------------------------------------------------------------:#
 
 # Debugging helpers							# dbg
-dbg_echo () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
+dbg_print () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
 	eval "V=\$$1"							# dbg
 	[ $CLE_DEBUG ] && printf "%-16s = %q\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
-dbg_echo; dbg_echo CLE pid:$$ DEBUG ON;					# dbg
+dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
 
 #:------------------------------------------------------------:#
 
@@ -40,25 +40,25 @@ dbg_echo; dbg_echo CLE pid:$$ DEBUG ON;					# dbg
 #:    as a resource
 #: Then find out suitable shell and use it to run interactive shell session with
 #: this file as init resource. The $CLE_RC variable must contain full path!
-dbg_echo "startup case: '$ZSH_NAME$BASH:$0'"
+dbg_print "startup case: '$ZSH_NAME$BASH:$0'"
 case $ZSH_NAME$BASH:$0 in
 *bash:*) # bash session resource
-	dbg_echo sourcing to BASH
+	dbg_print sourcing to BASH
 	CLE_RC=$BASH_SOURCE
 	;;
 *zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
-	dbg_echo sourcing to ZSH - from command
+	dbg_print sourcing to ZSH - from command
 	# we know value of CLE_RC
 	unset ZDOTDIR
 	;;
 *zsh:*/rc*) # started FROM .zshrc
-	dbg_echo sourcing to ZSH - from .zshrc
+	dbg_print sourcing to ZSH - from .zshrc
 	CLE_RC=$0
 	;;
 *:/*/rc*) # executed as a command from .cle directory
 	#: code in this section must be strictly POSIX compatible with /bin/sh
 	#: Now we're looking for suitable shell: zsh first, fallback to bash
-	dbg_echo executing as script, looking for shell
+	dbg_print executing as script, looking for shell
 	export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
 	ZS=`which zsh 2>/dev/null` # check zsh
 	#: process command line options
@@ -77,14 +77,14 @@ case $ZSH_NAME$BASH:$0 in
 		shift
 	done
 	if [ $ZS ]; then
-		dbg_echo found: $ZS
+		dbg_print found: $ZS
 		#: prepare startup environment in zsh way
 		export ZDOTDIR=/tmp/`whoami`
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
 	elif which bash >/dev/null 2>&1; then
-		dbg_echo found: `which bash`
+		dbg_print found: `which bash`
 		exec bash --rcfile $0
 	else
 		echo "CLE needs bash or zsh. Giving up..."
@@ -93,7 +93,7 @@ case $ZSH_NAME$BASH:$0 in
 	;;
 *:*zclerc*)	# first run!
 	#: code in this section must be strictly POSIX compatible with /bin/sh
-	dbg_echo First run
+	dbg_print First run
 	RD=$HOME/.zcle-`whoami`
 	export CLE_1=$0
 	mkdir -p $RD
@@ -106,9 +106,9 @@ esac
 
 #: Reaching this point means that the script is running as a resource
 #: to the interactive session. Further code must be bash & zsh compatible!
-dbg_echo ---------------
-dbg_echo Resource starts
-dbg_echo ---------------
+dbg_print ---------------
+dbg_print Resource starts
+dbg_print ---------------
 
 #:------------------------------------------------------------:#
 # Variables init
@@ -163,7 +163,6 @@ CLE_CF=$CLE_D/cf-$CLE_FHN
 CLE_AL=$CLE_D/al
 _N=`sed 's:.*/rc1*::' <<<$CLE_RC` # workstation name
 CLE_WS=${_N/-/}
-[ $CLE_USER != $USER -o -n "$CLE_WS" ] && CLE_LS=1
 CLE_TW=$CLE_RD/tw$_N
 CLE_ENV=$CLE_RD/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
@@ -199,7 +198,7 @@ _clexe () {
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1[:$] ]] && return
 	CLE_EXE=$CLE_EXE:$1
-	dbg_echo _clexe $1
+	dbg_print _clexe $1
 	source $1
 }
 CLE_EXE=$CLE_RC
@@ -208,7 +207,7 @@ CLE_EXE=$CLE_RC
 #: initialize $_C* variables with terminal compatible escape sequences
 #: following are basic ones:
 _cletable () {
-	dbg_echo "_cletable updating color table"
+	dbg_print "_cletable updating color table"
 	_C_=$TERM	#: save terminal type of this table
 	_CN=`tput sgr0`
 	_CL=`tput bold`
@@ -423,7 +422,7 @@ if [ "$CLE_MOTD" ]; then
 fi
 
 # read inherited environment
-[ $CLE_LS ] && _clexe $CLE_ENV
+[ $CLE_WS ] && _clexe $CLE_ENV
 
 # colorize LS
 case $OSTYPE in
@@ -533,30 +532,14 @@ _clehhout () (
 	done
 )
 
-## `vv VARNAME`      - show variable details and record them into rich history
-#: it was difficult to create this shot function and make it working
-#: in both zsh and bash because:
-#:  - in bash 'set' displays also functions - this is why there's 
-#:    first awk command: "/.* \(\)/ {exit}"
-#:  - zsh dereferences variable differently
-#:  - zsh on debian doesn't quote escape strings and 'mawk' stops
-#:    processing on special characters, gawk is required!
-#: This function might be useful also as command thus named without underscore
-vv-old () (
-	[ $1 ] || return
-	IFS='=' read N V <<<$(typeset -p $1)
-	[ "$N" ]  || return 1
-	#: in bash we need to remove quotes and canoncalize the value
-	[[ $V =~  && -n $BASH ]] && V=${V%\"} printf -v V %q "${V#\"}"
-	echo -E $N=$V
-	#_clerh '' \$ var "$N=$V"
-)
-
 ## `vv 'regexp'`   - dump variables in reusable way
 vv () (
-	typeset 2>/dev/null | awk "/.* \(\)/{exit} /^($1)=/ {print}"
+	#: awk: 1. exits when reaches functions
+	#:      2. finds variables matching regular expression
+	#:      3. replaces weird escape sequence '\C-[' from zsh to normal '\E'
+	typeset 2>/dev/null | awk '/.* \(\)/{exit} /^('$1')=/{gsub(/\\C-\[/,"\\E");print}'
+#	typeset 2>/dev/null | awk "/.* \(\)/{exit} /^($1)=/ {print}" | sed 's/\\C-\[/\\E/g'
 )
-
 
 # zsh hack to accept notes on cmdline
 [ $ZSH_NAME ] && '#' () { true; }
@@ -609,23 +592,31 @@ mdfilter () {
 #:  included directly into lssh. However, this allows to create any other
 #:  remote access wrapper
 _clepak () {
-	#: anything up to first dotted folder is home for .cle folder
-	cd `sed 's:\(/.*\)/\..*:\1:' <<<$CLE_RC`
-	RC=${CLE_RC/$PWD\//}-$1
-	TW=${CLE_TW/$PWD\//}-$1
-	cp $CLE_RC $RC
-	cp $CLE_TW $TW 2>/dev/null
-	EN=${CLE_ENV/$PWD\//}-$1
-	echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-	vv "CLE_P..|_C." >>$EN
-	vv "$CLE_VARS" >>$EN
-	alias >>$EN
-	RCS="$RC $TW $EN"
-	dbg_var PWD
-	dbg_var RCS
+	if [ $CLE_WS ]; then
+		#: this is live session, all files *should* be available
+		RC=$CLE_RC
+		RCS="$RC $CLE_TW $CLE_ENV"
+		dbg_print "_clepak: rc ready: $(ls -l $RC)"
+	else
+		RCD=/var/tmp/$USER/.cle-$CLE_USER
+		dbg_print "_clepak: preparing $RCD"
+		RC=$RCD/rc-$CLE_FHN
+		mkdir -m 0755 -p $RCD
+		cp $CLE_RC $RC
+		TW=$RCD/tw-$CLE_FHN
+		cp $CLE_TW $TW
+		EN=$RCD/env-$CLE_FHN
+		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
+		vv "CLE_P..|_C." >>$EN
+		vv "$CLE_EXP" >>$EN
+		echo "CLE_WS=$CLE_FHN" >>$EN
+		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN
+		cat $CLE_AL >>$EN
+		RCS="$RC $TW $EN"
+	fi
 	#:  I've never owned this computer, I had Atari 800XL :)
-	C64=`eval tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
-	#: 'eval' required due to zsh.
+	[ $1 ] && C64=`eval tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
+	#:             ^^^^ 'eval' required due to zsh.
 }
 
 ## `lssh [usr@]host`   - access remote system and take CLE along
@@ -634,16 +625,12 @@ lssh () (
 	#: on CLE workstation, suffix to resource filename is added
 	#: this 1. prevents overwriting on destination accounts
 	#:  and 2. provides information about source of the session
-	S= #: resource suffix is empty on remote sessions...
-	[ $CLE_WS ] || S=$CLE_FHN #: adding suffix when running on WS
-	_clepak $S
+	_clepak tar
 	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzf -
 	command ssh -t $* "
-		[ -w \$HOME ] && _H=\$HOME || _H=/tmp/\$USER
 		[ $OSTYPE = darwin ] && _D=D || _D=d
-		mkdir -m 755 -p \$_H; cd \$_H
-		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null;
-		exec $RC -m $CLE_ARG"
+		cd /; echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
+		cd; exec $RC -m $CLE_ARG"
 )
 
 #: Following are su* wrappers of different kinds including kerberos
@@ -652,16 +639,16 @@ lssh () (
 #: user's home folder are used.
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	[ $CLE_LS ] || vv "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
-        sudo -i -u ${1:-root} $CLE_RC $CLE_ARG
+	_clepak
+        sudo -i -u ${1:-root} $RC $CLE_ARG
 )
 
 ## `lsu [user]`        - su wrapper
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
-	[ $CLE_LS ] || vv "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
-        S=
+        _clepak
+	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -l ${1:-root} $CLE_RC
 )
@@ -669,7 +656,7 @@ lsu () (
 ## `lksu [user]`       - ksu wrapper
 #: Kerberized version of 'su'
 lksu () (
-	[ $CLE_LS ] || vv "CLE_P..|_C.|$CLE_VARS" >$CLE_ENV
+	_clepak
         ksu ${1:-root} -a -c $CLE_RC
 )
 
@@ -766,12 +753,20 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 _cledefp
 
 # 2. override with inherited strings
-[ $CLE_LS ] && _clepcp x
+[ $CLE_WS ] && _clepcp x
 
 # 3. create color table if necessary
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
+# transition from older config
+[ -r $CLE_CF ] && read Z <$CLE_CF	# transition
+[[ ${Z:-Zodiac} =~ Zodiac ]] || {	# transition
+	C=`grep CLE_CLR $CLE_CF`	# transition
+	mv $CLE_CF $CLE_CF-Nova		# transition
+	eval $C				# transition
+	_clesave			# transition
+}					# transition
 _clexe $CLE_CF
 _clepcp
 
@@ -962,12 +957,17 @@ cle () {
 		vv 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
-	debug)	[ "$1" = off ] && CLE_DEBUG='' || CLE_DEBUG=${1:-on}				# dbg
-		dbg_var CLE_DEBUG ;;								# dbg
+	debug)	case $1 in									# dbg
+		"")	dbg_var CLE_DEBUG ;;							# dbg
+		off)	CLE_DEBUG=''								# dbg
+			rm ~/CLEDEBUG;;								# dbg
+		*)	CLE_DEBUG=on								# dbg
+			touch ~/CLEDEBUG;;							# dbg
+		esac;;										# dbg
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
-		awk -F# "/[\t ]## *\`*$1|^## *\`*12/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
+		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
 	"")
 		_clebnr
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
