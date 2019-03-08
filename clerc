@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-07 (Zodiac)
+#* version: 2019-03-08 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -19,8 +19,6 @@
 # Now it really starts, warning: magic inside!
 
 
-	eval "V=\$$1"							# dbg
-)									# dbg
 
 
 # Startup sequence
@@ -37,13 +35,14 @@ case $ZSH_NAME$BASH:$0 in
 	;;
 *:/*/rc*) # executed as a command from .cle directory
 	export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
-	ZS=`which zsh 2>/dev/null` # check zsh
+	SH=$SHELL
 	while [ $1 ]; do
 		case $1 in
-		-b*)	ZS= 	# force bash
+		-b*)	SH=`which bash`		# force bash
 			export CLE_ARG='-b'
 			;;
-		-z*)	export CLE_ARG='-z'
+		-z*)	SH=`which zsh 2>/dev/null || which bash` # try zsh
+			export CLE_ARG='-z'
 			;;
 		-m)	CLE_MOTD=`uptime`
 			export CLE_MOTD
@@ -52,20 +51,21 @@ case $ZSH_NAME$BASH:$0 in
 		esac
 		shift
 	done
-	if [ $ZS ]; then
+	export CLE_PROF=1	
+	case $SH in
+	*zsh)	
 		export ZDOTDIR=/tmp/`whoami`
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
-	elif which bash >/dev/null 2>&1; then
+		;;
+	*)	
 		exec bash --rcfile $0
-	else
-		echo "CLE needs bash or zsh. Giving up..."
-		exit 1
-	fi
+		;;
+	esac
 	;;
-*:*zclerc*)	# first run!
-	RD=$HOME/.zcle-`whoami`
+*:*clerc*)	# first run!
+	RD=$HOME/.cle-`whoami`
 	export CLE_1=$0
 	mkdir -p $RD
 	cp $0 $RD/rc1
@@ -93,12 +93,11 @@ CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
 CLE_IP=${CLE_IP:-`hostname -i`}
 
 # where in the deep space CLE grows
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/master
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Zodiac
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 
-# current shell and shell prefix
+# current shell
 CLE_SH=`basename $BASH$ZSH_NAME`
-CLE_SP='B'; [ $ZSH_NAME ] && CLE_SP=Z
 
 # find writable folder
 [ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
@@ -316,15 +315,19 @@ _clerh () {
 		shift
 	fi
 	[[ $4 =~ $EXC ]] && return
-	echo -E "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4" >>$CLE_HIST
+	echo -E "$DT;$CLE_USER-${CLE_SH:0:1}$$;$1;$2;$3;$4" >>$CLE_HIST
 }
 
 
 # Use alias built-ins for startup
 unset -f alias unalias 2>/dev/null
 
-_clexe /etc/profile
-_clexe $HOME/.${CLE_SH}rc
+# Run profile files
+if [ -n "$CLE_PROF" ]; then
+	_clexe /etc/profile
+	_clexe $HOME/.${CLE_SH}rc
+	unset CLE_PROF
+fi
 
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
@@ -439,7 +442,6 @@ _clehhout () (
 ## `vv 'regexp'`   - dump variables in reusable way
 vv () (
 	typeset 2>/dev/null | awk '/.* \(\)/{exit} /^('$1')=/{gsub(/\\C-\[/,"\\E");print}'
-#	typeset 2>/dev/null | awk "/.* \(\)/{exit} /^($1)=/ {print}" | sed 's/\\C-\[/\\E/g'
 )
 
 # zsh hack to accept notes on cmdline
@@ -603,6 +605,14 @@ _cledefp
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
+# transition from older config
+[ -r $CLE_CF ] && read Z <$CLE_CF	# transition
+[[ ${Z:-Zodiac} =~ Zodiac ]] || {	# transition
+	C=`grep CLE_CLR $CLE_CF`	# transition
+	mv $CLE_CF $CLE_CF-Nova		# transition
+	eval $C				# transition
+	_clesave			# transition
+}					# transition
 _clexe $CLE_CF
 _clepcp
 
@@ -748,7 +758,7 @@ cle () {
 		cle reload;;
 	update) ## `cle update`            - install fresh version of CLE
 		NC=$CLE_D/rc.new
-		curl -k $CLE_SRC/zclerc >$NC      # always update from master branch
+		curl -k $CLE_SRC/clerc >$NC      # always update from master branch
 		C=`sed -n 's/^#\* version: //p' $NC`
 		[ "$C" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
@@ -773,9 +783,6 @@ cle () {
 		esac;;
 	env)	## `cle env`               - inspect variables
 		vv 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
-	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
-		esac;;										# dbg
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`

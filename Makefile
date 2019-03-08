@@ -9,7 +9,7 @@ SHAREDIR=${DEST}/usr/share/cle
 
 clerc: clerc.sh
 	sed -e  '/^[[:space:]]*#:/d' -e 's/#:.*//' <clerc.sh >clerc-t
-	grep -vi -e debug -e dbg_ -e transition clerc-t >clerc
+	grep -vi -e debug -e dbg clerc-t >clerc
 	chmod 755 clerc
 	rm clerc-t
 

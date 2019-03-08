@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-07 (Zodiac)
+#* version: 2019-03-08 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -40,6 +40,7 @@ dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
 #:    as a resource
 #: Then find out suitable shell and use it to run interactive shell session with
 #: this file as init resource. The $CLE_RC variable must contain full path!
+dbg_var SHELL
 dbg_print "startup case: '$ZSH_NAME$BASH:$0'"
 case $ZSH_NAME$BASH:$0 in
 *bash:*) # bash session resource
@@ -57,17 +58,18 @@ case $ZSH_NAME$BASH:$0 in
 	;;
 *:/*/rc*) # executed as a command from .cle directory
 	#: code in this section must be strictly POSIX compatible with /bin/sh
-	#: Now we're looking for suitable shell: zsh first, fallback to bash
-	dbg_print executing as script, looking for shell
+	#: Now we're looking for suitable shell: user's login shell first, fallback to bash
+	dbg_print executing as LIVE SESSION, looking for shell
 	export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
-	ZS=`which zsh 2>/dev/null` # check zsh
+	SH=$SHELL
 	#: process command line options
 	while [ $1 ]; do
 		case $1 in
-		-b*)	ZS= 	# force bash
+		-b*)	SH=`which bash`		# force bash
 			export CLE_ARG='-b'
 			;;
-		-z*)	export CLE_ARG='-z'
+		-z*)	SH=`which zsh 2>/dev/null || which bash` # try zsh
+			export CLE_ARG='-z'
 			;;
 		-m)	CLE_MOTD=`uptime`
 			export CLE_MOTD
@@ -76,20 +78,20 @@ case $ZSH_NAME$BASH:$0 in
 		esac
 		shift
 	done
-	if [ $ZS ]; then
-		dbg_print found: $ZS
-		#: prepare startup environment in zsh way
+	export CLE_PROF=1	#: profile files will be executed
+	case $SH in
+	*zsh)	#: prepare startup environment in zsh way
+		dbg_print running in ZSH
 		export ZDOTDIR=/tmp/`whoami`
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
-	elif which bash >/dev/null 2>&1; then
-		dbg_print found: `which bash`
+		;;
+	*)	#: fallback to bash
+		dbg_print running in BASH
 		exec bash --rcfile $0
-	else
-		echo "CLE needs bash or zsh. Giving up..."
-		exit 1
-	fi
+		;;
+	esac
 	;;
 *:*clerc*)	# first run!
 	#: code in this section must be strictly POSIX compatible with /bin/sh
@@ -143,9 +145,8 @@ CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Zodiac
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_VER="$CLE_VER debug"
 
-# current shell and shell prefix
+# current shell
 CLE_SH=`basename $BASH$ZSH_NAME`
-CLE_SP='B'; [ $ZSH_NAME ] && CLE_SP=Z
 
 # find writable folder
 #: there can be real situation where a remote account is restricted and have no
@@ -397,21 +398,25 @@ _clerh () {
 		shift
 	fi
 	[[ $4 =~ $EXC ]] && return
-	echo -E "$DT;$CLE_USER-$CLE_SP$$;$1;$2;$3;$4" >>$CLE_HIST
+	echo -E "$DT;$CLE_USER-${CLE_SH:0:1}$$;$1;$2;$3;$4" >>$CLE_HIST
 }
 
 
 # Use alias built-ins for startup
-#: alias & unalias must be available in their natural form now
+#: alias & unalias must be available in their natural form during CLE startup
 #: and will be redefined at the end of resource
 unset -f alias unalias 2>/dev/null
 
-#: Run profile files
-#: Things in /etc/profile.d can override some settings.
+# Run profile files
+#: This must be done now, not later because files may contain confilcting settings.
 #: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
 #: breaks rich history.
-_clexe /etc/profile
-_clexe $HOME/.${CLE_SH}rc
+dbg_var CLE_PROF
+if [ -n "$CLE_PROF" ]; then
+	_clexe /etc/profile
+	_clexe $HOME/.${CLE_SH}rc
+	unset CLE_PROF
+fi
 
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
@@ -443,9 +448,9 @@ fi
 
 # Remove alias 'which' if there is no version supporting extended options
 #: This weird construction ensures that the 'which' will work even in case
-#: there's an alias containing extended options inherited from such system
-#: to the one with simpler 'which' E.g. Fedora supports option --read-alias
-#: but Debian, and BSD do not have this version of 'which' command.
+#: there's an alias containing extended options inherited from such workstation
+#: E.g. Fedora supports option --read-alias but Debian and BSD do not have this
+#: version of 'which' command.
 { alias|command which -i which || unalias which; } >/dev/null 2>&1
 
 ## ** cd command enhancements **
@@ -538,7 +543,6 @@ vv () (
 	#:      2. finds variables matching regular expression
 	#:      3. replaces weird escape sequence '\C-[' from zsh to normal '\E'
 	typeset 2>/dev/null | awk '/.* \(\)/{exit} /^('$1')=/{gsub(/\\C-\[/,"\\E");print}'
-#	typeset 2>/dev/null | awk "/.* \(\)/{exit} /^($1)=/ {print}" | sed 's/\\C-\[/\\E/g'
 )
 
 # zsh hack to accept notes on cmdline
@@ -578,6 +582,7 @@ mdfilter () {
 ## ** Live session wrappers **
 
 # environment packer
+#: TODO: rewrite this comment
 #: grab *active* resource file, tweak file, pack it to tarball and store
 #: into variable C64 as base64 encoded string.
 #: Argument ($1) may contain additional suffix to filenames
@@ -591,6 +596,8 @@ mdfilter () {
 #: Note 3: _clepak is fuction even if it is used only once and could be
 #:  included directly into lssh. However, this allows to create any other
 #:  remote access wrapper
+#: TODO: make paths relative ($RCD $RC, $TW)
+#:   + recore corresponding part in `lssh`
 _clepak () {
 	if [ $CLE_WS ]; then
 		#: this is live session, all files *should* be available
