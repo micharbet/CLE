@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-08 (Zodiac)
+#* version: 2019-03-10 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -17,8 +17,6 @@
 # This is required for scp compatibility
 [ -t 0 -a -z "$CLE_EXE" ] || return
 # Now it really starts, warning: magic inside!
-
-
 
 
 # Startup sequence
@@ -51,15 +49,15 @@ case $ZSH_NAME$BASH:$0 in
 		esac
 		shift
 	done
-	export CLE_PROF=1	
+	export CLE_PROF=1
 	case $SH in
-	*zsh)	
+	*zsh)
 		export ZDOTDIR=/tmp/`whoami`
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
 		;;
-	*)	
+	*)
 		exec bash --rcfile $0
 		;;
 	esac
@@ -100,14 +98,15 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_SH=`basename $BASH$ZSH_NAME`
 
 # find writable folder
-[ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
-CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+_H=$HOME
+[ -w $_H ] || _H=/var/tmp/$USER
+CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
 CLE_CF=$CLE_D/cf-$CLE_FHN
 CLE_AL=$CLE_D/al
-_N=`sed 's:.*/rc1*::' <<<$CLE_RC` # workstation name
+_N=`sed 's:.*/rc1*::' <<<$CLE_RC`
 CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ENV=$CLE_RD/env$_N
@@ -149,7 +148,7 @@ CLE_EXE=$CLE_RC
 
 # Create color table
 _cletable () {
-	_C_=$TERM	
+	_C_=$TERM
 	_CN=`tput sgr0`
 	_CL=`tput bold`
 	_CU=`tput smul`;_Cu=`tput rmul`
@@ -253,10 +252,10 @@ _cledefp () {
 	CLE_P3='\w ^$'
 	CLE_PT='$CLE_SH: \u@^H'
 	case "$USER-$CLE_WS" in
-	root-)	_DEFC=red;;	
-	*-)	_DEFC=marley;;	
-	root-*)	_DEFC=RbB;;	
-	*-*)	_DEFC=blue;;	
+	root-)	_DEFC=red;;
+	*-)	_DEFC=marley;;
+	root-*)	_DEFC=RbB;;
+	*-*)	_DEFC=blue;;
 	esac
 }
 
@@ -274,31 +273,33 @@ precmd () {
 	local IFS S DT C
 	unset IFS
 	[ $BASH ] && C=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || C=`fc -lt ";$CLE_HTF;" -1`
-	C=${C#*;}	
-	DT=${C/;*}	
-	C=${C/$DT;}	
-	C="${C#"${C%%[![:space:]]*}"}" 
+	C=${C#*;}
+	DT=${C/;*}
+	C=${C/$DT;}
+	C="${C#"${C%%[![:space:]]*}"}"
 	if [[ $C =~ ^# ]]; then
-		_clerh  "$DT" '' \# note "$C" 
+		_clerh  "$DT" '' \# note "$C"
 	elif [ $_SST ]; then
 		S=$((SECONDS-_SST))
 		_clerh "$DT" $S $_EC $PWD "$C"
-		[ $_EC = 0 ] && _CE="" || _CE="$_Ce" 
+		[ $_EC = 0 ] && _CE="" || _CE="$_Ce"
 		_SST=
 	else
-		_CE=''; _EC=0 
+		_CE=''; _EC=0
 	fi
+	[ $BASH ] && trap _clepreex DEBUG
 }
 
 # run this function before the issued command
 preexec () {
-	_SST=$SECONDS 
-	echo -n $_CN  
+	_SST=$SECONDS
+	echo -n $_CN
 }
 
 # Bash hack
 _clepreex () {
 	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
+	trap "" DEBUG
 	preexec "$BASH_COMMAND"
 }
 
@@ -435,7 +436,7 @@ _clehhout () (
 		 *) CE=$_Cr; CC=$_CN;;
 		esac
 		printf "$_CB%s $_Cb%s $_CB%4s $CE%-3s $CC%s  $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
-		cat <<<$C 
+		cat <<<$C
 	done
 )
 
@@ -475,27 +476,31 @@ mdfilter () {
 ##
 ## ** Live session wrappers **
 
-# environment packer
+# Environment packer
 _clepak () {
+	RH=${CLE_RD/\/.*/}
+	RD=${CLE_RD/$RH\//}
+
 	if [ $CLE_WS ]; then
-		RC=$CLE_RC
-		RCS="$RC $CLE_TW $CLE_ENV"
+		cd $RH
+		RC=${CLE_RC/$RH\//}
+		TW=${CLE_TW/$RH\//}
+		EN=${CLE_ENV/$RH\//}
 	else
-		RCD=/var/tmp/$USER/.cle-$CLE_USER
-		RC=$RCD/rc-$CLE_FHN
-		mkdir -m 0755 -p $RCD
+		RH=/var/tmp/$USER
+		mkdir -m 0755 -p $RH/$RD
+		cd $RH
+		RC=$RD/rc-$CLE_FHN
+		TW=$RD/tw-$CLE_FHN
+		EN=$RD/env-$CLE_FHN
 		cp $CLE_RC $RC
-		TW=$RCD/tw-$CLE_FHN
 		cp $CLE_TW $TW
-		EN=$RCD/env-$CLE_FHN
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
 		vv "CLE_P..|_C." >>$EN
 		vv "$CLE_EXP" >>$EN
-		echo "CLE_WS=$CLE_FHN" >>$EN
 		cat $CLE_AL >>$EN
-		RCS="$RC $TW $EN"
 	fi
-	[ $1 ] && C64=`eval tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
+	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
 }
 
 ## `lssh [usr@]host`   - access remote system and take CLE along
@@ -503,15 +508,18 @@ lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	_clepak tar
 	command ssh -t $* "
+		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		[ $OSTYPE = darwin ] && _D=D || _D=d
-		cd /; echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
-		cd; exec $RC -m $CLE_ARG"
+		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
+		[ -r \$HOME ] || HOME=\$H
+		cd
+		exec \$H/$RC -m $CLE_ARG"
 )
 
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
 	_clepak
-        sudo -i -u ${1:-root} $RC $CLE_ARG
+        sudo -i -u ${1:-root} $RH/$RC $CLE_ARG
 )
 
 ## `lsu [user]`        - su wrapper
@@ -519,13 +527,13 @@ lsu () (
         _clepak
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
-        eval su $S -l ${1:-root} $CLE_RC
+        eval su $S -l ${1:-root} $RH/$RC
 )
 
 ## `lksu [user]`       - ksu wrapper
 lksu () (
 	_clepak
-        ksu ${1:-root} -a -c $CLE_RC
+        ksu ${1:-root} -a -c $RH/$RC
 )
 
 ## `lscreen [name]`    - gnu screen wrapper, join your recent session or start new
@@ -584,7 +592,7 @@ EOS
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
-[ $ZSH_NAME ] && setopt +o NOMATCH 
+[ $ZSH_NAME ] && setopt +o NOMATCH
 for M in $CLE_RD/mod-*; do
 	_clexe $M
 done
@@ -666,8 +674,8 @@ _clecomp () {
 if [ $BASH ]; then
 	# lssh completion
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-	_C=/usr/share/bash-completion/completions/ssh
-	[ -f $_C ] && . $_C && complete -F _ssh lssh
+	_C=/usr/share/bash-completion
+	[ -r $_C ] && . $_C/bash_completion && . $_C/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
@@ -699,7 +707,7 @@ unalias () {
 $_CL    cle deploy
 EOT
 
-[ -r . ] || cd 
+[ -r . ] || cd
 
 # record this startup into rich history
 _clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
@@ -800,7 +808,7 @@ cle () {
 }
 
 ##
-unset _N _DEFC
+unset _N _H _C _DEFC
 
 # that's all, folks...
 

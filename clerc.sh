@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-08 (Zodiac)
+#* version: 2019-03-10 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -18,8 +18,6 @@
 [ -t 0 -a -z "$CLE_EXE" ] || return
 # Now it really starts, warning: magic inside!
 
-#:------------------------------------------------------------:#
-
 # Debugging helpers							# dbg
 dbg_print () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
@@ -29,8 +27,6 @@ dbg_var () (								# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
 dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
-
-#:------------------------------------------------------------:#
 
 # Startup sequence
 #: First check how is this script executed
@@ -143,26 +139,27 @@ CLE_IP=${CLE_IP:-`hostname -i`}
 # where in the deep space CLE grows
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Zodiac
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
-CLE_VER="$CLE_VER debug"
+CLE_VER="$CLE_VER debug"			# dbg
 
 # current shell
 CLE_SH=`basename $BASH$ZSH_NAME`
 
 # find writable folder
 #: there can be real situation where a remote account is restricted and have no
-#: home folder. In such case CLE can be started from /tmp. Also, after su*
-#: wrapper the folder containing main resource file can be and usually will be
-#: in different place than current home.
-#: Simply to say, this sequence ensures customized configuration for every
-#: account accessed with CLE.
-[ -w $HOME ] || { HOME=/tmp/$USER; echo Temporary home: $HOME; }
-CLE_D=$HOME/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+#: home folder. In such case CLE can save config and other files into /var/tmp.
+#: Note, Live sessions have their respurce files always in /var/tmp/$USER but
+#: this must not be writable in subsequent lsu/lsudo sessions.
+#:  $CLE_D   is path to writable folder for config, aliases and other runtime files
+#:  $CLE_RD  is path to folder containing startup resources
+_H=$HOME
+[ -w $_H ] || _H=/var/tmp/$USER
+CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
-CLE_CF=$CLE_D/cf-$CLE_FHN
+CLE_CF=$CLE_D/cf-$CLE_FHN	#: NFS homes may keep configs for several hosts
 CLE_AL=$CLE_D/al
-_N=`sed 's:.*/rc1*::' <<<$CLE_RC` # workstation name
+_N=`sed 's:.*/rc1*::' <<<$CLE_RC` #: resource suffix contains workstation name
 CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ENV=$CLE_RD/env$_N
@@ -581,63 +578,60 @@ mdfilter () {
 ##
 ## ** Live session wrappers **
 
-# environment packer
-#: TODO: rewrite this comment
-#: grab *active* resource file, tweak file, pack it to tarball and store
-#: into variable C64 as base64 encoded string.
-#: Argument ($1) may contain additional suffix to filenames
-#: Second outcome of _clepak is value in $RC - relative path to the resource
-#: file that should be run on remote system (it may contain the suffix)
-#: Note: configuration is not packed in order to ensure unique cf on all
-#:  remote accounts.
-#: Note 2: _clepak is defined with curly brackets {} to pass variables RC and C64
-#:  On the other side lssh is defined with () ensuring execution in its own context
-#:  where all new variables are local only to lssh (and _clepak)
-#: Note 3: _clepak is fuction even if it is used only once and could be
-#:  included directly into lssh. However, this allows to create any other
-#:  remote access wrapper
-#: TODO: make paths relative ($RCD $RC, $TW)
-#:   + recore corresponding part in `lssh`
+# Environment packer
+#: On workstation do following:
+#: -prepare resource file, tweak and selected variables to temporary folder
+#: if required for remote session do following:
+#: -pack the folder with tar, and store as base64 encoded string into $C64
+#: always: prepare $RH and $RC for live session wrappers
 _clepak () {
+	RH=${CLE_RD/\/.*/}
+	RD=${CLE_RD/$RH\//}
+
 	if [ $CLE_WS ]; then
 		#: this is live session, all files *should* be available
-		RC=$CLE_RC
-		RCS="$RC $CLE_TW $CLE_ENV"
+		cd $RH
+		RC=${CLE_RC/$RH\//}
+		TW=${CLE_TW/$RH\//}
+		EN=${CLE_ENV/$RH\//}
 		dbg_print "_clepak: rc ready: $(ls -l $RC)"
 	else
-		RCD=/var/tmp/$USER/.cle-$CLE_USER
-		dbg_print "_clepak: preparing $RCD"
-		RC=$RCD/rc-$CLE_FHN
-		mkdir -m 0755 -p $RCD
+		#: live session is to be created - copy startup files
+		RH=/var/tmp/$USER
+		dbg_print "_clepak: preparing $RH/$RD"
+		mkdir -m 0755 -p $RH/$RD
+		cd $RH
+		RC=$RD/rc-$CLE_FHN
+		TW=$RD/tw-$CLE_FHN
+		EN=$RD/env-$CLE_FHN
 		cp $CLE_RC $RC
-		TW=$RCD/tw-$CLE_FHN
 		cp $CLE_TW $TW
-		EN=$RCD/env-$CLE_FHN
+		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
 		vv "CLE_P..|_C." >>$EN
 		vv "$CLE_EXP" >>$EN
-		echo "CLE_WS=$CLE_FHN" >>$EN
-		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN
+		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN
-		RCS="$RC $TW $EN"
 	fi
 	#:  I've never owned this computer, I had Atari 800XL :)
-	[ $1 ] && C64=`eval tar chzf - $RCS 2>/dev/null | base64 | tr -d '\n\r '`
+	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
 	#:             ^^^^ 'eval' required due to zsh.
 }
 
 ## `lssh [usr@]host`   - access remote system and take CLE along
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
-	#: on CLE workstation, suffix to resource filename is added
-	#: this 1. prevents overwriting on destination accounts
-	#:  and 2. provides information about source of the session
 	_clepak tar
-	[ $CLE_DEBUG ] && echo -n $C64 |base64 -d|tar tzf -
+	[ $CLE_DEBUG ] && printb "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
+	#: remote startup
+	#: - create destination folder, unpack tarball and execute the code
 	command ssh -t $* "
+		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		[ $OSTYPE = darwin ] && _D=D || _D=d
-		cd /; echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
-		cd; exec $RC -m $CLE_ARG"
+		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
+		[ -r \$HOME ] || HOME=\$H
+		cd
+		exec \$H/$RC -m $CLE_ARG"
 )
 
 #: Following are su* wrappers of different kinds including kerberos
@@ -647,7 +641,8 @@ lssh () (
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
 	_clepak
-        sudo -i -u ${1:-root} $RC $CLE_ARG
+	dbg_print "lsudo runs: $RH/$RC"
+        sudo -i -u ${1:-root} $RH/$RC $CLE_ARG
 )
 
 ## `lsu [user]`        - su wrapper
@@ -657,14 +652,14 @@ lsu () (
         _clepak
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
-        eval su $S -l ${1:-root} $CLE_RC
+        eval su $S -l ${1:-root} $RH/$RC
 )
 
 ## `lksu [user]`       - ksu wrapper
 #: Kerberized version of 'su'
 lksu () (
 	_clepak
-        ksu ${1:-root} -a -c $CLE_RC
+        ksu ${1:-root} -a -c $RH/$RC
 )
 
 ## `lscreen [name]`    - gnu screen wrapper, join your recent session or start new
@@ -840,8 +835,8 @@ if [ $BASH ]; then
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
-	_C=/usr/share/bash-completion/completions/ssh
-	[ -f $_C ] && . $_C && complete -F _ssh lssh
+	_C=/usr/share/bash-completion
+	[ -r $_C ] && . $_C/bash_completion && . $_C/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
@@ -989,7 +984,7 @@ cle () {
 
 ##
 #: final cleanup
-unset _N _DEFC
+unset _N _H _C _DEFC
 
 # that's all, folks...
 

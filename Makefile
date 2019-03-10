@@ -8,10 +8,9 @@ BINDIR=${DEST}/usr/bin
 SHAREDIR=${DEST}/usr/share/cle
 
 clerc: clerc.sh
-	sed -e  '/^[[:space:]]*#:/d' -e 's/#:.*//' <clerc.sh >clerc-t
-	grep -vi -e debug -e dbg clerc-t >clerc
+	sed -e '/dbg_/d' -e '/#.*dbg/d' clerc.sh >clerc-nodebug
+	sed -e '/^\s*#:/d' -e 's/\(^#\s\)*\s*#:.*/\1/'  clerc-nodebug >clerc
 	chmod 755 clerc
-	rm clerc-t
 
 install: clerc
 	mkdir -p -m 0755 ${BINDIR}
