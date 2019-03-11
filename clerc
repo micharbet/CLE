@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-10 (Zodiac)
+#* version: 2019-03-11 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -87,8 +87,8 @@ export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 # FQDN hack
 CLE_FHN=`hostname -f 2>/dev/null || hostname`
 [ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
-CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
-CLE_IP=${CLE_IP:-`hostname -i`}
+#; On workstation its just empty string :-( Better than 5 IP's from `hostname -i`
+CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Zodiac
@@ -200,16 +200,30 @@ _cleclr () {
 _clesc () (
 	# bash/zsh specific sequences
 	if [ $ZSH_NAME ]; then
-		SHESC='-e "s/\\\\n/\$_PN/g"
-		 -e "s/\^[$%#]/%#/g"
-		 -e "s/\\\\t/%*/g"
-		 -e "s/\\\\w/%3~/g"
-		 -e "s/\\\\u/%n/g"
-		'
-		# ^^^ TODO: add rest of bash escxapes
+		SHESC="-e 's/\\\\n/\$_PN/g'
+		 -e 's/\\^[$%#]/%#/g'
+		 -e 's/\\\\d/%D{%a %b %d}/g'
+		 -e 's/\\\\D/%D/g'
+		 -e 's/\\\\h/%m/g'
+		 -e 's/\\\\H/%M/g'
+		 -e 's/\\\\j/%j/g'
+		 -e 's/\\\\l/%l/g'
+		 -e 's/\\\\s/zsh/g'
+		 -e 's/\\\\t/%*/g'
+		 -e 's/\\\\T/%D{%r}/g'
+		 -e 's/\\\\@/%@/g'
+		 -e 's/\\\\A/%T/g'
+		 -e 's/\\\\u/%n/g'
+		 -e 's/\\\\w/%$PROMPT_DIRTRIM~/g'
+		 -e 's/\\\\W/%1~/g'
+		 -e 's/\\\\!/%!/g'
+		 -e 's/\\\\#/%i/g'
+		 -e 's/\\\\\[/%{/g'
+		 -e 's/\\\\\]/%}/g'
+		 -e 's/\\\\\\\\/\\\\/g'
+		"
 	else
-		SHESC='-e "s/\^[$%#]/\\\\\$/g"
-		'
+		SHESC="-e 's/\^[$%#]/\\\\\$/g'"
 	fi
 	EXTESC="
 	 -e 's/\^i/\$CLE_IP/g'
@@ -223,6 +237,7 @@ _clesc () (
 	 -e 's/\^\^/\^/g'
 	"
 
+#	SUBS=`echo -nE "$SHESC $EXTESC"`
 	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
 	eval sed "$SUBS" <<<"$*"
 )
@@ -651,7 +666,7 @@ PROMPT_DIRTRIM=3
 
 HISTCONTROL=ignoredups
 HISTFILE=$CLE_D/history-$CLE_SH
-CLE_HTF='%Y-%m-%d %T'
+CLE_HTF='%F %T'
 
 # completions
 _clecomp () {
@@ -675,7 +690,7 @@ if [ $BASH ]; then
 	# lssh completion
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 	_C=/usr/share/bash-completion
-	[ -r $_C ] && . $_C/bash_completion && . $_C/completions/ssh && complete -F _ssh lssh
+	[ -f $_C ] && . $_C/bash_completion && . $_C/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
@@ -715,7 +730,7 @@ _clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
 ##
 ## ** CLE command & control **
 cle () {
-	local C I P
+	local C I P S
 	C=$1;shift
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
@@ -731,8 +746,8 @@ cle () {
 		I=${C:1:1}
 		if [ "$1" ]; then
 			P=B; [[ $* =~ % && -n "$ZSH_NAME" ]] && P=Z || unset CLE_PZ$I
-			eval "CLE_P$P$I='$*'"
-			_clepcp;_cleps;_clesave
+			S=$*
+			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }"
 		else
 			vv CLE_P$I
 		fi;;

@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-10 (Zodiac)
+#* version: 2019-03-11 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -22,7 +22,7 @@
 dbg_print () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
 	eval "V=\$$1"							# dbg
-	[ $CLE_DEBUG ] && printf "%-16s = %q\n" $1 "$V" >/dev/tty	# dbg
+	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
@@ -133,8 +133,10 @@ dbg_var CLE_USER
 #: Use the longer string. Also try `hostname' in case -f is't accepted (BSD) 
 CLE_FHN=`hostname -f 2>/dev/null || hostname`
 [ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
-CLE_IP=`cut -d' ' -f3 <<<$SSH_CONNECTION`
-CLE_IP=${CLE_IP:-`hostname -i`}
+#: It is also difficult to get local IP addres.
+#: There is no simple and multiplattform command (ip, ifconfig, hostname -i/-I, netstat...)
+#; On workstation its just empty string :-( Better than 5 IP's from `hostname -i`
+CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Zodiac
@@ -264,16 +266,37 @@ _clesc () (
 	#: not so much backslashes due to multiple string expansions and eval at the end
 	if [ $ZSH_NAME ]; then
 		#: bash/zsh escapes compatibility
-		SHESC='-e "s/\\\\n/\$_PN/g"
-		 -e "s/\^[$%#]/%#/g"
-		 -e "s/\\\\t/%*/g"
-		 -e "s/\\\\w/%3~/g"
-		 -e "s/\\\\u/%n/g"
-		'
-		# ^^^ TODO: add rest of bash escxapes
+		SHESC="-e 's/\\\\n/\$_PN/g'
+		 -e 's/\\^[$%#]/%#/g'
+		 -e 's/\\\\d/%D{%a %b %d}/g'
+		 -e 's/\\\\D/%D/g'
+		 -e 's/\\\\h/%m/g'
+		 -e 's/\\\\H/%M/g'
+		 -e 's/\\\\j/%j/g'
+		 -e 's/\\\\l/%l/g'
+		 -e 's/\\\\s/zsh/g'
+		 -e 's/\\\\t/%*/g'
+		 -e 's/\\\\T/%D{%r}/g'
+		 -e 's/\\\\@/%@/g'
+		 -e 's/\\\\A/%T/g'
+		 -e 's/\\\\u/%n/g'
+		 -e 's/\\\\w/%$PROMPT_DIRTRIM~/g'
+		 -e 's/\\\\W/%1~/g'
+		 -e 's/\\\\!/%!/g'
+		 -e 's/\\\\#/%i/g'
+		 -e 's/\\\\\[/%{/g'
+		 -e 's/\\\\\]/%}/g'
+		 -e 's/\\\\\\\\/\\\\/g'
+		"
+		#: missing bash prompt escapes:
+		#: \a Bell character
+		#: \e ESC
+		#: \r Carriage return
+		#: \nnn ASCII octal character
+		#: \v Bash version, who the f... needs this?
+		#: \V ... same ^^^
 	else
-		SHESC='-e "s/\^[$%#]/\\\\\$/g"
-		'
+		SHESC="-e 's/\^[$%#]/\\\\\$/g'"
 	fi
 	#: CLE extensions escapes
 	EXTESC="
@@ -289,6 +312,9 @@ _clesc () (
 	"
 
 	#: compose substitute command, remove unwanted characters
+#	dbg_print _clesc
+#	SUBS=`echo -nE "$SHESC $EXTESC"`
+#	dbg_var SUBS
 	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
 	eval sed "$SUBS" <<<"$*"
 )
@@ -802,7 +828,7 @@ PROMPT_DIRTRIM=3
 
 HISTCONTROL=ignoredups
 HISTFILE=$CLE_D/history-$CLE_SH
-CLE_HTF='%Y-%m-%d %T'
+CLE_HTF='%F %T'
 
 # completions
 #: Command 'cle' completion
@@ -836,7 +862,7 @@ if [ $BASH ]; then
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
 	_C=/usr/share/bash-completion
-	[ -r $_C ] && . $_C/bash_completion && . $_C/completions/ssh && complete -F _ssh lssh
+	[ -f $_C ] && . $_C/bash_completion && . $_C/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
@@ -878,7 +904,7 @@ _clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
 ##
 ## ** CLE command & control **
 cle () {
-	local C I P
+	local C I P S
 	C=$1;shift
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
@@ -897,8 +923,11 @@ cle () {
 			#: if the propmt string is bash compatible, store it into $CLE_PBx
 			#: otherwise use $CLE_PZx
 			P=B; [[ $* =~ % && -n "$ZSH_NAME" ]] && P=Z || unset CLE_PZ$I
-			eval "CLE_P$P$I='$*'"
-			_clepcp;_cleps;_clesave
+			#: store the value only if it's different
+			#: this is to prevent situation when inherited value is set in configuration
+			#: causing to break the inheritance later
+			S=$*
+			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }"
 		else
 			vv CLE_P$I
 		fi;;
