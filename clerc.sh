@@ -65,6 +65,7 @@ case $ZSH_NAME$BASH:$0 in
 			export CLE_ARG='-b'
 			;;
 		-z*)	SH=`which zsh 2>/dev/null || which bash` # try zsh
+			[[ $SH =~ bash ]] && echo "No ZSH available, fallback to $SH"
 			export CLE_ARG='-z'
 			;;
 		-m)	CLE_MOTD=`uptime`
@@ -1004,7 +1005,7 @@ cle () {
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
 		;;
 	*)
-		echo unimplemented: cle $1;
+		echo unimplemented: cle $C;
 		echo check cle help;
 		return 1
 		;;
