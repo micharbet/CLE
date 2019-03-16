@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-11 (Zodiac)
+#* version: 2019-03-15 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -18,6 +18,7 @@
 [ -t 0 -a -z "$CLE_EXE" ] || return
 # Now it really starts, warning: magic inside!
 
+#:------------------------------------------------------------:#
 # Debugging helpers							# dbg
 dbg_print () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
@@ -28,6 +29,7 @@ dbg_var () (								# dbg
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
 dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
 
+#:------------------------------------------------------------:#
 # Startup sequence
 #: First check how is this script executed
 #:  - in case of a shell resource, this will be interactive session,
@@ -39,7 +41,7 @@ dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
 dbg_var SHELL
 dbg_print "startup case: '$ZSH_NAME$BASH:$0'"
 case $ZSH_NAME$BASH:$0 in
-*bash:*) # bash session resource
+*bash:*bash) # bash session resource
 	dbg_print sourcing to BASH
 	CLE_RC=$BASH_SOURCE
 	;;
@@ -56,7 +58,7 @@ case $ZSH_NAME$BASH:$0 in
 	#: code in this section must be strictly POSIX compatible with /bin/sh
 	#: Now we're looking for suitable shell: user's login shell first, fallback to bash
 	dbg_print executing as LIVE SESSION, looking for shell
-	export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
+	CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
 	SH=$SHELL
 	#: process command line options
 	while [ $1 ]; do
@@ -118,17 +120,6 @@ CLE_RC=$CLE_RD/`basename $CLE_RC`
 dbg_var CLE_RC
 dbg_var CLE_RD
 
-# who I am
-#: determine username that will be inherited over the all
-#: subsquent sessions initiated with lssh and su* wrappers
-#: the regexp extracts username from following patterns:
-#: - /any/folder/.cle-username/rcfile
-#: - /any/folder/.config/cle-username/rcfile
-#: important is the dot (hidden folder), word 'cle' with dash
-_N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
-export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
-dbg_var CLE_USER
-
 # FQDN hack
 #: `hostname -f` in some cases returns domain part only, without hostname!
 #: Use the longer string. Also try `hostname' in case -f is't accepted (BSD) 
@@ -136,7 +127,7 @@ CLE_FHN=`hostname -f 2>/dev/null || hostname`
 [ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
 #: It is also difficult to get local IP addres.
 #: There is no simple and multiplattform command (ip, ifconfig, hostname -i/-I, netstat...)
-#; On workstation its just empty string :-( Better than 5 IP's from `hostname -i`
+#: On workstation its just empty string :-( Better than 5 IP's from `hostname -i`
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
@@ -156,17 +147,31 @@ CLE_SH=`basename $BASH$ZSH_NAME`
 #:  $CLE_RD  is path to folder containing startup resources
 _H=$HOME
 [ -w $_H ] || _H=/var/tmp/$USER
+[ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
+[ $CLE_USER ] || cd		#: just go home on new session
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
 CLE_CF=$CLE_D/cf-$CLE_FHN	#: NFS homes may keep configs for several hosts
 CLE_AL=$CLE_D/al
+CLE_HIST=$_H/.clehistory
 _N=`sed 's:.*/rc1*::' <<<$CLE_RC` #: resource suffix contains workstation name
 CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ENV=$CLE_RD/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
+
+# who I am
+#: determine username that will be inherited over the all
+#: subsquent sessions initiated with lssh and su* wrappers
+#: the regexp extracts username from following patterns:
+#: - /any/folder/.cle-username/rcfile
+#: - /any/folder/.config/cle-username/rcfile
+#: important is the dot (hidden folder), word 'cle' with dash
+_N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
+export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+dbg_var CLE_USER
 
 #:------------------------------------------------------------:#
 # Internal functions
@@ -311,11 +316,7 @@ _clesc () (
 	 -e 's/\^v\([[:alnum:]]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
-
 	#: compose substitute command, remove unwanted characters
-#	dbg_print _clesc
-#	SUBS=`echo -nE "$SHESC $EXTESC"`
-#	dbg_var SUBS
 	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
 	eval sed "$SUBS" <<<"$*"
 )
@@ -366,7 +367,6 @@ _clesave () (
 #: should be as simple as possible. In best case all commands here should be
 #: bash internals. Those don't invoke new processes and as such they are much
 #: easier to system resources.
-CLE_HIST=$HOME/.clehistory
 precmd () {
 	_EC=$? # save return code
 	local IFS S DT C
@@ -576,10 +576,12 @@ vv () (
 ## ** Not-just-internal tools **
 ## `gitwb`           - show current working branch name
 gitwb () (
-	# search all parent directories
+	# go down the folder tree and look for .git
+	#: Because this function is supposed to use in prompt we want to save
+	#: cpu cycles. Do not call `git` if not necessary.
 	while [ $PWD != / ]; do
 		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
-	cd ..
+		cd ..
 	done
 	return 1  # not in git repository
 	)
@@ -600,8 +602,8 @@ mdfilter () {
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
-
 #:------------------------------------------------------------:#
+
 ##
 ## ** Live session wrappers **
 
@@ -656,8 +658,6 @@ lssh () (
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		[ $OSTYPE = darwin ] && _D=D || _D=d
 		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
-		[ -r \$HOME ] || HOME=\$H
-		cd
 		exec \$H/$RC -m $CLE_ARG"
 )
 

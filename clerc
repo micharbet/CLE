@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-11 (Zodiac)
+#* version: 2019-03-15 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -21,7 +21,7 @@
 
 # Startup sequence
 case $ZSH_NAME$BASH:$0 in
-*bash:*) # bash session resource
+*bash:*bash) # bash session resource
 	CLE_RC=$BASH_SOURCE
 	;;
 *zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
@@ -32,7 +32,7 @@ case $ZSH_NAME$BASH:$0 in
 	CLE_RC=$0
 	;;
 *:/*/rc*) # executed as a command from .cle directory
-	export CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
+	CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
 	SH=$SHELL
 	while [ $1 ]; do
 		case $1 in
@@ -81,14 +81,9 @@ esac
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
-# who I am
-_N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
-export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
-
 # FQDN hack
 CLE_FHN=`hostname -f 2>/dev/null || hostname`
 [ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
-#; On workstation its just empty string :-( Better than 5 IP's from `hostname -i`
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
@@ -101,17 +96,24 @@ CLE_SH=`basename $BASH$ZSH_NAME`
 # find writable folder
 _H=$HOME
 [ -w $_H ] || _H=/var/tmp/$USER
+[ -r $HOME ] || HOME=$_H
+[ $CLE_USER ] || cd
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
 CLE_CF=$CLE_D/cf-$CLE_FHN
 CLE_AL=$CLE_D/al
+CLE_HIST=$_H/.clehistory
 _N=`sed 's:.*/rc1*::' <<<$CLE_RC`
 CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ENV=$CLE_RD/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
+
+# who I am
+_N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
+export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 
 # Internal functions
 
@@ -237,8 +239,6 @@ _clesc () (
 	 -e 's/\^v\([[:alnum:]]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
-
-#	SUBS=`echo -nE "$SHESC $EXTESC"`
 	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
 	eval sed "$SUBS" <<<"$*"
 )
@@ -283,7 +283,6 @@ _clesave () (
 
 
 # prompt callback functions
-CLE_HIST=$HOME/.clehistory
 precmd () {
 	_EC=$? # save return code
 	local IFS S DT C
@@ -468,10 +467,10 @@ vv () (
 ## ** Not-just-internal tools **
 ## `gitwb`           - show current working branch name
 gitwb () (
-	# search all parent directories
+	# go down the folder tree and look for .git
 	while [ $PWD != / ]; do
 		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
-	cd ..
+		cd ..
 	done
 	return 1  # not in git repository
 	)
@@ -527,8 +526,6 @@ lssh () (
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		[ $OSTYPE = darwin ] && _D=D || _D=d
 		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
-		[ -r \$HOME ] || HOME=\$H
-		cd
 		exec \$H/$RC -m $CLE_ARG"
 )
 

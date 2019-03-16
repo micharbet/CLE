@@ -14,6 +14,7 @@ all: clerc modules/modulist
 clerc: clerc.sh
 	@ sed -e '/dbg_/d' -e '/#.*dbg/d' clerc.sh >clerc-nodebug
 	@ sed -e '/^\s*#:/d' -e 's/\(^#\s\)*\s*#:.*/\1/'  clerc-nodebug >clerc
+	@ rm clerc-nodebug
 	@ chmod 755 clerc
 	@ ls -l $@
 
