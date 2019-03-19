@@ -20,18 +20,18 @@
 
 
 # Startup sequence
+export CLE_RC
 case $ZSH_NAME$BASH:$0 in
 *bash:*bash) # bash session resource
 	CLE_RC=$BASH_SOURCE
 	;;
 *zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
-	# we know value of CLE_RC
 	unset ZDOTDIR
 	;;
 *zsh:*/rc*) # started FROM .zshrc
 	CLE_RC=$0
 	;;
-*:/*/rc*) # executed as a command from .cle directory
+*:*/rc*) # executed as a command from .cle directory
 	CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
 	SH=$SHELL
 	while [ $1 ]; do

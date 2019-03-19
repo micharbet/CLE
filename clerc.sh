@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-15 (Zodiac)
+#* version: 2019-03-19 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -13,8 +13,11 @@
 ## Do not use, otherwise a puppy or kitten may die!
 ##
 
+[ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
+
 # Check if the shell is interactive session and CLE not yet started
 # This is required for scp compatibility
+[ -t 0 -a -z "$CLE_EXE" ] || echo "Warning! nested CLE start"		# dbg
 [ -t 0 -a -z "$CLE_EXE" ] || return
 # Now it really starts, warning: magic inside!
 
@@ -26,7 +29,6 @@ dbg_var () (								# dbg
 	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
-[ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
 dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
 
 #:------------------------------------------------------------:#
@@ -38,23 +40,28 @@ dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
 #:    as a resource
 #: Then find out suitable shell and use it to run interactive shell session with
 #: this file as init resource. The $CLE_RC variable must contain full path!
+export CLE_RC
+dbg_var CLE_RC
 dbg_var SHELL
-dbg_print "startup case: '$ZSH_NAME$BASH:$0'"
-case $ZSH_NAME$BASH:$0 in
-*bash:*bash) # bash session resource
-	dbg_print sourcing to BASH
-	CLE_RC=$BASH_SOURCE
+dbg_var BASH
+dbg_var ZSH_NAME
+dbg_print "startup case: '$SHELL:$BASH:$ZSH_NAME:$0'"
+case $SHELL:$BASH:$ZSH_NAME:$0 in
+*clerc*)	# first run!
+	#: code in this section must be strictly POSIX compatible with /bin/sh
+	dbg_print First run
+	RD=$HOME/.cle-`whoami`
+	export CLE_1=$0
+	mkdir -p $RD
+	cp $0 $RD/rc1
+	chmod 755 $RD/rc1
+	exec $RD/rc1 "$@"
 	;;
-*zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
-	dbg_print sourcing to ZSH - from command
-	# we know value of CLE_RC
-	unset ZDOTDIR
-	;;
-*zsh:*/rc*) # started FROM .zshrc
+*zsh::*zsh:*/rc*) # started FROM .zshrc
 	dbg_print sourcing to ZSH - from .zshrc
 	CLE_RC=$0
 	;;
-*:/*/rc*) # executed as a command from .cle directory
+*:*/rc*) # executed as a command from .cle directory
 	#: code in this section must be strictly POSIX compatible with /bin/sh
 	#: Now we're looking for suitable shell: user's login shell first, fallback to bash
 	dbg_print executing as LIVE SESSION, looking for shell
@@ -67,7 +74,6 @@ case $ZSH_NAME$BASH:$0 in
 			export CLE_ARG='-b'
 			;;
 		-z*)	SH=`which zsh 2>/dev/null || which bash` # try zsh
-			[[ $SH =~ bash ]] && echo "No ZSH available, fallback to $SH"
 			export CLE_ARG='-z'
 			;;
 		-m)	CLE_MOTD=`uptime`
@@ -80,27 +86,27 @@ case $ZSH_NAME$BASH:$0 in
 	export CLE_PROF=1	#: profile files will be executed
 	case $SH in
 	*zsh)	#: prepare startup environment in zsh way
-		dbg_print running in ZSH
-		export ZDOTDIR=/tmp/`whoami`
+		dbg_print found ZSH
+		export ZDOTDIR=/var/tmp/`whoami`
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
 		;;
 	*)	#: fallback to bash
-		dbg_print running in BASH
+		dbg_print found BASH
 		exec bash --rcfile $0
 		;;
 	esac
 	;;
-*:*clerc*)	# first run!
-	#: code in this section must be strictly POSIX compatible with /bin/sh
-	dbg_print First run
-	RD=$HOME/.cle-`whoami`
-	export CLE_1=$0
-	mkdir -p $RD
-	cp $0 $RD/rc1
-	chmod 755 $RD/rc1
-	exec $RD/rc1 "$@"
+*bash:*bash) # bash session resource
+	dbg_print sourcing to BASH
+	#: CLE_RC not necessarily known!
+	CLE_RC=$BASH_SOURCE
+	;;
+*zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
+	dbg_print sourcing to ZSH - from live session
+	#: we already know the value of CLE_RC
+	unset ZDOTDIR
 	;;
 *)	echo something unknown;;
 esac
@@ -148,6 +154,7 @@ CLE_SH=`basename $BASH$ZSH_NAME`
 _H=$HOME
 [ -w $_H ] || _H=/var/tmp/$USER
 [ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
+dbg_var HOME
 [ $CLE_USER ] || cd		#: just go home on new session
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
@@ -656,6 +663,7 @@ lssh () (
 	#: - create destination folder, unpack tarball and execute the code
 	command ssh -t $* "
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
+		export CLE_DEBUG='$CLE_DEBUG'	# dbg
 		[ $OSTYPE = darwin ] && _D=D || _D=d
 		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
 		exec \$H/$RC -m $CLE_ARG"
