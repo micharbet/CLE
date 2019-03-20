@@ -729,7 +729,7 @@ _clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
 ##
 ## ** CLE command & control **
 cle () {
-	local C I P S
+	local C I P S N
 	C=$1;shift
 	if declare -f _cle_$C >/dev/null;then
 		_cle_$C $*
@@ -775,25 +775,25 @@ cle () {
 		CLE_RC=$P/rc
 		unset CLE_1
 		I='# Command Live Environment'
-		SHRC=$HOME/.${SHELL##*/}rc
-		grep -A1 "$I" $SHRC && printb CLE is already hooked in $SHRC && return 1
-		ask "Do you want to add CLE to $SHRC?" || return
-		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $SHRC
+		S=$HOME/.${SHELL##*/}rc
+		grep -A1 "$I" $S && printb CLE is already hooked in $C && return 1
+		ask "Do you want to add CLE to $C?" || return
+		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $C
 		cle reload;;
-	update) ## `cle update`            - install fresh version of CLE
-		NC=$CLE_D/rc.new
-		curl -k $CLE_SRC/clerc >$NC      # always update from master branch
-		C=`sed -n 's/^#\* version: //p' $NC`
-		[ "$C" ] || { echo "Download error"; return 1; }
+	update) ## `cle update [master]`   - install fresh version of CLE
+		N=$CLE_D/rc.new
+		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$N
+		S=`sed -n 's/^#\* version: //p' $N`
+		[ "$S" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
-		echo "new:     $C"
-		MM=`diff $CLE_RC $NC` && { echo No difference; return 1;}
-		ask Do you want to see diff? && cat <<<"$MM"
+		echo "new:     $S"
+		I=`diff $CLE_RC $N` && { echo No difference; return 1;}
+		ask Do you want to see diff? && cat <<<"$I"
 		ask Do you want to install new version? || return
-		BRC=$CLE_D/rc.bk
-		cp $CLE_RC $BRC
-		chmod 755 $NC
-		mv -f $NC $CLE_RC
+		B=$CLE_D/rc.bk
+		cp $CLE_RC $B
+		chmod 755 $N
+		mv -f $N $CLE_RC
 		cle reload;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
 		S=${1:-$CLE_SH}
