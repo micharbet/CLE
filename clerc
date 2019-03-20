@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-15 (Zodiac)
+#* version: 2019-03-20 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -12,6 +12,7 @@
 ## This code is in super early development stage.
 ## Do not use, otherwise a puppy or kitten may die!
 ##
+
 
 # Check if the shell is interactive session and CLE not yet started
 # This is required for scp compatibility
@@ -21,14 +22,16 @@
 
 # Startup sequence
 export CLE_RC
-case $ZSH_NAME$BASH:$0 in
-*bash:*bash) # bash session resource
-	CLE_RC=$BASH_SOURCE
+case $SHELL:$BASH:$ZSH_NAME:$0 in
+*clerc*)	# first run!
+	RD=$HOME/.cle-`whoami`
+	export CLE_1=$0
+	mkdir -p $RD
+	cp $0 $RD/rc1
+	chmod 755 $RD/rc1
+	exec $RD/rc1 "$@"
 	;;
-*zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
-	unset ZDOTDIR
-	;;
-*zsh:*/rc*) # started FROM .zshrc
+*zsh::*zsh:*/rc*) # started FROM .zshrc
 	CLE_RC=$0
 	;;
 *:*/rc*) # executed as a command from .cle directory
@@ -40,7 +43,6 @@ case $ZSH_NAME$BASH:$0 in
 			export CLE_ARG='-b'
 			;;
 		-z*)	SH=`which zsh 2>/dev/null || which bash` # try zsh
-			[[ $SH =~ bash ]] && echo "No ZSH available, fallback to $SH"
 			export CLE_ARG='-z'
 			;;
 		-m)	CLE_MOTD=`uptime`
@@ -53,7 +55,7 @@ case $ZSH_NAME$BASH:$0 in
 	export CLE_PROF=1
 	case $SH in
 	*zsh)
-		export ZDOTDIR=/tmp/`whoami`
+		export ZDOTDIR=/var/tmp/`whoami`
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
@@ -63,13 +65,11 @@ case $ZSH_NAME$BASH:$0 in
 		;;
 	esac
 	;;
-*:*clerc*)	# first run!
-	RD=$HOME/.cle-`whoami`
-	export CLE_1=$0
-	mkdir -p $RD
-	cp $0 $RD/rc1
-	chmod 755 $RD/rc1
-	exec $RD/rc1 "$@"
+*bash:*bash) # bash session resource
+	CLE_RC=$BASH_SOURCE
+	;;
+*zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
+	unset ZDOTDIR
 	;;
 *)	echo something unknown;;
 esac
@@ -597,6 +597,7 @@ cat <<-EOS
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
 EOS
+cat <<<$CLE_SCRC
 }
 
 
@@ -768,11 +769,13 @@ cle () {
 		esac
 		cle reload;;
 	deploy) ## `cle deploy`            - hook CLE into user's profile
-		cp $CLE_RC $CLE_D/rc
-		CLE_RC=$CLE_D/rc
+		P=$HOME/.cle-$USER
+		mkdir -p $P
+		cp $CLE_RC $P/rc
+		CLE_RC=$P/rc
 		unset CLE_1
 		I='# Command Live Environment'
-		SHRC=$HOME/.${CLE_SH}rc
+		SHRC=$HOME/.${SHELL##*/}rc
 		grep -A1 "$I" $SHRC && printb CLE is already hooked in $SHRC && return 1
 		ask "Do you want to add CLE to $SHRC?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $SHRC
@@ -791,17 +794,10 @@ cle () {
 		cp $CLE_RC $BRC
 		chmod 755 $NC
 		mv -f $NC $CLE_RC
-		cle reload
-		printb New CLE activated, backup saved here: $BRC;;
+		cle reload;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
-		SH=${1:-$CLE_SH}
-		exec $CLE_RC -$SH
-		case $SH in
-		bash)	exec bash --rcfile $CLE_RC;;
-		zsh)	exec zsh -c $CLE_RC;;
-		*)	echo no such shell: $1
-			return 1;;
-		esac;;
+		S=${1:-$CLE_SH}
+		exec $CLE_RC -$S;;
 	env)	## `cle env`               - inspect variables
 		vv 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	help|-h|--help) ## `cle help [fnc]`        - show help

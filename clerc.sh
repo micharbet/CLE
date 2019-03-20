@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-19 (Zodiac)
+#* version: 2019-03-20 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -42,6 +42,7 @@ dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
 #: this file as init resource. The $CLE_RC variable must contain full path!
 export CLE_RC
 dbg_var CLE_RC
+dbg_var CLE_ARG
 dbg_var SHELL
 dbg_var BASH
 dbg_var ZSH_NAME
@@ -630,7 +631,7 @@ _clepak () {
 		RC=${CLE_RC/$RH\//}
 		TW=${CLE_TW/$RH\//}
 		EN=${CLE_ENV/$RH\//}
-		dbg_print "_clepak: rc ready: $(ls -l $RC)"
+		dbg_print "_clepak: rc already there: $(ls -l $RC)"
 	else
 		#: live session is to be created - copy startup files
 		RH=/var/tmp/$USER
@@ -763,6 +764,7 @@ cat <<-EOS
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
 EOS
+cat <<<$CLE_SCRC
 }
 
 
@@ -915,10 +917,10 @@ _clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
 cle () {
 	local C I P S
 	C=$1;shift
-	if declare -f _cle_$C >/dev/null;then
+	if declare -f _cle_$C >/dev/null;then #: check if an add-on function exists
 		_cle_$C $*
 		return $?
-	elif [ -f $CLE_D/cle-$C ]; then
+	elif [ -f $CLE_D/cle-$C ]; then	#: check module
 		. $CLE_D/cle-$C $*
 		return $?
 	fi
@@ -959,11 +961,13 @@ cle () {
 		esac
 		cle reload;;
 	deploy) ## `cle deploy`            - hook CLE into user's profile
-		cp $CLE_RC $CLE_D/rc
-		CLE_RC=$CLE_D/rc
+		P=$HOME/.cle-$USER	#: new directory for CLE
+		mkdir -p $P
+		cp $CLE_RC $P/rc
+		CLE_RC=$P/rc
 		unset CLE_1
 		I='# Command Live Environment'
-		SHRC=$HOME/.${CLE_SH}rc
+		SHRC=$HOME/.${SHELL##*/}rc	#: hook int user's login shell rc
 		grep -A1 "$I" $SHRC && printb CLE is already hooked in $SHRC && return 1
 		ask "Do you want to add CLE to $SHRC?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $SHRC
@@ -982,17 +986,10 @@ cle () {
 		cp $CLE_RC $BRC
 		chmod 755 $NC
 		mv -f $NC $CLE_RC
-		cle reload
-		printb New CLE activated, backup saved here: $BRC;;
+		cle reload;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
-		SH=${1:-$CLE_SH}
-		exec $CLE_RC -$SH
-		case $SH in
-		bash)	exec bash --rcfile $CLE_RC;;
-		zsh)	exec zsh -c $CLE_RC;;
-		*)	echo no such shell: $1
-			return 1;;
-		esac;;
+		S=${1:-$CLE_SH}
+		exec $CLE_RC -$S;;
 	env)	## `cle env`               - inspect variables
 		vv 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
