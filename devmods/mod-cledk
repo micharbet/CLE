@@ -41,7 +41,7 @@ _cle_cp() {
 	[[ $1 =~ ^s ]] && CLERS="$CLE_DK/clerc $CLE_RC"
 	eval diff $CLERS
 	eval ls -lL $CLERS
-	ask "replace clerc?" && { cp $CLE_RC $CLE_RC.bkdev; eval cp $CLERS; cle reload; }
+	ask "replace clerc?" && { cp $CLE_RC $CLE_RC.bkdev; eval cp $CLERS; chmod 755 $CLE_RC; cle reload; }
 }
 
 ## `cle func`       - list all current bash functions

@@ -733,9 +733,8 @@ lscreen () (
 			done
 		fi
 		_clerh '' @ $CLE_TTY "screen -x $SN"
-		#: send message to other screen, then join the session
-		printf "$_CT screen: joined to $SN$_Ct"
-		screen -S $SN -X echo "$CLE_USER joining"
+		printf "$_CT screen: joined to $SN$_Ct" #: terminal title
+		screen -S $SN -X echo "$CLE_USER joining" #: alert to the original session
 		screen -x $SN
 	fi
 )
@@ -764,6 +763,7 @@ cat <<-EOS
 	bind c screen $CLE_RC
 	bind ^c screen $CLE_RC
 EOS
+#: user's addition to the screenrc via the variable - set in tweak file
 cat <<<$CLE_SCRC
 }
 
@@ -899,7 +899,7 @@ unalias () {
 	aa -s
 }
 
-# check manual start
+# check manual/initial run
 [ $CLE_1 ] && cat <<EOT
  It seems you started CLE running '$CLE_1' from command line
  Since this is the first run, consider setup in your profile.
@@ -1006,15 +1006,24 @@ cle () {
 			touch ~/CLEDEBUG;;							# dbg
 		esac;;										# dbg
 	help|-h|--help) ## `cle help [fnc]`        - show help
-		# double hash denotes help content
+		#: double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
-	"")
+	doc)	## `cle doc`               - show documentation
+		#: obtain index of doc files
+		I=`curl -sk $CLE_SRC/doc/index.md`
+		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
+		#: choose one to read
+		PS3="$_CL doc # $_CN"
+		select N in $I;do
+			[ $N ] && curl -sk $CLE_SRC/doc/$N |mdfilter|less -r; break
+		done;;
+	"")	#: do nothing, just show off
 		_clebnr
-		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
+		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC #: print lines starting with '#*' - header
 		;;
 	*)
-		echo unimplemented: cle $C;
+		echo unimplemented function: cle $C;
 		echo check cle help;
 		return 1
 		;;
@@ -1024,6 +1033,7 @@ cle () {
 ##
 #: final cleanup
 unset _N _H _C _DEFC
+#: ^^^^^^ TO BE UPDATED, review the code and find/optimize variable use
 
 # that's all, folks...
 

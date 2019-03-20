@@ -713,7 +713,7 @@ unalias () {
 	aa -s
 }
 
-# check manual start
+# check manual/initial run
 [ $CLE_1 ] && cat <<EOT
  It seems you started CLE running '$CLE_1' from command line
  Since this is the first run, consider setup in your profile.
@@ -801,15 +801,21 @@ cle () {
 	env)	## `cle env`               - inspect variables
 		vv 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	help|-h|--help) ## `cle help [fnc]`        - show help
-		# double hash denotes help content
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
+	doc)	## `cle doc`               - show documentation
+		I=`curl -sk $CLE_SRC/doc/index.md`
+		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
+		PS3="$_CL doc # $_CN"
+		select N in $I;do
+			[ $N ] && curl -sk $CLE_SRC/doc/$N |mdfilter|less -r; break
+		done;;
 	"")
 		_clebnr
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
 		;;
 	*)
-		echo unimplemented: cle $C;
+		echo unimplemented function: cle $C;
 		echo check cle help;
 		return 1
 		;;
