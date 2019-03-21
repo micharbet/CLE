@@ -366,7 +366,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	date +"# CLE/$CLE_VER %Y-%m-%d %H:%M:%S"
-	vv "CLE_CLR|CLE_PB.|CLE_PZ."
+	vdump "CLE_CLR|CLE_PB.|CLE_PZ."
 ) >$CLE_CF
 
 
@@ -423,7 +423,7 @@ _clerh () {
 		for V in $5; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				DT=`vv $V`
+				DT=`vdump $V`
 				echo -E "$S;;$;$4;${DT:-$V=''}"
 			fi
 		done;;
@@ -572,14 +572,6 @@ _clehhout () (
 	done
 )
 
-## `vv 'regexp'`   - dump variables in reusable way
-vv () (
-	#: awk: 1. exits when reaches functions
-	#:      2. finds variables matching regular expression
-	#:      3. replaces weird escape sequence '\C-[' from zsh to normal '\E'
-	typeset 2>/dev/null | awk '/.* \(\)/{exit} /^('$1')=/{gsub(/\\C-\[/,"\\E");print}'
-)
-
 # zsh hack to accept notes on cmdline
 [ $ZSH_NAME ] && '#' () { true; }
 
@@ -612,6 +604,14 @@ mdfilter () {
 	 -e "s/\`\`\`/$_CD~~~~~~~~~~~~~~~~~$_CN/"\
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
+
+## `vdump 'regexp'`  - dump variables in reusable way
+vdump () (
+	#: awk: 1. exits when reaches functions
+	#:      2. finds variables matching regular expression
+	#:      3. replaces weird escape sequence '\C-[' from zsh to normal '\E'
+	typeset 2>/dev/null | awk '/.* \(\)/{exit} /^('$1')=/{gsub(/\\C-\[/,"\\E");print}'
+)
 
 #:------------------------------------------------------------:#
 
@@ -648,8 +648,8 @@ _clepak () {
 		cp $CLE_TW $TW
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vv "CLE_P..|_C." >>$EN
-		vv "$CLE_EXP" >>$EN
+		vdump "CLE_P..|_C." >>$EN
+		vdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN
 	fi
@@ -943,7 +943,7 @@ cle () {
 			S=$*
 			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }"
 		else
-			vv CLE_P$I
+			vdump CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
 		[ "$1" = off ] && CLE_PT='' || CLE_PT=${1:-'$CLE_SH: ^u@^H'}
@@ -998,7 +998,7 @@ cle () {
 		S=${1:-$CLE_SH}
 		exec $CLE_RC -$S;;
 	env)	## `cle env`               - inspect variables
-		vv 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	case $1 in									# dbg

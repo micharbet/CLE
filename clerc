@@ -278,7 +278,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	date +"# CLE/$CLE_VER %Y-%m-%d %H:%M:%S"
-	vv "CLE_CLR|CLE_PB.|CLE_PZ."
+	vdump "CLE_CLR|CLE_PB.|CLE_PZ."
 ) >$CLE_CF
 
 
@@ -326,7 +326,7 @@ _clerh () {
 		for V in $5; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				DT=`vv $V`
+				DT=`vdump $V`
 				echo -E "$S;;$;$4;${DT:-$V=''}"
 			fi
 		done;;
@@ -460,11 +460,6 @@ _clehhout () (
 	done
 )
 
-## `vv 'regexp'`   - dump variables in reusable way
-vv () (
-	typeset 2>/dev/null | awk '/.* \(\)/{exit} /^('$1')=/{gsub(/\\C-\[/,"\\E");print}'
-)
-
 # zsh hack to accept notes on cmdline
 [ $ZSH_NAME ] && '#' () { true; }
 
@@ -492,6 +487,11 @@ mdfilter () {
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
+## `vdump 'regexp'`  - dump variables in reusable way
+vdump () (
+	typeset 2>/dev/null | awk '/.* \(\)/{exit} /^('$1')=/{gsub(/\\C-\[/,"\\E");print}'
+)
+
 
 ##
 ## ** Live session wrappers **
@@ -516,8 +516,8 @@ _clepak () {
 		cp $CLE_RC $RC
 		cp $CLE_TW $TW
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vv "CLE_P..|_C." >>$EN
-		vv "$CLE_EXP" >>$EN
+		vdump "CLE_P..|_C." >>$EN
+		vdump "$CLE_EXP" >>$EN
 		cat $CLE_AL >>$EN
 	fi
 	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
@@ -753,7 +753,7 @@ cle () {
 			S=$*
 			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }"
 		else
-			vv CLE_P$I
+			vdump CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
 		[ "$1" = off ] && CLE_PT='' || CLE_PT=${1:-'$CLE_SH: ^u@^H'}
@@ -804,7 +804,7 @@ cle () {
 		S=${1:-$CLE_SH}
 		exec $CLE_RC -$S;;
 	env)	## `cle env`               - inspect variables
-		vv 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		C=`ls "$CLE_D/cle-*" 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
