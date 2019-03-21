@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-20 (Zodiac)
+#* version: 2019-03-21 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -292,16 +292,11 @@ precmd () {
 	DT=${C/;*}
 	C=${C/$DT;}
 	C="${C#"${C%%[![:space:]]*}"}"
-	if [[ $C =~ ^# ]]; then
-		_clerh  "$DT" '' \# note "$C"
-	elif [ $_SST ]; then
-		S=$((SECONDS-_SST))
-		_clerh "$DT" $S $_EC $PWD "$C"
-		[ $_EC = 0 ] && _CE="" || _CE="$_Ce"
-		_SST=
-	else
-		_CE=''; _EC=0
-	fi
+	[ $_SST ] || { _CE=''; _EC=0; }
+	S=$((SECONDS-${_SST:-$SECONDS}))
+	_clerh "$DT" $S $_EC $PWD "$C"
+	[ $_EC = 0 ] && _CE="" || _CE="$_Ce"
+	_SST=
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
@@ -320,19 +315,29 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT EXC
-	[ $_NORH ] && unset _NORH && return
-	# exclude regexp
-	EXC="^vv\ |^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^xx$|^aa$|^lscreen"
-	if [ $# -lt 5 ]; then
-		DT=`date "+$CLE_HTF"`
-	else
-		DT=$1
-		shift
-	fi
-	[[ $4 =~ $EXC ]] && return
-	echo -E "$DT;$CLE_USER-${CLE_SH:0:1}$$;$1;$2;$3;$4" >>$CLE_HIST
-}
+	local DT REX S V
+	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen"
+	[[ $5 =~ $REX  || -n $_NORH ]] && unset _NORH && return
+	[ "$1" ] && DT=$1 || DT=`date "+$CLE_HTF"`
+	S="$DT;$CLE_USER-${CLE_SH:0:1}$$"
+	REX='^\$[A-Za-z0-9_]*'
+	case "$5" in
+	echo\ \$*)
+		for V in $5; do
+			if [[ $V =~ $REX ]]; then
+				V=${V/\$/}
+				DT=`vv $V`
+				echo -E "$S;;$;$4;${DT:-$V=''}"
+			fi
+		done;;
+	xx) # directory bookmark
+		echo -E "$S;;*;$4;" ;;
+	\#*)
+		echo -E "$S;;#;$4;$5" ;;
+	*)
+		echo -E "$S;$2;$3;$4;$5" ;;
+	esac
+} >>$CLE_HIST
 
 
 # Use alias built-ins for startup
@@ -381,7 +386,7 @@ fi
 .. () { cd ..;}
 ... () { cd ../..;}
 ## `xx` & `cx`   - bookmark $PWD & use later
-xx () { _XX=$PWD;_clerh '' '*' $PWD ''; echo path bookmark: $_XX; }
+xx () { _XX=$PWD; echo path bookmark: $_XX; }
 cx () { cd $_XX; }
 
 ##
@@ -724,7 +729,7 @@ EOT
 [ -r . ] || cd
 
 # record this startup into rich history
-_clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
+_clerh '' '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
 
 ##
 ## ** CLE command & control **

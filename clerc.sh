@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-20 (Zodiac)
+#* version: 2019-03-21 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -385,17 +385,11 @@ precmd () {
 	C=${C/$DT;}	#: extract command
 	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
-	if [[ $C =~ ^# ]]; then
-		_clerh  "$DT" '' \# note "$C" #: record notes to rich history
-	elif [ $_SST ]; then
-		#: this code will be executed only after an valid command
-		S=$((SECONDS-_SST))
-		_clerh "$DT" $S $_EC $PWD "$C"
-		[ $_EC = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
-		_SST=
-	else
-		_CE=''; _EC=0 #: reset error code
-	fi
+	[ $_SST ] || { _CE=''; _EC=0; } #: reset error code
+	S=$((SECONDS-${_SST:-$SECONDS}))
+	_clerh "$DT" $S $_EC $PWD "$C"
+	[ $_EC = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
+	_SST=
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
@@ -415,23 +409,32 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT EXC
-	#: ignore marked commands
-	[ $_NORH ] && unset _NORH && return
-	# exclude regexp
-	#: `vv` generates its record
-	#: folder is visible so no need to record `cd`
-	EXC="^vv\ |^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^xx$|^aa$|^lscreen"
+	local DT REX S V
+	#dbg_print "_clerh    DT:'$1' Secs:'$2' Ret:'$3' WD:'$4' cmd:'$5'"
+	#: ignore commands that dont want to be recorded
+	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen"
+	[[ $5 =~ $REX  || -n $_NORH ]] && unset _NORH && return
 	#: check timestamp and create if missing
-	if [ $# -lt 5 ]; then
-		DT=`date "+$CLE_HTF"`
-	else
-		DT=$1
-		shift
-	fi
-	[[ $4 =~ $EXC ]] && return
-	echo -E "$DT;$CLE_USER-${CLE_SH:0:1}$$;$1;$2;$3;$4" >>$CLE_HIST
-}
+	[ "$1" ] && DT=$1 || DT=`date "+$CLE_HTF"`
+	S="$DT;$CLE_USER-${CLE_SH:0:1}$$"
+	REX='^\$[A-Za-z0-9_]*' #: regex to identify variables
+	case "$5" in
+	echo\ \$*) #: special records for `echo $VARIABLE`
+		for V in $5; do
+			if [[ $V =~ $REX ]]; then
+				V=${V/\$/}
+				DT=`vv $V`
+				echo -E "$S;;$;$4;${DT:-$V=''}"
+			fi
+		done;;
+	xx) # directory bookmark
+		echo -E "$S;;*;$4;" ;;
+	\#*) #: notes to rich history
+		echo -E "$S;;#;$4;$5" ;;
+	*) #: regular commands
+		echo -E "$S;$2;$3;$4;$5" ;;
+	esac
+} >>$CLE_HIST
 
 
 # Use alias built-ins for startup
@@ -492,7 +495,7 @@ fi
 .. () { cd ..;}
 ... () { cd ../..;}
 ## `xx` & `cx`   - bookmark $PWD & use later
-xx () { _XX=$PWD;_clerh '' '*' $PWD ''; echo path bookmark: $_XX; }
+xx () { _XX=$PWD; echo path bookmark: $_XX; }
 cx () { cd $_XX; }
 
 ##
@@ -910,7 +913,7 @@ EOT
 [ -r . ] || cd #: go home if this is unreadable directory
 
 # record this startup into rich history
-_clerh '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
+_clerh '' '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
 
 ##
 ## ** CLE command & control **
