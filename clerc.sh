@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-21 (Zodiac)
+#* version: 2019-03-22 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -997,6 +997,15 @@ cle () {
 	reload) ## `cle reload [bash|zsh]` - reload CLE
 		S=${1:-$CLE_SH}
 		exec $CLE_RC -$S;;
+	mod)    ## `cle mod`         - cle module management
+		#: this is just a fallback to initialize modularity
+		#: downloaded cle-mod overrides this code
+		ask Activate CLE modules? || return
+		N=cle-mod
+		S=$CLE_D/$N
+		curl -k $CLE_SRC/modules/$N >$S
+		grep -q "# .* $I:" $S || { printb Module download failed; rm -f $S; return 1;}
+		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
 		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
