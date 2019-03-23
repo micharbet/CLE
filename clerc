@@ -781,9 +781,9 @@ cle () {
 		unset CLE_1
 		I='# Command Live Environment'
 		S=$HOME/.${SHELL##*/}rc
-		grep -A1 "$I" $S && printb CLE is already hooked in $C && return 1
-		ask "Do you want to add CLE to $C?" || return
-		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $C
+		grep -A1 "$I" $S && printb CLE is already hooked in $S && return 1
+		ask "Do you want to add CLE to $S?" || return
+		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
 		N=$CLE_D/rc.new
