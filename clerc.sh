@@ -355,7 +355,8 @@ _cledefp () {
 	CLE_P2='^h'
 	CLE_P3='\w ^$'
 	CLE_PT='$CLE_SH: \u@^H'
-	case "$USER-$CLE_WS" in
+	#: decide by username and if the host is remote
+	case "$USER-${CLE_WS#$CLE_FHN}" in
 	root-)	_DEFC=red;;	#: root@workstation
 	*-)	_DEFC=marley;;	#: user's basic color scheme
 	root-*)	_DEFC=RbB;;	#: root@remote
