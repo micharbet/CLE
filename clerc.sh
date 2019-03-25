@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-22 (Zodiac)
+#* version: 2019-03-25 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -417,14 +417,15 @@ _clerh () {
 	#: check timestamp and create if missing
 	[ "$1" ] && DT=$1 || DT=`date "+$CLE_HTF"`
 	S="$DT;$CLE_USER-${CLE_SH:0:1}$$"
-	REX='^\$[A-Za-z0-9_]*' #: regex to identify variables
+	REX='^\$[A-Za-z0-9_]+' #: regex to identify simple variables
 	case "$5" in
-	echo\ \$*) #: special records for `echo $VARIABLE`
+	echo*) #: create special records for `echo $VARIABLE`
+		echo -E "$S;$2;$3;$4;$5"
 		for V in $5; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
 				DT=`vdump $V`
-				echo -E "$S;;$;$4;${DT:-$V=''}"
+				echo -E "$S;;$;$4;${DT:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
