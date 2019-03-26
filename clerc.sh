@@ -1006,7 +1006,7 @@ cle () {
 		N=cle-mod
 		S=$CLE_D/$N
 		curl -k $CLE_SRC/modules/$N >$S
-		grep -q "# .* $I:" $S || { printb Module download failed; rm -f $S; return 1;}
+		grep -q "# .* $N:" $S || { printb Module download failed; rm -f $S; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
 		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
@@ -1021,7 +1021,7 @@ cle () {
 		esac;;										# dbg
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
-		C=`ls "$CLE_D/cle-*" 2>/dev/null`
+		C=`ls $CLE_D/cle-* 2>/dev/null`
 		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files

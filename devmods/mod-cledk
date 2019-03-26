@@ -63,8 +63,8 @@ _cle_commit () (
 	gicom $1
 )
 
-## `cle modln`      - symlink module from $CLE_DK
-_cle_modln () (
+## `cle modcp`      - copy module from $CLE_DK
+_cle_modcp () (
 	F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
 	case `wc -w <<<$F` in
 	0)
@@ -80,7 +80,7 @@ _cle_modln () (
 		;;
 	esac
 	echo Linking $FF
-	ln -sf $FF $CLE_D
+	cp $FF $CLE_D
 	cle reload
 )
 

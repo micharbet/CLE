@@ -1,7 +1,7 @@
 ##
 ## ** cle-mod: CLE module management **
 #
-#* version: 2019-03-22
+#* version: 2019-03-26
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -19,54 +19,51 @@ local MODINDEX=$CLE_D/$INDEXFILE
 # cle-mod helper functions
 #
 # check installed module - where it came from
-modtype () (
+_modstat () (
 	M=`basename $1`
-	MLINK=`readlink $1`
-	MSRC="LN"
-	if [ -z "$MLINK" ]; then
-		if grep $M $MODINDEX >/dev/null; then
-			MSRC="DL"
+	SUM=`_modsum $1`
+	if grep -q $M $MODINDEX; then
+		if grep -q "$M:.*:$SUM" $MODINDEX; then
+			echo ""
+			return 0	# code 0, module ok
 		else
-			echo "CU"
-			return 2	# return code indicates module not to be deleted!
+			# this module has different checksum
+			echo "UPG"
+			return 1	# code 1 means upgradable module
 		fi
+	else
+		# this module doesn't exist in official repo
+		echo "CUS"
+		return 2		# means: custom module
 	fi
-	echo $MSRC
 )
 
 # extract module description 
-modesc () (
-	local M=`basename $1`
-	sed -n "/^##/s/.*$M:\s*\([^*]*\)\**/\1/p" $1
-)
+_modesc () ( sed -n "/^##/s/.*$(basename $1):\s*\([^*]*\)\**/\1/p" $1; )
 
 # extract module version 
-modver () (
-	sed -n "s/^#\* version:\s*//p" $1
-)
+_modver () ( sed -n "s/^#\* version:\s*//p" $1; )
 
 # compute module content checksum
-modsum () (
-	md5sum $1 | cut -d' ' -f1
-)
+_modsum () ( md5sum $1 | cut -d' ' -f1; )
 
 # module deails
-modet () (
+_modetails () (
 	M=$CLE_D/$1
-	MDESC=`modesc $M`
-	MSRC=`modtype $M`
-	MVER=`modver $M`
-	printf "$_CW%-15s $_Cw[%-3s %10s] $_CN%s\n" $1 $MSRC "$MVER" "$MDESC"
+	MDESC=`_modesc $M`
+	MSTAT=`_modstat $M`
+	MVER=`_modver $M`
+	printf "$_CL%-15s $_CN$_CD [%-3s %10s] $_CN %s\n" "$1" "$MSTAT" "$MVER" "$MDESC"
 )
 
 # get list of currently installed modules
-getinstalled () (
+_modinst () (
 	cd $CLE_D
 	ls cle-* mod-* bin-* 2>/dev/null
 )
 
 # download list of available modules
-getindex () (
+_modindex () (
 	curl -ksS $CLE_SRC/modules/$INDEXFILE >$MODINDEX.tmp
 	M=`head -1 $MODINDEX.tmp`
 	# check if the file appears lik module index
@@ -84,20 +81,20 @@ local M MM MODS DMM MDESC MSRC MVER
 
 case "$1" in
 ls)	## `cle mod ls`        - list installed modules
-	printb ${_TU}Modules installed in $CLE_D:
-	for M in `getinstalled`; do
-		modet $M
+	printb ${_CU}Modules installed in $CLE_D:
+	for M in `_modinst`; do
+		_modetails $M
 	done
 	;;
 avail)	## `cle mod avail`     - list modules available to install
-	getindex || return $?
-	printb ${_TU}Modules available in repository: $CLE_SRC
+	_modindex || return $?
+	printb ${_CU}Modules available in repository: $CLE_SRC
 	cat $MODINDEX | { IFS=:; while read MM MVER MSUM MDESC; do
 		printf "$_CW%-15s $_Cw[%10s] $_CN%s\n" $MM "$MVER" "$MDESC"
 	done; }
 	;;
 add)	## `cle mod add [mod]` - install/upgrade module from repository
-	getindex || return $?
+	_modindex || return $?
 
 	# get matching modules
 	MODS=`grep ^[^:]*$2[^:]* $MODINDEX |cut -d: -f1`
@@ -134,7 +131,7 @@ add)	## `cle mod add [mod]` - install/upgrade module from repository
 		if [[ $MM =~ 'mod-' ]]; then
 			# now include the module
 			printb Executing module $CLE_D/$MM
-			MDESC=`modesc $CLE_D/$MM`
+			MDESC=`_modesc $CLE_D/$MM`
 			_clexe $CLE_D/$MM && { echo $MM: $MDESC; printb ready!; }
 		fi
 	else
@@ -147,7 +144,7 @@ add)	## `cle mod add [mod]` - install/upgrade module from repository
 	fi
 	;;
 del)	## `cle mod del [mod]` - delete module
-	MODS=`getinstalled | grep "$2"`
+	MODS=`_modinst | grep "$2"`
 	[ "$MODS" ] || { echo Nothing like $2 to remove; return 1; }
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
@@ -161,11 +158,14 @@ del)	## `cle mod del [mod]` - delete module
 	fi
 	[ $MM ] || return
 	echo
-	modet $MM
+	_modetails $MM
 	ask "Do yo want to remove this?" || return
 	mkdir -p $CLE_D/off
 	mv -f $CLE_D/$MM $CLE_D/off
 	echo Module $MM moved into $CLE_D/off
+	;;
+update)
+	printb Module update - not implemented yet, TBD
 	;;
 '')
 	printb ${_TU}CLE module management
@@ -185,5 +185,5 @@ help)
 esac
 
 # remove internal functions
-unset modtype modesc modver modsum modet getinstalled getindex
+unset _modstat _modesc _modver _modsum _modetails _modinst _modindex
 
