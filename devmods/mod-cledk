@@ -1,11 +1,11 @@
 ##
 ## ** mod-cledk: functions to assist CLE development process **
 #
-#* version: 2019-03-12
+#* version: 2019-03-27
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2017-2018 by Michael Arbet
+#* Copyright (C) 2017-2019 by Michael Arbet
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -15,34 +15,60 @@
 # where I do development
 CLE_DK=$HOME/d/CLE
 
-## `cle e [mod]`    - edit clerc file ev. specified module
-_cle_e () (
-	local F=$CLE_DK/clerc.sh
-	[ -n "$1" ] && F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
+# helper function to find module by incomplete name
+_dkchoosemod () {
+	local F
+	F=`ls modules/* devmods/* 2>/dev/null | grep $1`
 	case `wc -w <<<$F` in
 	0)
-		echo no such file: $1
+		echo no such module: $1
 		return 1;;
 	1)
-		vim $F;;
+		FILENAME=$F;;
 	*)
-		PS3="$_CL choose file # $_CN"
-		select FF in $F; do
-			[ -n "$FF" ] && break
+		PS3="$_CL choose module # $_CN"
+		select FILENAME in $F; do
+			[ -n "$FILENAME" ] && break
 		done
-		vim $FF
 		;;
 	esac
+}
+
+## `cle e [mod]`    - edit clerc file ev. specified module
+_cle_e () (
+	cd $CLE_DK
+	if [ $1 ]; then
+		_dkchoosemod $1
+	else
+		FILENAME=$CLE_DK/clerc.sh
+	fi
+	vim $FILENAME
 )
 
-## `cle cp [short]` - copy and run new development version of clerc
+## `cle cp [mod]`   - copy development version of clerc or a module
 _cle_cp() {
-	[ $1 ] || CLERS="$CLE_DK/clerc.sh $CLE_RC"
-	[[ $1 =~ ^s ]] && CLERS="$CLE_DK/clerc $CLE_RC"
-	eval diff $CLERS
-	eval ls -lL $CLERS
-	ask "replace clerc?" && { cp $CLE_RC $CLE_RC.bkdev; eval cp $CLERS; chmod 755 $CLE_RC; cle reload; }
+	local DEST FILENAME
+	pushd $CLE_DK >/dev/null
+	if [ $1 ]; then
+		_dkchoosemod $1
+		DEST=$CLE_D/`basename $FILENAME`
+	else
+		FILENAME=clerc.sh
+		DEST=$CLE_RC
+	fi
+
+	printb " ${_CU}diff $DEST $FILENAME${_Cu}"
+	if diff $DEST $FILENAME; then
+		echo No diff...
+		popd
+	else
+		ask "replace $DEST?" || return
+		cp $FILENAME $DEST
+		popd
+		cle reload
+	fi
 }
+
 
 ## `cle func`       - list all current bash functions
 _cle_func () {
@@ -61,26 +87,5 @@ _cle_commit () (
 	# generate short version of CLE
 	make
 	gicom $1
-)
-
-## `cle modcp`      - copy module from $CLE_DK
-_cle_modcp () (
-	F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
-	case `wc -w <<<$F` in
-	0)
-		echo no such module: $1
-		return 1;;
-	1)
-		FF=$F;;
-	*)
-		PS3="$_CL choose module # $_CN"
-		select FF in $F; do
-			[ -n "$FF" ] && break
-		done
-		;;
-	esac
-	echo Linking $FF
-	cp $FF $CLE_D
-	cle reload
 )
 

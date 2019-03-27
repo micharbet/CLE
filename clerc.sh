@@ -478,7 +478,7 @@ esac
 #: busybox identified by symlinked 'grep' file
 if [ -L `command which grep` ];then
 	#: Fedora defines this mess :(
-	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep
+	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep 2>/dev/null
 else
 	alias grep='grep --color=auto'
 fi
