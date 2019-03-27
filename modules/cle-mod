@@ -17,7 +17,7 @@ local INDEXFN=modulist
 local INDEXFILE=$CLE_D/$INDEXFN
 
 # variable used only in this script
-local MOD MODS DMOD 
+local MOD MODS DMOD MUPD MSTAT
 
 #
 # cle-mod helper functions
@@ -30,20 +30,16 @@ _clemodstat () (
 		if [ -z "$SUMI" ]; then
 			# custom module, not found in index
 			echo C
-			return 2
 		elif [ $SUMI = $SUMM ]; then
 			# installed
 			echo I
-			return 0
 		else
 			# installed, upgradable
 			echo U
-			return 1
 		fi
 	else
 		# no such module here
 		echo
-		return 3
 	fi
 )
 
@@ -82,7 +78,7 @@ _clemodlist () {
 	pushd $CLE_D >/dev/null
 	INST=`ls cle-* mod-* bin-* 2>/dev/null`
 	AVAIL=`cut -d: -f1 $INDEXFILE`
-	sort <<<$INST$'\n'$AVAIL | uniq
+	echo "$INST $AVAIL" | tr ' ' '\n' | sort | uniq
 	popd >/dev/null
 }
 
@@ -100,79 +96,67 @@ _clemodindex () (
 	fi
 )
 
+# install module
+_clemodadd () {
+	DMOD=$CLE_D/dl-$1
+	curl -ksS $CLE_SRC/modules/$1 >$DMOD
+	# check module signature
+	# every regular cle module should have at least it's identification strings
+	# (comments at the beginning, see this file or mod-example)
+	if grep -q "^##* *.*$1: ..*" $DMOD ; then
+		mv -f $DMOD $CLE_D/$1
+		if [[ $1 =~ 'mod-' ]]; then
+			# now include the module
+			_clexe $CLE_D/$1
+		fi
+		_clemodet $1
+	else
+		# either download error or this is no module
+		echo $1 download failed!
+		rm -f $DMOD
+		return 1
+	fi
+}
+
 #
 # cle mod script main
 #
 case "$1" in
 ls)	## `cle mod ls`        - list modules
-	pushd $CLE_D >/dev/null
-	printb "Repository:  $CLE_SRC"
-	printb "Local store: $CLE_D"
+	printb "Repository:  $_CN$CLE_SRC"
+	printb "Local store: $_CN$CLE_D"
 	_clemodindex
 	echo
 	for MOD in `_clemodlist`; do
 		_clemodet $MOD
 	done
-	popd >/dev/null
 	;;
-add)	## `cle mod add [mod]` - install/upgrade module from repository
-	_clemodindex || return $?
-	pushd $CLE_D >/dev/null
-
+add)	## `cle mod add [mod]` - install module from repository
+	#_clemodindex || return $?
 	# get matching modules
-	#MODS=`grep ^[^:]*$2[^:]* $INDEXFILE |cut -d: -f1`
 	MODS=`sed -n "/[^:]*$2[^:]*/s/\([^:]*\):.*/\1/p" $INDEXFILE`
-	[ "$MODS" ] || { echo Nothing like $2 to install; popd >/dev/null; return 1; }
-
-	# choose one if there are more matches
+	[ "$MODS" ] || { echo Nothing like $2 to install; return 1; }
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
-		# chose one module in case of more matches
+		# more matches, choose one
 		PS3="$_CL choose module # $_CN"
 		select MOD in $MODS; do
 			[ -n "$MOD" ] && break
 		done
 	else
+		# exactly one module
 		MOD=$MODS
 	fi
-	[ $MOD ] || { popd >/dev/null; return; }
-
+	[ $MOD ] || return
 	# show selected module details
 	echo
 	_clemodet $MOD
-	ask "Do you want to install this module?" || { popd >/dev/null; return; }
-
-	# module setup
-	echo "Downloading $MOD"
-	DMOD=$CLE_D/dl-$MOD
-	curl -ksS $CLE_SRC/modules/$MOD >$DMOD
-	# check module signature
-	# every regular cle module should have at least it's identification strings
-	# (comments at the beginning, see this file or mod-example)
-	if grep -q "## *.*$MOD: ..*" $DMOD ; then
-		mv -f $DMOD $CLE_D/$MOD
-		if [[ $MOD =~ 'mod-' ]]; then
-			# now include the module
-			echo Executing module $CLE_D/$MOD
-			_clexe $CLE_D/$MOD
-		fi
-		echo ready:
-		_clemodet $MOD
-		popd >/dev/null
-	else
-		# either download error or this is no module
-		printb Download error, no module header found, see following:
-		head $DMOD
-		printb Removing temporary file...
-		rm -f $DMOD
-		popd >/dev/null
-		return 1
-	fi
+	ask "Do you want to install this module?" || return
+	_clemodadd $MOD
 	;;
-del)	## `cle mod del [mod]` - delete module
-	pushd $CLE_D >/dev/null
-	MODS=`ls cle-* mod-* bin-* 2>/dev/null | grep $2`
-	[ "$MODS" ] || { echo Nothing like $2 to remove; popd >/dev/null; return 1; }
+rm)	## `cle mod rm [mod]`  - delete module
+	MODS=`cd $CLE_D; ls cle-* mod-* bin-* 2>/dev/null | grep $2`
+	[ "$MODS" ] || { echo Nothing like $2 to remove; return 1; }
 	MODN=`wc -w <<<$MODS`
 	if [ $MODN -gt 1 ]; then
 		# chose one in case of more matches
@@ -184,21 +168,33 @@ del)	## `cle mod del [mod]` - delete module
 	else
 		MOD=$MODS
 	fi
-	[ $MOD ] || { popd >/dev/null; return; }
+	[ $MOD ] || return
 	_clemodet $MOD
-	ask "Do yo want to remove this?" || { popd >/dev/null; return; }
-	mkdir -p off
-	mv -f $MOD off
+	ask "Do yo want to remove this?" || return
+	mkdir -p $CLE_D/off
+	mv -f $CLE_D/$MOD $CLE_D/off
 	echo Module $MOD moved into $CLE_D/off
-	popd >/dev/null
 	;;
-update)
-	printb Module update - not implemented yet, TBD
+update)	## `cle mod update`    - update all modules
+	_clemodindex || return $?
+	MODS=`cd $CLE_D;ls cle-* mod-* bin-* 2>/dev/null`
+	MUPD=''
+	for MOD in $MODS; do
+		MSTAT=`_clemodstat $MOD`
+		[ "$MSTAT" = "U" ] && MUPD="$MUPD $MOD"
+	done
+	printb Modules to update:$_CN $MUPD
+	ask "Continue?" || return
+	mkdir -p $CLE_D/off
+	for MOD in $MUPD; do
+		cp -f $CLE_D/$MOD $CLE_D/off
+		_clemodadd $MOD
+	done
 	;;
 '')
-	printb ${_CU}CLE module management
-	echo "Repository:  $_Cw $CLE_SRC/$_CN"
-	echo "Local store: $_Cw $CLE_D$_CN"
+	printb " ${_CU}CLE module management"
+	printb "Repository:  $_CN$CLE_SRC"
+	printb "Local store: $_CN$CLE_D"
 	echo
 	cle help "cle mod"
 	;;
