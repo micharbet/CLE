@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-25 (Zodiac)
+#* version: 2019-03-29 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -410,10 +410,11 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT REX S V
+	local DT REX S V W
 	#dbg_print "_clerh    DT:'$1' Secs:'$2' Ret:'$3' WD:'$4' cmd:'$5'"
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen"
+	W=${4/$HOME/\~}
 	[[ $5 =~ $REX  || -n $_NORH ]] && unset _NORH && return
 	#: check timestamp and create if missing
 	[ "$1" ] && DT=$1 || DT=`date "+$CLE_HTF"`
@@ -421,20 +422,20 @@ _clerh () {
 	REX='^\$[A-Za-z0-9_]+' #: regex to identify simple variables
 	case "$5" in
 	echo*) #: create special records for `echo $VARIABLE`
-		echo -E "$S;$2;$3;$4;$5"
+		echo -E "$S;$2;$3;$W;$5"
 		for V in $5; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
 				DT=`vdump $V`
-				echo -E "$S;;$;$4;${DT:-unset $V}"
+				echo -E "$S;;$;$W;${DT:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
-		echo -E "$S;;*;$4;" ;;
+		echo -E "$S;;*;$W;" ;;
 	\#*) #: notes to rich history
-		echo -E "$S;;#;$4;$5" ;;
+		echo -E "$S;;#;$W;$5" ;;
 	*) #: regular commands
-		echo -E "$S;$2;$3;$4;$5" ;;
+		echo -E "$S;$2;$3;$W;$5" ;;
 	esac
 } >>$CLE_HIST
 
@@ -565,11 +566,11 @@ _clehhout () (
 	while read -r DT SID SEC EC D C; do
 		case $EC in
 		 0) CE=$_Cg; CC=$_CN;;
-		 @) CE=$_Cg; CC=$_Cg;;
+		 @) CE=$_Cc; CC=$_Cc;;
 		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
 		 *) CE=$_Cr; CC=$_CN;;
 		esac
-		printf "$_CB%s $_Cb%s $_CB%4s $CE%-3s $CC%s  $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
+		printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-3s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
 		cat <<<$C #: this cannot be part of printf above to keep possible backslashes
 	done
 )
@@ -915,7 +916,8 @@ EOT
 [ -r . ] || cd #: go home if this is unreadable directory
 
 # record this startup into rich history
-_clerh '' '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY($TERM)" "$CLE_SH $CLE_RC  $CLE_VER"
+_clerh '' '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
+[ $CLE_DEBUG ] && _clerh '' '' @ $PWD "$CLE_VER"
 
 ##
 ## ** CLE command & control **
