@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-29 (Zodiac)
+#* version: 2019-03-30 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -344,16 +344,16 @@ _clepcp () {
 # craft the prompt from defined strings
 _cleps () {
 	[ "$CLE_PT" ] && PS1="$_PE\${_CT}$(_clesc $CLE_PT)\${_Ct}$_Pe" || PS1=''
-	PS1=$PS1`_clesc "^c0$CLE_P0 ^c1$CLE_P1 ^c2$CLE_P2 ^c3$CLE_P3 ^cN^c4"`
+	PS1=$PS1`_clesc "^c0$CLE_P0^c1$CLE_P1^c2$CLE_P2^c3$CLE_P3^cN^c4"`
 	PS2=`_clesc "^c3>>> ^cN^c4"`
 }
 
 # default prompt strings and colors
 _cledefp () {
-	CLE_P0='^e \t'
-	CLE_P1='\u'
-	CLE_P2='^h'
-	CLE_P3='\w ^$'
+	CLE_P0='^e \t '
+	CLE_P1='\u '
+	CLE_P2='^h '
+	CLE_P3='\w ^$ '
 	CLE_PT='$CLE_SH: \u@^H'
 	#: decide by username and if the host is remote
 	case "$USER-${CLE_WS#$CLE_FHN}" in
@@ -804,14 +804,21 @@ _cledefp
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
-# transition from older config
-[ -r $CLE_CF ] && read Z <$CLE_CF	# transition
-[[ ${Z:-Zodiac} =~ Zodiac ]] || {	# transition
-	C=`grep CLE_CLR $CLE_CF`	# transition
-	mv $CLE_CF $CLE_CF-Nova		# transition
-	eval $C				# transition
-	_clesave			# transition
-}					# transition
+# edit config from old version, transition to new
+[ -r $CLE_CF ] && read _C <$CLE_CF  # get version id			# transition
+[[ ${_C:-Zodiac} =~ Zodiac ]] || {					# transition
+	mv $CLE_CF $CLE_CF-old						# transition
+	_C="s!^#.*!# $CLE_VER, transformed from $CLE_CF-old!"		# transition
+	if [ $CLE_WS ]; then						# transition
+		# ensure inheritance on remote sessions 		# transition
+		_C=$_C";/^CLE_P/d"					# transition
+	else								# transition
+		# rename CLE_Px to $CLE_PBx				# transition
+		_C=$_C";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		# transition
+		_C=$_C";s/%/^/g" # replace % with ^			# transition
+	fi								# transition
+	sed -e "$_C" <$CLE_CF-old >$CLE_CF				# transition
+}									# transition
 _clexe $CLE_CF
 _clepcp
 
@@ -945,7 +952,7 @@ cle () {
 			#: this is to prevent situation when inherited value is set in configuration
 			#: causing to break the inheritance later
 			S=$*
-			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }"
+			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
 			vdump CLE_P$I
 		fi;;
