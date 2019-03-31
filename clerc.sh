@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-30 (Zodiac)
+#* version: 2019-03-31 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -319,9 +319,10 @@ _clesc () (
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\$(gitwb)/g'
-	 -e 's/\^e/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
-	 -e 's/\^c\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
-	 -e 's/\^v\([[:alnum:]]*\)/\1=\$\1/g'
+	 -e 's/\^?/\$_EC/g'
+	 -e 's/\^[E]/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
+	 -e 's/\^[C]\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
+	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
 	#: compose substitute command, remove unwanted characters
@@ -344,8 +345,8 @@ _clepcp () {
 # craft the prompt from defined strings
 _cleps () {
 	[ "$CLE_PT" ] && PS1="$_PE\${_CT}$(_clesc $CLE_PT)\${_Ct}$_Pe" || PS1=''
-	PS1=$PS1`_clesc "^c0$CLE_P0^c1$CLE_P1^c2$CLE_P2^c3$CLE_P3^cN^c4"`
-	PS2=`_clesc "^c3>>> ^cN^c4"`
+	PS1=$PS1`_clesc "^C0$CLE_P0^C1$CLE_P1^C2$CLE_P2^C3$CLE_P3^CN^C4"`
+	PS2=`_clesc "^C3>>> ^CN^C4"`
 }
 
 # default prompt strings and colors
@@ -354,7 +355,7 @@ _cledefp () {
 	CLE_P1='\u '
 	CLE_P2='^h '
 	CLE_P3='\w ^$ '
-	CLE_PT='$CLE_SH: \u@^H'
+	CLE_PT='\u@^H'
 	#: decide by username and if the host is remote
 	case "$USER-${CLE_WS#$CLE_FHN}" in
 	root-)	_DEFC=red;;	#: root@workstation
@@ -366,7 +367,7 @@ _cledefp () {
 
 # save configuration
 _clesave () (
-	date +"# CLE/$CLE_VER %Y-%m-%d %H:%M:%S"
+	echo "# $CLE_VER"
 	vdump "CLE_CLR|CLE_PB.|CLE_PZ."
 ) >$CLE_CF
 
@@ -806,7 +807,8 @@ _cledefp
 # 4. get values from config file
 # edit config from old version, transition to new
 [ -r $CLE_CF ] && read _C <$CLE_CF  # get version id			# transition
-[[ ${_C:-Zodiac} =~ Zodiac ]] || {					# transition
+#[[ ${_C:-Zodiac} =~ Zodiac ]] || {					# transition
+{  							# temporarily forced transition
 	mv $CLE_CF $CLE_CF-old						# transition
 	_C="s!^#.*!# $CLE_VER, transformed from $CLE_CF-old!"		# transition
 	if [ $CLE_WS ]; then						# transition
@@ -816,8 +818,11 @@ _cledefp
 		# rename CLE_Px to $CLE_PBx				# transition
 		_C=$_C";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		# transition
 		_C=$_C";s/%/^/g" # replace % with ^			# transition
+		_C=$_C";s/\^c/^C/g" # replace ^c with ^C		# transition
+		_C=$_C";s/\^e/^E/g" # replace ^c with ^E		# transition
 	fi								# transition
 	sed -e "$_C" <$CLE_CF-old >$CLE_CF				# transition
+	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	# transition
 }									# transition
 _clexe $CLE_CF
 _clepcp
@@ -957,7 +962,11 @@ cle () {
 			vdump CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
-		[ "$1" = off ] && CLE_PT='' || CLE_PT=${1:-'$CLE_SH: ^u@^H'}
+		case "$1" in
+		off)	CLE_PT='';;
+		'')	_clepcp;;
+		*)	cle pT "$*";;
+		esac
 		_cleps;;
 	cf)	## `cle cf [ed|reset]`     - view/edit/reset/revert configuration
 		case "$1" in
