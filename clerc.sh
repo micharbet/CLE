@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-03-31 (Zodiac)
+#* version: 2019-04-01 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -330,6 +330,13 @@ _clesc () (
 	eval sed "$SUBS" <<<"$*"
 )
 
+_cle_r () {
+	[ "$1" != h ] && return
+	printf "\n$_Cr     ,==~~-~w^, \n    /#=-.,#####\\ \n .,!. ##########!\n((###,. \`\"#######;."
+	printf "\n &######\`..#####;^###)\n$_CW   (&@$_Cr^#############\"\n$_CW"
+	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
+}
+
 # override default prompt strings with configured values
 _clepcp () {
 	local I
@@ -571,7 +578,7 @@ _clehhout () (
 		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
 		 *) CE=$_Cr; CC=$_CN;;
 		esac
-		printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-3s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
+		printf "$_CB%s $_Cb%-13s $_CB%4s $CE%-3s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
 		cat <<<$C #: this cannot be part of printf above to keep possible backslashes
 	done
 )
@@ -809,8 +816,9 @@ _cledefp
 [ -r $CLE_CF ] && read _C <$CLE_CF  # get version id			# transition
 #[[ ${_C:-Zodiac} =~ Zodiac ]] || {					# transition
 {  							# temporarily forced transition
-	mv $CLE_CF $CLE_CF-old						# transition
-	_C="s!^#.*!# $CLE_VER, transformed from $CLE_CF-old!"		# transition
+	_O=$CLE_D/cf-old
+	mv $CLE_CF $_O 2>/dev/null					# transition
+	_C="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
 	if [ $CLE_WS ]; then						# transition
 		# ensure inheritance on remote sessions 		# transition
 		_C=$_C";/^CLE_P/d"					# transition
@@ -821,7 +829,7 @@ _cledefp
 		_C=$_C";s/\^c/^C/g" # replace ^c with ^C		# transition
 		_C=$_C";s/\^e/^E/g" # replace ^c with ^E		# transition
 	fi								# transition
-	sed -e "$_C" <$CLE_CF-old >$CLE_CF				# transition
+	sed -e "$_C" <$_O >$CLE_CF					# transition
 	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	# transition
 }									# transition
 _clexe $CLE_CF
@@ -857,6 +865,10 @@ PROMPT_DIRTRIM=3
 
 HISTCONTROL=ignoredups
 HISTFILE=$CLE_D/history-$CLE_SH
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILESIZE=10000
+HISTTIMEFORMAT='%F %T '
 CLE_HTF='%F %T'
 
 # completions
