@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-01 (Zodiac)
+#* version: 2019-04-03 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -15,18 +15,18 @@
 
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
 
-# Check if the shell is interactive session and CLE not yet started
-# This is required for scp compatibility
-[ -t 0 -a -z "$CLE_EXE" ] || echo "Warning! nested CLE start"		# dbg
+# Check if the shell is interactive and CLE not yet started
+#: required for scp compatibility and also prevents loop upon `cle reload`
+[ -t 0 -a -z "$CLE_EXE" ] || dbg_print "Warning! nested CLE start"	# dbg
 [ -t 0 -a -z "$CLE_EXE" ] || return
 # Now it really starts, warning: magic inside!
 
 #:------------------------------------------------------------:#
 # Debugging helpers							# dbg
-dbg_print () { [ $CLE_DEBUG ] && echo "$*" >/dev/tty; }			# dbg
+dbg_print () { [ $CLE_DEBUG ] && echo "DBG: $*" >/dev/tty; }			# dbg
 dbg_var () (								# dbg
 	eval "V=\$$1"							# dbg
-	[ $CLE_DEBUG ] && printf "%-16s = %s\n" $1 "$V" >/dev/tty	# dbg
+	[ $CLE_DEBUG ] && printf "DBG: %-16s = %s\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
 #: ^^^ This was first bit of zsh/bash compatible code			# dbg
 dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
@@ -333,8 +333,8 @@ _clesc () (
 _cle_r () {
 	[ "$1" != h ] && return
 	printf "\n$_Cr     ,==~~-~w^, \n    /#=-.,#####\\ \n .,!. ##########!\n((###,. \`\"#######;."
-	printf "\n &######\`..#####;^###)\n$_CW   (&@$_Cr^#############\"\n$_CW"
-	printf "    \`&&@\\__,-~-__,\n     \`&@@@@@69@&'\n        '&&@@@&'\n$_CN\n"
+	printf "\n &######\`..#####;^###)\n$_CW   (@@$_Cr^#############\"\n$_CW"
+	printf "    \\@@@\\__,-~-__,\n     \`&@@@@@69@@/\n        ^&@@@@&*\n$_CN\n"
 }
 
 # override default prompt strings with configured values
@@ -421,7 +421,7 @@ _clerh () {
 	local DT REX S V W
 	#dbg_print "_clerh    DT:'$1' Secs:'$2' Ret:'$3' WD:'$4' cmd:'$5'"
 	#: ignore commands that dont want to be recorded
-	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen"
+	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
 	W=${4/$HOME/\~}
 	[[ $5 =~ $REX  || -n $_NORH ]] && unset _NORH && return
 	#: check timestamp and create if missing
@@ -534,39 +534,48 @@ aa () {
 
 ##
 ## ** History tools **
-## REWORKING RICH HISTORY FROM SCRATCH
 ## `h`               - shell 'history' wrapper
 CLE_HTF=
-h () {
+h () (
 	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
 	done;) 
-	_NORH=1
-}
+)
 
 ## `hh [opt] [srch]` - rich history viewer
-hh () {
-	#: Compose read filter
-	case "$1" in
-	'')	SEARCH="tail -100 $CLE_HIST"
-		;;
-	*[!0-9]*)
-		SEARCH="grep '$1' $CLE_HIST"
-		;;
-	*)	SEARCH="tail -$1 $CLE_HIST"
-		;;
-	esac
+hh () (
+	OUTF='_clehhout'
+	DISP=""
+	S=""
+	while getopts "dtsncfl" O;do
+		case $O in
+		d)	## `hh -d`           - today's commands
+			S=$S" -e '/^$(date "+%F") /!d'";;
+		t)	## `hh -t`           - commands from current session
+			S=$S" -e '/.*;$CLE_USER-${CLE_SH:0:1}$$;.*/!d'";;
+		s)	## `hh -s`           - select successful commands only
+			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
+		n)	## `hh -n`           - do not show time and session id
+			OUTF='_clehhout n';;
+		c)	## `hh -c`           - show only commands
+			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;[^;]*;\(.*\)/\1/p' |uniq";;
+		f) 	## `hh -f`           - show working folder history
+			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;\([^;]*\);.*/\1/p' |sort|uniq";;
+		l)	## `hh -l`           - display using 'less'
+			DISP="|less -r +G";;
+		*)	cle help hh;return
+		esac
+	done
+	shift $((OPTIND-1))
 
-	OUTF=_clehhout
-	# commands only
-	#OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;[^;]*;\(.*\)/\1/p'"
-	# directories
-	#OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;\([^;]*\);.*/\1/p'"
+	#: number (default 100) or search string
+	A=${*:-100}
+	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/$A/!d'"
 
-	#: execute filters
-	eval "$SEARCH | $OUTF"
-	_NORH=1
-}
+	#: execute filter stream
+	dbg_print hh: eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S} | $OUTF  $DISP"
+	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S} | $OUTF  $DISP"
+)
 
 # rich history colorful output filter
 _clehhout () (
@@ -578,7 +587,13 @@ _clehhout () (
 		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
 		 *) CE=$_Cr; CC=$_CN;;
 		esac
-		printf "$_CB%s $_Cb%-13s $_CB%4s $CE%-3s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
+		if [ $1 ]; then
+			#: print less information (option -x)
+			printf " $CE%-3s $CC%-20s: $_CL" "$EC" "$D"
+		else
+			#: print full record
+			printf "$_CB%s $_Cb%-13s $_CB%4s $CE%-3s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
+		fi
 		cat <<<$C #: this cannot be part of printf above to keep possible backslashes
 	done
 )
@@ -812,11 +827,11 @@ _cledefp
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
-# edit config from old version, transition to new
+# rewrite config from old versioni					# transition
 [ -r $CLE_CF ] && read _C <$CLE_CF  # get version id			# transition
 #[[ ${_C:-Zodiac} =~ Zodiac ]] || {					# transition
 {  							# temporarily forced transition
-	_O=$CLE_D/cf-old
+	_O=$CLE_D/cf-old						# transition
 	mv $CLE_CF $_O 2>/dev/null					# transition
 	_C="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
 	if [ $CLE_WS ]; then						# transition
@@ -829,7 +844,7 @@ _cledefp
 		_C=$_C";s/\^c/^C/g" # replace ^c with ^C		# transition
 		_C=$_C";s/\^e/^E/g" # replace ^c with ^E		# transition
 	fi								# transition
-	sed -e "$_C" <$_O >$CLE_CF					# transition
+	[ -f $_O ] && sed -e "$_C" <$_O >$CLE_CF			# transition
 	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	# transition
 }									# transition
 _clexe $CLE_CF
