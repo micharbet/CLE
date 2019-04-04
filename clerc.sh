@@ -4,9 +4,29 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-03 (Zodiac)
+#* version: 2019-04-04 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
+
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# CLE provides:
+# -improved look&feel: colorful prompt, highlighted exit code
+# -persistent alias store - command 'aa'
+# -rich command history - commands 'h' and 'hh'
+# -seamless remote CLE session, with no installation - use command 'lssh'
+# -local live session - lsu/lsudo (su/sudo wrappers)
+# -find more in 'cle help' and Github homepage
+#
+# Installation:
+# 1. Download and execute this file within your shell session
+# 2. Integrate it into your profile:
+#	$ . clerc
+#	$ cle deploy
+# 3. Enjoy!
 
 ## ** WARNING! **
 ## This code is in super early development stage.
@@ -48,21 +68,21 @@ dbg_var BASH
 dbg_var ZSH_NAME
 dbg_print "startup case: '$SHELL:$BASH:$ZSH_NAME:$0'"
 case $SHELL:$BASH:$ZSH_NAME:$0 in
-*clerc*)	# first run!
-	#: code in this section must be strictly POSIX compatible with /bin/sh
-	dbg_print First run
-	RD=$HOME/.cle-`whoami`
-	export CLE_1=$0
-	mkdir -p $RD
-	cp $0 $RD/rc1
-	chmod 755 $RD/rc1
-	exec $RD/rc1 "$@"
-	;;
+#*clerc*)	# first run!
+#	#: code in this section must be strictly POSIX compatible with /bin/sh
+#	dbg_print First run
+#	RD=$HOME/.cle-`whoami`
+#	export CLE_1=$0
+#	mkdir -p $RD
+#	cp $0 $RD/rc1
+#	chmod 755 $RD/rc1
+#	exec $RD/rc1 "$@"
+#	;;
 *zsh::*zsh:*/rc*) # started FROM .zshrc
 	dbg_print sourcing to ZSH - from .zshrc
 	CLE_RC=$0
 	;;
-*:*/rc*) # executed as a command from .cle directory
+*clerc*|*:*/rc*) # executed as a command from .cle directory
 	#: code in this section must be strictly POSIX compatible with /bin/sh
 	#: Now we're looking for suitable shell: user's login shell first, fallback to bash
 	dbg_print executing as LIVE SESSION, looking for shell
@@ -120,6 +140,16 @@ dbg_print ---------------
 
 #:------------------------------------------------------------:#
 # Variables init
+
+# First run code
+if [[ $CLE_RC =~ clerc ]]; then
+	CLE_RD=$HOME/.cle-`whoami`
+	mkdir -m 755 -p $CLE_RD
+	CLE_1=$CLE_RD/rc1
+	cp $CLE_RC $CLE_1
+	chmod 755 $CLE_1
+	CLE_RC=$CLE_1
+fi
 
 # CLE_RC can be relative path, make it full
 CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
@@ -358,7 +388,7 @@ _cleps () {
 
 # default prompt strings and colors
 _cledefp () {
-	CLE_P0='^e \t '
+	CLE_P0='^E \t '
 	CLE_P1='\u '
 	CLE_P2='^h '
 	CLE_P3='\w ^$ '
@@ -832,7 +862,7 @@ _cledefp
 #[[ ${_C:-Zodiac} =~ Zodiac ]] || {					# transition
 {  							# temporarily forced transition
 	_O=$CLE_D/cf-old						# transition
-	mv $CLE_CF $_O 2>/dev/null					# transition
+	mv -f $CLE_CF $_O 2>/dev/null					# transition
 	_C="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
 	if [ $CLE_WS ]; then						# transition
 		# ensure inheritance on remote sessions 		# transition
@@ -995,11 +1025,11 @@ cle () {
 		*)	cle pT "$*";;
 		esac
 		_cleps;;
-	cf)	## `cle cf [ed|reset]`     - view/edit/reset/revert configuration
+	cf)	## `cle cf [ed|reset|rev]`  - view/edit/reset/revert configuration
 		case "$1" in
 		ed)	vi $CLE_CF  && . $CLE_RC;;
-		reset)	mv $CLE_CF $CLE_CF-bk;;
-		revert)	cp $CLE_CF-bk $CLE_CF;;
+		reset)	mv -f $CLE_CF $CLE_CF-bk;;
+		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
 			if [ -f $CLE_CF ]; then
 				printb $_CU$CLE_CF:
