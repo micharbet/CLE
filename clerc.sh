@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-04 (Zodiac)
+#* version: 2019-04-07 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -14,24 +14,20 @@
 # of the License, or (at your option) any later version.
 #
 # CLE provides:
-# -improved look&feel: colorful prompt, highlighted exit code
+# -improved look&feel: responsive colorful prompt, highlighted exit code
 # -persistent alias store - command 'aa'
-# -rich command history - commands 'h' and 'hh'
-# -seamless remote CLE session, with no installation - use command 'lssh'
+# -rich history - commands 'h' and 'hh'
+# -seamless remote CLE session, with no installation - use 'lssh' instead 'ssh'
 # -local live session - lsu/lsudo (su/sudo wrappers)
-# -find more in 'cle help' and Github homepage
+# -setup from command line, eg. 'cle color RGB'
+# -find more using 'cle help' and 'cle doc'
 #
-# Installation:
+# Quick setup:
 # 1. Download and execute this file within your shell session
 # 2. Integrate it into your profile:
 #	$ . clerc
 #	$ cle deploy
 # 3. Enjoy!
-
-## ** WARNING! **
-## This code is in super early development stage.
-## Do not use, otherwise a puppy or kitten may die!
-##
 
 [ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }				# dbg
 
@@ -43,13 +39,12 @@
 
 #:------------------------------------------------------------:#
 # Debugging helpers							# dbg
-dbg_print () { [ $CLE_DEBUG ] && echo "DBG: $*" >/dev/tty; }			# dbg
+dbg_print () { [ $CLE_DEBUG ] && echo "DBG: $*" >/dev/tty; }		# dbg
 dbg_var () (								# dbg
 	eval "V=\$$1"							# dbg
 	[ $CLE_DEBUG ] && printf "DBG: %-16s = %s\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
-#: ^^^ This was first bit of zsh/bash compatible code			# dbg
-dbg_print; dbg_print CLE pid:$$ DEBUG ON;				# dbg
+dbg_print; dbg_print pid:$$						# dbg
 
 #:------------------------------------------------------------:#
 # Startup sequence
@@ -66,24 +61,15 @@ dbg_var CLE_ARG
 dbg_var SHELL
 dbg_var BASH
 dbg_var ZSH_NAME
-dbg_print "startup case: '$SHELL:$BASH:$ZSH_NAME:$0'"
-case $SHELL:$BASH:$ZSH_NAME:$0 in
-#*clerc*)	# first run!
-#	#: code in this section must be strictly POSIX compatible with /bin/sh
-#	dbg_print First run
-#	RD=$HOME/.cle-`whoami`
-#	export CLE_1=$0
-#	mkdir -p $RD
-#	cp $0 $RD/rc1
-#	chmod 755 $RD/rc1
-#	exec $RD/rc1 "$@"
-#	;;
+_C=$SHELL:$BASH:$ZSH_NAME:$0
+dbg_print "startup case: '$_C'"
+case  $_C in
 *zsh::*zsh:*/rc*) # started FROM .zshrc
 	dbg_print sourcing to ZSH - from .zshrc
 	CLE_RC=$0
 	;;
 *clerc*|*:*/rc*) # executed as a command from .cle directory
-	#: code in this section must be strictly POSIX compatible with /bin/sh
+	#: IMPORTANT: code in this section must be strictly POSIX compatible with /bin/sh
 	#: Now we're looking for suitable shell: user's login shell first, fallback to bash
 	dbg_print executing as LIVE SESSION, looking for shell
 	CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
@@ -126,10 +112,10 @@ case $SHELL:$BASH:$ZSH_NAME:$0 in
 	;;
 *zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
 	dbg_print sourcing to ZSH - from live session
-	#: we already know the value of CLE_RC
+	#: CLE_RC already set, exported
 	unset ZDOTDIR
 	;;
-*)	echo something unknown;;
+*)	echo "CLE startup failed: 'case $_C'";;
 esac
 
 #: Reaching this point means that the script is running as a resource
@@ -143,6 +129,7 @@ dbg_print ---------------
 
 # First run code
 if [[ $CLE_RC =~ clerc ]]; then
+	dbg_print First run
 	CLE_RD=$HOME/.cle-`whoami`
 	mkdir -m 755 -p $CLE_RD
 	CLE_1=$CLE_RD/rc1
@@ -195,6 +182,7 @@ CLE_CF=$CLE_D/cf-$CLE_FHN	#: NFS homes may keep configs for several hosts
 CLE_AL=$CLE_D/al
 CLE_HIST=$_H/.clehistory
 _N=`sed 's:.*/rc1*::' <<<$CLE_RC` #: resource suffix contains workstation name
+dbg_print "_N should contain resource suffix. here it is: '$_N'"
 CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ENV=$CLE_RD/env$_N
@@ -395,10 +383,10 @@ _cledefp () {
 	CLE_PT='\u@^H'
 	#: decide by username and if the host is remote
 	case "$USER-${CLE_WS#$CLE_FHN}" in
-	root-)	_DEFC=red;;	#: root@workstation
-	*-)	_DEFC=marley;;	#: user's basic color scheme
-	root-*)	_DEFC=RbB;;	#: root@remote
-	*-*)	_DEFC=blue;;	#: user@remote
+	root-)	_DC=red;;	#: root@workstation
+	*-)	_DC=marley;;	#: user's basic color scheme
+	root-*)	_DC=RbB;;	#: root@remote
+	*-*)	_DC=blue;;	#: user@remote
 	esac
 }
 
@@ -449,7 +437,6 @@ _clepreex () {
 # rich history record
 _clerh () {
 	local DT REX S V W
-	#dbg_print "_clerh    DT:'$1' Secs:'$2' Ret:'$3' WD:'$4' cmd:'$5'"
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
 	W=${4/$HOME/\~}
@@ -585,7 +572,7 @@ hh () (
 			S=$S" -e '/.*;$CLE_USER-${CLE_SH:0:1}$$;.*/!d'";;
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
-		n)	## `hh -n`           - do not show time and session id
+		n)	## `hh -n`           - narrow output, hide time and session id
 			OUTF='_clehhout n';;
 		c)	## `hh -c`           - show only commands
 			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;[^;]*;\(.*\)/\1/p' |uniq";;
@@ -676,16 +663,16 @@ vdump () (
 
 # Environment packer
 #: On workstation do following:
-#: -prepare resource file, tweak and selected variables to temporary folder
-#: if required for remote session do following:
-#: -pack the folder with tar, and store as base64 encoded string into $C64
-#: always: prepare $RH and $RC for live session wrappers
+#:  -copy resource file, tweak and selected variables to temporary folder
+#: If required for remote session do following:
+#:  -pack the folder with tar, and store as base64 encoded string into $C64
+#: Always: prepare $RH and $RC for live session wrappers
 _clepak () {
-	RH=${CLE_RD/\/.*/}
-	RD=${CLE_RD/$RH\//}
+	RH=${CLE_RD/\/.*/}	#: resource home is path until first dot
+	RD=${CLE_RD/$RH\//}	#: relative path to resource directory
 
 	if [ $CLE_WS ]; then
-		#: this is live session, all files *should* be available
+		#: this is live session, all files *should* be available, just set vars
 		cd $RH
 		RC=${CLE_RC/$RH\//}
 		TW=${CLE_TW/$RH\//}
@@ -709,7 +696,8 @@ _clepak () {
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN
 	fi
-	#:  I've never owned this computer, I had Atari 800XL :)
+	#: if tarball required, create it and save to $C64
+	#: I've never owned this computer, I had Atari 800XL :)
 	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
 	#:             ^^^^ 'eval' required due to zsh.
 }
@@ -857,25 +845,25 @@ _cledefp
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
-# rewrite config from old versioni					# transition
-[ -r $CLE_CF ] && read _C <$CLE_CF  # get version id			# transition
-#[[ ${_C:-Zodiac} =~ Zodiac ]] || {					# transition
-{  							# temporarily forced transition
+# rewrite config from old version					# transition
+[ -r $CLE_CF ] && read _N <$CLE_CF  # get version id			# transition
+[[ ${_N:-Zodiac} =~ Zodiac ]] || {					# transition
 	_O=$CLE_D/cf-old						# transition
 	mv -f $CLE_CF $_O 2>/dev/null					# transition
-	_C="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
+	_R="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
 	if [ $CLE_WS ]; then						# transition
 		# ensure inheritance on remote sessions 		# transition
-		_C=$_C";/^CLE_P/d"					# transition
+		_R=$_R";/^CLE_P/d"					# transition
 	else								# transition
 		# rename CLE_Px to $CLE_PBx				# transition
-		_C=$_C";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		# transition
-		_C=$_C";s/%/^/g" # replace % with ^			# transition
-		_C=$_C";s/\^c/^C/g" # replace ^c with ^C		# transition
-		_C=$_C";s/\^e/^E/g" # replace ^c with ^E		# transition
+		_R=$_R";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		# transition
+		_R=$_R";s/%/^/g" # replace % with ^			# transition
+		_R=$_R";s/\^c/^C/g" # replace ^c with ^C		# transition
+		_R=$_R";s/\^e/^E/g" # replace ^c with ^E		# transition
 	fi								# transition
-	[ -f $_O ] && sed -e "$_C" <$_O >$CLE_CF			# transition
+	[ -f $_O ] && sed -e "$_R" <$_O >$CLE_CF			# transition
 	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	# transition
+	unset _O _R							# transition
 }									# transition
 _clexe $CLE_CF
 _clepcp
@@ -903,7 +891,7 @@ fi
 
 # 7. craft the prompt string
 _cleps
-_cleclr ${CLE_CLR:-$_DEFC}
+_cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
 PROMPT_DIRTRIM=3
@@ -947,8 +935,8 @@ if [ $BASH ]; then
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
-	_C=/usr/share/bash-completion
-	[ -f $_C ] && . $_C/bash_completion && . $_C/completions/ssh && complete -F _ssh lssh
+	_N=/usr/share/bash-completion
+	[ -f $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
@@ -1025,7 +1013,7 @@ cle () {
 		*)	cle pT "$*";;
 		esac
 		_cleps;;
-	cf)	## `cle cf [ed|reset|rev]`  - view/edit/reset/revert configuration
+	cf)	## `cle cf [ed|reset|rev]` - view/edit/reset/revert configuration
 		case "$1" in
 		ed)	vi $CLE_CF  && . $CLE_RC;;
 		reset)	mv -f $CLE_CF $CLE_CF-bk;;
@@ -1047,41 +1035,41 @@ cle () {
 		CLE_RC=$P/rc
 		unset CLE_1
 		I='# Command Live Environment'
-		S=$HOME/.${SHELL##*/}rc	#: hook int user's login shell rc
+		S=$HOME/.${SHELL##*/}rc	#: hook into user's login shell rc
 		grep -A1 "$I" $S && printb CLE is already hooked in $S && return 1
 		ask "Do you want to add CLE to $S?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
-		N=$CLE_D/rc.new
+		P=$CLE_D/rc.new
 		#: update by default from the own branch
 		#: master brach or other can be specified in parameter
-		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$N
+		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$P
 		#: check correct download and its version
-		S=`sed -n 's/^#\* version: //p' $N`
+		S=`sed -n 's/^#\* version: //p' $P`
 		[ "$S" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
 		echo "new:     $S"
-		I=`diff $CLE_RC $N` && { echo No difference; return 1;}
+		I=`diff $CLE_RC $P` && { echo No difference; return 1;}
 		ask Do you want to see diff? && cat <<<"$I"
 		ask Do you want to install new version? || return
 		#: now replace CLE code
 		B=$CLE_D/rc.bk
 		cp $CLE_RC $B
-		chmod 755 $N
-		mv -f $N $CLE_RC
+		chmod 755 $P
+		mv -f $P $CLE_RC
 		cle reload;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
 		S=${1:-$CLE_SH}
 		exec $CLE_RC -$S;;
-	mod)    ## `cle mod`         - cle module management
+	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code
 		ask Activate CLE modules? || return
 		N=cle-mod
-		S=$CLE_D/$N
-		curl -k $CLE_SRC/modules/$N >$S
-		grep -q "# .* $N:" $S || { printb Module download failed; rm -f $S; return 1;}
+		P=$CLE_D/$N
+		curl -k $CLE_SRC/modules/$N >$P
+		grep -q "# .* $N:" $P || { printb Module download failed; rm -f $P; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
 		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
@@ -1096,11 +1084,12 @@ cle () {
 		esac;;										# dbg
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
-		C=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
+		P=`ls $CLE_D/cle-* 2>/dev/null`
+		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`
+		#: $I - index must contain word LICENSE - part of doc files
 		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
 		#: choose one to read
 		PS3="$_CL doc # $_CN"
@@ -1111,18 +1100,15 @@ cle () {
 		_clebnr
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC #: print lines starting with '#*' - header
 		;;
-	*)
-		echo unimplemented function: cle $C;
+	*)	echo unimplemented function: cle $C;
 		echo check cle help;
 		return 1
 		;;
 	esac
 }
 
-##
 #: final cleanup
-unset _N _H _C _DEFC
-#: ^^^^^^ TO BE UPDATED, review the code and find/optimize variable use
-
+unset _N _H _C _DC
+##~~
 # that's all, folks...
 

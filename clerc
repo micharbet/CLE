@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-04 (Zodiac)
+#* version: 2019-04-07 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -14,24 +14,20 @@
 # of the License, or (at your option) any later version.
 #
 # CLE provides:
-# -improved look&feel: colorful prompt, highlighted exit code
+# -improved look&feel: responsive colorful prompt, highlighted exit code
 # -persistent alias store - command 'aa'
-# -rich command history - commands 'h' and 'hh'
-# -seamless remote CLE session, with no installation - use command 'lssh'
+# -rich history - commands 'h' and 'hh'
+# -seamless remote CLE session, with no installation - use 'lssh' instead 'ssh'
 # -local live session - lsu/lsudo (su/sudo wrappers)
-# -find more in 'cle help' and Github homepage
+# -setup from command line, eg. 'cle color RGB'
+# -find more using 'cle help' and 'cle doc'
 #
-# Installation:
+# Quick setup:
 # 1. Download and execute this file within your shell session
 # 2. Integrate it into your profile:
 #	$ . clerc
 #	$ cle deploy
 # 3. Enjoy!
-
-## ** WARNING! **
-## This code is in super early development stage.
-## Do not use, otherwise a puppy or kitten may die!
-##
 
 
 # Check if the shell is interactive and CLE not yet started
@@ -41,16 +37,8 @@
 
 # Startup sequence
 export CLE_RC
-case $SHELL:$BASH:$ZSH_NAME:$0 in
-#*clerc*)	# first run!
-#	
-#	RD=$HOME/.cle-`whoami`
-#	export CLE_1=$0
-#	mkdir -p $RD
-#	cp $0 $RD/rc1
-#	chmod 755 $RD/rc1
-#	exec $RD/rc1 "$@"
-#	;;
+_C=$SHELL:$BASH:$ZSH_NAME:$0
+case  $_C in
 *zsh::*zsh:*/rc*) # started FROM .zshrc
 	CLE_RC=$0
 	;;
@@ -91,7 +79,7 @@ case $SHELL:$BASH:$ZSH_NAME:$0 in
 *zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
 	unset ZDOTDIR
 	;;
-*)	echo something unknown;;
+*)	echo "CLE startup failed: 'case $_C'";;
 esac
 
 
@@ -306,10 +294,10 @@ _cledefp () {
 	CLE_P3='\w ^$ '
 	CLE_PT='\u@^H'
 	case "$USER-${CLE_WS#$CLE_FHN}" in
-	root-)	_DEFC=red;;
-	*-)	_DEFC=marley;;
-	root-*)	_DEFC=RbB;;
-	*-*)	_DEFC=blue;;
+	root-)	_DC=red;;
+	*-)	_DC=marley;;
+	root-*)	_DC=RbB;;
+	*-*)	_DC=blue;;
 	esac
 }
 
@@ -474,7 +462,7 @@ hh () (
 			S=$S" -e '/.*;$CLE_USER-${CLE_SH:0:1}$$;.*/!d'";;
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
-		n)	## `hh -n`           - do not show time and session id
+		n)	## `hh -n`           - narrow output, hide time and session id
 			OUTF='_clehhout n';;
 		c)	## `hh -c`           - show only commands
 			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;[^;]*;\(.*\)/\1/p' |uniq";;
@@ -684,25 +672,25 @@ _cledefp
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
-# rewrite config from old versioni					# transition
-[ -r $CLE_CF ] && read _C <$CLE_CF  # get version id			# transition
-#[[ ${_C:-Zodiac} =~ Zodiac ]] || {					# transition
-{  							# temporarily forced transition
+# rewrite config from old version					# transition
+[ -r $CLE_CF ] && read _N <$CLE_CF  # get version id			# transition
+[[ ${_N:-Zodiac} =~ Zodiac ]] || {					# transition
 	_O=$CLE_D/cf-old						# transition
 	mv -f $CLE_CF $_O 2>/dev/null					# transition
-	_C="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
+	_R="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
 	if [ $CLE_WS ]; then						# transition
 		# ensure inheritance on remote sessions 		# transition
-		_C=$_C";/^CLE_P/d"					# transition
+		_R=$_R";/^CLE_P/d"					# transition
 	else								# transition
 		# rename CLE_Px to $CLE_PBx				# transition
-		_C=$_C";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		# transition
-		_C=$_C";s/%/^/g" # replace % with ^			# transition
-		_C=$_C";s/\^c/^C/g" # replace ^c with ^C		# transition
-		_C=$_C";s/\^e/^E/g" # replace ^c with ^E		# transition
+		_R=$_R";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		# transition
+		_R=$_R";s/%/^/g" # replace % with ^			# transition
+		_R=$_R";s/\^c/^C/g" # replace ^c with ^C		# transition
+		_R=$_R";s/\^e/^E/g" # replace ^c with ^E		# transition
 	fi								# transition
-	[ -f $_O ] && sed -e "$_C" <$_O >$CLE_CF			# transition
+	[ -f $_O ] && sed -e "$_R" <$_O >$CLE_CF			# transition
 	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	# transition
+	unset _O _R							# transition
 }									# transition
 _clexe $CLE_CF
 _clepcp
@@ -727,7 +715,7 @@ fi
 
 # 7. craft the prompt string
 _cleps
-_cleclr ${CLE_CLR:-$_DEFC}
+_cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
 PROMPT_DIRTRIM=3
@@ -761,8 +749,8 @@ _clecomp () {
 if [ $BASH ]; then
 	# lssh completion
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-	_C=/usr/share/bash-completion
-	[ -f $_C ] && . $_C/bash_completion && . $_C/completions/ssh && complete -F _ssh lssh
+	_N=/usr/share/bash-completion
+	[ -f $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
@@ -831,7 +819,7 @@ cle () {
 		*)	cle pT "$*";;
 		esac
 		_cleps;;
-	cf)	## `cle cf [ed|reset|rev]`  - view/edit/reset/revert configuration
+	cf)	## `cle cf [ed|reset|rev]` - view/edit/reset/revert configuration
 		case "$1" in
 		ed)	vi $CLE_CF  && . $CLE_RC;;
 		reset)	mv -f $CLE_CF $CLE_CF-bk;;
@@ -859,35 +847,35 @@ cle () {
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
-		N=$CLE_D/rc.new
-		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$N
-		S=`sed -n 's/^#\* version: //p' $N`
+		P=$CLE_D/rc.new
+		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$P
+		S=`sed -n 's/^#\* version: //p' $P`
 		[ "$S" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
 		echo "new:     $S"
-		I=`diff $CLE_RC $N` && { echo No difference; return 1;}
+		I=`diff $CLE_RC $P` && { echo No difference; return 1;}
 		ask Do you want to see diff? && cat <<<"$I"
 		ask Do you want to install new version? || return
 		B=$CLE_D/rc.bk
 		cp $CLE_RC $B
-		chmod 755 $N
-		mv -f $N $CLE_RC
+		chmod 755 $P
+		mv -f $P $CLE_RC
 		cle reload;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
 		S=${1:-$CLE_SH}
 		exec $CLE_RC -$S;;
-	mod)    ## `cle mod`         - cle module management
+	mod)    ## `cle mod`               - cle module management
 		ask Activate CLE modules? || return
 		N=cle-mod
-		S=$CLE_D/$N
-		curl -k $CLE_SRC/modules/$N >$S
-		grep -q "# .* $N:" $S || { printb Module download failed; rm -f $S; return 1;}
+		P=$CLE_D/$N
+		curl -k $CLE_SRC/modules/$N >$P
+		grep -q "# .* $N:" $P || { printb Module download failed; rm -f $P; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
 		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	help|-h|--help) ## `cle help [fnc]`        - show help
-		C=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $C | mdfilter | less -erFX;;
+		P=`ls $CLE_D/cle-* 2>/dev/null`
+		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		I=`curl -sk $CLE_SRC/doc/index.md`
 		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
@@ -899,16 +887,14 @@ cle () {
 		_clebnr
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
 		;;
-	*)
-		echo unimplemented function: cle $C;
+	*)	echo unimplemented function: cle $C;
 		echo check cle help;
 		return 1
 		;;
 	esac
 }
 
-##
-unset _N _H _C _DEFC
-
+unset _N _H _C _DC
+##~~
 # that's all, folks...
 
