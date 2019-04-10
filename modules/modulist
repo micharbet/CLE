@@ -4,5 +4,5 @@ mod-fsps:2018-11-13:47a349bdd04024447d00177bbcfb7859:Filesystem and processess u
 cle-ed:2018-09-23:ea80bfdb213acf2505cd61c4adc8d6c9:Tweak and config editor
 cle-hist:2018-08-29:4cc751bb2da800af3129a21a46c47a26:Rich history manipulations
 cle-mod:2019-03-27:dcf2ce0c878a48f0a269fc28d402e1d5:CLE module management
-cle-prompt:2019-03-31:be563225d535e650daf5bee392bd5db1:pre-configured prompt themes
+cle-prompt:2019-03-31:d27abf5272c54db1d6b8196c9b43884d:pre-configured prompt themes
 cle-rcmove:2018-09-23:c00dc60dddf2366e64cf44b36b7e208d:Move resource files to different folder

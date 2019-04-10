@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-07 (Zodiac)
+#* version: 2019-04-10 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -38,6 +38,7 @@
 # Startup sequence
 export CLE_RC
 _C=$SHELL:$BASH:$ZSH_NAME:$0
+_T=/var/tmp/$USER
 case  $_C in
 *zsh::*zsh:*/rc*) # started FROM .zshrc
 	CLE_RC=$0
@@ -63,7 +64,7 @@ case  $_C in
 	export CLE_PROF=1
 	case $SH in
 	*zsh)
-		export ZDOTDIR=/var/tmp/`whoami`
+		export ZDOTDIR=$_T
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
@@ -113,7 +114,7 @@ CLE_SH=`basename $BASH$ZSH_NAME`
 
 # find writable folder
 _H=$HOME
-[ -w $_H ] || _H=/var/tmp/$USER
+[ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H
 [ $CLE_USER ] || cd
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
@@ -131,7 +132,7 @@ CLE_TTY=`tty|tr -d '/dev'`
 
 # who I am
 _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
-export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 
 # Internal functions
 
@@ -548,13 +549,12 @@ _clepak () {
 		EN=${CLE_ENV/$RH\//}
 	else
 		RH=/var/tmp/$USER
-		mkdir -m 0755 -p $RH/$RD
-		cd $RH
+		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
 		RC=$RD/rc-$CLE_FHN
 		TW=$RD/tw-$CLE_FHN
 		EN=$RD/env-$CLE_FHN
 		cp $CLE_RC $RC
-		cp $CLE_TW $TW
+		cp $CLE_TW $TW 2>/dev/null
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
 		vdump "CLE_P..|_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
@@ -894,7 +894,7 @@ cle () {
 	esac
 }
 
-unset _N _H _C _DC
+unset _T _N _H _C _DC
 ##~~
 # that's all, folks...
 

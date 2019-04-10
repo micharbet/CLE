@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-07 (Zodiac)
+#* version: 2019-04-10 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -63,6 +63,7 @@ dbg_var BASH
 dbg_var ZSH_NAME
 _C=$SHELL:$BASH:$ZSH_NAME:$0
 dbg_print "startup case: '$_C'"
+_T=/var/tmp/$USER
 case  $_C in
 *zsh::*zsh:*/rc*) # started FROM .zshrc
 	dbg_print sourcing to ZSH - from .zshrc
@@ -94,7 +95,7 @@ case  $_C in
 	case $SH in
 	*zsh)	#: prepare startup environment in zsh way
 		dbg_print found ZSH
-		export ZDOTDIR=/var/tmp/`whoami`
+		export ZDOTDIR=$_T
 		mkdir -p $ZDOTDIR
 		ln -sf $CLE_RC $ZDOTDIR/.zshrc
 		exec zsh
@@ -170,7 +171,7 @@ CLE_SH=`basename $BASH$ZSH_NAME`
 #:  $CLE_D   is path to writable folder for config, aliases and other runtime files
 #:  $CLE_RD  is path to folder containing startup resources
 _H=$HOME
-[ -w $_H ] || _H=/var/tmp/$USER
+[ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
 dbg_var HOME
 [ $CLE_USER ] || cd		#: just go home on new session
@@ -196,7 +197,7 @@ CLE_TTY=`tty|tr -d '/dev'`
 #: - /any/folder/.config/cle-username/rcfile
 #: important is the dot (hidden folder), word 'cle' with dash
 _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
-export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 dbg_var CLE_USER
 
 #:------------------------------------------------------------:#
@@ -682,13 +683,13 @@ _clepak () {
 		#: live session is to be created - copy startup files
 		RH=/var/tmp/$USER
 		dbg_print "_clepak: preparing $RH/$RD"
-		mkdir -m 0755 -p $RH/$RD
-		cd $RH
+		#: by default prepare files in /var/tmp; fall back to the home dir
+		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
 		RC=$RD/rc-$CLE_FHN
 		TW=$RD/tw-$CLE_FHN
 		EN=$RD/env-$CLE_FHN
 		cp $CLE_RC $RC
-		cp $CLE_TW $TW
+		cp $CLE_TW $TW 2>/dev/null
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
 		vdump "CLE_P..|_C." >>$EN
@@ -1108,7 +1109,7 @@ cle () {
 }
 
 #: final cleanup
-unset _N _H _C _DC
+unset _T _N _H _C _DC
 ##~~
 # that's all, folks...
 
