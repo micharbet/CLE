@@ -119,6 +119,8 @@ _H=$HOME
 [ $CLE_USER ] || cd
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
+CLE_CF=$CLE_D/cf-$CLE_FHN
+[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF # transition to multihost/nfs shared folders
 
 # config, tweak, etc...
 CLE_CF=$CLE_D/cf-$CLE_FHN

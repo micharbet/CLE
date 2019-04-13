@@ -68,10 +68,13 @@ below) and alter color table with following lines:
 ```
 
 
+
 ## 2. Installation tweaks
+
 
 ### Deploying for user root
 
+** NOTE: this is not recommended **
 In case you really insist on using root as your default login account and
 want to have cle deployed here, you can do it same way like for any other
 user. Remember following: there is variable **$CLE_USER** that makes it
@@ -80,7 +83,7 @@ would be string 'root' If somebody else would do the same and you both
 would meet as administrators of the same server, you'd get into conflict
 because resource folder and used configuration file would be the same.
 
-To avoid this situation do following steps after deployment:
+To avoid such situation perform following steps after deployment:
 1. rename '.cle-root' to '.cle-YOURNAME'
 2. open .bashrc in editor and replace all occurences of '.cle-root'
    with the name chosen in step #1
@@ -89,6 +92,7 @@ To avoid this situation do following steps after deployment:
 
 See section 'Variables' in document _HOWTO.md_ for more details about
 how $CLE_USER is determined and used.
+
 
 
 ### How to deploy CLE into different folder
@@ -157,19 +161,20 @@ Try for example this:
 1. using text editor create tweak file .cle-YOURNAME/tw with following content:
 ```
    ## My own worldwide tweak
-   ## psg string     -- grepped process list
-   psg () (
-      [ $1 ] || { echo 'psg: missing process name'; return 1; }
-      ps -ef | grep $1 | grep -v grep
+   ## myfun string     -- my funny function
+   myfun () (
+      [ $1 ] || { echo 'myfun: missing arguments'; return 1; }
+      echo Making fun of $*
    )
 ```
 2. restart environment (`cle reload`) or start new terminal
-3. try new function: `psg bash`; you should see all running shells only
+3. try new function: `myfun bash`; you should see all running shells only
 4. go to different account: `lssh account@somewhere.else` and try new function
    there. It should work.
 5. bonus: you also created in-script help strings and you can see them in
-   output of `cle help` and `cle help psg`
+   output of `cle help` and `cle help myfun`
 6. enjoy and tweak more!
+
 
 
 ### Suppress /etc/motd (variable CLE_MOTD)
@@ -180,6 +185,7 @@ prompt. This ensures /etc/motd will be displayed only once. The variable gains
 otuput of `uptime` while CLE is initiated and displays it after /etc/motd. This
 is normal behavior however you can add add `unset CLE_MOTD` to your tweak file
 and message of the day will never be shown.
+
 
 
 ### Tweaking only on particular accounts
@@ -202,6 +208,7 @@ statement like for example this:
 ```
 Be creative, make your own 'case', you can use it to define for example extra
 aliases. special prompt settings (see next section) etc.
+
 
 
 ### Override internal functions
