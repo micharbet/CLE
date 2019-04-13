@@ -119,8 +119,6 @@ _H=$HOME
 [ $CLE_USER ] || cd
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
-CLE_CF=$CLE_D/cf-$CLE_FHN
-[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF # transition to multihost/nfs shared folders
 
 # config, tweak, etc...
 CLE_CF=$CLE_D/cf-$CLE_FHN
@@ -675,6 +673,7 @@ _cledefp
 
 # 4. get values from config file
 # rewrite config from old version					# transition
+[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF		# transition
 [ -r $CLE_CF ] && read _N <$CLE_CF  # get version id			# transition
 [[ ${_N:-Zodiac} =~ Zodiac ]] || {					# transition
 	_O=$CLE_D/cf-old						# transition
