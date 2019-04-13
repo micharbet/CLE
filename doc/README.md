@@ -3,18 +3,21 @@
 
 ##   Enhanced shell experience
 
-CLE adds the following functionalities to bash:
+CLE is a resource that can be loaded upon interactive shell startup. It makes
+regular work with command line easier by adding fancy features named below:
+
  - a colorized and customizable **prompt** string including server time and exit
    code highlighting
  - it allows you to save/edit and reuse **aliases** in an easy way
  - rich **history** with timestamps, return codes and additional information
- - the super easy installation is only on your workstation, and yet...
- - **seamless** transfer of the environment from the workstation to remote
-   sessions without remote installation!
- - configuration from the commandline with immediate effect, no restarts
- - self documenting features
- - open framework for tweaks and further customization
- 
+ - setup the environment on your workstation only and use anywhere you go
+ - **seamless** transfer of the environment and its settings to remote
+   sessions without need of remote setup!
+ - configuration right from the commandline with immediate effect, no restarts
+ - quick acess to documentation
+ - open framework for customization with tweaks and modules
+
+CLE is compatible with bash and zsh, one resource file for both shells.
 
 
 ## 1. CLE setup and basic usage
@@ -26,7 +29,7 @@ the current shell context using a trailing dot:
     `wget http://git.io/clerc`
     `. clerc`
 
-* Note, the `http://git.io/clerc` is shortcut. If not sure use real source
+* Note, the `http://git.io/clerc` is shortcut. If unsure use real source
   `https://raw.githubusercontent.com/micharbet/CLE/master/clerc`
 
 The CLE will be activated and you can configure this environment to be
@@ -35,17 +38,17 @@ persistent with the command:
     `cle deploy`
 
 CLE copies itself to `$HOME/.cle-YOURLOGIN/rc` and adds two lines into `.bashrc`
-so it will be started upon each login. Note this is the **one and only**
-installation step you need to perform. Typically you'll only install this on
-your workstation's account. Note: do not deploy CLE as root! It would work,
-and no harm is expected, however it's not recommended. In case you insist on
-using the root account as your working account, please read the document
-'TipsAndTweaks.md' and find the corresponding section.
+ev. `.zshrc` if you run Z-shell. Then it will be started upon each login. Note,
+this is the **one and only** installation step you need to perform. Typically
+you'll only install this on your workstation's account. Do not deploy CLE as
+root! It would work, and no harm is expected, however it's not recommended.
+In case you insist on using the root account as your working account, please
+read the document 'TipsAndTweaks.md' and find the corresponding section.
 
 
 ### lssh utility (ssh wrapper)
 
-The CLE is able to pass itself over ssh to a remote system. Use the ssh wrapper
+The CLE is able to pass itself over ssh to a remote system. Use the wrapper
 called `lssh` instead of the regular 'ssh' command for a login into a remote
 account and CLE will be copied over then started seamlessly:
 
@@ -61,10 +64,10 @@ however they add CLE to the sessions.
 ### lscreen - GNU screen wrapper
 
 This wrapper is a workaround to the original GNU screen to allow using CLE
-inside a screen session. By default `lscreen` searches for _yours_ opened/detached
-session and jumps into it if finds one. Otherwise it creates a new screen.
-Another added value is a configuration file with a nice status line and
-shortcuts enabled such as Ctrl-Left/Right to switch between windows.
+inside a screen session. By default `lscreen` searches for _yours_ openedi 
+and/or detached session and jumps into it if finds one. Otherwise it creates
+a new screen. Another added value is a configuration file with a nice status
+line and shortcuts enabled such as Ctrl-Left/Right to switch between windows.
 
 
 ### Other utilities
@@ -79,11 +82,9 @@ Read HOWTO.md and other documents to find out more about this environment.
 
 ## 2. Compatibility
 
-CLE has been tested on various systems containing bash version 3.x and 4.x
-and different flavors of basic utilities (GNU vs. BSD). Strict attention was
-paid to writing highly compatible code, and so some of the nice features of
-bach4 could not be used. And, various flavors of the 'sed' utility is another
-story.
+CLE has been tested on various systems containing bash version 3.x 4.x and zsh.
+Works in different flavors of basic utilities (GNU vs. BSD). Strict attention was
+paid to writing highly multiplattform compatible code.
 
 Tested systems include the following:
 - Linux Mint
@@ -113,6 +114,7 @@ Generally a basic OS installation should be sufficient. Some systems, however,
 might require you to add missing utilities. Truly necessary utilities are:
 - bash (yeah, minimal FreeBSD setup didn't contain this shell!)
 - sed
+- awk
 - base64
 - curl
 - ssh (note, no scp required, e.g no openssh-clients on RHEL)
@@ -148,10 +150,20 @@ The only thing you need is a working CLE on your workstation from where you
 can manage the world :-) Everywhere you go you can now use the same basic and
 still customizable environment!
 
-Incorporating the `lssh` and `lsu*` wrappers together with the `cle` management
+ Incorporating the `lssh` and `lsu*` wrappers together with the `cle` management
 function into one single resource file was just a natural evolution that gave
 the word 'Live' its true meaning -- the `clerc` now contains a mechanism for
 multiplying its own DNA [1].
+
+CLE versions have no numbers but rather names. As of 2016 following releases
+were issued:
+- Spring, Easter, MayDay - 2016, very old 
+- HAlpha - 2017, code cleanup and high optimization
+- RedH - 2017, adding new features
+- Nova - 2018, big improvements, new features again, like rich history
+- Zodiac - 2019, current release, basically the same functions as Nova
+  but almost complete rewrite to ensure compatibility with Z-shell and
+  improved environment transfer incl. prompt settings, aliases, variables
 
 [1] CLE is not a virus :-) It doesn't run itself on any host. Everything is
 under the users' (your) control and responsibilty. All the spreading is initiated
