@@ -3,7 +3,9 @@
 
 ##   Enhanced shell experience
 
-CLE adds the following functionalities to your shell:
+CLE is a resource that can be loaded upon interactive shell startup. It makes
+regular work with command line easier by adding fancy features named below:
+
  - a colorized and customizable **prompt** string including server time and exit
    code highlighting
  - it allows you to save/edit and reuse **aliases** in an easy way
@@ -14,8 +16,8 @@ CLE adds the following functionalities to your shell:
  - configuration right from the commandline with immediate effect, no restarts
  - quick acess to documentation
  - open framework for customization with tweaks and modules
- - **compatibility** with bash and zsh
- 
+
+CLE is compatible with bash and zsh, one resource file for both shells.
 
 
 ## 1. CLE setup and basic usage
@@ -148,14 +150,14 @@ The only thing you need is a working CLE on your workstation from where you
 can manage the world :-) Everywhere you go you can now use the same basic and
 still customizable environment!
 
-Incorporating the `lssh` and `lsu*` wrappers together with the `cle` management
+ Incorporating the `lssh` and `lsu*` wrappers together with the `cle` management
 function into one single resource file was just a natural evolution that gave
 the word 'Live' its true meaning -- the `clerc` now contains a mechanism for
 multiplying its own DNA [1].
 
 CLE versions have no numbers but rather names. As of 2016 following releases
 were issued:
-- Spring, Easter, MayDay - all very old 
+- Spring, Easter, MayDay - 2016, very old 
 - HAlpha - 2017, code cleanup and high optimization
 - RedH - 2017, adding new features
 - Nova - 2018, big improvements, new features again, like rich history
