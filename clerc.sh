@@ -413,11 +413,15 @@ precmd () {
 	C=${C/$DT;}	#: extract command
 	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
-	[ $_SST ] || { _CE=''; _EC=0; } #: reset error code
-	S=$((SECONDS-${_SST:-$SECONDS}))
-	_clerh "$DT" $S $_EC $PWD "$C"
-	[ $_EC = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
-	_SST=
+	if [ $_SST ]; then
+		S=$((SECONDS-${_SST:-$SECONDS}))
+		_clerh "$DT" $S $_EC $PWD "$C"
+		[ $_EC = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
+		_SST=
+	else
+		_CE=''
+		_EC=0 #: reset error code
+	fi
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
@@ -847,6 +851,7 @@ _cledefp
 
 # 4. get values from config file
 # rewrite config from old version					# transition
+[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF		# transition
 [ -r $CLE_CF ] && read _N <$CLE_CF  # get version id			# transition
 [[ ${_N:-Zodiac} =~ Zodiac ]] || {					# transition
 	_O=$CLE_D/cf-old						# transition
