@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-13 (Zodiac)
+#* version: 2019-04-14 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -403,8 +403,11 @@ _clesave () (
 #: should be as simple as possible. In best case all commands here should be
 #: bash internals. Those don't invoke new processes and as such they are much
 #: easier to system resources.
+_PST=PIPESTATUS		#: status of all command in pipeline has different name in zsh
+[ $ZSH_NAME ] && _PST=pipestatus
 precmd () {
-	_EC=$? # save return code
+	eval "_EC=\${$_PST[@]}"	
+	[[ $_EC =~ [1..9] ]] || _EC=0 #: just one zero if all ok
 	local IFS S DT C
 	unset IFS
 	[ $BASH ] && C=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || C=`fc -lt ";$CLE_HTF;" -1`
@@ -415,7 +418,7 @@ precmd () {
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 	if [ $_SST ]; then
 		S=$((SECONDS-${_SST:-$SECONDS}))
-		_clerh "$DT" $S $_EC $PWD "$C"
+		_clerh "$DT" $S "$_EC" $PWD "$C"
 		[ $_EC = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
 		_SST=
 	else
@@ -611,10 +614,10 @@ _clehhout () (
 		esac
 		if [ $1 ]; then
 			#: print less information (option -x)
-			printf " $CE%-3s $CC%-20s: $_CL" "$EC" "$D"
+			printf " $CE%-9s $CC%-20s: $_CL" "$EC" "$D"
 		else
 			#: print full record
-			printf "$_CB%s $_Cb%-13s $_CB%4s $CE%-3s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
+			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
 		fi
 		cat <<<$C #: this cannot be part of printf above to keep possible backslashes
 	done
