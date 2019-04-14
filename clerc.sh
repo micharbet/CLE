@@ -419,7 +419,7 @@ precmd () {
 	if [ $_SST ]; then
 		S=$((SECONDS-${_SST:-$SECONDS}))
 		_clerh "$DT" $S "$_EC" $PWD "$C"
-		[ $_EC = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
+		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
 		_SST=
 	else
 		_CE=''
