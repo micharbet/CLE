@@ -1,11 +1,11 @@
 ##
 ## ** mod-cledk: functions to assist CLE development process **
 #
-#* version: 2018-09-13
+#* version: 2019-03-27
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2017-2018 by Michael Arbet
+#* Copyright (C) 2017-2019 by Michael Arbet
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -15,142 +15,77 @@
 # where I do development
 CLE_DK=$HOME/d/CLE
 
-# those functions are the same like in cle-mod
-# extract module description 
-_modesc () (
-	local M=`basename $1`
-	sed -n "/^##/s/.*$M:\s*\([^*]*\)\**/\1/p" $1
-)
-
-# extract module version 
-_modver () (
-	sed -n "s/^#\* version:\s*//p" $1
-)
-
-# compute module content checksum
-_modsum () (
-	md5sum $1 | cut -d' ' -f1
-)
-
-
-## `cle e [mod]`   -- edit clerc file ev. specified module
-_cle_e () (
-	local F=$CLE_DK/clerc.sh
-	[ -n "$1" ] && F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
+# helper function to find module by incomplete name
+_dkchoosemod () {
+	local F
+	F=`ls modules/* devmods/* 2>/dev/null | grep $1`
 	case `wc -w <<<$F` in
 	0)
-		echo no such file: $1
+		echo no such module: $1
 		return 1;;
 	1)
-		vim $F;;
+		FILENAME=$F;;
 	*)
-		PS3="$_CL choose file # $_CN"
-		select FF in $F; do
-			[ -n "$FF" ] && break
+		PS3="$_CL choose module # $_CN"
+		select FILENAME in $F; do
+			[ -n "$FILENAME" ] && break
 		done
-		vim $FF
 		;;
 	esac
-)
-
-## `cle short c|s|t`  -- remove extended comments or debug ev. transtition stuff
-_cle_short () {
-	local F=$CLE_DK/clerc.sh
-	local S=$CLE_DK/clerc
-	local T=$CLE_DK/clerc-t
-	cp $F $S
-	while [ $1 ]; do
-		case "$1" in
-		c)
-			echo removing comments
-			sed -e '/^[[:space:]]*#:/d' -e 's/#:.*//' <$S >$T 
-			mv -f $T $S
-			;;
-		d)
-			echo removing debug stuff
-			grep -v -e debug -e DEBUG -e dbg_ $S >$T
-			mv -f $T $S
-			;;
-		t)
-			echo 'removing version compatibility (transition) hacks'
-			grep -v -i transition $S >$T
-			mv -f $T $S
-			;;
-		*)	echo 'cle short c|d|s'
-			return 1
-			;;
-		esac
-		shift
-	done
-	chmod 755 $S
-	ls -l $F $S
-	ask Wanna see diff? && diff -W $COLUMNS -y $F $S
 }
 
-## `cle cp`        -- copy and run new development version of clerc
-_cle_cp() (
-	[ $1 ] || CLERS="$CLE_DK/clerc.sh $CLE_RC"
-	[ "$1" = s ] && CLERS="$CLE_DK/clerc $CLE_RC"
-	eval diff $CLERS
-	eval ls -lL $CLERS
-	ask "replace clerc?" && { cp $CLE_RC $CLE_RC.bkdev; eval cp $CLERS; cle reload; }
+## `cle e [mod]`    - edit clerc file ev. specified module
+_cle_e () (
+	cd $CLE_DK
+	if [ $1 ]; then
+		_dkchoosemod $1
+	else
+		FILENAME=$CLE_DK/clerc.sh
+	fi
+	vim $FILENAME
 )
 
-## `cle ls`        -- list CLE related files
-_cle_ls () {
-	ls -l ~/.history-* $CLE_D
+## `cle cp [mod]`   - copy development version of clerc or a module
+_cle_cp() {
+	local DEST FILENAME
+	pushd $CLE_DK >/dev/null
+	if [ $1 ]; then
+		_dkchoosemod $1
+		DEST=$CLE_D/`basename $FILENAME`
+	else
+		FILENAME=clerc.sh
+		DEST=$CLE_RC
+	fi
+
+	printb " ${_CU}diff $DEST $FILENAME${_Cu}"
+	if diff $DEST $FILENAME; then
+		echo No diff...
+		popd
+	else
+		ask "replace $DEST?" || return
+		cp $FILENAME $DEST
+		popd
+		cle reload
+	fi
 }
 
-## `cle func`      -- list all current bash functions
+
+## `cle func`       - list all current bash functions
 _cle_func () {
-	declare -f |sed -n '/.\+\s()/p'
+	declare -f |sed -n '/_cle.\+\s()/p'
 }
 
-## `cle modgen`     -- generate module index
-_cle_modgen () (
-	# find modules mod-* and cle-*
-	cd $CLE_DK/modules
-	for M in mod-* cle-*; do
-		echo $M:`_modver $M`:`_modsum $M`:`_modesc $M`
-	done
-) >$CLE_DK/modules/modulist
-
-
-## `cdc`      - shortcut into $HOME/d/cle
+## `cdc`            - shortcut into $HOME/d/cle
 cdc () {
 	cd $CLE_DK
 	printb CLE development kit: $PWD
 	git status
 }
 
-## `cle commit`   -- commit changes into git (also generate clerc from clerc.sh
+## `cle commit`     - commit changes into git (also generate clerc from clerc.sh
 _cle_commit () (
 	# generate short version of CLE
-	cle short c d
-	# regenerate module index if necessary
-	NEWEST=`ls -t $CLE_DK/modules|head -1`
-	[ $NEWEST != modulist ] && cle modgen
+	make
 	gicom $1
-)
-
-## `cle modln`    -- symlink module from $CLE_DK
-_cle_modln () (
-	F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
-	case `wc -w <<<$F` in
-	0)
-		echo no such module: $1
-		return 1;;
-	1)
-		FF=$F;;
-	*)
-		PS3="$_CL choose module # $_CN"
-		select FF in $F; do
-			[ -n "$FF" ] && break
-		done
-		;;
-	esac
-	echo Linking $FF
-	ln -sf $FF $CLE_D
-	cle reload
 )
 

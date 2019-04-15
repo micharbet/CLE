@@ -12,6 +12,22 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
+removed from dociment Modularity.md
+136 ### cle-hist
+137 Rich history by default starts with using CLE and doesn't contain items
+138 from `.bash_history` file. This module is able to import old records.
+139 However the only information that may be contained in old history file is
+140 timestamp. No return code and other information may be restored. Imported
+141 records will be marked with session ID like 'username-OLD' and working
+142 directory will be shown as '/un/known' and they all will appear at the
+143 beginning of rich file. Use command `cle hist import`
+144  Note: upon very first start of CLE on the account, the `.bash_history` is
+145  copied into personal file `.history-username` so all regular seraching
+146  methods like 'Ctrl-R' will work.
+147 Planned features of this modules are: removing selected entries, archiving
+148 and restoring.
+149 
+
 case "$1" in
 import) ## `cle hist import`   -- import old .badh_history into rich file
 	HF=$HOME/.bash_history

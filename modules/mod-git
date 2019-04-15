@@ -1,7 +1,7 @@
 ##
 ## ** mod-git: GIT helpers / shorcuts **
 #
-#* version: 2018-08-29
+#* version: 2019-03-12
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -66,16 +66,5 @@ giout ()
 		done
 	fi
         git checkout $BR
-)
-
-
-## `gitwb`            - show current working branch name
-gitwb () (
-	# search all parent directories
-	while [ $PWD != / ]; do
-		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
-		cd ..
-	done
-	return 1  # not in git repository
 )
 

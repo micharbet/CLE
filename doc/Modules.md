@@ -64,32 +64,29 @@ subcommands:
 
 `cle mod`       - shows URL of module repository and destination folder
 `cle mod help`  - provides short overview of module related commands
-`cle mod avail` - downloads index and displays modules available in repository
-`cle mod ls`    - provides list of installed modules
+`cle mod ls`    - provides list of all modules - installed and available
 `cle mod add [modname]` - installs/upgrades module
-`cle mod del [modname]` - module removal
+`cle mod rm [modname]`  - module removal
 
-Note that add/del subcommands do not require full module name, you can use
+Note that add/rm subcommands do not require full module name, you can use
 just a part of the name and for the same reason prefix cle- or mod- is not
-required. If more modules wit the same substring are found you will be able
-to chose the right one. If you do not provide any module name all of them *)
-are offered as numbered options. You can interrupt operation with Ctrl-C.
-*) all of them means all available for operation 'add' and all installed for
-operation 'del'
+required. If more modules witih the same substring are found you will be able
+to chose the right one using simple menu with numbered options. You can
+interrupt the operation with Ctrl-C.
 
 Module installation is simple - download the file and activate (execute the
-code) if it's mod-* (because cle-* and bin/* are executed on demand only) On
-the other side, module removal means not exactly deletion just the file is
-moved int $HOME/.cle/inactive. Another fact is that any residuals of modules 
+code) if it's mod-* (cle-* is executed on demand only) On the other side,
+module removal means not exactly deletion just the file is moved into
+'$HOME/.cle/inactive'. Another fact is that any residuals of modules 
 are still in memory of sessions started before removal. In other words, even
 if mod-something has been removed, full deactivation happens in new session.
 
 
 ## 4. Modules repository
 
-We've been talking about repository and downloading. Two variables combo
-`$CLE_SRC/$CLE_REL` points to the CLE repository. By default it is GitHub's
-URL where everything around CLE is stored. You can however create your own
+We've been talking about repository and downloading. The variables
+`$CLE_SRC` points to the CLE repository. By default it is GitHub's URL
+where everything around CLE is stored. You can however create your own
 repository and change value of `$CLE_SRC` accordingly. Do this in following
 cases:
 1. you have your own CLE development branch
@@ -102,8 +99,6 @@ Set the `$CLE_SRC` in one of following files:
 - your personal tweak `$HOME/.cle-YOURNAME/tw` (remember this file is
   transferred and executed over all lssh/lsu/lsudo sessions. You might want to
   create 'if' statement and ensure redirecting only on particular hosts.)
-- /etc/cle-systweak - global files for all CLE sessions on particular host
- (^^^ this needs to be done!)
 
 Downloading of modules is done with `curl` utility. Any URL valid for curl
 can be used. For this reason, the repository can be also a local folder when
@@ -112,12 +107,12 @@ URL of style `file://....` is used.
 
 ## 5. List of basic available modules
 
-### cle-mod - the basic one
+### cle-mod - the mods management
 This one allows installations and removal other modules. The modularity is
 built in CLE but module maintenace is kept in separate file. First request
 to 'cle mod [operation]' downloads and install this file and then performs
 the action. The 'cle-mod' is not required however. If you install/or create
-your own modules manually they will work.
+your own modules manually they will work without this one.
 
 ### mod-mancolor
 Almost descriptive name. This module doesn't add any new feature to the CLE.
@@ -134,29 +129,23 @@ as aliases, but why not to have this :-)
 This module makes it easy to move CLE installation folder to a different
 location. It's described in 'TipsAndTweks.md'.
 
-### cle-hist
-Rich history by default starts with using CLE and doesn't contain items
-from `.bash_history` file. This module is able to import old records.
-However the only information that may be contained in old history file is
-timestamp. No return code and other information may be restored. Imported
-records will be marked with session ID like 'username-OLD' and working
-directory will be shown as '/un/known' and they all will appear at the
-beginning of rich file. Use command `cle hist import`
- Note: upon very first start of CLE on the account, the `.bash_history` is
- copied into personal file `.history-username` so all regular seraching
- methods like 'Ctrl-R' will work.
-Planned features of this modules are: removing selected entries, archiving
-and restoring.
-
 ### mod-git
-Functions / shortcuts to 'git' commands. Maybe the most useful is function
-`gicwb`. It simply prints out curren working branch (hence it's name) and is
-useful if you want to display that information in prompt. Document
-'TipsAndTweaks.md' provides an example of such use. Find all added functions
-in built-in help (`cle help gi`)
+Functions / shortcuts to 'git' commands. Find all added functions
+in built-in help (`cle help git`)
+
+### mod-prompt
+Contains pre-defined prompt settings. Besides the default one you can choose
+between following:
+`cle prompt rh`       - inspired by Red Hat's deault but with colors.
+`cle prompt twoline`  - prompt on two lines, as its name says. It's almost the
+                        same aone as described in document 'TipsAndTweaks.md'
+`cle prompt triliner` - even more spacious prompt, adds an empty line for
+                        better readability.
 
 ### mod-example
-Template of module. Use it how it names.
+Template of module. Not available directly with, `cle mod` command. Find it
+in github repository and  use how as an base of your own additions. Read next
+(to be written) chapter.
 
 
 ## 6. How to write your own cool stuff
