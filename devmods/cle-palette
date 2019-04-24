@@ -1,0 +1,139 @@
+##
+## ** cle-palette: color palettes for OSC4 capable terminals **
+#
+#* version: 0.0.prd
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2019 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+## WARNING: too incomplete code may harm your kitten!
+
+## `cle palette [palname]`  - See terminal color to predefined palette
+
+local PALNAME PAL BG FG HL CR
+
+##  - `solarized [light|dark]`  - same colors with light/dark background
+# https://ethanschoonover.com/solarized/
+# https://github.com/altercation/solarized
+# http://www.zovirl.com/2011/07/22/solarized_cheat_sheet/
+# https://en.wikipedia.org/wiki/Solarized_(color_scheme)
+_pal_solarized () {
+	local BASE03='#002b36'
+	local BASE02='#073642'
+	local BASE01='#586e75'
+	local BASE00='#657b83'
+	local BASE0='#839496'
+	local BASE1='#93a1a1'
+	local BASE2='#eee8d5'
+	local BASE3='#fdf6e3'
+	local YELLOW='#b58900'
+	local ORANGE='#cb4b16'
+	local RED='#dc322f'
+	local MAGENTA='#d33682'
+	local VIOLET='#6c71c4'
+	local BLUE='#268bd2'
+	local CYAN='#2aa198'
+	local GREEN='#859900'
+
+	PAL="$BASE03 $RED $GREEN $YELLOW $BLUE $MAGENTA $CYAN $BASE2"
+	PAL="$PAL $BASE01 $ORANGE $BASE01 $BASE00 $BASE0 $VIOLET $BASE1 $BASE3"
+
+	case "$1" in
+	""|dark)
+		BG=$BASE03
+		FG=$BASE0
+		HL=$BASE02
+		CR=$BASE00
+		;;
+	light)
+		BG=$BASE3
+		FG=$BASE00
+		HL=$BASE2
+		CR=$BASE0
+		;;
+	esac
+	CR=$ORANGE  # override^^
+}
+
+##  - `gruvbox [light|dark] [soft|medium|hard]`  - oldstyle, less blue light
+# https://github.com/morhetz/gruvbox
+# https://blog.jeaye.com/2018/02/01/gruvbox/
+_pal_gruvbox () {
+	case "$1" in
+	""|dark)
+		PAL="#282828 #cc241d #98971a #d79921 #458588 #b16286 #689d6a #a89984 #928374 #fb4934 #b8bb26 #fabd2f #83a598 #d3869b #8ec07c #ebdbb2"
+		FG='#ebdbb2\e\\' # fg
+
+		case "$2" in
+		""|medium) BG='#282828\e\\';;
+		soft)	BG='#32302f\e\\';;
+		hard)	BG='#1d2021\e\\';;
+		esac
+
+		HL='#504945\e\\' # bg2
+		CR='#fbf1c7\e\\' # fg0
+		;;
+	esac
+}
+
+# https://github.com/nanotech/jellybeans.vim
+_pal_jellybeans () {
+	PAL="#3b3b3b #cf6a4c #99ad6a #d8ad4c #597bc5 #a037b0 #71b9f8 #adadad"
+	FG='#adadad'
+	BG='#3b3b3b'
+}
+
+#
+# main()
+#
+case "$1" in
+show)	## `cle palette show`    - display colors and their variants
+	printf "0-7 :"
+	for I in {0..15}; do
+		[ $I = 8 ] && printf "\n8-15:"
+		FG=`tput setaf $I`
+		printf "%s #%02d $_CN" $FG $I
+	done
+	printf "\nBOLD:"
+	for I in {0..8}; do
+		FG=`tput setaf $I;tput bold`
+		printf "%s #%02d $_CN" $FG $I
+	done
+	printf "\nDIM :"
+	for I in {0..8}; do
+		FG=`tput setaf $I;tput dim`
+		printf "%s #%02d $_CN" $FG $I
+	done
+	echo
+	;;
+reset)	## `cle palette reset`   - reset palette to terminal defaults
+	echo -en "\e]104\e\\"
+	echo -en "\e]110\e\\"
+	echo -en "\e]111\e\\"
+	echo -en "\e]112\e\\"
+	echo -en "\e]117\e\\"
+	;;
+*)
+	PALNAME=$1
+	shift
+	eval _pal_$PALNAME "$@"
+
+	I=0
+	for C in $PAL; do
+		echo -en "\e]4;$I;$C\e\\"
+		((I++))
+	done
+
+	echo -en "\e]10;$FG\e\\" # fg (base0)
+	echo -en "\e]11;$BG\e\\" # bg (base03)
+	echo -en "\e]17;$HL\e\\" # highlight (base02)
+	echo -en "\e]12;$CR\e\\" # cursor (base00)
+	;;
+esac
+
