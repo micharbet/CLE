@@ -89,6 +89,18 @@ _pal_jellybeans () {
 	BG='#3b3b3b'
 }
 
+##  - `cga16`                 - sixteen bright colors of CGA
+# https://en.wikipedia.org/wiki/Color_Graphics_Adapter
+# note code 'a50' - brown instead of dark yellow
+_pal_cga16 () {
+	PAL="#000 #a00 #0a0 #a50 #00a #a0a #0aa #aaa"
+	PAL="$PAL #555 #f55 #5f5 #ff5 #55f #f5f #5ff #fff"
+	BG="#000"
+	FG="#aaa"
+	CR="#0c0"
+	HL="#444"
+}
+
 #
 # main()
 #
@@ -101,12 +113,12 @@ show)	## `cle palette show`    - display colors and their variants
 		printf "%s #%02d $_CN" $FG $I
 	done
 	printf "\nBOLD:"
-	for I in {0..8}; do
+	for I in {0..7}; do
 		FG=`tput setaf $I;tput bold`
 		printf "%s #%02d $_CN" $FG $I
 	done
 	printf "\nDIM :"
-	for I in {0..8}; do
+	for I in {0..7}; do
 		FG=`tput setaf $I;tput dim`
 		printf "%s #%02d $_CN" $FG $I
 	done
