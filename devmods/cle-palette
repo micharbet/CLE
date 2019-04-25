@@ -65,21 +65,57 @@ _pal_solarized () {
 # https://github.com/morhetz/gruvbox
 # https://blog.jeaye.com/2018/02/01/gruvbox/
 _pal_gruvbox () {
+	# basic set common for dark and light modes
+	local RED="#cc241d"
+	local GREEN="#98971a"
+	local YELLOW="#d79921"
+	local BLUE="#458588"
+	local PURPLE="#b16286"
+	local AQUA="#689d6a"
+	local ORANGE='#d65d0e'
+
 	case "$1" in
 	""|dark)
-		PAL="#282828 #cc241d #98971a #d79921 #458588 #b16286 #689d6a #a89984 #928374 #fb4934 #b8bb26 #fabd2f #83a598 #d3869b #8ec07c #ebdbb2"
-		FG='#ebdbb2\e\\' # fg
-
+		local RED1="#fb4934"
+		local GREEN1="#b8bb26"
+		local YELLOW1="#fabd2f"
+		local BLUE1="#83a598"
+		local PURPLE1="#d3869b"
+		local AQUA1="#8ec07c"
+		local GRAY="#a89984"
+		local GRAY1="#928374"
+		local ORANGE1="#fe8019"
 		case "$2" in
-		""|medium) BG='#282828\e\\';;
-		soft)	BG='#32302f\e\\';;
-		hard)	BG='#1d2021\e\\';;
+		""|medium) BG='#282828';;
+		soft)	BG='#32302f';;
+		hard)	BG='#1d2021';;
 		esac
-
-		HL='#504945\e\\' # bg2
-		CR='#fbf1c7\e\\' # fg0
+		FG='#ebdbb2'
+		HL='#504945' # bg2
+		CR=$ORANGE
 		;;
+	light)
+		local RED1="#9d0006"
+		local GREEN1="#79740e"
+		local YELLOW1="#b57614"
+		local BLUE1="#076678"
+		local PURPLE1="#8f3f71"
+		local AQUA1="#427b58"
+		local GRAY="#7c6f64"
+		local GRAY1="#928374"
+		local ORANGE1="#af3a03"
+		case "$2" in
+		""|medium) BG='#fbf1c7';;
+		soft)	BG='#f2e5bc';;
+		hard)	BG='#f9f5d7';;
+		esac
+		FG='#3c3836'
+		HL='#d5c4a1' # bg2
+		CR=$ORANGE
+		;;
+	
 	esac
+	PAL="$BG $RED $GREEN $YELLOW $BLUE $PURPLE $AQUA $GRAY $GRAY1 $RED1 $GREEN1 $YELLOW1 $BLUE1 $PURPLE1 $AQUA1 $FG"
 }
 
 # https://github.com/nanotech/jellybeans.vim
@@ -149,3 +185,8 @@ reset)	## `cle palette reset`   - reset palette to terminal defaults
 	;;
 esac
 
+# remove unwanted functions
+unset _pal_solarized
+unset _pal_gruvbox
+unset _pal_jellybeans
+unset _pal_cga16
