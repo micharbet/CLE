@@ -14,11 +14,11 @@
 
 ## WARNING: too incomplete code may harm your kitten!
 
-## `cle palette [palname]`  - See terminal color to predefined palette
+## `cle palette [palname]`      - colorize terminal with predefined palette
 
 local PALNAME PAL BG FG HL CR
 
-##  - `solarized [light|dark]`  - same colors with light/dark background
+##  ... `solarized [l|d]`       - well known blue-ish theme with light/dark options
 # https://ethanschoonover.com/solarized/
 # https://github.com/altercation/solarized
 # http://www.zovirl.com/2011/07/22/solarized_cheat_sheet/
@@ -45,13 +45,13 @@ _pal_solarized () {
 	PAL="$PAL $BASE01 $ORANGE $BASE01 $BASE00 $BASE0 $VIOLET $BASE1 $BASE3"
 
 	case "$1" in
-	""|dark)
+	""|d)
 		BG=$BASE03
 		FG=$BASE0
 		HL=$BASE02
 		CR=$BASE00
 		;;
-	light)
+	l)
 		BG=$BASE3
 		FG=$BASE00
 		HL=$BASE2
@@ -61,7 +61,8 @@ _pal_solarized () {
 	CR=$ORANGE  # override^^
 }
 
-##  - `gruvbox [light|dark] [soft|medium|hard]`  - oldstyle, less blue light
+##  ... `gruvbox [l|d] [s|m|h]` - retro groove light/dark plus contrast options
+##                              less blue light pleasant for the eyes
 # https://github.com/morhetz/gruvbox
 # https://blog.jeaye.com/2018/02/01/gruvbox/
 _pal_gruvbox () {
@@ -75,7 +76,7 @@ _pal_gruvbox () {
 	local ORANGE='#d65d0e'
 
 	case "$1" in
-	""|dark)
+	""|d)	# dark colors
 		local RED1="#fb4934"
 		local GREEN1="#b8bb26"
 		local YELLOW1="#fabd2f"
@@ -85,16 +86,17 @@ _pal_gruvbox () {
 		local GRAY="#a89984"
 		local GRAY1="#928374"
 		local ORANGE1="#fe8019"
+		# select contrast
 		case "$2" in
-		""|medium) BG='#282828';;
-		soft)	BG='#32302f';;
-		hard)	BG='#1d2021';;
+		""|m)	BG='#282828';; # medium
+		s)	BG='#32302f';; # soft
+		h)	BG='#1d2021';; # hard
 		esac
 		FG='#ebdbb2'
 		HL='#504945' # bg2
 		CR=$ORANGE
 		;;
-	light)
+	l)	# light colors
 		local RED1="#9d0006"
 		local GREEN1="#79740e"
 		local YELLOW1="#b57614"
@@ -104,10 +106,11 @@ _pal_gruvbox () {
 		local GRAY="#7c6f64"
 		local GRAY1="#928374"
 		local ORANGE1="#af3a03"
+		# select contrast
 		case "$2" in
-		""|medium) BG='#fbf1c7';;
-		soft)	BG='#f2e5bc';;
-		hard)	BG='#f9f5d7';;
+		""|m)	BG='#fbf1c7';; # medium
+		s)	BG='#f2e5bc';; # soft
+		h)	BG='#f9f5d7';; # hard
 		esac
 		FG='#3c3836'
 		HL='#d5c4a1' # bg2
@@ -115,6 +118,7 @@ _pal_gruvbox () {
 		;;
 	
 	esac
+	# complete the palette
 	PAL="$BG $RED $GREEN $YELLOW $BLUE $PURPLE $AQUA $GRAY $GRAY1 $RED1 $GREEN1 $YELLOW1 $BLUE1 $PURPLE1 $AQUA1 $FG"
 }
 
@@ -125,7 +129,7 @@ _pal_jellybeans () {
 	BG='#3b3b3b'
 }
 
-##  - `cga16`                 - sixteen bright colors of CGA
+##  ... `cga16`                 - back in time, sixteen bright colors of CGA
 # https://en.wikipedia.org/wiki/Color_Graphics_Adapter
 # note code 'a50' - brown instead of dark yellow
 _pal_cga16 () {
@@ -141,7 +145,7 @@ _pal_cga16 () {
 # main()
 #
 case "$1" in
-show)	## `cle palette show`    - display colors and their variants
+show)	## `cle palette show`           - display colors and their variants
 	printf "0-7 :"
 	for I in {0..15}; do
 		[ $I = 8 ] && printf "\n8-15:"
@@ -160,14 +164,19 @@ show)	## `cle palette show`    - display colors and their variants
 	done
 	echo
 	;;
-reset)	## `cle palette reset`   - reset palette to terminal defaults
+reset)	## `cle palette reset`          - reset palette to terminal defaults
 	echo -en "\e]104\e\\"
 	echo -en "\e]110\e\\"
 	echo -en "\e]111\e\\"
 	echo -en "\e]112\e\\"
 	echo -en "\e]117\e\\"
 	;;
-*)
+
+"")	# show available palettes
+	printb "${_CU}Avaliable palettes:${_Cu}"
+	declare -f | sed -n 's/.*_pal_\([[:graph:]]*\).*/\1/p'
+	;;
+*)	# paint the terminal
 	PALNAME=$1
 	shift
 	eval _pal_$PALNAME "$@"
