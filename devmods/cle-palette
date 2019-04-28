@@ -16,7 +16,8 @@
 
 ## `cle palette [palname]`      - colorize terminal with predefined palette
 
-local PALNAME PAL BG FG HL CR
+local PALNAME PALSPEC PAL BG FG HL CR
+local PALMOD=$CLE_D/mod-palette
 
 ##  ... `solarized [l|d]`       - well known blue-ish theme with light/dark options
 # https://ethanschoonover.com/solarized/
@@ -50,12 +51,14 @@ _pal_solarized () {
 		FG=$BASE0
 		HL=$BASE02
 		CR=$BASE00
+		PALSPEC=dark
 		;;
 	l|light)
 		BG=$BASE3
 		FG=$BASE00
 		HL=$BASE2
 		CR=$BASE0
+		PALSPEC=light
 		;;
 	esac
 	CR=$ORANGE  # override^^
@@ -88,9 +91,15 @@ _pal_gruvbox () {
 		local ORANGE1="#fe8019"
 		# select contrast
 		case "$2" in
-		""|m|medium)	BG='#282828';; # medium
-		s|soft)	BG='#32302f';; # soft
-		h|hard)	BG='#1d2021';; # hard
+		""|m|medium)
+			BG='#282828'
+			PALSPEC='dark medium';;
+		s|soft)
+			BG='#32302f'
+			PALSPEC='dark soft';;
+		h|hard)
+			BG='#1d2021'
+			PALSPEC='dark hard';;
 		esac
 		FG='#ebdbb2'
 		HL='#504945' # bg2
@@ -108,9 +117,15 @@ _pal_gruvbox () {
 		local ORANGE1="#af3a03"
 		# select contrast
 		case "$2" in
-		""|m|medium)	BG='#fbf1c7';; # medium
-		s|soft)	BG='#f2e5bc';; # soft
-		h|hard)	BG='#f9f5d7';; # hard
+		""|m|medium)
+			BG='#fbf1c7'
+			PALSPEC='light medium';;
+		s|soft)
+			BG='#f2e5bc'
+			PALSPEC='light soft';;
+		h|hard)
+			BG='#f9f5d7'
+			PALSPEC='light hard';;
 		esac
 		FG='#3c3836'
 		HL='#d5c4a1' # bg2
@@ -139,6 +154,7 @@ _pal_cga16 () {
 	FG="#aaa"
 	CR="#0c0"
 	HL="#444"
+	PALSPEC=''
 }
 
 #
@@ -170,27 +186,38 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 	echo -en "\e]111\e\\"
 	echo -en "\e]112\e\\"
 	echo -en "\e]117\e\\"
+	rm -f $PALMOD
 	;;
 
 "")	# show available palettes
 	printb "${_CU}Avaliable palettes:${_Cu}"
 	declare -f | sed -n 's/.*_pal_\([[:graph:]]*\).*/\1/p'
 	;;
-*)	# paint the terminal
+*)	# color palette setup
 	PALNAME=$1
 	shift
 	eval _pal_$PALNAME "$@"
 
+	# generate palette module
+	cat <<-EOP >$PALMOD
+		#
+		# terminal colors generated with cle-palette
+		# palette: $PALNAME $PALSPEC
+	EOP
 	I=0
 	for C in $PAL; do
-		echo -en "\e]4;$I;$C\e\\"
+		echo "printf '\e]4;$I;$C\e\\'" >>$PALMOD
 		((I++))
 	done
 
-	echo -en "\e]10;$FG\e\\" # fg (base0)
-	echo -en "\e]11;$BG\e\\" # bg (base03)
-	echo -en "\e]17;$HL\e\\" # highlight (base02)
-	echo -en "\e]12;$CR\e\\" # cursor (base00)
+	cat <<-EOP >>$PALMOD
+		printf '\e]10;$FG\e\\' # fg (base0)
+		printf '\e]11;$BG\e\\' # bg (base03)
+		printf '\e]17;$HL\e\\' # highlight (base02)
+		printf '\e]12;$CR\e\\' # cursor (base00)
+	EOP
+	# paint the terminal
+	. $PALMOD
 	;;
 esac
 
