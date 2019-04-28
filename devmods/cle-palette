@@ -45,13 +45,13 @@ _pal_solarized () {
 	PAL="$PAL $BASE01 $ORANGE $BASE01 $BASE00 $BASE0 $VIOLET $BASE1 $BASE3"
 
 	case "$1" in
-	""|d)
+	""|d|dark)
 		BG=$BASE03
 		FG=$BASE0
 		HL=$BASE02
 		CR=$BASE00
 		;;
-	l)
+	l|light)
 		BG=$BASE3
 		FG=$BASE00
 		HL=$BASE2
@@ -76,7 +76,7 @@ _pal_gruvbox () {
 	local ORANGE='#d65d0e'
 
 	case "$1" in
-	""|d)	# dark colors
+	""|d|dark)	# dark colors
 		local RED1="#fb4934"
 		local GREEN1="#b8bb26"
 		local YELLOW1="#fabd2f"
@@ -88,15 +88,15 @@ _pal_gruvbox () {
 		local ORANGE1="#fe8019"
 		# select contrast
 		case "$2" in
-		""|m)	BG='#282828';; # medium
-		s)	BG='#32302f';; # soft
-		h)	BG='#1d2021';; # hard
+		""|m|medium)	BG='#282828';; # medium
+		s|soft)	BG='#32302f';; # soft
+		h|hard)	BG='#1d2021';; # hard
 		esac
 		FG='#ebdbb2'
 		HL='#504945' # bg2
 		CR=$ORANGE
 		;;
-	l)	# light colors
+	l|light)	# light colors
 		local RED1="#9d0006"
 		local GREEN1="#79740e"
 		local YELLOW1="#b57614"
@@ -108,9 +108,9 @@ _pal_gruvbox () {
 		local ORANGE1="#af3a03"
 		# select contrast
 		case "$2" in
-		""|m)	BG='#fbf1c7';; # medium
-		s)	BG='#f2e5bc';; # soft
-		h)	BG='#f9f5d7';; # hard
+		""|m|medium)	BG='#fbf1c7';; # medium
+		s|soft)	BG='#f2e5bc';; # soft
+		h|hard)	BG='#f9f5d7';; # hard
 		esac
 		FG='#3c3836'
 		HL='#d5c4a1' # bg2
