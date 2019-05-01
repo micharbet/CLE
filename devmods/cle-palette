@@ -1,7 +1,7 @@
 ##
 ## ** cle-palette: color palettes for OSC4 capable terminals **
 #
-#* version: 0.0.prd
+#* version: 2019-05-01
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -19,12 +19,30 @@
 local PALNAME PALSPEC PAL BG FG HL CR
 local PALMOD=$CLE_D/mod-palette
 
-##  ... `solarized [l|d]`       - well known blue-ish theme with light/dark options
+##  ... `solarized [l|d]`       - well known theme with light/dark options
+##                                (adjusted colors of bold characteres)
+#
 # https://ethanschoonover.com/solarized/
 # https://github.com/altercation/solarized
 # http://www.zovirl.com/2011/07/22/solarized_cheat_sheet/
 # https://en.wikipedia.org/wiki/Solarized_(color_scheme)
+#
+# Note following: This is modified solarized palette. The design created
+# by Ethan Schoonover was customized for better terminal and command line
+# experience keeping it's original idea.
+#
+# Ethan's Solarized theme defined first eight colors plus BASSE* intended for
+# background vs. content. And did it great! However if  BASE* + ORANGE and
+# MAGENTA become colors 8-15 in terminal's palette they cause weird coloring
+# of bold characters. (Gray instead of green, yellow, blue...) For this reason
+# I added brighter variants of RED, GREEN, etc. to dark palette and darker
+# variants of the same colors to the light palette. Colors of BASE are used as
+# they were intended - for background and content. (inspiration taken back
+# from gruvbox palette) and ORANGE/MAGENTA are not abandoned, they create nice
+# distinguished cursors.
+#
 _pal_solarized () {
+	# Solarized background and content tones
 	local BASE03='#002b36'
 	local BASE02='#073642'
 	local BASE01='#586e75'
@@ -33,41 +51,49 @@ _pal_solarized () {
 	local BASE1='#93a1a1'
 	local BASE2='#eee8d5'
 	local BASE3='#fdf6e3'
-	local YELLOW='#b58900'
+	# Terminal adapted solarized palette with better bright/bold colors
+	#      solarized basic    light              dark
+	#      color              color*1.2          color*0.6
+	local RED='#dc322f'      RED1='#ff3b37'     RED0='#831e1c'
 	local ORANGE='#cb4b16'
-	local RED='#dc322f'
+	local GREEN='#859900'    GREEN1='#9eb600'   GREEN0='#505c00'
+	local YELLOW='#b58900'   YELLOW1='#d7a300'  YELLOW0='#6d5200'
+	local BLUE='#268bd2'     BLUE1='#2da5fa'    BLUE0='#17537e'
+	local VIOLET='#6c71c4'   VIOLET1='#8186e9'  VIOLET0='#414476'
 	local MAGENTA='#d33682'
-	local VIOLET='#6c71c4'
-	local BLUE='#268bd2'
-	local CYAN='#2aa198'
-	local GREEN='#859900'
-
-	PAL="$BASE03 $RED $GREEN $YELLOW $BLUE $MAGENTA $CYAN $BASE2"
-	PAL="$PAL $BASE01 $ORANGE $BASE01 $BASE00 $BASE0 $VIOLET $BASE1 $BASE3"
+	local CYAN='#2aa198'     CYAN1='#32c0b5'    CYAN0='#19615b'
 
 	case "$1" in
 	""|d|dark)
 		BG=$BASE03
 		FG=$BASE0
 		HL=$BASE02
-		CR=$BASE00
+		CR=$ORANGE
 		PALSPEC=dark
+		PAL="$BASE03 $RED $GREEN $YELLOW $BLUE $VIOLET $CYAN $BASE2"
+		PAL="$PAL $BASE01 $RED1 $GREEN1 $YELLOW1 $BLUE1 $VIOLET1 $CYAN1 $BASE3"
 		;;
 	l|light)
 		BG=$BASE3
 		FG=$BASE00
 		HL=$BASE2
-		CR=$BASE0
+		CR=$MAGENTA
 		PALSPEC=light
+		PAL="$BASE3 $RED $GREEN $YELLOW $BLUE $VIOLET $CYAN $BASE02"
+		PAL="$PAL $BASE1 $RED0 $GREEN0 $YELLOW0 $BLUE0 $VIOLET0 $CYAN0 $BASE03"
 		;;
 	esac
-	CR=$ORANGE  # override^^
+	#CR=$ORANGE  # override^^
 }
 
 ##  ... `gruvbox [l|d] [s|m|h]` - retro groove light/dark plus contrast options
 ##                              less blue light pleasant for the eyes
+#
 # https://github.com/morhetz/gruvbox
 # https://blog.jeaye.com/2018/02/01/gruvbox/
+#
+# Original as defined by Pavel Pertsev (github)
+#
 _pal_gruvbox () {
 	# basic set common for dark and light modes
 	local RED="#cc241d"
@@ -137,14 +163,7 @@ _pal_gruvbox () {
 	PAL="$BG $RED $GREEN $YELLOW $BLUE $PURPLE $AQUA $GRAY $GRAY1 $RED1 $GREEN1 $YELLOW1 $BLUE1 $PURPLE1 $AQUA1 $FG"
 }
 
-# https://github.com/nanotech/jellybeans.vim
-_pal_jellybeans () {
-	PAL="#3b3b3b #cf6a4c #99ad6a #d8ad4c #597bc5 #a037b0 #71b9f8 #adadad"
-	FG='#adadad'
-	BG='#3b3b3b'
-}
-
-##  ... `cga16`                 - back in time, sixteen bright colors of CGA
+##  ... `cga16`                 - back in time, sixteen bright colors of ancient CGA
 # https://en.wikipedia.org/wiki/Color_Graphics_Adapter
 # note code 'a50' - brown instead of dark yellow
 _pal_cga16 () {
@@ -155,6 +174,14 @@ _pal_cga16 () {
 	CR="#0c0"
 	HL="#444"
 	PALSPEC=''
+}
+
+# https://github.com/nanotech/jellybeans.vim
+# This maybe needs similar improvement as solarized
+_pal_jellybeans () {
+	PAL="#3b3b3b #cf6a4c #99ad6a #d8ad4c #597bc5 #a037b0 #71b9f8 #adadad"
+	FG='#adadad'
+	BG='#3b3b3b'
 }
 
 #

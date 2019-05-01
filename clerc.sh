@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-14 (Zodiac)
+#* version: 2019-05-01 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -58,6 +58,7 @@ dbg_print; dbg_print pid:$$						# dbg
 export CLE_RC
 dbg_var CLE_RC
 dbg_var CLE_ARG
+dbg_var CLE_USER
 dbg_var SHELL
 dbg_var BASH
 dbg_var ZSH_NAME
@@ -197,7 +198,7 @@ CLE_TTY=`tty|tr -d '/dev'`
 #: - /any/folder/.config/cle-username/rcfile
 #: important is the dot (hidden folder), word 'cle' with dash
 _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
-CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 dbg_var CLE_USER
 
 #:------------------------------------------------------------:#
@@ -1069,8 +1070,12 @@ cle () {
 		mv -f $P $CLE_RC
 		cle reload;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
-		S=${1:-$CLE_SH}
-		exec $CLE_RC -$S;;
+		[[ $1 =~ ^[bz] ]] && S=-$1
+		#: complete re-exec removes unexported variables
+		[ $S ] && exec $CLE_RC $S
+		#: re-sourcing the environment keeps user's settings
+		unset CLE_EXE
+		. $CLE_RC;;
 	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code
@@ -1117,7 +1122,7 @@ cle () {
 }
 
 #: final cleanup
-unset _T _N _H _C _DC
+unset _T _H _C _N _DC
 ##~~
 # that's all, folks...
 
