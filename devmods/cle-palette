@@ -220,21 +220,37 @@ _pal_jellybeans () {
 #
 case "$1" in
 show)	## `cle palette show`           - display colors and their variants
-	printf "0-7 :"
-	for I in {0..15}; do
-		[ $I = 8 ] && printf "\n8-15:"
+	printf "${_CU}Basic colors 0..7$_Cu\nDIM :"
+	for I in {0..7}; do
+		FG=`tput setaf $I;tput dim`
+		printf "%s #%02d$_CN" $FG $I
+	done
+	printf " <-- 'dim' not always supported\nREG :"
+	for I in {0..7}; do
 		FG=`tput setaf $I`
-		printf "%s #%02d $_CN" $FG $I
+		printf "%s #%02d$_CN" $FG $I
 	done
 	printf "\nBOLD:"
 	for I in {0..7}; do
 		FG=`tput setaf $I;tput bold`
-		printf "%s #%02d $_CN" $FG $I
+		printf "%s #%02d$_CN" $FG $I
 	done
-	printf "\nDIM :"
-	for I in {0..7}; do
+	printf " <-- may render same as bold of 8..15\n"
+	printf "${_CU}Colors 8..15$_Cu\nDIM :"
+	for I in {8..15}; do
 		FG=`tput setaf $I;tput dim`
-		printf "%s #%02d $_CN" $FG $I
+		printf "%s #%02d$_CN" $FG $I
+	done
+	printf "\nREG :"
+	for I in {8..15}; do
+		FG=`tput setaf $I`
+		printf "%s #%02d$_CN" $FG $I
+	done
+	printf " <-- no colors on 8-color terminal\n"
+	printf "BOLD:"
+	for I in {8..15}; do
+		FG=`tput setaf $I;tput bold`
+		printf "%s #%02d$_CN" $FG $I
 	done
 	echo
 	;;
