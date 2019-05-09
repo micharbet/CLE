@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-05-01 (Zodiac)
+#* version: 2019-05-10 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -207,10 +207,10 @@ dbg_var CLE_USER
 _clebnr () {
 cat <<EOT
 
-   ___| |     ____|  Command Live Environment activated
-  |     |     __|    ...bit of life to the command line
-  |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
- \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
+$_CC   ___| |     ____| $_CN Command Live Environment activated
+$_CB  |     |     __|   $_CN ...bit of life to the command line
+$_Cb  |     |     |     $_CN Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
+$_Cb$_CD \____|_____|_____| $_CN Uncover the magic:$_CL less $CLE_RC$_CN
 
 EOT
 }
@@ -250,14 +250,36 @@ _cletable () {
 	#: Note: dim and italic not available everywhere (e.g. RHEL)
 	_CI=`tput sitm`;_Ci=`tput ritm`
 	_CD=`tput dim`
-	_Ck=$_CN$(tput setaf 0);_CK=$_Ck$_CL
-	_Cr=$_CN$(tput setaf 1);_CR=$_Cr$_CL
-	_Cg=$_CN$(tput setaf 2);_CG=$_Cg$_CL
-	_Cy=$_CN$(tput setaf 3);_CY=$_Cy$_CL
-	_Cb=$_CN$(tput setaf 4);_CB=$_Cb$_CL
-	_Cm=$_CN$(tput setaf 5);_CM=$_Cm$_CL
-	_Cc=$_CN$(tput setaf 6);_CC=$_Cc$_CL
-	_Cw=$_CN$(tput setaf 7);_CW=$_Cw$_CL
+	_Ck=$_CN$(tput setaf 0)
+	_Cr=$_CN$(tput setaf 1)
+	_Cg=$_CN$(tput setaf 2)
+	_Cy=$_CN$(tput setaf 3)
+	_Cb=$_CN$(tput setaf 4)
+	_Cm=$_CN$(tput setaf 5)
+	_Cc=$_CN$(tput setaf 6)
+	_Cw=$_CN$(tput setaf 7)
+	case `tput colors` in
+	8)
+		_CK=$_Ck$_CL
+		_CR=$_Cr$_CL
+		_CG=$_Cg$_CL
+		_CY=$_Cy$_CL
+		_CB=$_Cb$_CL
+		_CM=$_Cm$_CL
+		_CC=$_Cc$_CL
+		_CW=$_Cw$_CL
+		;;
+	*)
+		_CK=$_CN$(tput setaf 8)
+		_CR=$_CN$(tput setaf 9)
+		_CG=$_CN$(tput setaf 10)
+		_CY=$_CN$(tput setaf 11)
+		_CB=$_CN$(tput setaf 12)
+		_CM=$_CN$(tput setaf 13)
+		_CC=$_CN$(tput setaf 14)
+		_CW=$_CN$(tput setaf 15)
+		;;
+	esac
 	#: and... special color code for error highlight in prompt
 	_Ce=`tput setab 1;tput setaf 7` # err highlight
 }

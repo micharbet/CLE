@@ -176,6 +176,37 @@ _pal_cga16 () {
 	PALSPEC=''
 }
 
+##  ... `rh`                    - tribute to the Shadowman
+_pal_rh () {
+	local LIGHTGRAY='#DCDCDC'
+	local GRAY1='#f0f0f0' GRAY4='#bebebe' GRAY6='#969696' GRAY10='#707070' GRAY12='#303030'
+	local RHRED='#cc0000' DARKRED1='#a30000' ORANGE='#ec7a08'
+	local DARKGREEN='#3f9c35' GREEN='#92d400'
+	local GREEN6='#aad840' GREEN5='#b5df56' GREEN4='#cae883' GREEN1='#eaf5cd'
+	local GOLD6='#f2b22d' GOLD4='#f8d384'
+	local DARKBLUE='#004153' LIGHTBLUE='#a3dbe8' NAVYBLUE='#0088CE' BLUE='#00b9e4'
+	local LIGHTBLUE3='#86e2ec' DARKBLUE3='#1b5564'
+	local PURPLE6='#7551a6' PURPLE4='#9c82c0'
+	local TEAL6='#36959e' TEAL5='#68afb6'
+
+	PAL="$GRAY12 $RHRED $GREEN $GOLD6 $NAVYBLUE $PURPLE6 $TEAL6 $GRAY4"
+	PAL="$PAL $GRAY10 $ORANGE $GREEN4 $GOLD4 $BLUE $PURPLE4 $TEAL5 $GRAY1"
+
+	BG=$DARKBLUE
+	FG=$LIGHTGRAY
+	HL=$DARKBLUE3
+	CR=$LIGHTBLUE3
+}
+
+##  ... `xterm`                 - simple and contrast colors
+_pal_xterm () {
+	PAL="#000000 #cd0000 #00cd00 #cdcd00 #0000ee #cd00cd #00cdcd #e5e5e5 #7f7f7f #ff0000 #00ff00 #ffff00 #5c5cff #ff00ff #00ffff #ffffff"
+	BG="#000000"
+	FG="#aaaaaa"
+	CR="#62df22"
+	HL="#666666"
+}
+
 # https://github.com/nanotech/jellybeans.vim
 # This maybe needs similar improvement as solarized
 _pal_jellybeans () {
@@ -255,7 +286,7 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 esac
 
 # remove unwanted functions
-unset _pal_solarized
-unset _pal_gruvbox
-unset _pal_jellybeans
-unset _pal_cga16
+PALMOD=$BASH_SOURCE
+#       ^^^^ something else for zsh!
+unset `sed -n 's/\(^_pal_[[:graph:]]*\).*/\1/p' $PALMOD`
+
