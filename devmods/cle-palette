@@ -177,6 +177,7 @@ _pal_cga16 () {
 }
 
 ##  ... `rh`                    - tribute to the Shadowman
+# taken from internal color palette
 _pal_rh () {
 	local LIGHTGRAY='#DCDCDC'
 	local GRAY1='#f0f0f0' GRAY4='#bebebe' GRAY6='#969696' GRAY10='#707070' GRAY12='#303030'
@@ -185,17 +186,17 @@ _pal_rh () {
 	local GREEN6='#aad840' GREEN5='#b5df56' GREEN4='#cae883' GREEN1='#eaf5cd'
 	local GOLD6='#f2b22d' GOLD4='#f8d384'
 	local DARKBLUE='#004153' LIGHTBLUE='#a3dbe8' NAVYBLUE='#0088CE' BLUE='#00b9e4'
-	local LIGHTBLUE3='#86e2ec' DARKBLUE3='#1b5564'
-	local PURPLE6='#7551a6' PURPLE4='#9c82c0'
-	local TEAL6='#36959e' TEAL5='#68afb6'
+	local LIGHTBLUE3='#86e2ec' DARKBLUE3='#1b5564' DARKBLUE1='#80a0a9'
+	local PURPLE6='#7551a6' PURPLE5='#8869b3' PURPLE4='#9c82c0' PURPLE3='#b09bcc'
+	local TEAL6='#36959e' TEAL4='#9acacf' TEAL5='#68afb6' TEAL3='#b3d7db'
 
-	PAL="$GRAY12 $RHRED $GREEN $GOLD6 $NAVYBLUE $PURPLE6 $TEAL6 $GRAY4"
-	PAL="$PAL $GRAY10 $ORANGE $GREEN4 $GOLD4 $BLUE $PURPLE4 $TEAL5 $GRAY1"
+	PAL="$GRAY12 $RHRED $GREEN $GOLD6 $NAVYBLUE $PURPLE5 $TEAL6 $GRAY4"
+	PAL="$PAL $GRAY10 $ORANGE $GREEN4 $GOLD4 $BLUE $PURPLE3 $TEAL4 $GRAY1"
 
 	BG=$DARKBLUE
 	FG=$LIGHTGRAY
 	HL=$DARKBLUE3
-	CR=$LIGHTBLUE3
+	CR=$DARKBLUE1
 }
 
 ##  ... `xterm`                 - simple and contrast colors

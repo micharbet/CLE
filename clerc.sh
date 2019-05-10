@@ -281,7 +281,7 @@ _cletable () {
 		;;
 	esac
 	#: and... special color code for error highlight in prompt
-	_Ce=`tput setab 1;tput setaf 7` # err highlight
+	_Ce=$_CR$_CL$_CV # err highlight
 }
 
 # set prompt colors
@@ -306,12 +306,13 @@ _cleclr () {
 		return 1
 	esac
 	# decode colors and prompt strings
-	C=K${C}L
-	for I in {0..4};do
+	C=x${C}L
+	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
 		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
 		eval "_C$I=\$CI"
 	done
+	_C0=$_C3$_CD
 }
 
 # CLE prompt escapes
