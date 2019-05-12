@@ -348,9 +348,11 @@ precmd () {
 	DT=${C/;*}
 	C=${C/$DT;}
 	C="${C#"${C%%[![:space:]]*}"}"
-	if [ $_SST ]; then
+	if [[ $C =~ ^\# ]]; then
+		_clerh '#' "$PWD" "$C"
+	elif [ $_SST ]; then
 		S=$((SECONDS-${_SST:-$SECONDS}))
-		_clerh "$DT" $S "$_EC" $PWD "$C"
+		_clerh "$DT" $S "$_EC" "$PWD" "$C"
 		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce"
 		_SST=
 	else
@@ -375,29 +377,34 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT REX S V W
+	local DT RC REX ID V W
+	case $# in
+	3)	DT='';SC='';;
+	4)	DT='';SC=$1;shift;;
+	5)	DT=$1;SC=$2;shift;shift;;
+	esac
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	W=${4/$HOME/\~}
-	[[ $5 =~ $REX  || -n $_NORH ]] && unset _NORH && return
-	[ "$1" ] && DT=$1 || DT=`date "+$CLE_HTF"`
-	S="$DT;$CLE_USER-${CLE_SH:0:1}$$"
+	W=${2/$HOME/\~}
+	[[ $3 =~ $REX  || -n $_NORH ]] && unset _NORH && return
+	[ "$DT" ] || DT=`date "+$CLE_HTF"`
+	ID="$DT;$CLE_USER-${CLE_SH:0:1}$$"
 	REX='^\$[A-Za-z0-9_]+'
-	case "$5" in
+	case "$3" in
 	echo*)
-		echo -E "$S;$2;$3;$W;$5"
-		for V in $5; do
+		echo -E "$ID;$SC;$1;$W;$3"
+		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
 				DT=`vdump $V`
-				echo -E "$S;;$;$W;${DT:-unset $V}"
+				echo -E "$ID;;$;$W;${DT:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
-		echo -E "$S;;*;$W;" ;;
+		echo -E "$ID;;*;$W;" ;;
 	\#*)
-		echo -E "$S;;#;$W;$5" ;;
+		echo -E "$ID;;#;$W;$3" ;;
 	*)
-		echo -E "$S;$2;$3;$W;$5" ;;
+		echo -E "$ID;$SC;$1;$W;$3" ;;
 	esac
 } >>$CLE_HIST
 
@@ -638,7 +645,7 @@ lscreen () (
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		SCF=$CLE_D/screenrc
 		SN=$CLE_TTY-CLE.$NM
-		_clerh '' @ $CLE_TTY "screen -S $SN"
+		_clerh @ $CLE_TTY "screen -S $SN"
 		_clescrc >$SCF
 		printf "$_CT screen: $CLE_FHN$_Ct"
 		screen -c $SCF -S $SN $CLE_RC
@@ -651,7 +658,7 @@ lscreen () (
 				[ $SN ] && break
 			done
 		fi
-		_clerh '' @ $CLE_TTY "screen -x $SN"
+		_clerh @ $CLE_TTY "screen -x $SN"
 		printf "$_CT screen: joined to $SN$_Ct"
 		screen -S $SN -X echo "$CLE_USER joining"
 		screen -x $SN
@@ -817,8 +824,8 @@ EOT
 [ -r . ] || cd
 
 # record this startup into rich history
-_clerh '' '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
-[ $CLE_DEBUG ] && _clerh '' '' @ $PWD "$CLE_VER"
+_clerh @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
+[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_VER"
 
 ##
 ## ** CLE command & control **

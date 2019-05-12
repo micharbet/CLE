@@ -444,9 +444,11 @@ precmd () {
 	C=${C/$DT;}	#: extract command
 	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
-	if [ $_SST ]; then
+	if [[ $C =~ ^\# ]]; then
+		_clerh '#' "$PWD" "$C"
+	elif [ $_SST ]; then
 		S=$((SECONDS-${_SST:-$SECONDS}))
-		_clerh "$DT" $S "$_EC" $PWD "$C"
+		_clerh "$DT" $S "$_EC" "$PWD" "$C"
 		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
 		_SST=
 	else
@@ -472,31 +474,37 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT REX S V W
+	local DT RC REX ID V W
+	#: three to five arguments, timestamp and elapsed seconds may be missing
+	case $# in
+	3)	DT='';SC='';;
+	4)	DT='';SC=$1;shift;;
+	5)	DT=$1;SC=$2;shift;shift;;
+	esac
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	W=${4/$HOME/\~}
-	[[ $5 =~ $REX  || -n $_NORH ]] && unset _NORH && return
-	#: check timestamp and create if missing
-	[ "$1" ] && DT=$1 || DT=`date "+$CLE_HTF"`
-	S="$DT;$CLE_USER-${CLE_SH:0:1}$$"
+	W=${2/$HOME/\~}
+	[[ $3 =~ $REX  || -n $_NORH ]] && unset _NORH && return
+	#: create timestamp if missing
+	[ "$DT" ] || DT=`date "+$CLE_HTF"`
+	ID="$DT;$CLE_USER-${CLE_SH:0:1}$$"
 	REX='^\$[A-Za-z0-9_]+' #: regex to identify simple variables
-	case "$5" in
+	case "$3" in
 	echo*) #: create special records for `echo $VARIABLE`
-		echo -E "$S;$2;$3;$W;$5"
-		for V in $5; do
+		echo -E "$ID;$SC;$1;$W;$3"
+		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
 				DT=`vdump $V`
-				echo -E "$S;;$;$W;${DT:-unset $V}"
+				echo -E "$ID;;$;$W;${DT:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
-		echo -E "$S;;*;$W;" ;;
+		echo -E "$ID;;*;$W;" ;;
 	\#*) #: notes to rich history
-		echo -E "$S;;#;$W;$5" ;;
+		echo -E "$ID;;#;$W;$3" ;;
 	*) #: regular commands
-		echo -E "$S;$2;$3;$W;$5" ;;
+		echo -E "$ID;$SC;$1;$W;$3" ;;
 	esac
 } >>$CLE_HIST
 
@@ -800,7 +808,7 @@ lscreen () (
 		#: No session with given name found, prepare to start new session
 		SCF=$CLE_D/screenrc
 		SN=$CLE_TTY-CLE.$NM
-		_clerh '' @ $CLE_TTY "screen -S $SN"
+		_clerh @ $CLE_TTY "screen -S $SN"
 		_clescrc >$SCF
 		printf "$_CT screen: $CLE_FHN$_Ct"
 		screen -c $SCF -S $SN $CLE_RC
@@ -815,7 +823,7 @@ lscreen () (
 				[ $SN ] && break
 			done
 		fi
-		_clerh '' @ $CLE_TTY "screen -x $SN"
+		_clerh @ $CLE_TTY "screen -x $SN"
 		printf "$_CT screen: joined to $SN$_Ct" #: terminal title
 		screen -S $SN -X echo "$CLE_USER joining" #: alert to the original session
 		screen -x $SN
@@ -1012,8 +1020,8 @@ EOT
 [ -r . ] || cd #: go home if this is unreadable directory
 
 # record this startup into rich history
-_clerh '' '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
-[ $CLE_DEBUG ] && _clerh '' '' @ $PWD "$CLE_VER"
+_clerh @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
+[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_VER"
 
 ##
 ## ** CLE command & control **
