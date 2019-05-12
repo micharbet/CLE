@@ -101,8 +101,11 @@ CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
 CLE_RC=$CLE_RD/`basename $CLE_RC`
 
 # FQDN hack
-CLE_FHN=`hostname -f 2>/dev/null || hostname`
-[ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
+CLE_FHN=$HOSTNAME
+_N=`hostname`
+[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
+_N=`hostname -f 2>/dev/null`
+[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows

@@ -147,13 +147,17 @@ dbg_var CLE_RC
 dbg_var CLE_RD
 
 # FQDN hack
-#: `hostname -f` in some cases returns domain part only, without hostname!
-#: Use the longer string. Also try `hostname' in case -f is't accepted (BSD) 
-CLE_FHN=`hostname -f 2>/dev/null || hostname`
-[ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
-#: It is also difficult to get local IP addres.
-#: There is no simple and multiplattform command (ip, ifconfig, hostname -i/-I, netstat...)
-#: On workstation its just empty string :-( Better than 5 IP's from `hostname -i`
+#: Find the longest - the most complete hostname string.
+#: Sometimes information from $HOSTNAME and command `hostname` differs.
+CLE_FHN=$HOSTNAME
+_N=`hostname`
+[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
+_N=`hostname -f 2>/dev/null`
+[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
+#: It is also difficult to get local IP addres. There is no simple
+#: and multiplattform way to get it. See commands: ip, ifconfig,
+#: hostname -i/-I, netstat...
+#: Thus, on workstation its just empty string :-( Better than 5 IP's from `hostname -i`
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
