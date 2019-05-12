@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-05-10 (Zodiac)
+#* version: 2019-05-13 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -727,7 +727,7 @@ _clepak () {
 		cp $CLE_TW $TW 2>/dev/null
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_P..|_C." >>$EN
+		vdump "CLE_SRE|CLE_P..|_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN
@@ -852,23 +852,25 @@ cat <<<$CLE_SCRC
 
 
 #:------------------------------------------------------------:#
-# config, tweaks, env
+#: all fuctions declared, startup continues
+
+# shorten hostname
+#: by default remove domain, leave subdomains
+#: eventually apply CLE_SRE as sed regexp for custom shortening
+CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
+
+#: stop annoying zsh error when '*' doesn't match any file
+[ $ZSH_NAME ] && setopt +o NOMATCH
 
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
-[ $ZSH_NAME ] && setopt +o NOMATCH #: stop annoying zsh error when '*' doesn't match any file
 for M in $CLE_RD/mod-*; do
 	_clexe $M
 done
 
 #: Enhnace PATH by user's own bin folder
 [[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
-
-# shorten hostname
-#: by default remove domain, leave subdomains
-#: eventually apply CLE_SRE as sed regexp for custom shortening
-CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 
 # create the prompt in several steps
 # 1. default prompt strings
@@ -881,31 +883,31 @@ _cledefp
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
-# rewrite config from old version					# transition
-[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF		# transition
-[ -r $CLE_CF ] && read _N <$CLE_CF  # get version id			# transition
-[[ ${_N:-Zodiac} =~ Zodiac ]] || {					# transition
-	_O=$CLE_D/cf-old						# transition
-	mv -f $CLE_CF $_O 2>/dev/null					# transition
-	_R="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
-	if [ $CLE_WS ]; then						# transition
-		# ensure inheritance on remote sessions 		# transition
-		_R=$_R";/^CLE_P/d"					# transition
-	else								# transition
-		# rename CLE_Px to $CLE_PBx				# transition
-		_R=$_R";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		# transition
-		_R=$_R";s/%/^/g" # replace % with ^			# transition
-		_R=$_R";s/\^c/^C/g" # replace ^c with ^C		# transition
-		_R=$_R";s/\^e/^E/g" # replace ^c with ^E		# transition
-	fi								# transition
-	[ -f $_O ] && sed -e "$_R" <$_O >$CLE_CF			# transition
-	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	# transition
-	unset _O _R							# transition
-}									# transition
+# rewrite config of old CLE release					#: transition
+[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF		#: transition
+[ -r $CLE_CF ] && read _N <$CLE_CF  # get version id			#: transition
+[[ ${_N:-Zodiac} =~ Zodiac ]] || {					#: transition
+	_O=$CLE_D/cf-old						#: transition
+	mv -f $CLE_CF $_O 2>/dev/null					#: transition
+	_R="s!^#.*!# $CLE_VER"						#: transition
+	if [ $CLE_WS ]; then						#: transition
+		#: remove CLE_Px on remote sessions, ensure inheritance	#: transition
+		_R=$_R";/^CLE_P/d"					#: transition
+	else								#: transition
+		#: rename CLE_Px to $CLE_PBx on workstation		#: transition
+		_R=$_R";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		#: transition
+		_R=$_R";s/%/^/g" # replace % with ^			#: transition
+		_R=$_R";s/\^c/^C/g" # replace ^c with ^C		#: transition
+		_R=$_R";s/\^e/^E/g" # replace ^c with ^E		#: transition
+	fi								#: transition
+	[ -f $_O ] && sed -e "$_R" <$_O >$CLE_CF			#: transition
+	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	#: transition
+	unset _O _R							#: transition
+}									#: transition
 _clexe $CLE_CF
 _clepcp
 
-# 5. termnal specific
+# 5. terminal specific
 #: $_CT and $_Ct are codes to create window title
 #: also in screen the title should be short and obviously no title on text console
 case $TERM in
@@ -916,7 +918,7 @@ screen*) CLE_PT='\u'
 esac
 
 # 6. shell specific
-#: $_PE nad $_Pe keep strings to enclose ansi control charaters in prompt
+#: $_PE nad $_Pe keep strings to enclosing control charaters in prompt
 if [ $BASH ]; then
 	shopt -s checkwinsize
 	_PE='\['; _Pe='\]'
