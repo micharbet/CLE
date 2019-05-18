@@ -1,7 +1,7 @@
 ##
-## ** cle-palette: color palettes for OSC4 capable terminals **
+## ** cle-palette: Color palettes for OSC4 capable terminals **
 #
-#* version: 2019-05-01
+#* version: 2019-05-15
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -16,7 +16,7 @@
 
 ## `cle palette [palname]`      - colorize terminal with predefined palette
 
-local PALNAME PALSPEC PAL BG FG HL CR
+local PALNAME PALSPEC PAL BG FG HL CU CREDITS
 local PALMOD=$CLE_D/mod-palette
 
 ##  ... `solarized [l|d]`       - well known theme with light/dark options
@@ -55,20 +55,20 @@ _pal_solarized () {
 	#      solarized basic    light              dark
 	#      color              color*1.2          color*0.6
 	local RED='#dc322f'      RED1='#ff3b37'     RED0='#831e1c'
-	local ORANGE='#cb4b16'
 	local GREEN='#859900'    GREEN1='#9eb600'   GREEN0='#505c00'
 	local YELLOW='#b58900'   YELLOW1='#d7a300'  YELLOW0='#6d5200'
 	local BLUE='#268bd2'     BLUE1='#2da5fa'    BLUE0='#17537e'
 	local VIOLET='#6c71c4'   VIOLET1='#8186e9'  VIOLET0='#414476'
-	local MAGENTA='#d33682'
 	local CYAN='#2aa198'     CYAN1='#32c0b5'    CYAN0='#19615b'
+	local ORANGE='#cb4b16'
+	local MAGENTA='#d33682'
 
 	case "$1" in
 	""|d|dark)
 		BG=$BASE03
 		FG=$BASE0
 		HL=$BASE02
-		CR=$ORANGE
+		CU=$ORANGE
 		PALSPEC=dark
 		PAL="$BASE03 $RED $GREEN $YELLOW $BLUE $VIOLET $CYAN $BASE2"
 		PAL="$PAL $BASE01 $RED1 $GREEN1 $YELLOW1 $BLUE1 $VIOLET1 $CYAN1 $BASE3"
@@ -77,13 +77,15 @@ _pal_solarized () {
 		BG=$BASE3
 		FG=$BASE00
 		HL=$BASE2
-		CR=$MAGENTA
+		CU=$MAGENTA
 		PALSPEC=light
 		PAL="$BASE3 $RED $GREEN $YELLOW $BLUE $VIOLET $CYAN $BASE02"
 		PAL="$PAL $BASE1 $RED0 $GREEN0 $YELLOW0 $BLUE0 $VIOLET0 $CYAN0 $BASE03"
 		;;
 	esac
-	#CR=$ORANGE  # override^^
+	#CU=$ORANGE  # override^^
+	CREDITS="Original colors by Ethan Schoonover (https://ethanschoonover.com/solarized/)
+Adapted to command line by Michael Arbet (https://github.com/micharbet/CLE)"
 }
 
 ##  ... `gruvbox [l|d] [s|m|h]` - retro groove light/dark plus contrast options
@@ -129,7 +131,7 @@ _pal_gruvbox () {
 		esac
 		FG='#ebdbb2'
 		HL='#504945' # bg2
-		CR=$ORANGE
+		CU=$ORANGE
 		;;
 	l|light)	# light colors
 		local RED1="#9d0006"
@@ -155,12 +157,13 @@ _pal_gruvbox () {
 		esac
 		FG='#3c3836'
 		HL='#d5c4a1' # bg2
-		CR=$ORANGE
+		CU=$ORANGE
 		;;
 	
 	esac
 	# complete the palette
 	PAL="$BG $RED $GREEN $YELLOW $BLUE $PURPLE $AQUA $GRAY $GRAY1 $RED1 $GREEN1 $YELLOW1 $BLUE1 $PURPLE1 $AQUA1 $FG"
+	CREDITS="Colors by Pavel Pertsev, https://github.com/morhetz/gruvbox"
 }
 
 ##  ... `cga16`                 - back in time, sixteen bright colors of ancient CGA
@@ -171,9 +174,10 @@ _pal_cga16 () {
 	PAL="$PAL #555 #f55 #5f5 #ff5 #55f #f5f #5ff #fff"
 	BG="#000"
 	FG="#aaa"
-	CR="#0c0"
+	CU="#0c0"
 	HL="#444"
 	PALSPEC=''
+	CREDITS="Reloaded from pre-internet age"
 }
 
 ##  ... `rh`                    - tribute to the Shadowman
@@ -196,7 +200,8 @@ _pal_rh () {
 	BG=$DARKBLUE
 	FG=$LIGHTGRAY
 	HL=$DARKBLUE3
-	CR=$DARKBLUE1
+	CU=$DARKBLUE1
+	CREDITS='Defined by Shadowman'
 }
 
 ##  ... `xterm`                 - simple and contrast colors
@@ -204,16 +209,19 @@ _pal_xterm () {
 	PAL="#000000 #cd0000 #00cd00 #cdcd00 #0000ee #cd00cd #00cdcd #e5e5e5 #7f7f7f #ff0000 #00ff00 #ffff00 #5c5cff #ff00ff #00ffff #ffffff"
 	BG="#000000"
 	FG="#aaaaaa"
-	CR="#62df22"
+	CU="#62df22"
 	HL="#666666"
 }
 
 # https://github.com/nanotech/jellybeans.vim
 # This maybe needs similar improvement as solarized
 _pal_jellybeans () {
-	PAL="#3b3b3b #cf6a4c #99ad6a #d8ad4c #597bc5 #a037b0 #71b9f8 #adadad"
+	
+	PAL="#181818 #cf6a4c #99ad6a #d8ad4c #597bc5 #a037b0 #71b9f8 #adadad"
+	PAL="$PAL #1B1B1B #F07B58 #B2C97B #FBC958 #678FE5 #BA40CC #83D7FF #C9C9C9"
+#	PAL="$PAL #636363:#f79274 #c1d592 #ffd574 #81a3ed #c85fd8 #99e1ff #d5d5d5"
 	FG='#adadad'
-	BG='#3b3b3b'
+	BG='#181818'
 }
 
 #
@@ -267,9 +275,9 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 "")	# show available palettes
 	printb "${_CU}Avaliable palettes:${_Cu}"
 	declare -f | sed -n 's/.*_pal_\([[:graph:]]*\).*/- \1/p'
-	printf "${_CL}Current colors:"
+	printf "${_CL}Current colors:$_CN"
 	if [ -f $PALMOD ]; then
-		sed -n 's/# palette:\(.*\)/\1/'p $PALMOD
+		sed -n "s/#.*mod-palette:\([^*]*\)[*]*/\1/"p $PALMOD
 	else
 		echo ' terminal defaults'
 	fi
@@ -280,11 +288,11 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 	eval _pal_$PALNAME "$@"
 
 	# generate palette module
-	cat <<-EOP >$PALMOD
-		#
-		# terminal colors generated with cle-palette
-		# palette: $PALNAME $PALSPEC
-	EOP
+	printf "##\n## ** mod-palette: $PALNAME${PALSPEC:+ $PALSPEC}**\n" >$PALMOD
+	while read; do
+		printf "## $REPLY\n" >>$PALMOD
+	done <<<$CREDITS
+	printf "#\n#  code by Michael Arbet\n# automatically generated using module cle-palette\n#\n" >>$PALMOD
 	I=0
 	for C in $PAL; do
 		echo "printf '\e]4;$I;$C\e\\'" >>$PALMOD
@@ -295,7 +303,7 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 		printf '\e]10;$FG\e\\' # fg (base0)
 		printf '\e]11;$BG\e\\' # bg (base03)
 		printf '\e]17;$HL\e\\' # highlight (base02)
-		printf '\e]12;$CR\e\\' # cursor (base00)
+		printf '\e]12;$CU\e\\' # cursor (base00)
 	EOP
 	# paint the terminal
 	. $PALMOD

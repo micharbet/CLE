@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-05-13 (Zodiac)
+#* version: 2019-05-18 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -152,8 +152,9 @@ dbg_var CLE_RD
 CLE_FHN=$HOSTNAME
 _N=`hostname`
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
-_N=`hostname -f 2>/dev/null`
-[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
+#: hostname -f disabled because it requires working net & DNS!
+#:_N=`hostname -f 2>/dev/null`
+#:[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
 #: It is also difficult to get local IP addres. There is no simple
 #: and multiplattform way to get it. See commands: ip, ifconfig,
 #: hostname -i/-I, netstat...
@@ -873,7 +874,7 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
-for M in $CLE_RD/mod-*; do
+for M in $CLE_D/mod-*; do
 	_clexe $M
 done
 
@@ -959,8 +960,8 @@ CLE_HTF='%F %T'
 _clecomp () {
 	#: list of subcommands, this might be reworked to have possibility of expansion
 	#: with modules (TODO)
-	#: 'cle deploy' is hidden intentionaly as user should do it only on when really needed
-	local A=(color p0 p1 p2 p3 cf title mod env update reload doc help)
+	#: 'cle deploy' is hidden intentionaly
+	local A=(color p0 p1 p2 p3 cf mod env update reload doc help)
 	local C
 	COMPREPLY=()
 	case $3 in

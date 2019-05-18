@@ -1,7 +1,7 @@
 ##
 ## ** cle-ed: Tweak and config editor **
 #
-#* version: 2018-09-23
+#* version: 2019-05-17
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -38,6 +38,9 @@ cf)	## `cle ed cf`    -- edit CLE configuration file
 # other shortcuts
 brc)	## `cle ed brc`   -- edit .bashrc
 	vii ~/.bashrc
+	;;
+vrc)	## `cle ed vrc`   -- edit .vimrc
+	vii ~/.vimrc
 	;;
 sshcf)	## `cle ed sshcf` -- edit ssh config	
 	vii ~/.ssh/config
