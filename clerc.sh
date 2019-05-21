@@ -898,7 +898,7 @@ _cledefp
 [[ ${_N:-Zodiac} =~ Zodiac ]] || {					#: transition
 	_O=$CLE_D/cf-old						#: transition
 	mv -f $CLE_CF $_O 2>/dev/null					#: transition
-	_R="s!^#.*!# $CLE_VER"						#: transition
+	_R="s!^#.*!# $CLE_VER!"						#: transition
 	if [ $CLE_WS ]; then						#: transition
 		#: remove CLE_Px on remote sessions, ensure inheritance	#: transition
 		_R=$_R";/^CLE_P/d"					#: transition
