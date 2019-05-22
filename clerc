@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-05-18 (Zodiac)
+#* version: 2019-05-22 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -712,11 +712,11 @@ _cledefp
 # 4. get values from config file
 # rewrite config of old CLE release
 [ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF
-[ -r $CLE_CF ] && read _N <$CLE_CF  # get version id
-[[ ${_N:-Zodiac} =~ Zodiac ]] || {
+[ -r $CLE_CF ] && read _N <$CLE_CF || _N=Zodiac
+[[ $_N =~ Zodiac ]] || {
 	_O=$CLE_D/cf-old
 	mv -f $CLE_CF $_O 2>/dev/null
-	_R="s!^#.*!# $CLE_VER"
+	_R="s!^#.*!# $CLE_VER!"
 	if [ $CLE_WS ]; then
 		_R=$_R";/^CLE_P/d"
 	else
