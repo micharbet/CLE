@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-04-14 (Zodiac)
+#* version: 2019-05-22 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -58,6 +58,7 @@ dbg_print; dbg_print pid:$$						# dbg
 export CLE_RC
 dbg_var CLE_RC
 dbg_var CLE_ARG
+dbg_var CLE_USER
 dbg_var SHELL
 dbg_var BASH
 dbg_var ZSH_NAME
@@ -146,13 +147,18 @@ dbg_var CLE_RC
 dbg_var CLE_RD
 
 # FQDN hack
-#: `hostname -f` in some cases returns domain part only, without hostname!
-#: Use the longer string. Also try `hostname' in case -f is't accepted (BSD) 
-CLE_FHN=`hostname -f 2>/dev/null || hostname`
-[ ${#CLE_FHN} -lt ${#HOST} ] && CLE_FHN=$HOST
-#: It is also difficult to get local IP addres.
-#: There is no simple and multiplattform command (ip, ifconfig, hostname -i/-I, netstat...)
-#: On workstation its just empty string :-( Better than 5 IP's from `hostname -i`
+#: Find the longest - the most complete hostname string.
+#: Sometimes information from $HOSTNAME and command `hostname` differs.
+CLE_FHN=$HOSTNAME
+_N=`hostname`
+[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
+#: hostname -f disabled because it requires working net & DNS!
+#:_N=`hostname -f 2>/dev/null`
+#:[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
+#: It is also difficult to get local IP addres. There is no simple
+#: and multiplattform way to get it. See commands: ip, ifconfig,
+#: hostname -i/-I, netstat...
+#: Thus, on workstation its just empty string :-( Better than 5 IP's from `hostname -i`
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
@@ -197,7 +203,7 @@ CLE_TTY=`tty|tr -d '/dev'`
 #: - /any/folder/.config/cle-username/rcfile
 #: important is the dot (hidden folder), word 'cle' with dash
 _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
-CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 dbg_var CLE_USER
 
 #:------------------------------------------------------------:#
@@ -206,10 +212,10 @@ dbg_var CLE_USER
 _clebnr () {
 cat <<EOT
 
-   ___| |     ____|  Command Live Environment activated
-  |     |     __|    ...bit of life to the command line
-  |     |     |      Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
- \____|_____|_____|  Uncover the magic:$_CL less $CLE_RC$_CN
+$_CC   ___| |     ____| $_CN Command Live Environment activated
+$_CB  |     |     __|   $_CN ...bit of life to the command line
+$_Cb  |     |     |     $_CN Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
+$_Cb$_CD \____|_____|_____| $_CN Uncover the magic:$_CL less $CLE_RC$_CN
 
 EOT
 }
@@ -249,16 +255,38 @@ _cletable () {
 	#: Note: dim and italic not available everywhere (e.g. RHEL)
 	_CI=`tput sitm`;_Ci=`tput ritm`
 	_CD=`tput dim`
-	_Ck=$_CN$(tput setaf 0);_CK=$_Ck$_CL
-	_Cr=$_CN$(tput setaf 1);_CR=$_Cr$_CL
-	_Cg=$_CN$(tput setaf 2);_CG=$_Cg$_CL
-	_Cy=$_CN$(tput setaf 3);_CY=$_Cy$_CL
-	_Cb=$_CN$(tput setaf 4);_CB=$_Cb$_CL
-	_Cm=$_CN$(tput setaf 5);_CM=$_Cm$_CL
-	_Cc=$_CN$(tput setaf 6);_CC=$_Cc$_CL
-	_Cw=$_CN$(tput setaf 7);_CW=$_Cw$_CL
+	_Ck=$_CN$(tput setaf 0)
+	_Cr=$_CN$(tput setaf 1)
+	_Cg=$_CN$(tput setaf 2)
+	_Cy=$_CN$(tput setaf 3)
+	_Cb=$_CN$(tput setaf 4)
+	_Cm=$_CN$(tput setaf 5)
+	_Cc=$_CN$(tput setaf 6)
+	_Cw=$_CN$(tput setaf 7)
+	case `tput colors` in
+	8)
+		_CK=$_Ck$_CL
+		_CR=$_Cr$_CL
+		_CG=$_Cg$_CL
+		_CY=$_Cy$_CL
+		_CB=$_Cb$_CL
+		_CM=$_Cm$_CL
+		_CC=$_Cc$_CL
+		_CW=$_Cw$_CL
+		;;
+	*)
+		_CK=$_CN$(tput setaf 8)
+		_CR=$_CN$(tput setaf 9)
+		_CG=$_CN$(tput setaf 10)
+		_CY=$_CN$(tput setaf 11)
+		_CB=$_CN$(tput setaf 12)
+		_CM=$_CN$(tput setaf 13)
+		_CC=$_CN$(tput setaf 14)
+		_CW=$_CN$(tput setaf 15)
+		;;
+	esac
 	#: and... special color code for error highlight in prompt
-	_Ce=`tput setab 1;tput setaf 7` # err highlight
+	_Ce=$_CR$_CL$_CV # err highlight
 }
 
 # set prompt colors
@@ -283,12 +311,13 @@ _cleclr () {
 		return 1
 	esac
 	# decode colors and prompt strings
-	C=K${C}L
-	for I in {0..4};do
+	C=x${C}L
+	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
 		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
 		eval "_C$I=\$CI"
 	done
+	_C0=$_C3$_CD
 }
 
 # CLE prompt escapes
@@ -416,9 +445,11 @@ precmd () {
 	C=${C/$DT;}	#: extract command
 	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
-	if [ $_SST ]; then
+	if [[ $C =~ ^\# ]]; then
+		_clerh '#' "$PWD" "$C"
+	elif [ $_SST ]; then
 		S=$((SECONDS-${_SST:-$SECONDS}))
-		_clerh "$DT" $S "$_EC" $PWD "$C"
+		_clerh "$DT" $S "$_EC" "$PWD" "$C"
 		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
 		_SST=
 	else
@@ -444,31 +475,37 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT REX S V W
+	local DT RC REX ID V W
+	#: three to five arguments, timestamp and elapsed seconds may be missing
+	case $# in
+	3)	DT='';SC='';;
+	4)	DT='';SC=$1;shift;;
+	5)	DT=$1;SC=$2;shift;shift;;
+	esac
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	W=${4/$HOME/\~}
-	[[ $5 =~ $REX  || -n $_NORH ]] && unset _NORH && return
-	#: check timestamp and create if missing
-	[ "$1" ] && DT=$1 || DT=`date "+$CLE_HTF"`
-	S="$DT;$CLE_USER-${CLE_SH:0:1}$$"
+	W=${2/$HOME/\~}
+	[[ $3 =~ $REX  || -n $_NORH ]] && unset _NORH && return
+	#: create timestamp if missing
+	[ "$DT" ] || DT=`date "+$CLE_HTF"`
+	ID="$DT;$CLE_USER-${CLE_SH:0:1}$$"
 	REX='^\$[A-Za-z0-9_]+' #: regex to identify simple variables
-	case "$5" in
+	case "$3" in
 	echo*) #: create special records for `echo $VARIABLE`
-		echo -E "$S;$2;$3;$W;$5"
-		for V in $5; do
+		echo -E "$ID;$SC;$1;$W;$3"
+		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
 				DT=`vdump $V`
-				echo -E "$S;;$;$W;${DT:-unset $V}"
+				echo -E "$ID;;$;$W;${DT:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
-		echo -E "$S;;*;$W;" ;;
+		echo -E "$ID;;*;$W;" ;;
 	\#*) #: notes to rich history
-		echo -E "$S;;#;$W;$5" ;;
+		echo -E "$ID;;#;$W;$3" ;;
 	*) #: regular commands
-		echo -E "$S;$2;$3;$W;$5" ;;
+		echo -E "$ID;$SC;$1;$W;$3" ;;
 	esac
 } >>$CLE_HIST
 
@@ -699,7 +736,7 @@ _clepak () {
 		cp $CLE_TW $TW 2>/dev/null
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_P..|_C." >>$EN
+		vdump "CLE_SRE|CLE_P..|_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN
@@ -772,7 +809,7 @@ lscreen () (
 		#: No session with given name found, prepare to start new session
 		SCF=$CLE_D/screenrc
 		SN=$CLE_TTY-CLE.$NM
-		_clerh '' @ $CLE_TTY "screen -S $SN"
+		_clerh @ $CLE_TTY "screen -S $SN"
 		_clescrc >$SCF
 		printf "$_CT screen: $CLE_FHN$_Ct"
 		screen -c $SCF -S $SN $CLE_RC
@@ -787,7 +824,7 @@ lscreen () (
 				[ $SN ] && break
 			done
 		fi
-		_clerh '' @ $CLE_TTY "screen -x $SN"
+		_clerh @ $CLE_TTY "screen -x $SN"
 		printf "$_CT screen: joined to $SN$_Ct" #: terminal title
 		screen -S $SN -X echo "$CLE_USER joining" #: alert to the original session
 		screen -x $SN
@@ -824,23 +861,25 @@ cat <<<$CLE_SCRC
 
 
 #:------------------------------------------------------------:#
-# config, tweaks, env
-
-_clexe $HOME/.cle-local
-_clexe $CLE_AL
-_clexe $CLE_TW
-[ $ZSH_NAME ] && setopt +o NOMATCH #: stop annoying zsh error when '*' doesn't match any file
-for M in $CLE_RD/mod-*; do
-	_clexe $M
-done
-
-#: Enhnace PATH by user's own bin folder
-[[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
+#: all fuctions declared, startup continues
 
 # shorten hostname
 #: by default remove domain, leave subdomains
 #: eventually apply CLE_SRE as sed regexp for custom shortening
 CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
+
+#: stop annoying zsh error when '*' doesn't match any file
+[ $ZSH_NAME ] && setopt +o NOMATCH
+
+_clexe $HOME/.cle-local
+_clexe $CLE_AL
+_clexe $CLE_TW
+for M in $CLE_D/mod-*; do
+	_clexe $M
+done
+
+#: Enhnace PATH by user's own bin folder
+[[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
 
 # create the prompt in several steps
 # 1. default prompt strings
@@ -853,31 +892,31 @@ _cledefp
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
-# rewrite config from old version					# transition
-[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF		# transition
-[ -r $CLE_CF ] && read _N <$CLE_CF  # get version id			# transition
-[[ ${_N:-Zodiac} =~ Zodiac ]] || {					# transition
-	_O=$CLE_D/cf-old						# transition
-	mv -f $CLE_CF $_O 2>/dev/null					# transition
-	_R="s!^#.*!# $CLE_VER, backup saved in: $_O!"			# transition
-	if [ $CLE_WS ]; then						# transition
-		# ensure inheritance on remote sessions 		# transition
-		_R=$_R";/^CLE_P/d"					# transition
-	else								# transition
-		# rename CLE_Px to $CLE_PBx				# transition
-		_R=$_R";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		# transition
-		_R=$_R";s/%/^/g" # replace % with ^			# transition
-		_R=$_R";s/\^c/^C/g" # replace ^c with ^C		# transition
-		_R=$_R";s/\^e/^E/g" # replace ^c with ^E		# transition
-	fi								# transition
-	[ -f $_O ] && sed -e "$_R" <$_O >$CLE_CF			# transition
-	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	# transition
-	unset _O _R							# transition
-}									# transition
+# rewrite config of old CLE release					#: transition
+[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF		#: transition
+[ -r $CLE_CF ] && read _N <$CLE_CF || _N=Zodiac				#: transition
+[[ $_N =~ Zodiac ]] || {						#: transition
+	_O=$CLE_D/cf-old						#: transition
+	mv -f $CLE_CF $_O 2>/dev/null					#: transition
+	_R="s!^#.*!# $CLE_VER!"						#: transition
+	if [ $CLE_WS ]; then						#: transition
+		#: remove CLE_Px on remote sessions, ensure inheritance	#: transition
+		_R=$_R";/^CLE_P/d"					#: transition
+	else								#: transition
+		#: rename CLE_Px to $CLE_PBx on workstation		#: transition
+		_R=$_R";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		#: transition
+		_R=$_R";s/%/^/g" # replace % with ^			#: transition
+		_R=$_R";s/\^c/^C/g" # replace ^c with ^C		#: transition
+		_R=$_R";s/\^e/^E/g" # replace ^c with ^E		#: transition
+	fi								#: transition
+	[ -f $_O ] && sed -e "$_R" <$_O >$CLE_CF			#: transition
+	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	#: transition
+	unset _O _R							#: transition
+}									#: transition
 _clexe $CLE_CF
 _clepcp
 
-# 5. termnal specific
+# 5. terminal specific
 #: $_CT and $_Ct are codes to create window title
 #: also in screen the title should be short and obviously no title on text console
 case $TERM in
@@ -888,7 +927,7 @@ screen*) CLE_PT='\u'
 esac
 
 # 6. shell specific
-#: $_PE nad $_Pe keep strings to enclose ansi control charaters in prompt
+#: $_PE nad $_Pe keep strings to enclosing control charaters in prompt
 if [ $BASH ]; then
 	shopt -s checkwinsize
 	_PE='\['; _Pe='\]'
@@ -921,8 +960,8 @@ CLE_HTF='%F %T'
 _clecomp () {
 	#: list of subcommands, this might be reworked to have possibility of expansion
 	#: with modules (TODO)
-	#: 'cle deploy' is hidden intentionaly as user should do it only on when really needed
-	local A=(color p0 p1 p2 p3 cf title mod env update reload doc help)
+	#: 'cle deploy' is hidden intentionaly
+	local A=(color p0 p1 p2 p3 cf mod env update reload doc help)
 	local C
 	COMPREPLY=()
 	case $3 in
@@ -982,8 +1021,8 @@ EOT
 [ -r . ] || cd #: go home if this is unreadable directory
 
 # record this startup into rich history
-_clerh '' '' @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
-[ $CLE_DEBUG ] && _clerh '' '' @ $PWD "$CLE_VER"
+_clerh @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
+[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_VER"
 
 ##
 ## ** CLE command & control **
@@ -1069,8 +1108,12 @@ cle () {
 		mv -f $P $CLE_RC
 		cle reload;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
-		S=${1:-$CLE_SH}
-		exec $CLE_RC -$S;;
+		[[ $1 =~ ^[bz] ]] && S=-$1
+		#: complete re-exec removes unexported variables
+		[ $S ] && exec $CLE_RC $S
+		#: re-sourcing the environment keeps user's settings
+		unset CLE_EXE
+		. $CLE_RC;;
 	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code
@@ -1117,7 +1160,7 @@ cle () {
 }
 
 #: final cleanup
-unset _T _N _H _C _DC
+unset _T _H _C _N _DC
 ##~~
 # that's all, folks...
 

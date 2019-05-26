@@ -1,0 +1,317 @@
+##
+## ** cle-palette: Color palettes for OSC4 capable terminals **
+#
+#* version: 2019-05-15
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2019 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+## WARNING: too incomplete code may harm your kitten!
+
+## `cle palette [palname]`      - colorize terminal with predefined palette
+
+local PALNAME PALSPEC PAL BG FG HL CU CREDITS
+local PALMOD=$CLE_D/mod-palette
+
+##  ... `solarized [l|d]`       - well known theme with light/dark options
+##                                (adjusted colors of bold characteres)
+#
+# https://ethanschoonover.com/solarized/
+# https://github.com/altercation/solarized
+# http://www.zovirl.com/2011/07/22/solarized_cheat_sheet/
+# https://en.wikipedia.org/wiki/Solarized_(color_scheme)
+#
+# Note following: This is modified solarized palette. The design created
+# by Ethan Schoonover was customized for better terminal and command line
+# experience keeping it's original idea.
+#
+# Ethan's Solarized theme defined first eight colors plus BASSE* intended for
+# background vs. content. And did it great! However if  BASE* + ORANGE and
+# MAGENTA become colors 8-15 in terminal's palette they cause weird coloring
+# of bold characters. (Gray instead of green, yellow, blue...) For this reason
+# I added brighter variants of RED, GREEN, etc. to dark palette and darker
+# variants of the same colors to the light palette. Colors of BASE are used as
+# they were intended - for background and content. (inspiration taken back
+# from gruvbox palette) and ORANGE/MAGENTA are not abandoned, they create nice
+# distinguished cursors.
+#
+_pal_solarized () {
+	# Solarized background and content tones
+	local BASE03='#002b36'
+	local BASE02='#073642'
+	local BASE01='#586e75'
+	local BASE00='#657b83'
+	local BASE0='#839496'
+	local BASE1='#93a1a1'
+	local BASE2='#eee8d5'
+	local BASE3='#fdf6e3'
+	# Terminal adapted solarized palette with better bright/bold colors
+	#      solarized basic    light              dark
+	#      color              color*1.2          color*0.6
+	local RED='#dc322f'      RED1='#ff3b37'     RED0='#831e1c'
+	local GREEN='#859900'    GREEN1='#9eb600'   GREEN0='#505c00'
+	local YELLOW='#b58900'   YELLOW1='#d7a300'  YELLOW0='#6d5200'
+	local BLUE='#268bd2'     BLUE1='#2da5fa'    BLUE0='#17537e'
+	local VIOLET='#6c71c4'   VIOLET1='#8186e9'  VIOLET0='#414476'
+	local CYAN='#2aa198'     CYAN1='#32c0b5'    CYAN0='#19615b'
+	local ORANGE='#cb4b16'
+	local MAGENTA='#d33682'
+
+	case "$1" in
+	""|d|dark)
+		BG=$BASE03
+		FG=$BASE0
+		HL=$BASE02
+		CU=$ORANGE
+		PALSPEC=dark
+		PAL="$BASE03 $RED $GREEN $YELLOW $BLUE $VIOLET $CYAN $BASE2"
+		PAL="$PAL $BASE01 $RED1 $GREEN1 $YELLOW1 $BLUE1 $VIOLET1 $CYAN1 $BASE3"
+		;;
+	l|light)
+		BG=$BASE3
+		FG=$BASE00
+		HL=$BASE2
+		CU=$MAGENTA
+		PALSPEC=light
+		PAL="$BASE3 $RED $GREEN $YELLOW $BLUE $VIOLET $CYAN $BASE02"
+		PAL="$PAL $BASE1 $RED0 $GREEN0 $YELLOW0 $BLUE0 $VIOLET0 $CYAN0 $BASE03"
+		;;
+	esac
+	#CU=$ORANGE  # override^^
+	CREDITS="Original colors by Ethan Schoonover (https://ethanschoonover.com/solarized/)
+Adapted to command line by Michael Arbet (https://github.com/micharbet/CLE)"
+}
+
+##  ... `gruvbox [l|d] [s|m|h]` - retro groove light/dark plus contrast options
+##                              less blue light pleasant for the eyes
+#
+# https://github.com/morhetz/gruvbox
+# https://blog.jeaye.com/2018/02/01/gruvbox/
+#
+# Original as defined by Pavel Pertsev (github)
+#
+_pal_gruvbox () {
+	# basic set common for dark and light modes
+	local RED="#cc241d"
+	local GREEN="#98971a"
+	local YELLOW="#d79921"
+	local BLUE="#458588"
+	local PURPLE="#b16286"
+	local AQUA="#689d6a"
+	local ORANGE='#d65d0e'
+
+	case "$1" in
+	""|d|dark)	# dark colors
+		local RED1="#fb4934"
+		local GREEN1="#b8bb26"
+		local YELLOW1="#fabd2f"
+		local BLUE1="#83a598"
+		local PURPLE1="#d3869b"
+		local AQUA1="#8ec07c"
+		local GRAY="#a89984"
+		local GRAY1="#928374"
+		local ORANGE1="#fe8019"
+		# select contrast
+		case "$2" in
+		""|m|medium)
+			BG='#282828'
+			PALSPEC='dark medium';;
+		s|soft)
+			BG='#32302f'
+			PALSPEC='dark soft';;
+		h|hard)
+			BG='#1d2021'
+			PALSPEC='dark hard';;
+		esac
+		FG='#ebdbb2'
+		HL='#504945' # bg2
+		CU=$ORANGE
+		;;
+	l|light)	# light colors
+		local RED1="#9d0006"
+		local GREEN1="#79740e"
+		local YELLOW1="#b57614"
+		local BLUE1="#076678"
+		local PURPLE1="#8f3f71"
+		local AQUA1="#427b58"
+		local GRAY="#7c6f64"
+		local GRAY1="#928374"
+		local ORANGE1="#af3a03"
+		# select contrast
+		case "$2" in
+		""|m|medium)
+			BG='#fbf1c7'
+			PALSPEC='light medium';;
+		s|soft)
+			BG='#f2e5bc'
+			PALSPEC='light soft';;
+		h|hard)
+			BG='#f9f5d7'
+			PALSPEC='light hard';;
+		esac
+		FG='#3c3836'
+		HL='#d5c4a1' # bg2
+		CU=$ORANGE
+		;;
+	
+	esac
+	# complete the palette
+	PAL="$BG $RED $GREEN $YELLOW $BLUE $PURPLE $AQUA $GRAY $GRAY1 $RED1 $GREEN1 $YELLOW1 $BLUE1 $PURPLE1 $AQUA1 $FG"
+	CREDITS="Colors by Pavel Pertsev, https://github.com/morhetz/gruvbox"
+}
+
+##  ... `cga16`                 - back in time, sixteen bright colors of ancient CGA
+# https://en.wikipedia.org/wiki/Color_Graphics_Adapter
+# note code 'a50' - brown instead of dark yellow
+_pal_cga16 () {
+	PAL="#000 #a00 #0a0 #a50 #00a #a0a #0aa #aaa"
+	PAL="$PAL #555 #f55 #5f5 #ff5 #55f #f5f #5ff #fff"
+	BG="#000"
+	FG="#aaa"
+	CU="#0c0"
+	HL="#444"
+	PALSPEC=''
+	CREDITS="Reloaded from pre-internet age"
+}
+
+##  ... `rh`                    - tribute to the Shadowman
+# taken from internal color palette
+_pal_rh () {
+	local LIGHTGRAY='#DCDCDC'
+	local GRAY1='#f0f0f0' GRAY4='#bebebe' GRAY6='#969696' GRAY10='#707070' GRAY12='#303030'
+	local RHRED='#cc0000' DARKRED1='#a30000' ORANGE='#ec7a08'
+	local DARKGREEN='#3f9c35' GREEN='#92d400'
+	local GREEN6='#aad840' GREEN5='#b5df56' GREEN4='#cae883' GREEN1='#eaf5cd'
+	local GOLD6='#f2b22d' GOLD4='#f8d384'
+	local DARKBLUE='#004153' LIGHTBLUE='#a3dbe8' NAVYBLUE='#0088CE' BLUE='#00b9e4'
+	local LIGHTBLUE3='#86e2ec' DARKBLUE3='#1b5564' DARKBLUE1='#80a0a9'
+	local PURPLE6='#7551a6' PURPLE5='#8869b3' PURPLE4='#9c82c0' PURPLE3='#b09bcc'
+	local TEAL6='#36959e' TEAL4='#9acacf' TEAL5='#68afb6' TEAL3='#b3d7db'
+
+	PAL="$GRAY12 $RHRED $GREEN $GOLD6 $NAVYBLUE $PURPLE5 $TEAL6 $GRAY4"
+	PAL="$PAL $GRAY10 $ORANGE $GREEN4 $GOLD4 $BLUE $PURPLE3 $TEAL4 $GRAY1"
+
+	BG=$DARKBLUE
+	FG=$LIGHTGRAY
+	HL=$DARKBLUE3
+	CU=$DARKBLUE1
+	CREDITS='Defined by Shadowman'
+}
+
+##  ... `xterm`                 - simple and contrast colors
+_pal_xterm () {
+	PAL="#000000 #cd0000 #00cd00 #cdcd00 #0000ee #cd00cd #00cdcd #e5e5e5 #7f7f7f #ff0000 #00ff00 #ffff00 #5c5cff #ff00ff #00ffff #ffffff"
+	BG="#000000"
+	FG="#aaaaaa"
+	CU="#62df22"
+	HL="#666666"
+}
+
+# https://github.com/nanotech/jellybeans.vim
+# This maybe needs similar improvement as solarized
+_pal_jellybeans () {
+	
+	PAL="#181818 #cf6a4c #99ad6a #d8ad4c #597bc5 #a037b0 #71b9f8 #adadad"
+	PAL="$PAL #1B1B1B #F07B58 #B2C97B #FBC958 #678FE5 #BA40CC #83D7FF #C9C9C9"
+#	PAL="$PAL #636363:#f79274 #c1d592 #ffd574 #81a3ed #c85fd8 #99e1ff #d5d5d5"
+	FG='#adadad'
+	BG='#181818'
+}
+
+#
+# main()
+#
+case "$1" in
+show)	## `cle palette show`           - display colors and their variants
+	printf "${_CU}Basic colors 0..7$_Cu\nDIM :"
+	for I in {0..7}; do
+		FG=`tput setaf $I;tput dim`
+		printf "%s #%02d$_CN" $FG $I
+	done
+	printf " <-- 'dim' not always supported\nREG :"
+	for I in {0..7}; do
+		FG=`tput setaf $I`
+		printf "%s #%02d$_CN" $FG $I
+	done
+	printf "\nBOLD:"
+	for I in {0..7}; do
+		FG=`tput setaf $I;tput bold`
+		printf "%s #%02d$_CN" $FG $I
+	done
+	printf " <-- may render same as bold of 8..15\n"
+	printf "${_CU}Colors 8..15$_Cu\nDIM :"
+	for I in {8..15}; do
+		FG=`tput setaf $I;tput dim`
+		printf "%s #%02d$_CN" $FG $I
+	done
+	printf "\nREG :"
+	for I in {8..15}; do
+		FG=`tput setaf $I`
+		printf "%s #%02d$_CN" $FG $I
+	done
+	printf " <-- no colors on 8-color terminal\n"
+	printf "BOLD:"
+	for I in {8..15}; do
+		FG=`tput setaf $I;tput bold`
+		printf "%s #%02d$_CN" $FG $I
+	done
+	echo
+	;;
+reset)	## `cle palette reset`          - reset palette to terminal defaults
+	echo -en "\e]104\e\\"
+	echo -en "\e]110\e\\"
+	echo -en "\e]111\e\\"
+	echo -en "\e]112\e\\"
+	echo -en "\e]117\e\\"
+	rm -f $PALMOD
+	;;
+
+"")	# show available palettes
+	printb "${_CU}Avaliable palettes:${_Cu}"
+	declare -f | sed -n 's/.*_pal_\([[:graph:]]*\).*/- \1/p'
+	printf "${_CL}Current colors:$_CN"
+	if [ -f $PALMOD ]; then
+		sed -n "s/#.*mod-palette:\([^*]*\)[*]*/\1/"p $PALMOD
+	else
+		echo ' terminal defaults'
+	fi
+	;;
+*)	# color palette setup
+	PALNAME=$1
+	shift
+	eval _pal_$PALNAME "$@"
+
+	# generate palette module
+	printf "##\n## ** mod-palette: $PALNAME${PALSPEC:+ $PALSPEC}**\n" >$PALMOD
+	while read; do
+		printf "## $REPLY\n" >>$PALMOD
+	done <<<$CREDITS
+	printf "#\n#  code by Michael Arbet\n# automatically generated using module cle-palette\n#\n" >>$PALMOD
+	I=0
+	for C in $PAL; do
+		echo "printf '\e]4;$I;$C\e\\'" >>$PALMOD
+		((I++))
+	done
+
+	cat <<-EOP >>$PALMOD
+		printf '\e]10;$FG\e\\' # fg (base0)
+		printf '\e]11;$BG\e\\' # bg (base03)
+		printf '\e]17;$HL\e\\' # highlight (base02)
+		printf '\e]12;$CU\e\\' # cursor (base00)
+	EOP
+	# paint the terminal
+	. $PALMOD
+	;;
+esac
+
+# remove unwanted functions
+PALMOD=$BASH_SOURCE
+#       ^^^^ something else for zsh!
+unset `sed -n 's/\(^_pal_[[:graph:]]*\).*/\1/p' $PALMOD`
+

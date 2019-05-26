@@ -1,8 +1,8 @@
 mod-git:2019-03-12:fe120e9fb29e9bd2554f4869e1548ddd:GIT helpers / shorcuts
-mod-mancolor:2018-08-29:4e9fb06a52103051d811a36a53c598b7:Colorize man pages
+mod-mancolor:2018-08-29:4cb76858862d9809fd7d5ecd821ded51:Colorize man pages
 mod-fsps:2018-11-13:47a349bdd04024447d00177bbcfb7859:Filesystem and processess utilities
-cle-ed:2018-09-23:ea80bfdb213acf2505cd61c4adc8d6c9:Tweak and config editor
-cle-hist:2018-08-29:4cc751bb2da800af3129a21a46c47a26:Rich history manipulations
+cle-ed:2019-05-17:baf24c81a2cc27572803a84526c85eaf:Tweak and config editor
 cle-mod:2019-03-27:dcf2ce0c878a48f0a269fc28d402e1d5:CLE module management
 cle-prompt:2019-03-31:d27abf5272c54db1d6b8196c9b43884d:pre-configured prompt themes
 cle-rcmove:2018-09-23:c00dc60dddf2366e64cf44b36b7e208d:Move resource files to different folder
+cle-palette:2019-05-15:faa5948e4ddb3059017e882e42137579:Color palettes for OSC4 capable terminals
