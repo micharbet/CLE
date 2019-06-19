@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-05-22 (Zodiac)
+#* version: 2019-06-19 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -275,14 +275,14 @@ _cletable () {
 		_CW=$_Cw$_CL
 		;;
 	*)
-		_CK=$_CN$(tput setaf 8)
-		_CR=$_CN$(tput setaf 9)
-		_CG=$_CN$(tput setaf 10)
-		_CY=$_CN$(tput setaf 11)
-		_CB=$_CN$(tput setaf 12)
-		_CM=$_CN$(tput setaf 13)
-		_CC=$_CN$(tput setaf 14)
-		_CW=$_CN$(tput setaf 15)
+		_CK=$_CN$(tput setaf 8)$_CL
+		_CR=$_CN$(tput setaf 9)$_CL
+		_CG=$_CN$(tput setaf 10)$_CL
+		_CY=$_CN$(tput setaf 11)$_CL
+		_CB=$_CN$(tput setaf 12)$_CL
+		_CM=$_CN$(tput setaf 13)$_CL
+		_CC=$_CN$(tput setaf 14)$_CL
+		_CW=$_CN$(tput setaf 15)$_CL
 		;;
 	esac
 	#: and... special color code for error highlight in prompt
@@ -299,7 +299,7 @@ _cleclr () {
 	blue)   C=BbB;;
 	cyan)   C=CcC;;
 	magenta) C=MmM;;
-	white|grey|gray) C=NwW;;
+	white|grey|gray) C=wNW;;
 	tricolora) C=RBW;;
 	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
 	???|????)    C=$1;; # any 3/4 colors
@@ -311,13 +311,13 @@ _cleclr () {
 		return 1
 	esac
 	# decode colors and prompt strings
-	C=x${C}L
+	C=x${C}L #: command in bol by default
 	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
 		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
 		eval "_C$I=\$CI"
 	done
-	_C0=$_C3$_CD
+	_C0=$_C2$_CD #: dim color for status part 0
 }
 
 # CLE prompt escapes
