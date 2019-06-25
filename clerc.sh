@@ -311,7 +311,7 @@ _cleclr () {
 		return 1
 	esac
 	# decode colors and prompt strings
-	C=x${C}L #: command in bol by default
+	C=x${C}L #: status color will be added later, plus bold command line
 	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
 		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
@@ -432,10 +432,11 @@ _clesave () (
 #: should be as simple as possible. In best case all commands here should be
 #: bash internals. Those don't invoke new processes and as such they are much
 #: easier to system resources.
-_PST=PIPESTATUS		#: status of all command in pipeline has different name in zsh
-[ $ZSH_NAME ] && _PST=pipestatus
+_PST='${PIPESTATUS[@]}'		#: status of all command in pipeline has different name in zsh
+[ $ZSH_NAME ] && _PST='${pipestatus[@]}'
+[ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
 precmd () {
-	eval "_EC=\${$_PST[@]}"	
+	eval "_EC=$_PST"
 	[[ $_EC =~ [1..9] ]] || _EC=0 #: just one zero if all ok
 	local IFS S DT C
 	unset IFS
@@ -787,7 +788,7 @@ lsu () (
 #: Kerberized version of 'su'
 lksu () (
 	_clepak
-        ksu ${1:-root} -a -c $RH/$RC
+        ksu ${1:-root} -a -c "cd;$RH/$RC"
 )
 
 ## `lscreen [name]`    - gnu screen wrapper, join your recent session or start new
