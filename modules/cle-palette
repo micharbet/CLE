@@ -1,7 +1,7 @@
 ##
 ## ** cle-palette: Color palettes for OSC4 capable terminals **
 #
-#* version: 2019-05-15
+#* version: 2019-06-29
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -11,8 +11,6 @@
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
-
-## WARNING: too incomplete code may harm your kitten!
 
 ## `cle palette [palname]`      - colorize terminal with predefined palette
 
@@ -166,18 +164,15 @@ _pal_gruvbox () {
 	CREDITS="Colors by Pavel Pertsev, https://github.com/morhetz/gruvbox"
 }
 
-##  ... `cga16`                 - back in time, sixteen bright colors of ancient CGA
-# https://en.wikipedia.org/wiki/Color_Graphics_Adapter
-# note code 'a50' - brown instead of dark yellow
-_pal_cga16 () {
-	PAL="#000 #a00 #0a0 #a50 #00a #a0a #0aa #aaa"
-	PAL="$PAL #555 #f55 #5f5 #ff5 #55f #f5f #5ff #fff"
-	BG="#000"
-	FG="#aaa"
-	CU="#0c0"
-	HL="#444"
-	PALSPEC=''
-	CREDITS="Reloaded from pre-internet age"
+# https://github.com/nanotech/jellybeans.vim
+##  ... `jellybeans`            - pastel colorful world
+_pal_jellybeans () {
+	PAL="#181818 #cf6a4c #99ad6a #d8ad4c #597bc5 #a037b0 #71b9f8 #adadad"
+	PAL="$PAL #1B1B1B #F07B58 #B2C97B #FBC958 #678FE5 #BA40CC #83D7FF #C9C9C9"
+	FG='#adadad'
+	BG='#181818'
+	CREDITS="Originated as vim color scheme (https://github.com/nanotech/jellybeans.vim)
+Adapted to command line by Michael Arbet (https://github.com/micharbet/CLE)"
 }
 
 ##  ... `rh`                    - tribute to the Shadowman
@@ -204,24 +199,41 @@ _pal_rh () {
 	CREDITS='Defined by Shadowman'
 }
 
-##  ... `xterm`                 - simple and contrast colors
+##  ... `xterm [green]`         - simple and contrast colors
 _pal_xterm () {
 	PAL="#000000 #cd0000 #00cd00 #cdcd00 #0000ee #cd00cd #00cdcd #e5e5e5 #7f7f7f #ff0000 #00ff00 #ffff00 #5c5cff #ff00ff #00ffff #ffffff"
 	BG="#000000"
-	FG="#aaaaaa"
 	CU="#62df22"
 	HL="#666666"
+	FG="#aaaaaa";
+	PALSPEC=''
+	case "$1" in
+	g|green)
+		PALSPEC=green
+		FG="#00cd00";;
+	esac
 }
 
-# https://github.com/nanotech/jellybeans.vim
-# This maybe needs similar improvement as solarized
-_pal_jellybeans () {
-	
-	PAL="#181818 #cf6a4c #99ad6a #d8ad4c #597bc5 #a037b0 #71b9f8 #adadad"
-	PAL="$PAL #1B1B1B #F07B58 #B2C97B #FBC958 #678FE5 #BA40CC #83D7FF #C9C9C9"
-#	PAL="$PAL #636363:#f79274 #c1d592 #ffd574 #81a3ed #c85fd8 #99e1ff #d5d5d5"
-	FG='#adadad'
-	BG='#181818'
+##  ... `cga16 [green|amber]`   - back in time, sixteen bright colors of ancient CGA
+# https://en.wikipedia.org/wiki/Color_Graphics_Adapter
+# note code 'a50' - brown instead of dark yellow
+_pal_cga16 () {
+	PAL="#000 #a00 #0a0 #a50 #00a #a0a #0aa #aaa"
+	PAL="$PAL #555 #f55 #5f5 #ff5 #55f #f5f #5ff #fff"
+	BG="#000"
+	FG="#aaa"
+	CU="#0c0"
+	HL="#444"
+	PALSPEC=''
+	case "$1" in
+	g|green)
+		PALSPEC=green
+		FG="#0a0" ;;
+	a|amber)
+		PALSPEC=amber
+		FG="#a50";;
+	esac
+	CREDITS="Reloaded from pre-internet age"
 }
 
 #
@@ -292,21 +304,22 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 	while read; do
 		printf "## $REPLY\n" >>$PALMOD
 	done <<<$CREDITS
-	printf "#\n#  code by Michael Arbet\n# automatically generated using module cle-palette\n#\n" >>$PALMOD
+	printf "#\n#  code by Michael Arbet\n# generated using module cle-palette\n#\n" >>$PALMOD
 	I=0
+	printf "# colors 0..15\nprintf '" >>$PALMOD
 	for C in $PAL; do
-		echo "printf '\e]4;$I;$C\e\\'" >>$PALMOD
+		printf '\\e]4;%d;%s\\e\\\\' $I $C >>$PALMOD
 		((I++))
 	done
+	printf "'\n" >>$PALMOD
 
+	printf "# foreground, background, highlight, cursor\n" >>$PALMOD
 	cat <<-EOP >>$PALMOD
-		printf '\e]10;$FG\e\\' # fg (base0)
-		printf '\e]11;$BG\e\\' # bg (base03)
-		printf '\e]17;$HL\e\\' # highlight (base02)
-		printf '\e]12;$CU\e\\' # cursor (base00)
+		printf '\\e]10;$FG\\e\\\\\\e]11;$BG\\e\\\\\\e]17;$HL\\e\\\\\\e]12;$CU\\e\\\\'
 	EOP
-	# paint the terminal
-	. $PALMOD
+	. $PALMOD || return 1
+	echo Palette: $PALNAME $PALSPEC
+	echo $CREDITS
 	;;
 esac
 
