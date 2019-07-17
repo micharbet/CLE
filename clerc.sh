@@ -476,19 +476,19 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT RC REX ID V W
+	local DT RC REX ID V VD W
 	#: three to five arguments, timestamp and elapsed seconds may be missing
 	case $# in
-	3)	DT='';SC='';;
-	4)	DT='';SC=$1;shift;;
+	3)	DT=`date "+$CLE_HTF"`;SC='';;
+	4)	DT=`date "+$CLE_HTF"`;SC=$1;shift;;
 	5)	DT=$1;SC=$2;shift;shift;;
 	esac
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	W=${2/$HOME/\~}
 	[[ $3 =~ $REX  || -n $_NORH ]] && unset _NORH && return
+	#: working dir (substitute home with ~)
+	W=${2/$HOME/\~}
 	#: create timestamp if missing
-	[ "$DT" ] || DT=`date "+$CLE_HTF"`
 	ID="$DT;$CLE_USER-${CLE_SH:0:1}$$"
 	REX='^\$[A-Za-z0-9_]+' #: regex to identify simple variables
 	case "$3" in
@@ -497,8 +497,8 @@ _clerh () {
 		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				DT=`vdump $V`
-				echo -E "$ID;;$;$W;${DT:-unset $V}"
+				VD=`vdump $V`
+				echo -E "$ID;;$;$W;${VD:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
@@ -598,7 +598,7 @@ aa () {
 ##
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
-CLE_HTF=
+CLE_HTF='%F %T'
 h () (
 	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
@@ -870,6 +870,10 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 #: stop annoying zsh error when '*' doesn't match any file
 [ $ZSH_NAME ] && setopt +o NOMATCH
 
+# record this startup into rich history
+_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}}]"
+[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_SH $CLE_RC [$CLE_VER]"
+
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
@@ -950,8 +954,7 @@ HISTFILE=$CLE_D/history-$CLE_SH
 HISTSIZE=10000
 SAVEHIST=10000
 HISTFILESIZE=10000
-HISTTIMEFORMAT='%F %T '
-CLE_HTF='%F %T'
+HISTTIMEFORMAT="$CLE_HTF "
 
 # completions
 #: Command 'cle' completion
@@ -1020,10 +1023,6 @@ $_CL    cle deploy
 EOT
 
 [ -r . ] || cd #: go home if this is unreadable directory
-
-# record this startup into rich history
-_clerh @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
-[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_VER"
 
 ##
 ## ** CLE command & control **
