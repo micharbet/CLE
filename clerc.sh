@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-06-29 (Zodiac)
+#* version: 2019-07-17 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -812,7 +812,6 @@ lscreen () (
 		SN=$CLE_TTY-CLE.$NM
 		_clerh @ $CLE_TTY "screen -S $SN"
 		_clescrc >$SCF
-		printf "$_CT screen: $CLE_FHN$_Ct"
 		screen -c $SCF -S $SN $CLE_RC
 	else
 		#: is there only one such session or more?
@@ -826,7 +825,6 @@ lscreen () (
 			done
 		fi
 		_clerh @ $CLE_TTY "screen -x $SN"
-		printf "$_CT screen: joined to $SN$_Ct" #: terminal title
 		screen -S $SN -X echo "$CLE_USER joining" #: alert to the original session
 		screen -x $SN
 	fi
@@ -920,9 +918,11 @@ _clepcp
 # 5. terminal specific
 #: $_CT and $_Ct are codes to create window title
 #: also in screen the title should be short and obviously no title on text console
+
 case $TERM in
 linux)	 CLE_PT='';;	# no tits on console
 screen*) CLE_PT='\u'
+	printf "\e]0; screen: $CLE_USER@$CLE_FHN$_Ct\007"
 	_CT=$'\ek'; _Ct=$'\e\\';;
 *)	_CT=$'\e]0;'; _Ct=$'\007';;
 esac

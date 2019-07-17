@@ -5,4 +5,4 @@ cle-ed:2019-05-17:baf24c81a2cc27572803a84526c85eaf:Tweak and config editor
 cle-mod:2019-03-27:dcf2ce0c878a48f0a269fc28d402e1d5:CLE module management
 cle-prompt:2019-03-31:d27abf5272c54db1d6b8196c9b43884d:pre-configured prompt themes
 cle-rcmove:2018-09-23:c00dc60dddf2366e64cf44b36b7e208d:Move resource files to different folder
-cle-palette:2019-05-29:bcee08b25095a23af3ee272f7f96c61e:Color palettes for OSC4 capable terminals
+cle-palette:2019-06-29:109c28c325599e0af2ffe0411cece546:Color palettes for OSC4 capable terminals
