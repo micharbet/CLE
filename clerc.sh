@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-07-17 (Zodiac)
+#* version: 2019-08-09 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -35,6 +35,7 @@
 #: required for scp compatibility and also prevents loop upon `cle reload`
 [ -t 0 -a -z "$CLE_EXE" ] || dbg_print "Warning! nested CLE start"	# dbg
 [ -t 0 -a -z "$CLE_EXE" ] || return
+
 # Now it really starts, warning: magic inside!
 
 #:------------------------------------------------------------:#
@@ -224,12 +225,12 @@ EOT
 printb () { printf "$_CL$*$_CN\n";}
 
 # simple question
-ask () {
-	local PR="$_CL$* (y/N) $_CN"
+ask () (
+	PR="$_CL$* (y/N) $_CN"
 	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
-}
+)
 
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
@@ -321,46 +322,10 @@ _cleclr () {
 }
 
 # CLE prompt escapes
-#: library of enhanced prompt escape codes introduced with ^ sign
-#:  bash uses backslash while zsh percent sign for their prompt escapes
+#:  - enhanced prompt escape codes introduced with ^ sign
+#:  - bash uses backslash while zsh percent sign for their prompt escapes
 _clesc () (
-	# bash/zsh specific sequences
-	#: not so much backslashes due to multiple string expansions and eval at the end
-	if [ $ZSH_NAME ]; then
-		#: bash/zsh escapes compatibility
-		SHESC="-e 's/\\\\n/\$_PN/g'
-		 -e 's/\\^[$%#]/%#/g'
-		 -e 's/\\\\d/%D{%a %b %d}/g'
-		 -e 's/\\\\D/%D/g'
-		 -e 's/\\\\h/%m/g'
-		 -e 's/\\\\H/%M/g'
-		 -e 's/\\\\j/%j/g'
-		 -e 's/\\\\l/%l/g'
-		 -e 's/\\\\s/zsh/g'
-		 -e 's/\\\\t/%*/g'
-		 -e 's/\\\\T/%D{%r}/g'
-		 -e 's/\\\\@/%@/g'
-		 -e 's/\\\\A/%T/g'
-		 -e 's/\\\\u/%n/g'
-		 -e 's/\\\\w/%$PROMPT_DIRTRIM~/g'
-		 -e 's/\\\\W/%1~/g'
-		 -e 's/\\\\!/%!/g'
-		 -e 's/\\\\#/%i/g'
-		 -e 's/\\\\\[/%{/g'
-		 -e 's/\\\\\]/%}/g'
-		 -e 's/\\\\\\\\/\\\\/g'
-		"
-		#: missing bash prompt escapes:
-		#: \a Bell character
-		#: \e ESC
-		#: \r Carriage return
-		#: \nnn ASCII octal character
-		#: \v Bash version, who the f... needs this?
-		#: \V ... same ^^^
-	else
-		SHESC="-e 's/\^[$%#]/\\\\\$/g'"
-	fi
-	#: CLE extensions escapes
+	#: CLE extensions
 	EXTESC="
 	 -e 's/\^i/\$CLE_IP/g'
 	 -e 's/\^h/\$CLE_SHN/g'
@@ -373,6 +338,37 @@ _clesc () (
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
+	#:  bash/zsh prompt compatibility
+	#: there are missing translations:
+	#:  \a Bell character
+	#:  \e ESC
+	#:  \r Carriage return
+	#:  \nnn ASCII octal character
+	#:  \v Bash version, who the f... needs this?
+	#:  \V ... same ^^^
+	#: so much backslashes due to multiple string expansions and `eval` at the end
+	[ $ZSH_NAME ] && SHESC="-e 's/\\\\n/\$_PN/g'
+	 -e 's/\\^[$%#]/%#/g'
+	 -e 's/\\\\d/%D{%a %b %d}/g'
+	 -e 's/\\\\D/%D/g'
+	 -e 's/\\\\h/%m/g'
+	 -e 's/\\\\H/%M/g'
+	 -e 's/\\\\j/%j/g'
+	 -e 's/\\\\l/%l/g'
+	 -e 's/\\\\s/zsh/g'
+	 -e 's/\\\\t/%*/g'
+	 -e 's/\\\\T/%D{%r}/g'
+	 -e 's/\\\\@/%@/g'
+	 -e 's/\\\\A/%T/g'
+	 -e 's/\\\\u/%n/g'
+	 -e 's/\\\\w/%$PROMPT_DIRTRIM~/g'
+	 -e 's/\\\\W/%1~/g'
+	 -e 's/\\\\!/%!/g'
+	 -e 's/\\\\#/%i/g'
+	 -e 's/\\\\\[/%{/g'
+	 -e 's/\\\\\]/%}/g'
+	 -e 's/\\\\\\\\/\\\\/g'
+	" || SHESC="-e 's/\^[$%#]/\\\\\$/g'"
 	#: compose substitute command, remove unwanted characters
 	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
 	eval sed "$SUBS" <<<"$*"

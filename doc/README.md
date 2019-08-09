@@ -129,7 +129,7 @@ My shell environment has been developed over the years of work with command
 line, where I always tried to have an easily distinguished prompt. It was
 possible in diferent ways. Basically, I have been editing the shell resource
 files .bashrc, .kshrc and manually transferring them to each new server and
-account. Those files probably still exists on some old boxes and in scattered
+account. Those files may still exist on some old boxes and in scattered
 backup files. You all probably have something similar.
 
 CLE itself begun as customized .bash resource file itself and a set of
@@ -140,7 +140,7 @@ step. Also, .bashrc changes might be unwelcome to other administrators.
 However this was first, primitive 'life' in command line.
 
 Evolution continues. I removed the setup necessity in an ingenious way - by
-passing the resource file icompressed and base64 encoded through a shell
+passing the resource file compressed and base64 encoded through a shell
 variable to the remote system. To be honest, I was inspired by the 'sshrc'
 project. Result: no setup, no tweaks on the remote site no harm to the current
 environment and consistent environment over all sessions!
