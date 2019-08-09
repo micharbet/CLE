@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-05-22 (Zodiac)
+#* version: 2019-08-09 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -35,6 +35,7 @@
 #: required for scp compatibility and also prevents loop upon `cle reload`
 [ -t 0 -a -z "$CLE_EXE" ] || dbg_print "Warning! nested CLE start"	# dbg
 [ -t 0 -a -z "$CLE_EXE" ] || return
+
 # Now it really starts, warning: magic inside!
 
 #:------------------------------------------------------------:#
@@ -224,12 +225,12 @@ EOT
 printb () { printf "$_CL$*$_CN\n";}
 
 # simple question
-ask () {
-	local PR="$_CL$* (y/N) $_CN"
+ask () (
+	PR="$_CL$* (y/N) $_CN"
 	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
-}
+)
 
 # execute script and log its filename into CLE_EXE
 # also ensure the script will be executed only once
@@ -275,14 +276,14 @@ _cletable () {
 		_CW=$_Cw$_CL
 		;;
 	*)
-		_CK=$_CN$(tput setaf 8)
-		_CR=$_CN$(tput setaf 9)
-		_CG=$_CN$(tput setaf 10)
-		_CY=$_CN$(tput setaf 11)
-		_CB=$_CN$(tput setaf 12)
-		_CM=$_CN$(tput setaf 13)
-		_CC=$_CN$(tput setaf 14)
-		_CW=$_CN$(tput setaf 15)
+		_CK=$_CN$(tput setaf 8)$_CL
+		_CR=$_CN$(tput setaf 9)$_CL
+		_CG=$_CN$(tput setaf 10)$_CL
+		_CY=$_CN$(tput setaf 11)$_CL
+		_CB=$_CN$(tput setaf 12)$_CL
+		_CM=$_CN$(tput setaf 13)$_CL
+		_CC=$_CN$(tput setaf 14)$_CL
+		_CW=$_CN$(tput setaf 15)$_CL
 		;;
 	esac
 	#: and... special color code for error highlight in prompt
@@ -299,7 +300,7 @@ _cleclr () {
 	blue)   C=BbB;;
 	cyan)   C=CcC;;
 	magenta) C=MmM;;
-	white|grey|gray) C=NwW;;
+	white|grey|gray) C=wNW;;
 	tricolora) C=RBW;;
 	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
 	???|????)    C=$1;; # any 3/4 colors
@@ -311,56 +312,20 @@ _cleclr () {
 		return 1
 	esac
 	# decode colors and prompt strings
-	C=x${C}L
+	C=x${C}L #: status color will be added later, plus bold command line
 	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
 		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
 		eval "_C$I=\$CI"
 	done
-	_C0=$_C3$_CD
+	_C0=$_C2$_CD #: dim color for status part 0
 }
 
 # CLE prompt escapes
-#: library of enhanced prompt escape codes introduced with ^ sign
-#:  bash uses backslash while zsh percent sign for their prompt escapes
+#:  - enhanced prompt escape codes introduced with ^ sign
+#:  - bash uses backslash while zsh percent sign for their prompt escapes
 _clesc () (
-	# bash/zsh specific sequences
-	#: not so much backslashes due to multiple string expansions and eval at the end
-	if [ $ZSH_NAME ]; then
-		#: bash/zsh escapes compatibility
-		SHESC="-e 's/\\\\n/\$_PN/g'
-		 -e 's/\\^[$%#]/%#/g'
-		 -e 's/\\\\d/%D{%a %b %d}/g'
-		 -e 's/\\\\D/%D/g'
-		 -e 's/\\\\h/%m/g'
-		 -e 's/\\\\H/%M/g'
-		 -e 's/\\\\j/%j/g'
-		 -e 's/\\\\l/%l/g'
-		 -e 's/\\\\s/zsh/g'
-		 -e 's/\\\\t/%*/g'
-		 -e 's/\\\\T/%D{%r}/g'
-		 -e 's/\\\\@/%@/g'
-		 -e 's/\\\\A/%T/g'
-		 -e 's/\\\\u/%n/g'
-		 -e 's/\\\\w/%$PROMPT_DIRTRIM~/g'
-		 -e 's/\\\\W/%1~/g'
-		 -e 's/\\\\!/%!/g'
-		 -e 's/\\\\#/%i/g'
-		 -e 's/\\\\\[/%{/g'
-		 -e 's/\\\\\]/%}/g'
-		 -e 's/\\\\\\\\/\\\\/g'
-		"
-		#: missing bash prompt escapes:
-		#: \a Bell character
-		#: \e ESC
-		#: \r Carriage return
-		#: \nnn ASCII octal character
-		#: \v Bash version, who the f... needs this?
-		#: \V ... same ^^^
-	else
-		SHESC="-e 's/\^[$%#]/\\\\\$/g'"
-	fi
-	#: CLE extensions escapes
+	#: CLE extensions
 	EXTESC="
 	 -e 's/\^i/\$CLE_IP/g'
 	 -e 's/\^h/\$CLE_SHN/g'
@@ -373,6 +338,37 @@ _clesc () (
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
+	#:  bash/zsh prompt compatibility
+	#: there are missing translations:
+	#:  \a Bell character
+	#:  \e ESC
+	#:  \r Carriage return
+	#:  \nnn ASCII octal character
+	#:  \v Bash version, who the f... needs this?
+	#:  \V ... same ^^^
+	#: so much backslashes due to multiple string expansions and `eval` at the end
+	[ $ZSH_NAME ] && SHESC="-e 's/\\\\n/\$_PN/g'
+	 -e 's/\\^[$%#]/%#/g'
+	 -e 's/\\\\d/%D{%a %b %d}/g'
+	 -e 's/\\\\D/%D/g'
+	 -e 's/\\\\h/%m/g'
+	 -e 's/\\\\H/%M/g'
+	 -e 's/\\\\j/%j/g'
+	 -e 's/\\\\l/%l/g'
+	 -e 's/\\\\s/zsh/g'
+	 -e 's/\\\\t/%*/g'
+	 -e 's/\\\\T/%D{%r}/g'
+	 -e 's/\\\\@/%@/g'
+	 -e 's/\\\\A/%T/g'
+	 -e 's/\\\\u/%n/g'
+	 -e 's/\\\\w/%$PROMPT_DIRTRIM~/g'
+	 -e 's/\\\\W/%1~/g'
+	 -e 's/\\\\!/%!/g'
+	 -e 's/\\\\#/%i/g'
+	 -e 's/\\\\\[/%{/g'
+	 -e 's/\\\\\]/%}/g'
+	 -e 's/\\\\\\\\/\\\\/g'
+	" || SHESC="-e 's/\^[$%#]/\\\\\$/g'"
 	#: compose substitute command, remove unwanted characters
 	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
 	eval sed "$SUBS" <<<"$*"
@@ -432,10 +428,11 @@ _clesave () (
 #: should be as simple as possible. In best case all commands here should be
 #: bash internals. Those don't invoke new processes and as such they are much
 #: easier to system resources.
-_PST=PIPESTATUS		#: status of all command in pipeline has different name in zsh
-[ $ZSH_NAME ] && _PST=pipestatus
+_PST='${PIPESTATUS[@]}'		#: status of all command in pipeline has different name in zsh
+[ $ZSH_NAME ] && _PST='${pipestatus[@]}'
+[ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
 precmd () {
-	eval "_EC=\${$_PST[@]}"	
+	eval "_EC=$_PST"
 	[[ $_EC =~ [1..9] ]] || _EC=0 #: just one zero if all ok
 	local IFS S DT C
 	unset IFS
@@ -475,19 +472,19 @@ _clepreex () {
 
 # rich history record
 _clerh () {
-	local DT RC REX ID V W
+	local DT RC REX ID V VD W
 	#: three to five arguments, timestamp and elapsed seconds may be missing
 	case $# in
-	3)	DT='';SC='';;
-	4)	DT='';SC=$1;shift;;
+	3)	DT=`date "+$CLE_HTF"`;SC='';;
+	4)	DT=`date "+$CLE_HTF"`;SC=$1;shift;;
 	5)	DT=$1;SC=$2;shift;shift;;
 	esac
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	W=${2/$HOME/\~}
 	[[ $3 =~ $REX  || -n $_NORH ]] && unset _NORH && return
+	#: working dir (substitute home with ~)
+	W=${2/$HOME/\~}
 	#: create timestamp if missing
-	[ "$DT" ] || DT=`date "+$CLE_HTF"`
 	ID="$DT;$CLE_USER-${CLE_SH:0:1}$$"
 	REX='^\$[A-Za-z0-9_]+' #: regex to identify simple variables
 	case "$3" in
@@ -496,8 +493,8 @@ _clerh () {
 		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				DT=`vdump $V`
-				echo -E "$ID;;$;$W;${DT:-unset $V}"
+				VD=`vdump $V`
+				echo -E "$ID;;$;$W;${VD:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
@@ -597,7 +594,7 @@ aa () {
 ##
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
-CLE_HTF=
+CLE_HTF='%F %T'
 h () (
 	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
@@ -787,7 +784,7 @@ lsu () (
 #: Kerberized version of 'su'
 lksu () (
 	_clepak
-        ksu ${1:-root} -a -c $RH/$RC
+        ksu ${1:-root} -a -c "cd;$RH/$RC"
 )
 
 ## `lscreen [name]`    - gnu screen wrapper, join your recent session or start new
@@ -811,7 +808,6 @@ lscreen () (
 		SN=$CLE_TTY-CLE.$NM
 		_clerh @ $CLE_TTY "screen -S $SN"
 		_clescrc >$SCF
-		printf "$_CT screen: $CLE_FHN$_Ct"
 		screen -c $SCF -S $SN $CLE_RC
 	else
 		#: is there only one such session or more?
@@ -825,7 +821,6 @@ lscreen () (
 			done
 		fi
 		_clerh @ $CLE_TTY "screen -x $SN"
-		printf "$_CT screen: joined to $SN$_Ct" #: terminal title
 		screen -S $SN -X echo "$CLE_USER joining" #: alert to the original session
 		screen -x $SN
 	fi
@@ -870,6 +865,10 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 
 #: stop annoying zsh error when '*' doesn't match any file
 [ $ZSH_NAME ] && setopt +o NOMATCH
+
+# record this startup into rich history
+_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}}]"
+[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_SH $CLE_RC [$CLE_VER]"
 
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
@@ -919,9 +918,11 @@ _clepcp
 # 5. terminal specific
 #: $_CT and $_Ct are codes to create window title
 #: also in screen the title should be short and obviously no title on text console
+
 case $TERM in
 linux)	 CLE_PT='';;	# no tits on console
 screen*) CLE_PT='\u'
+	printf "\e]0; screen: $CLE_USER@$CLE_FHN$_Ct\007"
 	_CT=$'\ek'; _Ct=$'\e\\';;
 *)	_CT=$'\e]0;'; _Ct=$'\007';;
 esac
@@ -949,8 +950,7 @@ HISTFILE=$CLE_D/history-$CLE_SH
 HISTSIZE=10000
 SAVEHIST=10000
 HISTFILESIZE=10000
-HISTTIMEFORMAT='%F %T '
-CLE_HTF='%F %T'
+HISTTIMEFORMAT="$CLE_HTF "
 
 # completions
 #: Command 'cle' completion
@@ -1019,10 +1019,6 @@ $_CL    cle deploy
 EOT
 
 [ -r . ] || cd #: go home if this is unreadable directory
-
-# record this startup into rich history
-_clerh @ "${STY:-${CLE_WS:-WS}}->$CLE_TTY" "$CLE_SH $CLE_RC"
-[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_VER"
 
 ##
 ## ** CLE command & control **
