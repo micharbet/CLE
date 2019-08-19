@@ -1,7 +1,7 @@
 ##
 ## ** cle-mod: CLE module management **
 #
-#* version: 2019-03-27
+#* version: 2019-08-19
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -134,6 +134,7 @@ ls)	## `cle mod ls`        - list modules
 add)	## `cle mod add [mod]` - install module from repository
 	#_clemodindex || return $?
 	# get matching modules
+	_clemodindex
 	MODS=`sed -n "/[^:]*$2[^:]*/s/\([^:]*\):.*/\1/p" $INDEXFILE`
 	[ "$MODS" ] || { echo Nothing like $2 to install; return 1; }
 	MODN=`wc -w <<<$MODS`
