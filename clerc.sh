@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-08-09 (Zodiac)
+#* version: 2019-08-19 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -736,7 +736,7 @@ _clepak () {
 		vdump "CLE_SRE|CLE_P..|_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
-		cat $CLE_AL >>$EN
+		cat $CLE_AL >>$EN 2>/dev/null
 	fi
 	#: if tarball required, create it and save to $C64
 	#: I've never owned this computer, I had Atari 800XL :)
