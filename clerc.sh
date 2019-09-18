@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-08-19 (Zodiac)
+#* version: 2019-09-19 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -485,7 +485,7 @@ _clerh () {
 	#: working dir (substitute home with ~)
 	W=${2/$HOME/\~}
 	#: create timestamp if missing
-	ID="$DT;$CLE_USER-${CLE_SH:0:1}$$"
+	ID="$DT;$CLE_USER-$$"
 	REX='^\$[A-Za-z0-9_]+' #: regex to identify simple variables
 	case "$3" in
 	echo*) #: create special records for `echo $VARIABLE`
@@ -606,12 +606,14 @@ hh () (
 	OUTF='_clehhout'
 	DISP=""
 	S=""
-	while getopts "dtsncfl" O;do
+	while getopts "mdtsncfl" O;do
 		case $O in
+		m)	## `hh -m`           - my commands, exclude other users
+			S=$S" -e'/.*;$CLE_USER/!d'";;
 		d)	## `hh -d`           - today's commands
 			S=$S" -e '/^$(date "+%F") /!d'";;
 		t)	## `hh -t`           - commands from current session
-			S=$S" -e '/.*;$CLE_USER-${CLE_SH:0:1}$$;.*/!d'";;
+			S=$S" -e '/.*;$CLE_USER-$$;.*/!d'";;
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
 		n)	## `hh -n`           - narrow output, hide time and session id
@@ -638,22 +640,31 @@ hh () (
 
 # rich history colorful output filter
 _clehhout () (
-	IFS=';'
-	while read -r DT SID SEC EC D C; do
-		case $EC in
+	NRW=$1	#: narrow output; without timestamp and session id
+	set -f
+	while read -r L; do
+		#: it would be easier to use loop with `read DT SID SEC EC DIR CMD`
+		#: but some bash implementations remove IFS from CMD thus rendering
+		#: the command on the output incomplete. e.g. Fedora, Debian implementation
+		#: of bash keeps the separator while RHEL and Centos removes it. Grrrr...
+		IFS=';'
+		set -- $L
+		case $4 in
 		 0) CE=$_Cg; CC=$_CN;;
 		 @) CE=$_Cc; CC=$_Cc;;
 		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
 		 *) CE=$_Cr; CC=$_CN;;
 		esac
-		if [ $1 ]; then
-			#: print less information (option -x)
-			printf " $CE%-9s $CC%-20s: $_CL" "$EC" "$D"
+		if [ $NRW ]; then
+			#: print less information (option -n)
+			printf " $CE%-9s $CC%-20s: $_CL" "$4" "$5"
 		else
 			#: print full record
-			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
+			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$1" "$2" "$3" "$4" "$5"
 		fi
-		cat <<<$C #: this cannot be part of printf above to keep possible backslashes
+		#: print the unprocessed rest of the input - the command itself
+		shift 5
+		printf "%s\n" "$*"
 	done
 )
 
@@ -867,8 +878,8 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 [ $ZSH_NAME ] && setopt +o NOMATCH
 
 # record this startup into rich history
-_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}}]"
-[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_SH $CLE_RC [$CLE_VER]"
+_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}},$CLE_SH]"
+[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_RC [$CLE_VER]"
 
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
@@ -944,13 +955,7 @@ _cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
 PROMPT_DIRTRIM=3
-
-HISTCONTROL=ignoredups
-HISTFILE=$CLE_D/history-$CLE_SH
-HISTSIZE=10000
-SAVEHIST=10000
-HISTFILESIZE=10000
-HISTTIMEFORMAT="$CLE_HTF "
+HISTTIMEFORMAT="$CLE_HTF " #: Tweakable value
 
 # completions
 #: Command 'cle' completion
