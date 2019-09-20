@@ -765,8 +765,8 @@ lssh () (
 	command ssh -t $* "
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
-		[ $OSTYPE = darwin ] && _D=D || _D=d
-		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
+		[ \$OSTYPE = darwin ] && D=D || D=d
+		base64 -\$D <<<$C64|tar xzf - 2>/dev/null
 		exec \$H/$RC -m $CLE_ARG"
 )
 
@@ -1114,7 +1114,8 @@ cle () {
 		[ $S ] && exec $CLE_RC $S
 		#: re-sourcing the environment keeps user's settings
 		unset CLE_EXE
-		. $CLE_RC;;
+		. $CLE_RC
+		echo CLE $CLE_VER;;
 	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code

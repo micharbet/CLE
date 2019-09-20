@@ -354,18 +354,23 @@ by placing `unalias not_needed_cmd` into tweak file.
 
 ## 5. History management
 
-Command line history in CLE is personalized in several ways:
-1. Each user account on the system has its own shell managed history stored
-   in the file $CLE_D/history-$CLE_SH (this replaces .bash_history)
-2. There is one file - $HOME/.clehistory managed by CLE routines where
-   the history of all commands issued by every user is collected. This is called
-   the _rich history_
-
-The rich history is persistent. That means the records are being added to
-the file and the file is not truncated. As the rich history file grows it holds
-a complete history over time. Next, the word 'rich' refers to enhanced
-information contained in each history record. The records are textual,
-one-per-line with following fields (as shown in terminal):
+Command line history is enhanced in CLE:
+1. _Regular shell history_ is almost untouched, the only tweak is timestamp
+   record added to the commands. All the other features like 'ignore*' flags
+   and history size definitions are kept. There is however an enhancement:
+   function `h` - it displays the history in colors to easy distinguish
+   commands from metadata.
+2. _Rich history_ feature is added and managed by CLE. The rich history records
+   keeps much more information, as expected by it's name. Particularly:
+   - session-id (username and shell PID) 
+   - time spent on execution
+   - return code
+   - folder where the command was issued
+   The records are collected in file `$HOME/.clehistory` and its content can be
+   viewed using command `hh` The rich history is persistent, the records are
+   being added to the file and the file is never truncated.
+   The rich history records are textual, one-per-line with following fields
+   (as shown in terminal, internally they are separated by semicolon):
 
 ```
   2019-04-11 14:31:26 mich-b22793 3  0 	~/d/CLE : cls -al
@@ -379,20 +384,17 @@ one-per-line with following fields (as shown in terminal):
     |           |      session ID ( $CLE_USER-shellpid )
     date and time
 ```
-Collumns are diferentiated by colors and the command is clearly highlighted
-to be visible at first glance. Note also the red number showing non-zero return
+Columns are diferentiated by colors so the command is clearly highlighted
+and visible at first glance. Note also the red number showing non-zero return
 code.
 
-Special records appear when a session is started. Those are denoted with an '@'
-at the place of the command return code. Then, the part that would normally ne the 
-working directory contains the terminal name and instead of the command there is
-additional information in square brackets.
-
-Other special rich hostory exist:
-- notes: lines with hash at the begining do not start anything but are recorded
+There are also special rich history records:
+- a session start, denoted with '@' at the place of the return code with
+  the terminal name and additional session originator info.
+- notes: lines with hash at the begining don't do anything but are recorded
   Such you can place markers to rich history. Shown in yellow color on output.
 - folder bookmarks are recorded with command `xx`
-- variables: those special rich history records are created whenever you issue
+- variables - those special rich history records are created whenever you issue
   something like `echo $MYVARIABLE` 
 
 
@@ -400,20 +402,19 @@ Other special rich hostory exist:
 ### Searching through history
 
 The function `h` is a simple shortcut to the regular 'history' command. It just
-colorizes history output highlghting sequence number and the command itself.
-Use the `h` with the same parameters of the `history` command.
+colorizes history output highlighting the command itself. Use the `h` with the
+same parameters like the `history` command.
 
-The new command `hh` works with the rich history.
-When issued without arguments it prints out the 100 recent records. However, you
-can alter its behavior or otherwise filter the output using options
-and arguments. Use the following basic filters:
-- `hh string` to grep-search for the given string in the rich history file. The grep
-  is applied to the whole file, so you can search for a specific date/time, a session
-  identification, or you can use regular expressions, etc.
-- `hh number` prints out the most recent 'number' records. Note: the number can be in
-  the range 1 .. 999.
+The new command `hh` works with the rich history. When issued without arguments
+it prints out the 100 recent records. However, you can alter its behavior or
+otherwise filter the output using options and arguments. Use the following
+filters and their combinations:
+- `hh string` to grep-search for the given string in the rich history file.
+   The grep is applied to the whole file, so you can search for a specific
+   date/time, a session identification, etc. As long as it uses grep, the
+   search string can contain regular expressions.
 
-Advanced filtering is done using these options:
+Issue `hh` with options:
 `-t` search only commands issued in the current session
 `-d` narrow down search to current days sessions
 `-s` filters only succesful commands (return code zero)
@@ -421,6 +422,8 @@ Advanced filtering is done using these options:
 `-l` pass the output into 'less' command
 `-f` instead of issued commands prints out visited folders
 `-n` narrow output - omit timestamp leave more space for commands
+`-m` my commands only, exclude other CLE user's entries that may
+     appear in multi-admin environment
 
 Examples:
 - `hh -sc tar` - this prints out only successful 'tar' commands without rich
@@ -479,8 +482,6 @@ The following files can be found there:
                       on remote sessions ($CLE_TW)
 - `al`                  Saved user's set of aliases ($CLE_AL)
 - `mod-*` and `cle-*`   Modules enhancing CLE functionality.
-- `history-bash`        history file, managed by bash
-- `history-zsh`         history file, managed by Z-shell
 
 The `rc`, `tw` and `al` files might have suffix '-hostname'. If not they are
 used locally as a CLE workstation. The suffix presence indicates the origin
