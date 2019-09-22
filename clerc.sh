@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-09-19 (Zodiac)
+#* version: 2019-09-22 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -424,10 +424,18 @@ _clesave () (
 
 
 # prompt callback functions
-#: As precmd function is executed *every* time you push enter key its code
-#: should be as simple as possible. In best case all commands here should be
-#: bash internals. Those don't invoke new processes and as such they are much
-#: easier to system resources.
+#: 
+#: Important note about code efficiency:
+#: As precmd function is executed *every* time you push <enter> key, its code
+#: needs to be as simple as possible. All commands here should be internals.
+#: Internal commands don't invoke (fork) new processes and as such they
+#: are much easier to system resources.
+#: E.g. construction `C=${C#*;}` could be written as C=$(sed 's/[^;]*;\(.*\)/\1/' <<<$C)
+#: Not only the actually used expression is shorter but also much faster since `sed`
+#: would be executed as new process from binary file
+#: The same rule applies to CLE internal functions used and called within prompt
+#: callback. Namely: `precmd` `preexec` `clepreex` `clerh`
+#:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline has different name in zsh
 [ $ZSH_NAME ] && _PST='${pipestatus[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
@@ -457,6 +465,7 @@ precmd () {
 }
 
 # run this function before the issued command
+#: This fuction is used within prompt calback. Read code efficiency note above!
 preexec () {
 	_SST=$SECONDS #: start timer
 	echo -n $_CN  #: reset tty colors
@@ -464,6 +473,7 @@ preexec () {
 
 # Bash hack
 #: Zsh supports preexec function naturaly. This is bash's workaround.
+#: This fuction is used within prompt calback. Read code efficiency note above!
 _clepreex () {
 	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
 	trap "" DEBUG
@@ -471,6 +481,7 @@ _clepreex () {
 }
 
 # rich history record
+#: This fuction is used within prompt calback. Read code efficiency note above!
 _clerh () {
 	local DT RC REX ID V VD W
 	#: three to five arguments, timestamp and elapsed seconds may be missing
@@ -595,6 +606,7 @@ aa () {
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
 CLE_HTF='%F %T'
+HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exists
 h () (
 	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
@@ -955,7 +967,6 @@ _cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
 PROMPT_DIRTRIM=3
-HISTTIMEFORMAT="$CLE_HTF " #: Tweakable value
 
 # completions
 #: Command 'cle' completion
