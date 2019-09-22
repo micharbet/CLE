@@ -38,7 +38,7 @@ First, there are many implementations of busybox with various level of
 compiled-in utilities. This makes it quite difficult to rely on particular
 commandi and even if the functionality is there, it may be simplified.
 Second, `ash` is missing some features of larger shells. Particularly,
-there is no regular expression comparison liske `[[ $VAR =~ ^string ]]`.
+there is no regular expression comparison like e.g. `[[ $VAR =~ ^string ]]`.
 
 
 ## Will it work on csh/tcsh?
@@ -63,5 +63,15 @@ Use `lscreen` wrapper instead of regular 'screen'
 ## Why tmux session is started with plain old boring prompt?
 Same reason as in 'screen'.
 Except that there is not live tmux wrapper yet. It's planned enhancement.
+
+
+## Why I do not see rich history record of the command that runs in another window?
+Rich history is updated after command finishes beacuse it waits for return code
+and to calculate elapsed time.
+
+
+## `lsu` on debian based systems starts shell without controlling terminal. Why?
+This is a feature of the `su` command there - it detaches terminal from process
+Check `man su` on debian. And use `lsudo` instead.
 
 

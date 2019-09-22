@@ -3,7 +3,6 @@ HOWTO.md
 TipsAndTweaks.md
 Modules.md
 FAQ.md
-Contribute.md
-Feedback.md
+ContributeAndFeedback.md
 Credits.md
 LICENSE.md
