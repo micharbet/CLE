@@ -29,7 +29,8 @@ and tested on following operating systems:
 - Linux (various distributions, the oldest one RHEL/CentOS 5)
 - OSX
 - Free / Net BSD
-Reported correct fuctionality on Windows 10.
+Reported fuctionality on Windows 10 and  it also works on Android
+proven with app Termux.
 
 
 ## Will it work with `ash` and busybox?

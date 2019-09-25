@@ -162,6 +162,12 @@ were issued:
   but almost complete rewrite to ensure compatibility with Z-shell plus
   improved environment transfer incl. prompt settings, aliases and variables.
 
+Also while CLE is big tweak itself, it tries to respect users and their own
+settings. Initial versions used to be pushy, defining a lot of aliases, of
+course those I liked. Wrong! I learned people use their own so I removed
+them. Shell history as well. There's rich history and tweaks to the regular
+one have been minimalized. The motto is: "Less tweaks, more options!"
+
 [1] CLE is not a virus :-) It doesn't run itself on any host. Everything is
 under the users' (your) control and responsibilty
 

@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-09-22 (Zodiac)
+#* version: 2019-09-26 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -777,8 +777,8 @@ lssh () (
 	command ssh -t $* "
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
-		[ \$OSTYPE = darwin ] && D=D || D=d
-		base64 -\$D <<<$C64|tar xzf - 2>/dev/null
+		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
+		echo $C64|base64 -\$D|tar xzf - 2>/dev/null
 		exec \$H/$RC -m $CLE_ARG"
 )
 
