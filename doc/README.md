@@ -22,16 +22,21 @@ CLE is compatible with bash and zsh, one resource file for both shells.
 ## 1. CLE setup and basic usage
 
 All the mentioned functionality is encoded into _single file_ and no other
-executables are needed. Download and run this file either by sourcing into
+executables are needed. Download and run this file by sourcing into
 the current shell context using a trailing dot:
 
     `wget http://git.io/clerc`
     `. clerc`
 
-* Note, the `http://git.io/clerc` is shortcut. If unsure use real source
-  `https://raw.githubusercontent.com/micharbet/CLE/master/clerc`
+* Note: you can alternatively download with `curl` from real source:
 
-The CLE will be activated and you can configure this environment to be
+    `curl -O https://raw.githubusercontent.com/micharbet/CLE/master/clerc`
+
+  This is necessary on OSX as there's no `wget` in default installation.
+  The `http://git.io/clerc` is only redirecting shortcut.
+
+
+Now The CLE is activated and you can configure this environment to be
 persistent with the command:
 
     `cle deploy`
