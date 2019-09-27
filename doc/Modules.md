@@ -122,12 +122,16 @@ pages.
 ### mod-fsps
 Defines following filesystem and process related functions:
    `dfh` `dush` `dusk` `psg`
-They appear in `cle help` output. Those functions could be safely be defined
-as aliases, but why not to have this :-)
+This module serves more as a concept but may be also practically useful.
 
 ### cle-rcmove
 This module makes it easy to move CLE installation folder to a different
 location. It's described in 'TipsAndTweks.md'.
+
+### cle-ed
+Add command `cle ed` as shortcut to various configuration files. See options
+if you issue it without any option. Try e.g. `cle ed tw` and write your tweak
+file that will run on every live session.
 
 ### mod-git
 Functions / shortcuts to 'git' commands. Find all added functions
@@ -141,6 +145,16 @@ between following:
                         same aone as described in document 'TipsAndTweaks.md'
 `cle prompt triliner` - even more spacious prompt, adds an empty line for
                         better readability.
+
+### cle-palette
+This module changes color palettes. Set look and feel of your terminal with
+following built-in palettes: `cga16`, `xterm`, `solarized`, `jellybeans`,
+`gruvbox` or `rh`
+Use the module as follows:
+`cle palette`         - to view available color scheme names
+`cle palette PALNAME` - set the terminal colors with selected palette
+`cle palette show`    - display the palette colors
+This module requires OSC capable terminal (xterm, VTE based terminals).
 
 ### mod-example
 Template of module. Not available directly with, `cle mod` command. Find it
