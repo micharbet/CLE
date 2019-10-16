@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-09-26 (Zodiac)
+#* version: 2019-10-16 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -505,7 +505,7 @@ _clerh () {
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
 				VD=`vdump $V`
-				echo -E "$ID;;$;$W;${VD:-unset $V}"
+				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
@@ -761,8 +761,9 @@ _clepak () {
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN 2>/dev/null
 	fi
-	#: if tarball required, create it and save to $C64
-	#: I've never owned this computer, I had Atari 800XL :)
+	#: save the envrironment tarball into $C64 if required
+	#: Note: I've never owned this computer, I had Atari 800XL instead :-)
+	#: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
 	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
 	#:             ^^^^ 'eval' required due to zsh.
 }
@@ -778,8 +779,10 @@ lssh () (
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
-		echo $C64|base64 -\$D|tar xzf - 2>/dev/null
+		echo $C64|base64 -\$D|tar xzf -
 		exec \$H/$RC -m $CLE_ARG"
+		#: it is not possible to use `base63 -\$D <<<$C64|tar xzf -`
+		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
 )
 
 #: Following are su* wrappers of different kinds including kerberos
