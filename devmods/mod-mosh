@@ -1,0 +1,34 @@
+##
+## ** mod-mosh: live session with `lmosh` command **
+#
+#* version: 2019-09-21
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2019 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+## `lmosh [user@]host`   - live remote session with mobile shell
+
+lmosh () ( 
+	[ "$1" ] || { cle help lmosh; return 1; }
+	_clepak tar
+
+	# here is the issue: other wrappers use /var/tmp/$USER but mosh simply can't
+	# preparation phase runs as 'server' code before start mosh-server. At this
+	# point the $USER contains remote username.
+	# on the other side, there's the command run by mosh itself but this code
+	# is run locally and the remote username might not be known!
+
+	command mosh --no-init --server="
+		# H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
+		cd /var/tmp
+		[ $OSTYPE = darwin ] && D=D || D=d
+		base64 -\$D <<<$C64 | tar xzf - 2>/dev/null
+		mosh-server" \
+		$@ /var/tmp/$RC
+)

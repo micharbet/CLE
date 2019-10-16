@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-08-09 (Zodiac)
+#* version: 2019-10-16 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -424,10 +424,18 @@ _clesave () (
 
 
 # prompt callback functions
-#: As precmd function is executed *every* time you push enter key its code
-#: should be as simple as possible. In best case all commands here should be
-#: bash internals. Those don't invoke new processes and as such they are much
-#: easier to system resources.
+#: 
+#: Important note about code efficiency:
+#: As precmd function is executed *every* time you push <enter> key, its code
+#: needs to be as simple as possible. All commands here should be internals.
+#: Internal commands don't invoke (fork) new processes and as such they
+#: are much easier to system resources.
+#: E.g. construction `C=${C#*;}` could be written as C=$(sed 's/[^;]*;\(.*\)/\1/' <<<$C)
+#: Not only the actually used expression is shorter but also much faster since `sed`
+#: would be executed as new process from binary file
+#: The same rule applies to CLE internal functions used and called within prompt
+#: callback. Namely: `precmd` `preexec` `clepreex` `clerh`
+#:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline has different name in zsh
 [ $ZSH_NAME ] && _PST='${pipestatus[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
@@ -457,6 +465,7 @@ precmd () {
 }
 
 # run this function before the issued command
+#: This fuction is used within prompt calback. Read code efficiency note above!
 preexec () {
 	_SST=$SECONDS #: start timer
 	echo -n $_CN  #: reset tty colors
@@ -464,6 +473,7 @@ preexec () {
 
 # Bash hack
 #: Zsh supports preexec function naturaly. This is bash's workaround.
+#: This fuction is used within prompt calback. Read code efficiency note above!
 _clepreex () {
 	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
 	trap "" DEBUG
@@ -471,6 +481,7 @@ _clepreex () {
 }
 
 # rich history record
+#: This fuction is used within prompt calback. Read code efficiency note above!
 _clerh () {
 	local DT RC REX ID V VD W
 	#: three to five arguments, timestamp and elapsed seconds may be missing
@@ -485,7 +496,7 @@ _clerh () {
 	#: working dir (substitute home with ~)
 	W=${2/$HOME/\~}
 	#: create timestamp if missing
-	ID="$DT;$CLE_USER-${CLE_SH:0:1}$$"
+	ID="$DT;$CLE_USER-$$"
 	REX='^\$[A-Za-z0-9_]+' #: regex to identify simple variables
 	case "$3" in
 	echo*) #: create special records for `echo $VARIABLE`
@@ -494,7 +505,7 @@ _clerh () {
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
 				VD=`vdump $V`
-				echo -E "$ID;;$;$W;${VD:-unset $V}"
+				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
@@ -595,6 +606,7 @@ aa () {
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
 CLE_HTF='%F %T'
+HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exists
 h () (
 	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
@@ -606,12 +618,14 @@ hh () (
 	OUTF='_clehhout'
 	DISP=""
 	S=""
-	while getopts "dtsncfl" O;do
+	while getopts "mdtsncfl" O;do
 		case $O in
+		m)	## `hh -m`           - my commands, exclude other users
+			S=$S" -e'/.*;$CLE_USER/!d'";;
 		d)	## `hh -d`           - today's commands
 			S=$S" -e '/^$(date "+%F") /!d'";;
 		t)	## `hh -t`           - commands from current session
-			S=$S" -e '/.*;$CLE_USER-${CLE_SH:0:1}$$;.*/!d'";;
+			S=$S" -e '/.*;$CLE_USER-$$;.*/!d'";;
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
 		n)	## `hh -n`           - narrow output, hide time and session id
@@ -638,22 +652,31 @@ hh () (
 
 # rich history colorful output filter
 _clehhout () (
-	IFS=';'
-	while read -r DT SID SEC EC D C; do
-		case $EC in
+	NRW=$1	#: narrow output; without timestamp and session id
+	set -f
+	while read -r L; do
+		#: it would be easier to use loop with `read DT SID SEC EC DIR CMD`
+		#: but some bash implementations remove IFS from CMD thus rendering
+		#: the command on the output incomplete. e.g. Fedora, Debian implementation
+		#: of bash keeps the separator while RHEL and Centos removes it. Grrrr...
+		IFS=';'
+		set -- $L
+		case $4 in
 		 0) CE=$_Cg; CC=$_CN;;
 		 @) CE=$_Cc; CC=$_Cc;;
 		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
 		 *) CE=$_Cr; CC=$_CN;;
 		esac
-		if [ $1 ]; then
-			#: print less information (option -x)
-			printf " $CE%-9s $CC%-20s: $_CL" "$EC" "$D"
+		if [ $NRW ]; then
+			#: print less information (option -n)
+			printf " $CE%-9s $CC%-20s: $_CL" "$4" "$5"
 		else
 			#: print full record
-			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$DT" "$SID" "$SEC" "$EC" "$D"
+			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$1" "$2" "$3" "$4" "$5"
 		fi
-		cat <<<$C #: this cannot be part of printf above to keep possible backslashes
+		#: print the unprocessed rest of the input - the command itself
+		shift 5
+		printf "%s\n" "$*"
 	done
 )
 
@@ -736,10 +759,11 @@ _clepak () {
 		vdump "CLE_SRE|CLE_P..|_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
-		cat $CLE_AL >>$EN
+		cat $CLE_AL >>$EN 2>/dev/null
 	fi
-	#: if tarball required, create it and save to $C64
-	#: I've never owned this computer, I had Atari 800XL :)
+	#: save the envrironment tarball into $C64 if required
+	#: Note: I've never owned this computer, I had Atari 800XL instead :-)
+	#: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
 	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
 	#:             ^^^^ 'eval' required due to zsh.
 }
@@ -754,9 +778,11 @@ lssh () (
 	command ssh -t $* "
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
-		[ $OSTYPE = darwin ] && _D=D || _D=d
-		echo -n $C64|base64 -\$_D |tar xzf - 2>/dev/null
+		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
+		echo $C64|base64 -\$D|tar xzf -
 		exec \$H/$RC -m $CLE_ARG"
+		#: it is not possible to use `base63 -\$D <<<$C64|tar xzf -`
+		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
 )
 
 #: Following are su* wrappers of different kinds including kerberos
@@ -867,8 +893,8 @@ CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 [ $ZSH_NAME ] && setopt +o NOMATCH
 
 # record this startup into rich history
-_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}}]"
-[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_SH $CLE_RC [$CLE_VER]"
+_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}},$CLE_SH]"
+[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_RC [$CLE_VER]"
 
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
@@ -944,13 +970,6 @@ _cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
 PROMPT_DIRTRIM=3
-
-HISTCONTROL=ignoredups
-HISTFILE=$CLE_D/history-$CLE_SH
-HISTSIZE=10000
-SAVEHIST=10000
-HISTFILESIZE=10000
-HISTTIMEFORMAT="$CLE_HTF "
 
 # completions
 #: Command 'cle' completion
@@ -1109,7 +1128,8 @@ cle () {
 		[ $S ] && exec $CLE_RC $S
 		#: re-sourcing the environment keeps user's settings
 		unset CLE_EXE
-		. $CLE_RC;;
+		. $CLE_RC
+		echo CLE $CLE_VER;;
 	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code

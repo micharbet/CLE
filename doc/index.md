@@ -2,7 +2,7 @@ README.md
 HOWTO.md
 TipsAndTweaks.md
 Modules.md
-Contribute.md
-Feedback.md
+FAQ.md
+ContributeAndFeedback.md
 Credits.md
 LICENSE.md

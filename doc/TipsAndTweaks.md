@@ -16,7 +16,8 @@ preferences. Some tips may require to install additional software.
 
 
 ## 1. Prompting
-The first thing you may want to customize. Go beyond just color change!
+The first thing you may want to customize is prompt. Add or remove items
+in it. Go beyond just a color change!
 
 ### Nice double line prompt
 ```
@@ -145,17 +146,17 @@ More about modules in dedicated document.
 
 ## 3. Startup tweaks
 
-Always customize CLE using one of tweak files. Avoid editing .clerc whenever
-posible. Besides modules described in separate document, CLE finds and executes
-following files:
+Always customize CLE using one of tweak files. Avoid editing .clerc itself!
+During startupp the  CLE finds and executes following files:
 - `$HOME/.cle-local`
-  Local account's tweak is executed when CLE is started.
-- `$HOME/.cle-YOURLOGIN/tw`
+  Local account's tweak is executed when CLE is started on this particular
+   account
+- `$HOME/.cle-YOURLOGIN/tw` (or `$CLE_D/tw`)
   This file is executed on CLE startup and moreover, it is packed, transferred
   and executed on remote account along with the main resource file everytime
-  new session is initiated with `lssh` or any of `lsu*` wrappers. Using this file
-  you can apply your own settings in just one single file that resides on your
-  workstation. 
+  new session is initiated with `lssh` or any of `lsu` wrappers. Using the `tw`
+  file you can apply your own personalization on all accounts and manage it all
+  from your workstation.
 
 Try for example this:
 1. using text editor create tweak file .cle-YOURNAME/tw with following content:
@@ -168,9 +169,9 @@ Try for example this:
    )
 ```
 2. restart environment (`cle reload`) or start new terminal
-3. try new function: `myfun bash`; you should see all running shells only
-4. go to different account: `lssh account@somewhere.else` and try new function
-   there. It should work.
+3. try new function: `myfun bash`; you should se the output and have fun :-D
+4. go to different account: `lssh account@somewhere.else` and try the new
+   function there. It should work.
 5. bonus: you also created in-script help strings and you can see them in
    output of `cle help` and `cle help myfun`
 6. enjoy and tweak more!
@@ -190,13 +191,13 @@ and message of the day will never be shown.
 
 ### Tweaking only on particular accounts
 
-Some tweaks may be applicable only on particular hosts/accounts. Use 'case'
-statement like for example this:
+Some tweaks may be applicable only on particular hosts/accounts. Use `case`
+statement like for example this one:
 ```
    # we're using $USER - not $CLE_USER!
    case $USER@$HOSTNAME in
-      user1@destination1.example.com)
-         # this will be executed only on one account
+      root@destination1.example.com)
+         # this will be executed only for root at given host
          ;;
       *@destination1.example.com)
          # executed on all other accounts on the same host
@@ -210,20 +211,10 @@ Be creative, make your own 'case', you can use it to define for example extra
 aliases. special prompt settings (see next section) etc.
 
 
-
-### Override internal functions
-
-Besides introducing new functions you can override any intenal CLE function
-with oyur own code. Doing this is easy and tricky at the same time. You need
-to ensure the new code serves the same purpose. 
-
-
 ## 4. How to enhance CLE
 
 CLE is highly extensible. Did I tell this? really? Well, you can add new
 fuctions, replace existing ones or add more functionality into 'cle'
-command itself. Do you miss a feature? Be brave and write your module.
-Read more in _Modules.md_ Are you really brave? Publish your work. Others
-may enjoy it too! For this check  _Contribute.md_
-
+command itself. Either use existing module or write your own.
+Read more in _Modules.md_ 
 
