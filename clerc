@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-09-26 (Zodiac)
+#* version: 2019-10-16 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -390,7 +390,7 @@ _clerh () {
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
 				VD=`vdump $V`
-				echo -E "$ID;;$;$W;${VD:-unset $V}"
+				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done;;
 	xx) # directory bookmark
@@ -611,7 +611,7 @@ lssh () (
 	command ssh -t $* "
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
-		echo $C64|base64 -\$D|tar xzf - 2>/dev/null
+		echo $C64|base64 -\$D|tar xzf -
 		exec \$H/$RC -m $CLE_ARG"
 )
 
