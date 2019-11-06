@@ -16,7 +16,7 @@
 - Savitoj Singh (savsingh@redhat.com)
 - Vaclav Hodina (vhodina@redhat.com)
 - Nenad Peric (nperic@redhat.com)
-- Alex Silva (alexsilv@redhat.com) had inspiring comments on tweaks,
-  he basically made me to remove several tweaks that resulted in simplified
-  but more useful and universal, yet less pushy environment.
+- Alex Silva (alexsilv@redhat.com) had very inspiring comments and reported
+  several bugs. He basically made me to remove a few tweaks that resulted
+  in more useful, universal, yet less pushy environment.
 
