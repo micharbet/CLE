@@ -34,5 +34,5 @@ EOL
 }
 
 # choose cmdline
-cur_ul
+#cur_ul
 

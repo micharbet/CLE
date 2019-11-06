@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-10-16 (Zodiac)
+#* version: 2019-11-04 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -441,7 +441,9 @@ _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline has different name
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
 precmd () {
 	eval "_EC=$_PST"
-	[[ $_EC =~ [1..9] ]] || _EC=0 #: just one zero if all ok
+	dbg_var _PST
+	dbg_var _EC
+	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
 	local IFS S DT C
 	unset IFS
 	[ $BASH ] && C=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || C=`fc -lt ";$CLE_HTF;" -1`
@@ -690,7 +692,7 @@ gitwb () (
 	# go down the folder tree and look for .git
 	#: Because this function is supposed to use in prompt we want to save
 	#: cpu cycles. Do not call `git` if not necessary.
-	while [ $PWD != / ]; do
+	while [ "$PWD" != / ]; do
 		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
 		cd ..
 	done
@@ -718,7 +720,7 @@ vdump () (
 	#: awk: 1. exits when reaches functions
 	#:      2. finds variables matching regular expression
 	#:      3. replaces weird escape sequence '\C-[' from zsh to normal '\E'
-	typeset 2>/dev/null | awk '/.* \(\)/{exit} /^('$1')=/{gsub(/\\C-\[/,"\\E");print}'
+	typeset 2>/dev/null | awk '/.* \(\)/{exit} /(^'$1')=/{gsub(/\\C-\[/,"\\E");print}'
 )
 
 #:------------------------------------------------------------:#
@@ -779,7 +781,7 @@ lssh () (
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
-		echo $C64|base64 -\$D|tar xzf -
+		echo $C64|base64 -\$D|tar xzmf -
 		exec \$H/$RC -m $CLE_ARG"
 		#: it is not possible to use `base63 -\$D <<<$C64|tar xzf -`
 		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
