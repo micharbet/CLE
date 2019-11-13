@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-11-04 (Zodiac)
+#* version: 2019-11-13 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -758,7 +758,7 @@ _clepak () {
 		cp $CLE_TW $TW 2>/dev/null
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_SRE|CLE_P..|_C." >>$EN
+		vdump "CLE_SRE|CLE_P..|^_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN 2>/dev/null
@@ -1179,6 +1179,6 @@ cle () {
 
 #: final cleanup
 unset _T _H _C _N _DC
-##~~
+
 # that's all, folks...
 
