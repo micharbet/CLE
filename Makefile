@@ -20,7 +20,6 @@ clerc: clerc.sh
 
 # create module index
 modules/modulist: modules/mod-* modules/cle-*
-	@ rm $@
 	@ for M in $^; do \
 		MM=$$(basename $$M); \
 		VER=$$(sed -n "s/^#\* version:\s*//p" $$M); \

@@ -1,7 +1,7 @@
 ##
 ## ** mod-fsps: Filesystem and processess utilities **
 #
-#* version: 2018-11-13
+#* version: 2019-12-12
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -37,4 +37,9 @@ dusk () {
 
 ## `psg name`   -- ps | grep
 alias psg='ps -ef | grep -v grep |grep '
+
+## `mkcd`       -- create folder and go there
+mkcd () {
+	[ $1 ] && mkdir -p $1 && cd $1
+}
 
