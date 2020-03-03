@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2019-11-13 (Zodiac)
+#* version: 2020-03-03 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -126,6 +126,14 @@ esac
 dbg_print ---------------
 dbg_print Resource starts
 dbg_print ---------------
+
+# Use alias built-ins for startup
+#: alias & unalias must be available in their natural form during CLE startup
+#: and will be redefined at the end of resource
+unset -f alias unalias 2>/dev/null
+#: remove particular aliases that might be defined e.g. in .bashrc
+#: those were causing confilcts, more of them might be added later
+unalias aa h hh .. ... 2>/dev/null
 
 #:------------------------------------------------------------:#
 # Variables init
@@ -441,8 +449,6 @@ _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline has different name
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
 precmd () {
 	eval "_EC=$_PST"
-	dbg_var _PST
-	dbg_var _EC
 	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
 	local IFS S DT C
 	unset IFS
@@ -520,11 +526,6 @@ _clerh () {
 } >>$CLE_HIST
 
 
-# Use alias built-ins for startup
-#: alias & unalias must be available in their natural form during CLE startup
-#: and will be redefined at the end of resource
-unset -f alias unalias 2>/dev/null
-
 # Run profile files
 #: This must be done now, not later because files may contain confilcting settings.
 #: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
@@ -574,7 +575,7 @@ fi
 ## ** cd command enhancements **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
-- () { cd -;}
+- () { cd - >/dev/null; vdump OLDPWD;}
 .. () { cd ..;}
 ... () { cd ../..;}
 ## `xx` & `cx`   - bookmark $PWD & use later
@@ -604,11 +605,13 @@ aa () {
 	esac
 }
 
+
 ##
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
 CLE_HTF='%F %T'
 HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exists
+
 h () (
 	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
