@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-03-03 (Zodiac)
+#* version: 2020-10-05 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -646,9 +646,9 @@ hh () (
 	done
 	shift $((OPTIND-1))
 
-	#: number (default 100) or search string
+	#: number (default 100) or search string; sed-escape slashes to '\/'
 	A=${*:-100}
-	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/$A/!d'"
+	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
 
 	#: execute filter stream
 	dbg_print hh: eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S} | $OUTF  $DISP"
