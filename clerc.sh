@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-10-05 (Zodiac)
+#* version: 2020-10-20 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -483,7 +483,7 @@ preexec () {
 #: Zsh supports preexec function naturaly. This is bash's workaround.
 #: This fuction is used within prompt calback. Read code efficiency note above!
 _clepreex () {
-	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
+	[ "$BASH_COMMAND" = "$PROMPT_COMMAND" ] && return
 	trap "" DEBUG
 	preexec "$BASH_COMMAND"
 }
