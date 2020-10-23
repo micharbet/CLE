@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-10-20 (Zodiac)
+#* version: 2020-10-22 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2019 by Michael Arbet
 
@@ -452,41 +452,64 @@ precmd () {
 	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
 	local IFS S DT C
 	unset IFS
-	[ $BASH ] && C=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || C=`fc -lt ";$CLE_HTF;" -1`
-	C=${C#*;}	#: strip sequence number
+	if [ $BASH ]; then
+		C=$_HN	#: already prepared by _clepreex()
+		history -a	#: immediately record commands so they are available in new shell sessions
+	else
+		C=`fc -lt ";$CLE_HTF;" -1`	#: get recent command, strip sequence number
+		C=${C#*;}
+	fi
 	DT=${C/;*}	#: extract date
-	C=${C/$DT;}	#: extract command
+	C=${C/$DT;}	#: extract pure command
 	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 	if [[ $C =~ ^\# ]]; then
-		_clerh '#' "$PWD" "$C"
-	elif [ $_SST ]; then
-		S=$((SECONDS-${_SST:-$SECONDS}))
+		_clerh '#' "$PWD" "$C"	# record a note to history
+	elif [ $_HT ]; then	# check timer - indicator of executed command
+		S=$((SECONDS-${_HT:-$SECONDS}))
 		_clerh "$DT" $S "$_EC" "$PWD" "$C"
 		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
-		_SST=
+		_HT=
 	else
 		_CE=''
-		_EC=0 #: reset error code
+		_EC=0 #: reset error code so it doesn not disturb on other prompts
 	fi
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
 # run this function before the issued command
-#: This fuction is used within prompt calback. Read code efficiency note above!
+#: This fuction is used within prompt calback.
 preexec () {
-	_SST=$SECONDS #: start timer
-	echo -n $_CN  #: reset tty colors
+	dbg_print 'preexec()'
+	echo -n $_CN	#: reset tty colors
+	_HT=$SECONDS	#: star history timer $_HT
 }
+
+CLE_HTF='%F %T'
+HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exists
 
 # Bash hack
 #: Zsh supports preexec function naturaly. This is bash's workaround.
 #: This fuction is used within prompt calback. Read code efficiency note above!
+#: _HP and _HN - previous and next command taken from shell history are compared
+#: sequence number have to be cut out as they are not necessarily the same over sessions
+if [ $BASH ]; then
+	history -r $HISTFILE
+	_HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`	#: prepare history for comaprison
+	_HP=${_HP#*;}	#: strip sequence number
+	dbg_var _HP
 _clepreex () {
-	[ "$BASH_COMMAND" = "$PROMPT_COMMAND" ] && return
+	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
+	_HN=${_HN#*;}	#: strip sequence number
+	dbg_var _HP
+	dbg_var _HN
+	dbg_var BASH_COMMAND
+	[ "$_HP" = "$_HN" ] && return
+	_HP=$_HN
 	trap "" DEBUG
 	preexec "$BASH_COMMAND"
 }
+fi
 
 # rich history record
 #: This fuction is used within prompt calback. Read code efficiency note above!
@@ -609,9 +632,6 @@ aa () {
 ##
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
-CLE_HTF='%F %T'
-HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exists
-
 h () (
 	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
