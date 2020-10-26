@@ -1,0 +1,102 @@
+##
+## ** mod-richpaste: Rich history viewer with paste buffers (experimental)
+#
+#* version: 2020-10-26
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2020 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+# as better rich history will be implelented in new release thid module needs to be removed
+if [[ ! $CLE_VER =~ Zodiac ]]; then
+	echo "Warning: mod-richpaste is only for Zodiac release"
+	echo "uninstall it using 'cle mod rm mod-richpaste' or 'rm $BASH_SOURCE'"
+	return
+fi
+
+## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
+##                   use Ctrl-X 1 or Alt-1 to paste the last command from the list
+hh () {
+	local OUTF BINDF DISP S A N
+	OUTF='_clehhout'
+	BINDF=$CLE_D/.hhbind
+	DISP=""
+	S=""
+	unset OPTIND
+	while getopts "mdtsncfl" O;do
+		case $O in
+		m)	## `hh -m`           - my commands, exclude other users
+			S=$S" -e'/.*;$CLE_USER/!d'";;
+		d)	## `hh -d`           - today's commands
+			S=$S" -e '/^$(date "+%F") /!d'";;
+		t)	## `hh -t`           - commands from current session
+			S=$S" -e '/.*;$CLE_USER-$$;.*/!d'";;
+		s)	## `hh -s`           - select successful commands only
+			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
+		n)	## `hh -n`           - narrow output, hide time and session id
+			OUTF='_clehhout n';;
+		c)	## `hh -c`           - show only commands
+			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;[^;]*;\(.*\)/\1/p' |uniq";;
+		f) 	## `hh -f`           - show working folder history
+			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;\([^;]*\);.*/\1/p' |sort|uniq";;
+		l)	## `hh -l`           - display using 'less'
+			DISP="|less -r +G";;
+		*)	cle help hh;return
+		esac
+	done
+	shift $((OPTIND-1))
+
+	#: number (default 100) or search string; sed-escape slashes to '\/'
+	A=${*:-100}
+	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
+
+	#: execute filter stream
+	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S} | $OUTF  $DISP"
+	echo "$_CN"
+	bind -f $BINDF
+}
+
+# rich history colorful output filter
+_clehhout () (
+	NRW=$1	#: narrow output; without timestamp and session id
+	set -f
+	while read -r L; do
+		#: it would be easier to use loop with `read DT SID SEC EC DIR CMD`
+		#: but some bash implementations remove IFS from CMD thus rendering
+		#: the command on the output incomplete. e.g. Fedora, Debian implementation
+		#: of bash keeps the separator while RHEL and Centos removes it. Grrrr...
+		IFS=';'
+		set -- $L
+		STAT=$4
+		case $STAT in
+		 0) CE=$_Cg; CC=$_CN;;
+		 [1-9]*) CE=$_Cr; CC=$_CN;;
+		 @) CE=$_Cc; CC=$_Cc;;
+		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
+		 *) CE=$_Cr; CC=$_Cr;;	# wrong record
+		esac
+		if [ $NRW ]; then
+			#: print less information (option -n)
+			printf " $CE%-9s $CC%-20s: $_CL" "$4" "$5"
+		else
+			#: print full record
+			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$1" "$2" "$3" "$4" "$5"
+		fi
+		#: print the unprocessed rest of the input - the command itself
+		shift 5
+		printf "%s\n" "$*"
+		[[ $STAT =~ ^[0-9] ]] && BUF="$*"
+	done
+	#: last command to bufer
+	echo "press Ctrl-X 1 or Alt-1 to paste command '$BUF'"
+	echo \"\\C-x\\C-x\": \"$BUF\" >$BINDF	# ctrl-X ctrl-X
+	echo \"\\C-x1\": \"$BUF\" >>$BINDF	# ctrl-X 1
+	echo \"\\e1\": \"$BUF\" >>$BINDF		# Meta-1
+	# Todo: Ringbuffer for more commands
+)
+
