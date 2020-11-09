@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-10-22 (Zodiac)
+#* version: 2020-11-04 (Zodiac)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2019 by Michael Arbet
+#* Copyright (C) 2016-2020 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -190,7 +190,8 @@ _H=$HOME
 [ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
 dbg_var HOME
 [ $CLE_USER ] || cd		#: just go home on new session
-CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC` #: regex cuts anything up to first DOTfolder
+dbg_var CLE_D
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
@@ -1178,7 +1179,7 @@ cle () {
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`

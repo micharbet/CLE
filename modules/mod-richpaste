@@ -1,7 +1,7 @@
 ##
-## ** mod-richpaste: Rich history viewer with paste buffers (experimental)
+## ** mod-richpaste: Rich history viewer with paste buffer (experimental)
 #
-#* version: 2020-10-26
+#* version: 2020-11-02
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -19,16 +19,22 @@ if [[ ! $CLE_VER =~ Zodiac ]]; then
 	return
 fi
 
+# init rich history buffer and shortcut keys
+declare -a _RHIBUF	#: array with last search
+_RHI=0			#: current index to history
+_RHIM=0			#: max index
+bind -x '"\e[1;5A": "_clerhup"'		#: Ctrl-UP/DOWN
+bind -x '"\e[1;5B": "_clerhdown"'
+# Ctrl-X Ctrl-H runs search based on curent line content
+bind -x '"\C-x\C-h": "hh \;$READLINE_LINE"'
+bind -x '"\C-x\C-b": "hh -b"'
+
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
-##                   use Ctrl-X 1 or Alt-1 to paste the last command from the list
+##                   use Ctrl-Up/Down to paste command found with the search
 hh () {
-	local OUTF BINDF DISP S A N
-	OUTF='_clehhout'
-	BINDF=$CLE_D/.hhbind
-	DISP=""
-	S=""
+	local OUTF LESS A S N
 	unset OPTIND
-	while getopts "mdtsncfl" O;do
+	while getopts "mdtsncflb" O; do
 		case $O in
 		m)	## `hh -m`           - my commands, exclude other users
 			S=$S" -e'/.*;$CLE_USER/!d'";;
@@ -39,32 +45,49 @@ hh () {
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
 		n)	## `hh -n`           - narrow output, hide time and session id
-			OUTF='_clehhout n';;
+			OUTF=n;;
 		c)	## `hh -c`           - show only commands
-			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;[^;]*;\(.*\)/\1/p' |uniq";;
+			OUTF=c;;
 		f) 	## `hh -f`           - show working folder history
-			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;\([^;]*\);.*/\1/p' |sort|uniq";;
+			OUTF=f;;
 		l)	## `hh -l`           - display using 'less'
-			DISP="|less -r +G";;
+			LESS="|less -r +G";;
+		b)	## `hh -b`           - show buffer with last search
+			N=0
+			while [ $N -lt $_RHIM ]; do
+				[ $N -eq $_RHI ] && A='*' || A=' ' #: mark current position in buffer
+				printf "$_CN$_C3$A%6d: $_CN$_C4%s\n" $N "${_RHIBUF[$N]}"
+				((N++))
+			done
+			echo "search: 'hh $_RHIARG'"
+			return;;
 		*)	cle help hh;return
 		esac
 	done
+
+	_RHIARG=$*
+	_RHI=0
+	_RHIBUF=()
 	shift $((OPTIND-1))
 
+	#
 	#: number (default 100) or search string; sed-escape slashes to '\/'
 	A=${*:-100}
 	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
 
 	#: execute filter stream
-	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S} | $OUTF  $DISP"
+	eval "{ _clehhout $OUTF $LESS; } <<<\$(tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S})"
 	echo "$_CN"
-	bind -f $BINDF
+	echo "  $_RHIM matches, use Ctrl-Up/Down to browse through commands found above"
 }
 
 # rich history colorful output filter
-_clehhout () (
-	NRW=$1	#: narrow output; without timestamp and session id
-	set -f
+_clehhout () {
+	local MOD=$1	#: output modifier
+	local IFS STAT CE CC FOLDS LAST
+	#: this caused a buggy behaviour when expanding e.g. $CLE_D/mod-*
+	#: now I'm not sure why the globbing was turned off by set -f - it could be removed later
+	#set -f   
 	while read -r L; do
 		#: it would be easier to use loop with `read DT SID SEC EC DIR CMD`
 		#: but some bash implementations remove IFS from CMD thus rendering
@@ -75,28 +98,53 @@ _clehhout () (
 		STAT=$4
 		case $STAT in
 		 0) CE=$_Cg; CC=$_CN;;
-		 [1-9]*) CE=$_Cr; CC=$_CN;;
 		 @) CE=$_Cc; CC=$_Cc;;
 		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
-		 *) CE=$_Cr; CC=$_Cr;;	# wrong record
+		 *) CE=$_Cr; CC=$_CN;;	# wrong record
 		esac
-		if [ $NRW ]; then
-			#: print less information (option -n)
+		
+		case "$MOD" in
+		n)	#: print less information (option -n)
 			printf " $CE%-9s $CC%-20s: $_CL" "$4" "$5"
-		else
-			#: print full record
+			shift 5
+			;;
+		f)	#: print folders (option -f)
+			set -- $5
+			[[ $FOLDS =~ :$1: ]] && continue #: collect unique folders
+			FOLDS=$FOLDS:$1:
+			;;
+		c)	#: print commands only (option -c)
+			shift 5
+			[[ $STAT =~ [^0-9\ ] || "$LAST" == "$*" ]] && continue	#: skip repeating commands
+			;;
+		*)	#: print full record
 			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$1" "$2" "$3" "$4" "$5"
-		fi
-		#: print the unprocessed rest of the input - the command itself
-		shift 5
+			shift 5
+		esac
+		#: now, thanks to `shift` ev. `set --` the  "$*" contains the string to print and add to buffer
 		printf "%s\n" "$*"
-		[[ $STAT =~ ^[0-9] ]] && BUF="$*"
+		if [[ $STAT =~ ^[0-9] && "$LAST" != "$*" ]]; then
+			_RHIBUF[$_RHI]="$*"
+			((_RHI++))
+			LAST="$*"
+		fi
 	done
-	#: last command to bufer
-	echo "press Ctrl-X 1 or Alt-1 to paste command '$BUF'"
-	echo \"\\C-x\\C-x\": \"$BUF\" >$BINDF	# ctrl-X ctrl-X
-	echo \"\\C-x1\": \"$BUF\" >>$BINDF	# ctrl-X 1
-	echo \"\\e1\": \"$BUF\" >>$BINDF		# Meta-1
-	# Todo: Ringbuffer for more commands
-)
+	_RHIM=$_RHI
+}
+
+# rich history ip/down shortcut routines
+_clerhup () {
+	[ $_RHI -le 0 ] && return
+	((_RHI--))
+	READLINE_LINE=${_RHIBUF[$_RHI]}
+	READLINE_POINT=${#READLINE_LINE}
+}
+
+_clerhdown () {
+	[ $_RHI -ge $_RHIM ] && return
+	((_RHI++))
+	READLINE_LINE=${_RHIBUF[$_RHI]}
+	READLINE_POINT=${#READLINE_LINE}
+}
+
 
