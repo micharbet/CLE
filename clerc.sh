@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-03-03 (Zodiac)
+#* version: 2020-11-04 (Zodiac)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2019 by Michael Arbet
+#* Copyright (C) 2016-2020 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -190,7 +190,8 @@ _H=$HOME
 [ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
 dbg_var HOME
 [ $CLE_USER ] || cd		#: just go home on new session
-CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC` #: regex cuts anything up to first DOTfolder
+dbg_var CLE_D
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
@@ -452,41 +453,64 @@ precmd () {
 	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
 	local IFS S DT C
 	unset IFS
-	[ $BASH ] && C=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` || C=`fc -lt ";$CLE_HTF;" -1`
-	C=${C#*;}	#: strip sequence number
+	if [ $BASH ]; then
+		C=$_HN	#: already prepared by _clepreex()
+		history -a	#: immediately record commands so they are available in new shell sessions
+	else
+		C=`fc -lt ";$CLE_HTF;" -1`	#: get recent command, strip sequence number
+		C=${C#*;}
+	fi
 	DT=${C/;*}	#: extract date
-	C=${C/$DT;}	#: extract command
+	C=${C/$DT;}	#: extract pure command
 	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
 	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 	if [[ $C =~ ^\# ]]; then
-		_clerh '#' "$PWD" "$C"
-	elif [ $_SST ]; then
-		S=$((SECONDS-${_SST:-$SECONDS}))
+		_clerh '#' "$PWD" "$C"	# record a note to history
+	elif [ $_HT ]; then	# check timer - indicator of executed command
+		S=$((SECONDS-${_HT:-$SECONDS}))
 		_clerh "$DT" $S "$_EC" "$PWD" "$C"
 		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
-		_SST=
+		_HT=
 	else
 		_CE=''
-		_EC=0 #: reset error code
+		_EC=0 #: reset error code so it doesn not disturb on other prompts
 	fi
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
 # run this function before the issued command
-#: This fuction is used within prompt calback. Read code efficiency note above!
+#: This fuction is used within prompt calback.
 preexec () {
-	_SST=$SECONDS #: start timer
-	echo -n $_CN  #: reset tty colors
+	dbg_print 'preexec()'
+	echo -n $_CN	#: reset tty colors
+	_HT=$SECONDS	#: star history timer $_HT
 }
+
+CLE_HTF='%F %T'
+HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exists
 
 # Bash hack
 #: Zsh supports preexec function naturaly. This is bash's workaround.
 #: This fuction is used within prompt calback. Read code efficiency note above!
+#: _HP and _HN - previous and next command taken from shell history are compared
+#: sequence number have to be cut out as they are not necessarily the same over sessions
+if [ $BASH ]; then
+	history -r $HISTFILE
+	_HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`	#: prepare history for comaprison
+	_HP=${_HP#*;}	#: strip sequence number
+	dbg_var _HP
 _clepreex () {
-	[ "$BASH_COMMAND" = $PROMPT_COMMAND ] && return
+	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
+	_HN=${_HN#*;}	#: strip sequence number
+	dbg_var _HP
+	dbg_var _HN
+	dbg_var BASH_COMMAND
+	[ "$_HP" = "$_HN" ] && return
+	_HP=$_HN
 	trap "" DEBUG
 	preexec "$BASH_COMMAND"
 }
+fi
 
 # rich history record
 #: This fuction is used within prompt calback. Read code efficiency note above!
@@ -609,9 +633,6 @@ aa () {
 ##
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
-CLE_HTF='%F %T'
-HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exists
-
 h () (
 	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
@@ -646,9 +667,9 @@ hh () (
 	done
 	shift $((OPTIND-1))
 
-	#: number (default 100) or search string
+	#: number (default 100) or search string; sed-escape slashes to '\/'
 	A=${*:-100}
-	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/$A/!d'"
+	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
 
 	#: execute filter stream
 	dbg_print hh: eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S} | $OUTF  $DISP"
@@ -1158,7 +1179,7 @@ cle () {
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/[\t ]## *\`*$1|^## *\`*$1/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`
