@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-11-04 (Zodiac)
+#* version: 2020-12-01 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -171,7 +171,7 @@ _N=`hostname`
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Zodiac
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/dev #: LATER REPLACE WITH 'Aquarius'
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_VER="$CLE_VER debug"			# dbg
 
