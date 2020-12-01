@@ -501,12 +501,22 @@ h () (
 	done;) 
 )
 
-## `hh [opt] [srch]` - rich history viewer
-hh () (
-	OUTF='_clehhout'
-	DISP=""
-	S=""
-	while getopts "mdtsncfl" O;do
+# init rich history buffer and shortcut keys
+declare -a _RHIBUF
+_RHI=0
+_RHIM=0
+bind -x '"\e[1;5A": "_clerhup"'
+bind -x '"\e[1;5B": "_clerhdown"'
+# Ctrl-X Ctrl-H runs search based on curent line content
+bind -x '"\C-x\C-h": "hh \;$READLINE_LINE"'
+bind -x '"\C-x\C-b": "hh -b"'
+
+## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
+##                   use Ctrl-Up/Down to paste command found with the search
+hh () {
+	local OUTF LESS A S N
+	unset OPTIND
+	while getopts "mdtsncflb" O; do
 		case $O in
 		m)	## `hh -m`           - my commands, exclude other users
 			S=$S" -e'/.*;$CLE_USER/!d'";;
@@ -517,46 +527,99 @@ hh () (
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
 		n)	## `hh -n`           - narrow output, hide time and session id
-			OUTF='_clehhout n';;
+			OUTF=n;;
 		c)	## `hh -c`           - show only commands
-			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;[^;]*;\(.*\)/\1/p' |uniq";;
+			OUTF=c;;
 		f) 	## `hh -f`           - show working folder history
-			OUTF="sed -n 's/^[^;]*;[^;]*;[^;]*;[0-9]*;\([^;]*\);.*/\1/p' |sort|uniq";;
+			OUTF=f;;
 		l)	## `hh -l`           - display using 'less'
-			DISP="|less -r +G";;
+			LESS="|less -r +G";;
+		b)	## `hh -b`           - show buffer with last search
+			N=0
+			while [ $N -lt $_RHIM ]; do
+				[ $N -eq $_RHI ] && A='*' || A=' '
+				printf "$_CN$_C3$A%6d: $_CN$_C4%s\n" $N "${_RHIBUF[$N]}"
+				((N++))
+			done
+			echo "search: 'hh $_RHIARG'"
+			return;;
 		*)	cle help hh;return
 		esac
 	done
+
+	_RHIARG=$*
+	_RHI=0
+	_RHIBUF=()
 	shift $((OPTIND-1))
 
+	#
 	A=${*:-100}
 	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
 
-	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S} | $OUTF  $DISP"
-)
+	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/$CLE_USER-hh
+	_clehhout $OUTF $LESS </tmp/$CLE_USER-hh
+	echo "$_CN"
+	echo "  $_RHIM matches, use Ctrl-Up/Down to browse through commands found above"
+}
 
 # rich history colorful output filter
-_clehhout () (
-	NRW=$1
-	set -f
+_clehhout () {
+	local MOD=$1
+	local IFS STAT CE CC FOLDS LAST
+	#set -f   
 	while read -r L; do
 		IFS=';'
 		set -- $L
-		case $4 in
+		STAT=$4
+		case $STAT in
 		 0) CE=$_Cg; CC=$_CN;;
 		 @) CE=$_Cc; CC=$_Cc;;
 		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
-		 *) CE=$_Cr; CC=$_CN;;
+		 *) CE=$_Cr; CC=$_CN;;	# wrong record
 		esac
-		if [ $NRW ]; then
+		
+		case "$MOD" in
+		n)
 			printf " $CE%-9s $CC%-20s: $_CL" "$4" "$5"
-		else
+			shift 5
+			;;
+		f)
+			set -- $5
+			[[ $FOLDS =~ :$1: ]] && continue
+			FOLDS=$FOLDS:$1:
+			;;
+		c)
+			shift 5
+			[[ $STAT =~ [^0-9\ ] || "$LAST" == "$*" ]] && continue
+			;;
+		*)
 			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$1" "$2" "$3" "$4" "$5"
-		fi
-		shift 5
+			shift 5
+		esac
 		printf "%s\n" "$*"
+		if [[ $STAT =~ ^[0-9] && "$LAST" != "$*" ]]; then
+			_RHIBUF[$_RHI]="$*"
+			((_RHI++))
+			LAST="$*"
+		fi
 	done
-)
+	_RHIM=$_RHI
+}
+
+# rich history ip/down shortcut routines
+_clerhup () {
+	[ $_RHI -le 0 ] && return
+	((_RHI--))
+	READLINE_LINE=${_RHIBUF[$_RHI]}
+	READLINE_POINT=${#READLINE_LINE}
+}
+
+_clerhdown () {
+	[ $_RHI -ge $_RHIM ] && return
+	((_RHI++))
+	READLINE_LINE=${_RHIBUF[$_RHI]}
+	READLINE_POINT=${#READLINE_LINE}
+}
 
 # zsh hack to accept notes on cmdline
 [ $ZSH_NAME ] && '#' () { true; }
