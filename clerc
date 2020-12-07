@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-12-01 (Aquarius)
+#* version: 2020-12-07 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -112,8 +112,10 @@ _N=`hostname`
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/dev
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
+CLE_REL=`sed -n 's/.*(\(.*\)).*/\1/p' <<<$CLE_VER`
+CLE_REL=dev	# REMOVE THIS ON RELEASE!!!!!
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
 
 # current shell
 CLE_SH=`basename $BASH$ZSH_NAME`
@@ -399,7 +401,7 @@ _clerh () {
 	5)	DT=$1;SC=$2;shift;shift;;
 	esac
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	[[ $3 =~ $REX  || -n $_NORH ]] && unset _NORH && return
+	[[ $3 =~ $REX ]] && return
 	W=${2/$HOME/\~}
 	ID="$DT;$CLE_USER-$$"
 	REX='^\$[A-Za-z0-9_]+'
@@ -959,7 +961,7 @@ cle () {
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
 		P=$CLE_D/rc.new
-		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$P
+		curl -k ${CLE_SRC/CLE_REL/${1:-CLE_REL}}/clerc >$P
 		S=`sed -n 's/^#\* version: //p' $P`
 		[ "$S" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER

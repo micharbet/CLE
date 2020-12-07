@@ -2,6 +2,7 @@ README.md
 HOWTO.md
 TipsAndTweaks.md
 Modules.md
+ReleaseNotes.md
 FAQ.md
 ContributeAndFeedback.md
 Credits.md

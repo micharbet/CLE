@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-12-01 (Aquarius)
+#* version: 2020-12-07 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -171,9 +171,11 @@ _N=`hostname`
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
-CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/dev #: LATER REPLACE WITH 'Aquarius'
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
+CLE_REL=`sed -n 's/.*(\(.*\)).*/\1/p' <<<$CLE_VER`
+CLE_REL=dev					# REMOVE THIS ON RELEASE!!!!!
 CLE_VER="$CLE_VER debug"			# dbg
+CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
 
 # current shell
 CLE_SH=`basename $BASH$ZSH_NAME`
@@ -524,7 +526,7 @@ _clerh () {
 	esac
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	[[ $3 =~ $REX  || -n $_NORH ]] && unset _NORH && return
+	[[ $3 =~ $REX ]] && return
 	#: working dir (substitute home with ~)
 	W=${2/$HOME/\~}
 	#: create timestamp if missing
@@ -1195,7 +1197,7 @@ cle () {
 		P=$CLE_D/rc.new
 		#: update by default from the own branch
 		#: master brach or other can be specified in parameter
-		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$P
+		curl -k ${CLE_SRC/CLE_REL/${1:-CLE_REL}}/clerc >$P #: use different branch if specified
 		#: check correct download and its version
 		S=`sed -n 's/^#\* version: //p' $P`
 		[ "$S" ] || { echo "Download error"; return 1; }
