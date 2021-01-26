@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-12-07 (Aquarius)
+#* version: 2021-01-26 (Aquarius)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2020 by Michael Arbet
+#* Copyright (C) 2016-2021 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -484,7 +484,6 @@ precmd () {
 #: This fuction is used within prompt calback.
 preexec () {
 	dbg_print 'preexec()'
-	echo -n $_CN	#: reset tty colors
 	_HT=$SECONDS	#: star history timer $_HT
 }
 
@@ -507,6 +506,7 @@ _clepreex () {
 	dbg_var _HP
 	dbg_var _HN
 	dbg_var BASH_COMMAND
+	echo -n $_CN	#: reset tty colors
 	[ "$_HP" = "$_HN" ] && return
 	_HP=$_HN
 	trap "" DEBUG
@@ -647,9 +647,13 @@ _RHI=0			#: current index to history
 _RHIM=0			#: max index
 bind -x '"\e[1;5A": "_clerhup"'		#: Ctrl-UP/DOWN
 bind -x '"\e[1;5B": "_clerhdown"'
+bind -x '"\ek": "_clerhup"'		#: Ctrl-UP/DOWN
+bind -x '"\ej": "_clerhdown"'
 # Ctrl-X Ctrl-H runs search based on curent line content
 bind -x '"\C-x\C-h": "hh \;$READLINE_LINE"'
+bind -x '"\eh": "hh \;$READLINE_LINE"'
 bind -x '"\C-x\C-b": "hh -b"'
+bind -x '"\el": "hh -b"'
 
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
 ##                   use Ctrl-Up/Down to paste command found with the search

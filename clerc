@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-12-07 (Aquarius)
+#* version: 2021-01-26 (Aquarius)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2020 by Michael Arbet
+#* Copyright (C) 2016-2021 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -114,7 +114,7 @@ CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 # where in the deep space CLE grows
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_REL=`sed -n 's/.*(\(.*\)).*/\1/p' <<<$CLE_VER`
-CLE_REL=dev	# REMOVE THIS ON RELEASE!!!!!
+CLE_REL=dev					# REMOVE THIS ON RELEASE!!!!!
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
 
 # current shell
@@ -370,7 +370,6 @@ precmd () {
 
 # run this function before the issued command
 preexec () {
-	echo -n $_CN
 	_HT=$SECONDS
 }
 
@@ -385,6 +384,7 @@ if [ $BASH ]; then
 _clepreex () {
 	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HN=${_HN#*;}
+	echo -n $_CN
 	[ "$_HP" = "$_HN" ] && return
 	_HP=$_HN
 	trap "" DEBUG
@@ -509,9 +509,13 @@ _RHI=0
 _RHIM=0
 bind -x '"\e[1;5A": "_clerhup"'
 bind -x '"\e[1;5B": "_clerhdown"'
+bind -x '"\ek": "_clerhup"'
+bind -x '"\ej": "_clerhdown"'
 # Ctrl-X Ctrl-H runs search based on curent line content
 bind -x '"\C-x\C-h": "hh \;$READLINE_LINE"'
+bind -x '"\eh": "hh \;$READLINE_LINE"'
 bind -x '"\C-x\C-b": "hh -b"'
+bind -x '"\el": "hh -b"'
 
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
 ##                   use Ctrl-Up/Down to paste command found with the search
