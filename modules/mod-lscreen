@@ -32,7 +32,31 @@ lscreen () (
 		SCF=$CLE_D/screenrc
 		SN=$CLE_TTY-CLE.$NM
 		_clerh @ $CLE_TTY "screen -S $SN"
-		_clescrc >$SCF
+		# prepare own screenrc
+		#: This generates nice configuration file with cool features:
+		#:  - always visible status line with list of windows, hostname and clock
+		#:  - feature to quickly switch using Ctrl+Left/Right Arrows
+		#:  - reads good old $HOME/.screenrc
+		#: Own screenrc file is necessary because otherwise it wouldn't start CLE in
+		#: subsequent windows created with 'C-a C-c' (note the bind commands, above
+		#: mentioned features are cool but this part is the important one)
+		cat <<-EOS >$SCF
+			source $HOME/.screenrc
+			altscreen on
+			autodetach on
+			# enables shift-PgUp/PgDn
+			termcapinfo xterm* ti@:te@
+			# change window with ctrl-left/right
+			bindkey "^[[1;5D" prev
+			bindkey "^[[1;5C" next
+			defscrollback 9000
+			hardstatus alwayslastline
+			hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b Y}$CLE_SHN%{G} %c'
+			bind c screen $CLE_RC
+			bind ^c screen $CLE_RC
+			#: user's addition to the screenrc via the variable - set in tweak file
+			$CLE_SCRC
+		EOS
 		screen -c $SCF -S $SN $CLE_RC
 	else
 		#: is there only one such session or more?
@@ -50,32 +74,3 @@ lscreen () (
 		screen -x $SN
 	fi
 )
-
-# screenrc generator
-#: This generates nice configuration file with cool features:
-#:  - always visible status line with list of windows, hostname and clock
-#:  - feature to quickly switch using Ctrl+Left/Right Arrows
-#:  - reads good old $HOME/.screenrc
-#: Own screenrc file is necessary because otherwise it wouldn't start CLE in
-#: subsequent windows created with 'C-a C-c' (note the bind commands, above
-#: mentioned features are cool but this part is the important one)
-_clescrc () {
-cat <<-EOS
-	source $HOME/.screenrc
-	altscreen on
-	autodetach on
-	# enables shift-PgUp/PgDn
-	termcapinfo xterm* ti@:te@
-	# change window with ctrl-left/right
-	bindkey "^[[1;5D" prev
-	bindkey "^[[1;5C" next
-	defscrollback 9000
-	hardstatus alwayslastline
-	hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b Y}$CLE_SHN%{G} %c'
-	bind c screen $CLE_RC
-	bind ^c screen $CLE_RC
-EOS
-#: user's addition to the screenrc via the variable - set in tweak file
-cat <<<$CLE_SCRC
-}
-
