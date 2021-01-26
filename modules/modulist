@@ -2,6 +2,7 @@ mod-git:2019-03-12:fe120e9fb29e9bd2554f4869e1548ddd:GIT helpers / shorcuts
 mod-mancolor:2018-08-29:4cb76858862d9809fd7d5ecd821ded51:Colorize man pages
 mod-mosh:2019-11-16:992b3e33800b0b62934422d3566e2a42:Live session with `lmosh` command
 mod-fsps:2019-12-12:f02502403ca8c29a066ec6893667be39:Filesystem and processess utilities
+mod-lscreen:2021-01-26:fb15015b1cc05703d14bb42dbcde5b33:GNU screen wrapper
 cle-ed:2019-05-17:baf24c81a2cc27572803a84526c85eaf:Tweak and config editor
 cle-mod:2019-08-19:aeeac9f42ecc0768aadad29b24247cfd:CLE module management
 cle-prompt:2019-03-31:d27abf5272c54db1d6b8196c9b43884d:pre-configured prompt themes

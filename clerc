@@ -720,55 +720,6 @@ lksu () (
         ksu ${1:-root} -a -c "cd;$RH/$RC"
 )
 
-## `lscreen [name]`    - gnu screen wrapper, join your recent session or start new
-## `lscreen -j [name]` - join other screen sessions, ev. search by name
-lscreen () (
-	NM=$CLE_USER${1:+-$1}
-	[ "$1" = -j ] && NM=${2:-.}
-	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
-	NS=`wc -w <<<$SCRS`
-	if [ $NS = 0 ]; then
-		[ "$1" = -j ] && echo "No screen to join" && return 1
-		SCF=$CLE_D/screenrc
-		SN=$CLE_TTY-CLE.$NM
-		_clerh @ $CLE_TTY "screen -S $SN"
-		_clescrc >$SCF
-		screen -c $SCF -S $SN $CLE_RC
-	else
-		if [ $NS = 1 ]; then SN=$SCRS
-		else
-			printb "${_CU}Current '$NM' sessions:"
-			PS3="$_CL choose # to join: $_CN"
-			select SN in $SCRS;do
-				[ $SN ] && break
-			done
-		fi
-		_clerh @ $CLE_TTY "screen -x $SN"
-		screen -S $SN -X echo "$CLE_USER joining"
-		screen -x $SN
-	fi
-)
-
-# screenrc generator
-_clescrc () {
-cat <<-EOS
-	source $HOME/.screenrc
-	altscreen on
-	autodetach on
-	# enables shift-PgUp/PgDn
-	termcapinfo xterm* ti@:te@
-	# change window with ctrl-left/right
-	bindkey "^[[1;5D" prev
-	bindkey "^[[1;5C" next
-	defscrollback 9000
-	hardstatus alwayslastline
-	hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b Y}$CLE_SHN%{G} %c'
-	bind c screen $CLE_RC
-	bind ^c screen $CLE_RC
-EOS
-cat <<<$CLE_SCRC
-}
-
 
 
 # shorten hostname
