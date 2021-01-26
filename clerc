@@ -565,7 +565,7 @@ hh () {
 	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/$CLE_USER-hh
 	_clehhout $OUTF $LESS </tmp/$CLE_USER-hh
 	echo "$_CN"
-	echo "  $_RHIM matches, use Ctrl-Up/Down to browse through commands found above"
+	echo "  $_RHIM matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
 }
 
 # rich history colorful output filter
