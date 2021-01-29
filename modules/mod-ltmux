@@ -1,0 +1,32 @@
+##
+## ** mod-ltmux: tmux live session wrapper **
+#
+#* version: 2021-01-27
+#* author:  Michael Arbet (micharbet@gmail.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2021 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+# prepare user's configuration on workstation to transfer
+if [ -z "$CLE_WS" ]; then
+	cp $HOME/.tmux.conf $CLE_D/tmux.conf
+fi
+
+## `ltmux`     - live tmux session
+ltmux () (
+	CLE_TMUX=$CLE_D/tmux.cle
+	cat <<-EOT >$CLE_TMUX
+		source-file -q $CLE_TMUX-$CLE_WS
+		source-file -q /etc/tmux.conf
+		source-file -q $HOME/.tmux.conf
+		# set the command that will be run on creatin new window or pane
+		set -g default-command $CLE_RC
+	EOT
+	tmux -f $CLE_TMUX
+)
+
