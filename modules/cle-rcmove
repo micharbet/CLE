@@ -22,7 +22,7 @@ local BRC=$HOME/.bashrc
 local NEWRD
 
 # test if this is initial CLE session
-if [ -n "$CLE_WS" -o $CLE_RD != $CLE_D ]; then
+if [ -n "$CLE_WS" -o $CLE_DR != $CLE_D ]; then
 	echo "Moving CLE folder is meaningless on live sessions!"
 	return 1
 fi
@@ -42,7 +42,7 @@ $HOME)
 esac
 
 # Sanity checks
-if [ $CLE_RD = $NEWRD ]; then
+if [ $CLE_DR = $NEWRD ]; then
 	echo "Error: destination folder is the same as current"
 	return 1
 fi
@@ -54,8 +54,8 @@ if [ -e $NEWRD ]; then
 fi
 
 # Do it!
-ask "moving folder: $CLE_RD -> $NEWRD ?"
-mv $CLE_RD $NEWRD
+ask "moving folder: $CLE_DR -> $NEWRD ?"
+mv $CLE_DR $NEWRD
 
 # replace paths in .bashrc hook
 local NEWRC=$NEWRD/rc

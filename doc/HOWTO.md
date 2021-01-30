@@ -251,14 +251,14 @@ various destinations. Find more information in file 'TipsAndTweaks.md'.
 - `lssh [ssh-options] [account@]remote.host`
 This command is in fact an 'ssh' wrapper that packs the whole CLE - creates
 a copy of the rc file on a remote host and runs a bash session with the copied
-environment. A new folder ($CLE_RD) is created on the remote system with
+environment. A new folder ($CLE_DR) is created on the remote system with
 a resource file renamed to 'rc-$CLE_WS' plus local configuration. This folder
 is by default created in /var/tmp directory. Previously home dir was used.
 That would be natural way however, home might not necessarily exist - using
 the temporary folder ensures successful start also in this case. Next, local
 live session (e.g. lsudo) is initiated from the same files. Disabled read of
 home folder could prevent startup of CLE for other users.  By default
-the $CLE_RD is following: `/var/tmp/$USER/.cle-$CLE_USER`
+the $CLE_DR is following: `/var/tmp/$USER/.cle-$CLE_USER`
 
 
 - `lsu [account]`
@@ -510,7 +510,7 @@ descriptions:
 - `CLE_CF`    path to configuration file
 - `CLE_TW`    custom tweak file
 - `CLE_AL`    path to aliases store
-- `CLE_RD`    path to folder containing resource files
+- `CLE_DR`    path to folder containing resource files
 - `CLE_D`     path to _writable_ folder with configuration files
 - `CLE_WS`    workstation's hostname when running in live session
 - `CLE_CLR`   prompt color scheme

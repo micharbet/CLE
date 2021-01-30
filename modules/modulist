@@ -7,5 +7,5 @@ mod-lscreen:2021-01-26:0e961fb8aeb80fca088ce8e42a82dca1:GNU screen wrapper
 cle-ed:2019-05-17:baf24c81a2cc27572803a84526c85eaf:Tweak and config editor
 cle-mod:2019-08-19:aeeac9f42ecc0768aadad29b24247cfd:CLE module management
 cle-prompt:2019-03-31:d27abf5272c54db1d6b8196c9b43884d:pre-configured prompt themes
-cle-rcmove:2018-09-23:c00dc60dddf2366e64cf44b36b7e208d:Move resource files to different folder
+cle-rcmove:2018-09-23:7e0fd7ef0564a72b3e2dbfd15dcd6e0e:Move resource files to different folder
 cle-palette:2019-11-15:c2e35da133afb28dfccf71231a8bd92e:Color palettes for OSC4 capable terminals

@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-01-26 (Aquarius)
+#* version: 2021-01-30 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -141,19 +141,19 @@ unalias aa h hh .. ... 2>/dev/null
 # First run code
 if [[ $CLE_RC =~ clerc ]]; then
 	dbg_print First run
-	CLE_RD=$HOME/.cle-`whoami`
-	mkdir -m 755 -p $CLE_RD
-	CLE_1=$CLE_RD/rc1
+	CLE_DR=$HOME/.cle-`whoami`
+	mkdir -m 755 -p $CLE_DR
+	CLE_1=$CLE_DR/rc1
 	cp $CLE_RC $CLE_1
 	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
 fi
 
 # CLE_RC can be relative path, make it full
-CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
-CLE_RC=$CLE_RD/`basename $CLE_RC`
+CLE_DR=$(cd `dirname $CLE_RC`;pwd;)
+CLE_RC=$CLE_DR/`basename $CLE_RC`
 dbg_var CLE_RC
-dbg_var CLE_RD
+dbg_var CLE_DR
 
 # FQDN hack
 #: Find the longest - the most complete hostname string.
@@ -186,7 +186,7 @@ CLE_SH=`basename $BASH$ZSH_NAME`
 #: Note, Live sessions have their respurce files always in /var/tmp/$USER but
 #: this must not be writable in subsequent lsu/lsudo sessions.
 #:  $CLE_D   is path to writable folder for config, aliases and other runtime files
-#:  $CLE_RD  is path to folder containing startup resources
+#:  $CLE_DR  is path to folder containing startup resources
 _H=$HOME
 [ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
@@ -203,8 +203,8 @@ CLE_HIST=$_H/.clehistory
 _N=`sed 's:.*/rc1*::' <<<$CLE_RC` #: resource suffix contains workstation name
 dbg_print "_N should contain resource suffix. here it is: '$_N'"
 CLE_WS=${_N/-/}
-CLE_TW=$CLE_RD/tw$_N
-CLE_ENV=$CLE_RD/env$_N
+CLE_TW=$CLE_DR/tw$_N
+CLE_ENV=$CLE_DR/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
 
 # who I am
@@ -827,8 +827,8 @@ vdump () (
 #:  -pack the folder with tar, and store as base64 encoded string into $C64
 #: Always: prepare $RH and $RC for live session wrappers
 _clepak () {
-	RH=${CLE_RD/\/.*/}	#: resource home is path until first dot
-	RD=${CLE_RD/$RH\//}	#: relative path to resource directory
+	RH=${CLE_DR/\/.*/}	#: resource home is path until first dot
+	RD=${CLE_DR/$RH\//}	#: relative path to resource directory
 
 	if [ $CLE_WS ]; then
 		#: this is live session, all files *should* be available, just set vars
@@ -1168,7 +1168,7 @@ cle () {
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
 		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
+	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_DR: $CLE_DR; ls -l $CLE_DR;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	case $1 in									# dbg
 		"")	dbg_var CLE_DEBUG ;;							# dbg

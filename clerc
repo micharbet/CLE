@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-01-26 (Aquarius)
+#* version: 2021-01-30 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -93,17 +93,17 @@ unalias aa h hh .. ... 2>/dev/null
 
 # First run code
 if [[ $CLE_RC =~ clerc ]]; then
-	CLE_RD=$HOME/.cle-`whoami`
-	mkdir -m 755 -p $CLE_RD
-	CLE_1=$CLE_RD/rc1
+	CLE_DR=$HOME/.cle-`whoami`
+	mkdir -m 755 -p $CLE_DR
+	CLE_1=$CLE_DR/rc1
 	cp $CLE_RC $CLE_1
 	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
 fi
 
 # CLE_RC can be relative path, make it full
-CLE_RD=$(cd `dirname $CLE_RC`;pwd;)
-CLE_RC=$CLE_RD/`basename $CLE_RC`
+CLE_DR=$(cd `dirname $CLE_RC`;pwd;)
+CLE_RC=$CLE_DR/`basename $CLE_RC`
 
 # FQDN hack
 CLE_FHN=$HOSTNAME
@@ -134,8 +134,8 @@ CLE_AL=$CLE_D/al
 CLE_HIST=$_H/.clehistory
 _N=`sed 's:.*/rc1*::' <<<$CLE_RC`
 CLE_WS=${_N/-/}
-CLE_TW=$CLE_RD/tw$_N
-CLE_ENV=$CLE_RD/env$_N
+CLE_TW=$CLE_DR/tw$_N
+CLE_ENV=$CLE_DR/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
 
 # who I am
@@ -665,8 +665,8 @@ vdump () (
 
 # Environment packer
 _clepak () {
-	RH=${CLE_RD/\/.*/}
-	RD=${CLE_RD/$RH\//}
+	RH=${CLE_DR/\/.*/}
+	RD=${CLE_DR/$RH\//}
 
 	if [ $CLE_WS ]; then
 		cd $RH
