@@ -1,7 +1,7 @@
 ##
 ## ** mod-ltmux: tmux live session wrapper **
 #
-#* version: 2021-01-27
+#* version: 2021-02-01
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -29,4 +29,7 @@ ltmux () (
 	EOT
 	tmux -f $CLE_TMUX
 )
+
+# Register ltmux for transfer to remote session
+CLE_XFUN="$CLE_XFUN ltmux"
 

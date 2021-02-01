@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-01-30 (Aquarius)
+#* version: 2021-02-01 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -206,6 +206,7 @@ CLE_WS=${_N/-/}
 CLE_TW=$CLE_DR/tw$_N
 CLE_ENV=$CLE_DR/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
+CLE_XFUN=	#: list of functions for transfer to remote session
 
 # who I am
 #: determine username that will be inherited over the all
@@ -854,6 +855,10 @@ _clepak () {
 		vdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN 2>/dev/null
+		#: Add selected functions to transfer
+		for XFUN in $CLE_XFUN; do
+			declare -f $XFUN >>$EN
+		done
 	fi
 	#: save the envrironment tarball into $C64 if required
 	#: Note: I've never owned this computer, I had Atari 800XL instead :-)

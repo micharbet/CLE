@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-01-30 (Aquarius)
+#* version: 2021-02-01 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -137,6 +137,7 @@ CLE_WS=${_N/-/}
 CLE_TW=$CLE_DR/tw$_N
 CLE_ENV=$CLE_DR/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
+CLE_XFUN=
 
 # who I am
 _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
@@ -685,6 +686,9 @@ _clepak () {
 		vdump "CLE_SRE|CLE_P..|^_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
 		cat $CLE_AL >>$EN 2>/dev/null
+		for XFUN in $CLE_XFUN; do
+			declare -f $XFUN >>$EN
+		done
 	fi
 	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
 }

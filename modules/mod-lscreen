@@ -1,7 +1,7 @@
 ##
 ## ** mod-lscreen: GNU screen wrapper **
 #
-#* version: 2021-01-26
+#* version: 2021-02-01
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -74,3 +74,7 @@ lscreen () (
 		screen -x $SN
 	fi
 )
+
+# register lscreen function for transfer to remote sessions
+CLE_XFUN="$CLE_XFUN lscreen"
+
