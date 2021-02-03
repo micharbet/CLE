@@ -176,6 +176,13 @@ Try for example this:
    output of `cle help` and `cle help myfun`
 6. enjoy and tweak more!
 
+You may also alter values of internal variables. E.g you want to highlight 
+word 'prod' in shortened hostname, then try following
+```
+   CLE_SHN=${CLE_SHN/prod/PROD}
+```
+Or use s`sed` utility for more sophisticated substitutions
+
 
 
 ### Suppress /etc/motd (variable CLE_MOTD)

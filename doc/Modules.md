@@ -161,6 +161,39 @@ Template of module. Not available directly with, `cle mod` command. Find it
 in github repository and  use how as an base of your own additions. Read next
 (to be written) chapter.
 
+### mod-lscreen
+Implements GNU screen wrapper. When installed use following command:
+ `lscreen [-j] [session_name]`
+GNU screen requires this wrappaer mainly on remote sessions, where CLE is not
+deployed and hooked into .bashrc. As an added value screen is started with
+the customized configuration file $CLE_D/screenrc. This configuration contains
+a fancy status line with a list of currently running screens and allows you to
+switch between them with simple shortcuts such as Ctrl-Left/Right arrow.
+
+GNU screen is often used to detach running session, when you disconnect from
+network and reattach the same session later - leaving running tasks untouched.
+CLE's enhanced `lscreen` makes this easier. It first looks for the detached
+session and attach it if found.
+
+You can run more sessions - if you specify 'session_name' as an optional parameter
+the named session will be created (and might be joined later). The following is
+the screen naming convention:
+
+    $PID.$TTY-CLE.$CLE_USER[-session_name]
+      e.g. '2785.pty3-CLE.mich'
+      or   '2327.pty4-CLE.mich-research'
+
+Check all this with the standard command `screen -ls`
+
+Next, there is the option '-j'. Use this to search and join other users' sessions
+to cooperate in multi-admin environments. Optional parameter 'session_name' 
+narrows down searching through the list of all screens, not just those
+invoked with CLE. When '-j' is used, no new screen is started, instead there is an
+error message printed out if no session with the given name is found.
+
+### mod-ltmux
+Tmux wrapper implementation
+TBD
 
 ## 6. How to write your own cool stuff
 (This section needs to be written)

@@ -102,7 +102,6 @@ In such case two sets of shell defining items will appear in configuration.
 
    ^h ... shortened hostname, removed toplevel and subdomain, retaining other
           levels. E.g. six1.lab.brq.redhat.com would appear 'six1.lab.brq'
-          (refer to hostname shortening and $CLE_SRE for more options)
 
    ^H ... full host name - the value of $CLE_FHN. Ideally should be FQDN but
           it depends on system configuration. CLE makes best effort to obtain
@@ -242,7 +241,7 @@ strings on live sessions. Use `cle p...` to override strings locally.
 The tweak file ($CLE_TW) worths separate document as it is a very powerful
 feature allowing you to customize the environment with your own script.
 The tweak file is one for all sessions but can contain specific parts for
-various destinations. Find more information in file 'TipsAndTweaks.md'.
+various destinations. Find more information in file _TipsAndTweaks.md_.
 
 
 
@@ -268,34 +267,16 @@ Those are wrappers to su/sudo/ksu commands. Use the appropriate one to switch
 user context for your particular purpose. CLE is started from temporary folder
 as discussed in paragraph above.
 
+Unfortunately neither GNU `screen` nor `tmux` work optimaly with CLE. This is
+due to fact that they are following login procedure which means:
+- on workstation with deployed environment the CLE is started, which is ok
+- on live remote sessions where CLE is typically not deployed, only regular
+  shell session is started
 
-- `lscreen [-j] [session_name]`
-GNU screen requires this wrappaer mainly on remote sessions, where CLE is not
-deployed and hooked into .bashrc. As an added value screen is started with
-the customized configuration file $CLE_D/screenrc. This configuration contains
-a fancy status line with a list of currently running screens and allows you to
-switch between them with simple shortcuts such as Ctrl-Left/Right arrow.
-
-GNU screen is often used to detach running session, when you disconnect from
-network and reattach the same session later - leaving running tasks untouched.
-CLE's enhanced `lscreen` makes this easier. It first looks for the detached
-session and attach it if found.
-
-You can run more sessions - if you specify 'session_name' as an optional parameter
-the named session will be created (and might be joined later). The following is
-the screen naming convention:
-
-    $PID.$TTY-CLE.$CLE_USER[-session_name]
-      e.g. '2785.pty3-CLE.mich'
-      or   '2327.pty4-CLE.mich-research'
-
-Check all this with the standard command `screen -ls`
-
-Next, there is the option '-j'. Use this to search and join other users' sessions
-to cooperate in multi-admin environments. Optional parameter 'session_name' 
-narrows down searching through the list of all screens, not just those
-invoked with CLE. When '-j' is used, no new screen is started, instead there is an
-error message printed out if no session with the given name is found.
+Solution is to use wrappers `lscreen` eventually `ltmux` Both are however not
+included in basic resource. You might want to install their respective modules
+using `cle mod add lscreen` (or `cle mod add ltmux`) For more information about
+those modules use `cle doc` and read file _Modules.md_.
 
 
 ## 4. Alias management
@@ -531,7 +512,6 @@ descriptions:
 - `CLE_MOTD`  ensures displaying /etc/motd upon remote login
 - `CLE_HTF`   history time format
 - `CLE_ENV`   path to file with exported environment
-- `CLE_SCRC`  string to be added to generated screenrc
 - `CLE_SH`    name of current shell
 - `CLE_TTY`   terminal name
 
@@ -568,42 +548,27 @@ string **'mich'** will be extracted and stored in $CLE_USER. Such CLE ensures:
 3. accountability
 
 
-### $CLE_SHN, $CLE_SRE - hostname shortening
+### $CLE_SHN - shortened hostname
 
-Another thing that might seem strange: `$CLE_SHN` - what does 'shortened hostname'
-mean? For example, let's say you are working in a company 'example.com' where
-internal infrastructure contains subdomains such as:
+Another thing that might seem strange: `$CLE_SHN` - what does 'shortened
+hostname' mean? For example, let's say you are working in a company
+'example.com' where internal infrastructure contains subdomains such as:
 - prod.intranet.example.com 
 - stage.intranet.example.com
 - world.exapmle.com
-And then imagine there are hosts named 'mail' in all these domains.
-It is useful to see the FQDN in the prompt to be sure where exactly you're working,
-but the last two words - 'example.com' can be safely omitted in favor of the prompt
-string length and readability. This is exactly what `$CLE_SHN` will contain
-and what will appear in the prompt when you use `^h`:
-- mail.prod.intranet
-- mail.stage.intranet
-- mail.world
+And then imagine there are hosts named 'smtp' in all these domains. It is
+useful to see the FQDN in the prompt to be sure where exactly you're working,
+but the last two words - 'example.com' can be safely omitted in favor of
+the prompt string length and readability. This is exactly what `$CLE_SHN`
+contains and what will appear in the prompt when you use `^h`:
+- smtp.prod.intranet
+- smtp.stage.intranet
+- smtp.world
 
-In plain bash you can place '\h' (hostname only) or '\H' (FQDN) into the prompt.
-CLE introduces shortened hostname that keeps part of hostname. As said above it
-removes domain name by default. There is however option to change this behavior
-if you define variable `$CLE_SRE` in tweak file. This variable should contain
-correct regular expression that would be passed as an argument to `sed` utility.
-For example:
-- only topmost domain removal: `CLE_SRE='s/\.[^.]*$//'`
-- highlight (uppercase) the environment: `CLE_SRE='s/prod\|stage\|dev/\U&/'`
-- combination: `CLE_SRE="-e 's/\.[^.]*\.[^.]*$//' -e 's/prod\|stage\|dev/\U&/'"`
-Shorten hostnames to your taste! Just keep in mind you need to `cle restart`
-after defining the variable - preferrably in tweak file so it will be applied
-on remote sessions.
-
-To debug shortening regexp use following sequence with the same command as
-called from resource:
-```
-   CLE_SRE="-e 's/your/replace/'"
-   eval sed "$CLE_SRE" <<<$CLE_FHN
-```
+In bash you can place '\h' (hostname only) or '\H' (FQDN) into the prompt.
+CLE introduces shortened hostname that is in fact something in between.
+Note that user can further manipulate the CLE_SHN string in the tweak file,
+find more in document _TipsAndTweaks.md_.
 
 
 ### $CLE_AL and $CLE_ALW - two alias stores

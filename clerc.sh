@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-02-01 (Aquarius)
+#* version: 2021-02-02 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -159,6 +159,9 @@ dbg_var CLE_DR
 #: Find the longest - the most complete hostname string.
 #: Sometimes information from $HOSTNAME and command `hostname` differs.
 CLE_FHN=$HOSTNAME
+#: and prepare shortened hostname without top domain, keep other subdomains
+CLE_SHN=`eval sed 's:\.[^.]*\.[^.]*$::' <<<$CLE_FHN`
+
 _N=`hostname`
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
 #: hostname -f disabled because it requires working net & DNS!
@@ -851,7 +854,7 @@ _clepak () {
 		cp $CLE_TW $TW 2>/dev/null
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_SRE|CLE_P..|^_C." >>$EN
+		vdump "CLE_P..|^_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN 2>/dev/null
@@ -915,11 +918,6 @@ lksu () (
 
 #:------------------------------------------------------------:#
 #: all fuctions declared, startup continues
-
-# shorten hostname
-#: by default remove domain, leave subdomains
-#: eventually apply CLE_SRE as sed regexp for custom shortening
-CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 
 #: stop annoying zsh error when '*' doesn't match any file
 [ $ZSH_NAME ] && setopt +o NOMATCH

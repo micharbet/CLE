@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-02-01 (Aquarius)
+#* version: 2021-02-02 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -107,6 +107,8 @@ CLE_RC=$CLE_DR/`basename $CLE_RC`
 
 # FQDN hack
 CLE_FHN=$HOSTNAME
+CLE_SHN=`eval sed 's:\.[^.]*\.[^.]*$::' <<<$CLE_FHN`
+
 _N=`hostname`
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
@@ -683,7 +685,7 @@ _clepak () {
 		cp $CLE_RC $RC
 		cp $CLE_TW $TW 2>/dev/null
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_SRE|CLE_P..|^_C." >>$EN
+		vdump "CLE_P..|^_C." >>$EN
 		vdump "$CLE_EXP" >>$EN
 		cat $CLE_AL >>$EN 2>/dev/null
 		for XFUN in $CLE_XFUN; do
@@ -725,9 +727,6 @@ lksu () (
 )
 
 
-
-# shorten hostname
-CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
 
 [ $ZSH_NAME ] && setopt +o NOMATCH
 
