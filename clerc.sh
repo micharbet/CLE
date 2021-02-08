@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-02-02 (Aquarius)
+#* version: 2021-02-08 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -647,8 +647,8 @@ h () (
 
 # init rich history buffer and shortcut keys
 declare -a _RHIBUF	#: array with last search
-_RHI=0			#: current index to history
-_RHIM=0			#: max index
+_RHI=1			#: current index to history
+_RHLEN=0			#: max index
 bind -x '"\e[1;5A": "_clerhup"'		#: Ctrl-UP/DOWN
 bind -x '"\e[1;5B": "_clerhdown"'
 bind -x '"\ek": "_clerhup"'		#: Ctrl-UP/DOWN
@@ -683,21 +683,19 @@ hh () {
 		l)	## `hh -l`           - display using 'less'
 			LESS="|less -r +G";;
 		b)	## `hh -b`           - show buffer with last search
-			N=0
-			while [ $N -lt $_RHIM ]; do
+			N=$_RHLEN
+			while [ $N -gt 0 ]; do
 				[ $N -eq $_RHI ] && A='*' || A=' ' #: mark current position in buffer
-				printf "$_CN$_C3$A%6d: $_CN$_C4%s\n" $N "${_RHIBUF[$N]}"
-				((N++))
+				printf "$_CN$_C3$A%6d: $_CN$_C4%s\n" $N "${_RHBUF[$N]}"
+				((N--))
 			done
-			echo "search: 'hh $_RHIARG'"
+			echo "search: 'hh $_RHARG'"
 			return;;
 		*)	cle help hh;return
 		esac
 	done
 
-	_RHIARG=$*
-	_RHI=0
-	_RHIBUF=()
+	_RHARG=$*
 	shift $((OPTIND-1))
 
 	#
@@ -706,16 +704,20 @@ hh () {
 	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
 
 	#: execute filter stream
-	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/$CLE_USER-hh
-	_clehhout $OUTF $LESS </tmp/$CLE_USER-hh
+	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
+	_clehhout $OUTF $LESS </tmp/clehh-$$
+	rm /tmp/clehh-$$
 	echo "$_CN"
-	echo "  $_RHIM matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
+	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
 }
 
 # rich history colorful output filter
 _clehhout () {
 	local MOD=$1	#: output modifier
-	local IFS STAT CE CC FOLDS LAST
+	local IFS STAT CE CC FOLDS LAST RHI2
+	local _RHIBUF=()
+	local _RHLIST=""
+	_RHBUF=()
 	#: this caused a buggy behaviour when expanding e.g. $CLE_D/mod-*
 	#: now I'm not sure why the globbing was turned off by set -f - it could be removed later
 	#set -f   
@@ -760,21 +762,43 @@ _clehhout () {
 			LAST="$*"
 		fi
 	done
-	_RHIM=$_RHI
+
+	#: sort out the commands found - only unique occurences
+	#: ver1 - try to keep timeline and only the last occurence remains
+	_RHI=1
+	_RHI2=${#_RHIBUF[@]}
+	while [ $_RHI2 -gt 0 -a $_RHI -lt 100 ]; do
+		((_RHI2--))
+		_RHITEM=${_RHIBUF[$_RHI2]}
+		if [[ $_RHLIST =~ ::$_RHITEM:: ]]; then
+			: noop
+		else
+			_RHLIST="$_RHLIST::$_RHITEM::"
+			_RHBUF[$_RHI]=$_RHITEM
+			((_RHI++))
+		fi
+	done
+
+	#: result of this function are following shell variables:
+	#: _RHBUF - array of commands from history
+	#: _RHLEN - length of the array
+	#: _RHI   - current index to the array
+	_RHLEN=${#_RHBUF[@]}
+	_RHI=0
 }
 
 # rich history ip/down shortcut routines
-_clerhup () {
+_clerhdown () {
 	[ $_RHI -le 0 ] && return
 	((_RHI--))
-	READLINE_LINE=${_RHIBUF[$_RHI]}
+	READLINE_LINE=${_RHBUF[$_RHI]}
 	READLINE_POINT=${#READLINE_LINE}
 }
 
-_clerhdown () {
-	[ $_RHI -ge $_RHIM ] && return
+_clerhup () {
+	[ $_RHI -ge $_RHLEN ] && return
 	((_RHI++))
-	READLINE_LINE=${_RHIBUF[$_RHI]}
+	READLINE_LINE=${_RHBUF[$_RHI]}
 	READLINE_POINT=${#READLINE_LINE}
 }
 
