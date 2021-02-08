@@ -714,9 +714,8 @@ hh () {
 # rich history colorful output filter
 _clehhout () {
 	local MOD=$1	#: output modifier
-	local IFS STAT CE CC FOLDS LAST RHI2
+	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST
 	local _RHIBUF=()
-	local _RHLIST=""
 	_RHBUF=()
 	#: this caused a buggy behaviour when expanding e.g. $CLE_D/mod-*
 	#: now I'm not sure why the globbing was turned off by set -f - it could be removed later
@@ -766,15 +765,13 @@ _clehhout () {
 	#: sort out the commands found - only unique occurences
 	#: ver1 - try to keep timeline and only the last occurence remains
 	_RHI=1
-	_RHI2=${#_RHIBUF[@]}
-	while [ $_RHI2 -gt 0 -a $_RHI -lt 100 ]; do
-		((_RHI2--))
-		_RHITEM=${_RHIBUF[$_RHI2]}
-		if [[ $_RHLIST =~ ::$_RHITEM:: ]]; then
-			: noop
-		else
-			_RHLIST="$_RHLIST::$_RHITEM::"
-			_RHBUF[$_RHI]=$_RHITEM
+	RHI2=${#_RHIBUF[@]}
+	while [ $RHI2 -gt 0 -a $_RHI -lt 1000 ]; do
+		((RHI2--))
+		RHITEM=${_RHIBUF[$RHI2]}
+		if [[ ! $RHLIST =~ ::$RHITEM:: ]]; then
+			RHLIST="$RHLIST::$RHITEM::"
+			_RHBUF[$_RHI]=$RHITEM
 			((_RHI++))
 		fi
 	done
@@ -817,7 +814,7 @@ gitwb () (
 		cd ..
 	done
 	return 1  # not in git repository
-	)
+)
 
 
 ## `mdfilter`        - markdown acsii highlighter

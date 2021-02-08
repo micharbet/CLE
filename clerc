@@ -573,9 +573,8 @@ hh () {
 # rich history colorful output filter
 _clehhout () {
 	local MOD=$1
-	local IFS STAT CE CC FOLDS LAST RHI2
+	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST
 	local _RHIBUF=()
-	local _RHLIST=""
 	_RHBUF=()
 	#set -f   
 	while read -r L; do
@@ -616,15 +615,13 @@ _clehhout () {
 	done
 
 	_RHI=1
-	_RHI2=${#_RHIBUF[@]}
-	while [ $_RHI2 -gt 0 -a $_RHI -lt 100 ]; do
-		((_RHI2--))
-		_RHITEM=${_RHIBUF[$_RHI2]}
-		if [[ $_RHLIST =~ ::$_RHITEM:: ]]; then
-			: noop
-		else
-			_RHLIST="$_RHLIST::$_RHITEM::"
-			_RHBUF[$_RHI]=$_RHITEM
+	RHI2=${#_RHIBUF[@]}
+	while [ $RHI2 -gt 0 -a $_RHI -lt 1000 ]; do
+		((RHI2--))
+		RHITEM=${_RHIBUF[$RHI2]}
+		if [[ ! $RHLIST =~ ::$RHITEM:: ]]; then
+			RHLIST="$RHLIST::$RHITEM::"
+			_RHBUF[$_RHI]=$RHITEM
 			((_RHI++))
 		fi
 	done
@@ -661,7 +658,7 @@ gitwb () (
 		cd ..
 	done
 	return 1  # not in git repository
-	)
+)
 
 
 ## `mdfilter`        - markdown acsii highlighter
