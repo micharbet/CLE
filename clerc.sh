@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-02-08 (Aquarius)
+#* version: 2021-03-18 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -646,21 +646,15 @@ h () (
 )
 
 # init rich history buffer and shortcut keys
-declare -a _RHIBUF	#: array with last search
-_RHI=1			#: current index to history
-_RHLEN=0			#: max index
-bind -x '"\e[1;5A": "_clerhup"'		#: Ctrl-UP/DOWN
-bind -x '"\e[1;5B": "_clerhdown"'
-bind -x '"\ek": "_clerhup"'		#: Ctrl-UP/DOWN
-bind -x '"\ej": "_clerhdown"'
-# Ctrl-X Ctrl-H runs search based on curent line content
-bind -x '"\C-x\C-h": "hh \;$READLINE_LINE"'
-bind -x '"\eh": "hh \;$READLINE_LINE"'
-bind -x '"\C-x\C-b": "hh -b"'
-bind -x '"\el": "hh -b"'
+bind -x '"\ek": "_clerhup"'		#: Alt-K  up in rich history
+bind -x '"\ej": "_clerhdown"'		#: Alt-J  down in rich history
+bind -x '"\eh": "hh $READLINE_LINE"'	#: Alt-H  serach in rich history using content of command line
+bind -x '"\el": "hh -b"'		#: Alt-L  list commands from rich history buffer
 
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
 ##                   use Ctrl-Up/Down to paste command found with the search
+_RHI=0		#: current index to history
+_RHLEN=0	#: max index
 hh () {
 	local OUTF LESS A S N
 	unset OPTIND
@@ -706,7 +700,7 @@ hh () {
 	#: execute filter stream
 	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
 	_clehhout $OUTF $LESS </tmp/clehh-$$
-	rm /tmp/clehh-$$
+	rm -f /tmp/clehh-$$
 	echo "$_CN"
 	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
 }
@@ -876,7 +870,7 @@ _clepak () {
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
 		vdump "CLE_P..|^_C." >>$EN
-		vdump "$CLE_EXP" >>$EN
+		vdump "$CLE_XVARS" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN 2>/dev/null
 		#: Add selected functions to transfer

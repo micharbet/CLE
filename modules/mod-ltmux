@@ -14,7 +14,7 @@
 
 # prepare user's configuration on workstation to transfer
 if [ -z "$CLE_WS" ]; then
-	cp $HOME/.tmux.conf $CLE_D/tmux.conf
+	cp $HOME/.tmux.conf $CLE_D/tmux.conf 2>/dev/null
 fi
 
 ## `ltmux`     - live tmux session
@@ -32,4 +32,5 @@ ltmux () (
 
 # Register ltmux for transfer to remote session
 CLE_XFUN="$CLE_XFUN ltmux"
+CLE_XFILES="$CLE_XFILES tmux.conf"
 
