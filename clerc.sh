@@ -849,6 +849,7 @@ _clepak () {
 	RH=${CLE_DR/\/.*/}	#: resource home is path until first dot
 	RD=${CLE_DR/$RH\//}	#: relative path to resource directory
 
+	pushd . >/dev/null	#: keep curred working directory while using relative paths
 	if [ $CLE_WS ]; then
 		#: this is live session, all files *should* be available, just set vars
 		cd $RH
@@ -883,6 +884,7 @@ _clepak () {
 	#: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
 	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
 	#:             ^^^^ 'eval' required due to zsh.
+	popd >/dev/null
 }
 
 ## `lssh [usr@]host`   - access remote system and take CLE along

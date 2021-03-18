@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-02-08 (Aquarius)
+#* version: 2021-03-18 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -507,21 +507,15 @@ h () (
 )
 
 # init rich history buffer and shortcut keys
-declare -a _RHIBUF
-_RHI=1
-_RHLEN=0
-bind -x '"\e[1;5A": "_clerhup"'
-bind -x '"\e[1;5B": "_clerhdown"'
 bind -x '"\ek": "_clerhup"'
 bind -x '"\ej": "_clerhdown"'
-# Ctrl-X Ctrl-H runs search based on curent line content
-bind -x '"\C-x\C-h": "hh \;$READLINE_LINE"'
-bind -x '"\eh": "hh \;$READLINE_LINE"'
-bind -x '"\C-x\C-b": "hh -b"'
+bind -x '"\eh": "hh $READLINE_LINE"'
 bind -x '"\el": "hh -b"'
 
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
 ##                   use Ctrl-Up/Down to paste command found with the search
+_RHI=0
+_RHLEN=0
 hh () {
 	local OUTF LESS A S N
 	unset OPTIND
@@ -565,7 +559,7 @@ hh () {
 
 	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
 	_clehhout $OUTF $LESS </tmp/clehh-$$
-	rm /tmp/clehh-$$
+	rm -f /tmp/clehh-$$
 	echo "$_CN"
 	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
 }
@@ -686,6 +680,7 @@ _clepak () {
 	RH=${CLE_DR/\/.*/}
 	RD=${CLE_DR/$RH\//}
 
+	pushd . >/dev/null
 	if [ $CLE_WS ]; then
 		cd $RH
 		RC=${CLE_RC/$RH\//}
@@ -701,13 +696,14 @@ _clepak () {
 		cp $CLE_TW $TW 2>/dev/null
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
 		vdump "CLE_P..|^_C." >>$EN
-		vdump "$CLE_EXP" >>$EN
+		vdump "$CLE_XVARS" >>$EN
 		cat $CLE_AL >>$EN 2>/dev/null
 		for XFUN in $CLE_XFUN; do
 			declare -f $XFUN >>$EN
 		done
 	fi
 	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
+	popd >/dev/null
 }
 
 ## `lssh [usr@]host`   - access remote system and take CLE along
