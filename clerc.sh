@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-03-18 (Aquarius)
+#* version: 2021-03-22 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -620,7 +620,7 @@ aa () {
 	case "$1" in
 	"")	## `aa`         - show aliases
 		#: also make the output nicer and more easy to read
-		builtin alias $Z|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN\t\2/";;
+		builtin alias $Z|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN	\2/";;
 	-s)	## `aa -s`      - save aliases
 		builtin alias $Z >$CLE_AL;;
 	-e)	## `aa -e`      - edit aliases
