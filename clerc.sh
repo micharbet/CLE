@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-03-22 (Aquarius)
+#* version: 2021-03-23 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -615,19 +615,28 @@ cx () { cd $_XX; }
 ##
 ## ** Alias management **
 aa () {
-	local AED=$CLE_AL.ed
+	local ATMP=$CLE_AL.tmp
 	local Z=${ZSH_NAME:+-L}
 	case "$1" in
 	"")	## `aa`         - show aliases
 		#: also make the output nicer and more easy to read
 		builtin alias $Z|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN	\2/";;
 	-s)	## `aa -s`      - save aliases
-		builtin alias $Z >$CLE_AL;;
+		if [ $CLE_WS ]; then
+			#: keep only localy defined aliases on remote sessions
+			#: this allows cleanup - alias removed on workstation is not propagated
+			grep "^alias " $CLE_ENV >$ATMP
+			builtin alias $Z | diff - $ATMP | sed -n 's/^< \(.*\)/\1/p' >$CLE_AL
+			rm -f $ATMP
+		else
+			builtin alias $Z >$CLE_AL
+		fi;;
 	-e)	## `aa -e`      - edit aliases
-		builtin alias $Z >$AED
-		vi $AED
+		builtin alias $Z >$ATMP
+		vi $ATMP
 		[ $ZSH_NAME ] && builtin unalias -m '*' || builtin unalias -a
-		. $AED;;
+		. $ATMP
+		rm -f $ATMP;;
 	*=*)	## `aa a='b'`   - create new alias and save
 		builtin alias "$*"
 		aa -s;;
