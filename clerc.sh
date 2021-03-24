@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-03-23 (Aquarius)
+#* version: 2021-03-24 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -500,7 +500,7 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exi
 #: _HP and _HN - previous and next command taken from shell history are compared
 #: sequence number have to be cut out as they are not necessarily the same over sessions
 if [ $BASH ]; then
-	history -r $HISTFILE
+	history -cr $HISTFILE
 	_HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`	#: prepare history for comaprison
 	_HP=${_HP#*;}	#: strip sequence number
 	dbg_var _HP
@@ -667,7 +667,7 @@ _RHLEN=0	#: max index
 hh () {
 	local OUTF LESS A S N
 	unset OPTIND
-	while getopts "mdtsncflb" O; do
+	while getopts "mdtsncflbex" O; do
 		case $O in
 		m)	## `hh -m`           - my commands, exclude other users
 			S=$S" -e'/.*;$CLE_USER/!d'";;
@@ -684,6 +684,7 @@ hh () {
 		f) 	## `hh -f`           - show working folder history
 			OUTF=f;;
 		l)	## `hh -l`           - display using 'less'
+			# TODO: Fix passing through 'less'
 			LESS="|less -r +G";;
 		b)	## `hh -b`           - show buffer with last search
 			N=$_RHLEN
@@ -692,7 +693,15 @@ hh () {
 				printf "$_CN$_C3$A%6d: $_CN$_C4%s\n" $N "${_RHBUF[$N]}"
 				((N--))
 			done
-			echo "search: 'hh $_RHARG'"
+			echo "$_CN$_C3 cmd:$_CN$_C4 'hh $_RHARG'"
+			return;;
+		e)	## `hh -e`           - edit the rich history file
+			vi + $CLE_HIST
+			return;;
+		x)	## `hh -x`           - remove the most recent history record
+			# TODO: maybe some args, numbers, etc
+			sed -i '$ d' $CLE_HIST
+			[ $BASH ] && history -d -2	#: also from regular BASH (!) history
 			return;;
 		*)	cle help hh;return
 		esac
@@ -708,7 +717,7 @@ hh () {
 
 	#: execute filter stream
 	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
-	_clehhout $OUTF $LESS </tmp/clehh-$$
+	_clehhout $OUTF </tmp/clehh-$$
 	rm -f /tmp/clehh-$$
 	echo "$_CN"
 	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
