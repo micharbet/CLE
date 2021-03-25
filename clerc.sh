@@ -526,7 +526,7 @@ _clerh () {
 	case $# in
 	3)	DT=`date "+$CLE_HTF"`;SC='';;
 	4)	DT=`date "+$CLE_HTF"`;SC=$1;shift;;
-	5)	DT=$1;SC=$2;shift;shift;;
+	5)	DT=$1;SC=$2;shift 2;;
 	esac
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
@@ -654,19 +654,21 @@ h () (
 	done;) 
 )
 
+if [ $BASH ]; then #: this won't work in zsh
 # init rich history buffer and shortcut keys
 bind -x '"\ek": "_clerhup"'		#: Alt-K  up in rich history
 bind -x '"\ej": "_clerhdown"'		#: Alt-J  down in rich history
 bind -x '"\eh": "hh $READLINE_LINE"'	#: Alt-H  serach in rich history using content of command line
 bind -x '"\el": "hh -b"'		#: Alt-L  list commands from rich history buffer
+fi
 
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
 ##                   use Ctrl-Up/Down to paste command found with the search
-_RHI=0		#: current index to history
+_RHI=1		#: current index to history
 _RHLEN=0	#: max index
 hh () {
-	local OUTF LESS A S N
-	unset OPTIND
+	local MOD LESS A S N
+	local OPTIND
 	while getopts "mdtsncflbex" O; do
 		case $O in
 		m)	## `hh -m`           - my commands, exclude other users
@@ -678,13 +680,12 @@ hh () {
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
 		n)	## `hh -n`           - narrow output, hide time and session id
-			OUTF=n;;
+			MOD=n;;
 		c)	## `hh -c`           - show only commands
-			OUTF=c;;
+			MOD=c;;
 		f) 	## `hh -f`           - show working folder history
-			OUTF=f;;
+			MOD=f;;
 		l)	## `hh -l`           - display using 'less'
-			# TODO: Fix passing through 'less'
 			LESS="|less -r +G";;
 		b)	## `hh -b`           - show buffer with last search
 			N=$_RHLEN
@@ -708,6 +709,8 @@ hh () {
 	done
 
 	_RHARG=$*
+	dbg_var OPTIND
+	dbg_var S
 	shift $((OPTIND-1))
 
 	#
@@ -717,7 +720,7 @@ hh () {
 
 	#: execute filter stream
 	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
-	_clehhout $OUTF </tmp/clehh-$$
+	_clehhout /tmp/clehh-$$
 	rm -f /tmp/clehh-$$
 	echo "$_CN"
 	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
@@ -725,19 +728,19 @@ hh () {
 
 # rich history colorful output filter
 _clehhout () {
-	local MOD=$1	#: output modifier
-	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST
-	local _RHIBUF=()
+	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST L
+	local _RHIB=()
 	_RHBUF=()
 	#: this caused a buggy behaviour when expanding e.g. $CLE_D/mod-*
 	#: now I'm not sure why the globbing was turned off by set -f - it could be removed later
 	#set -f   
+	IFS=';'
 	while read -r L; do
+		dbg_var L
 		#: it would be easier to use loop with `read DT SID SEC EC DIR CMD`
 		#: but some bash implementations remove IFS from CMD thus rendering
 		#: the command on the output incomplete. e.g. Fedora, Debian implementation
 		#: of bash keeps the separator while RHEL and Centos removes it. Grrrr...
-		IFS=';'
 		set -- $L
 		STAT=$4
 		case $STAT in
@@ -766,21 +769,23 @@ _clehhout () {
 			shift 5
 		esac
 		#: now, thanks to `shift` ev. `set --` the  "$*" contains the string to print and add to buffer
-		printf "%s\n" "$*"
+		printf "%s\n" $*
 		if [[ $STAT =~ ^[0-9] && "$LAST" != "$*" ]]; then
-			_RHIBUF[$_RHI]="$*"
+			_RHIB[$_RHI]="$*"
 			((_RHI++))
 			LAST="$*"
 		fi
-	done
+	done <$1 >/tmp/clehhout-$$
+	eval cat /tmp/clehhout-$$ $LESS
+	rm -f /tmp/clehhout-$$
 
 	#: sort out the commands found - only unique occurences
 	#: ver1 - try to keep timeline and only the last occurence remains
 	_RHI=1
-	RHI2=${#_RHIBUF[@]}
+	RHI2=${#_RHIB[@]}
 	while [ $RHI2 -gt 0 -a $_RHI -lt 1000 ]; do
 		((RHI2--))
-		RHITEM=${_RHIBUF[$RHI2]}
+		RHITEM=${_RHIB[$RHI2]}
 		if [[ ! $RHLIST =~ ::$RHITEM:: ]]; then
 			RHLIST="$RHLIST::$RHITEM::"
 			_RHBUF[$_RHI]=$RHITEM

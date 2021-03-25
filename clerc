@@ -401,7 +401,7 @@ _clerh () {
 	case $# in
 	3)	DT=`date "+$CLE_HTF"`;SC='';;
 	4)	DT=`date "+$CLE_HTF"`;SC=$1;shift;;
-	5)	DT=$1;SC=$2;shift;shift;;
+	5)	DT=$1;SC=$2;shift 2;;
 	esac
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
 	[[ $3 =~ $REX ]] && return
@@ -513,19 +513,21 @@ h () (
 	done;) 
 )
 
+if [ $BASH ]; then
 # init rich history buffer and shortcut keys
 bind -x '"\ek": "_clerhup"'
 bind -x '"\ej": "_clerhdown"'
 bind -x '"\eh": "hh $READLINE_LINE"'
 bind -x '"\el": "hh -b"'
+fi
 
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
 ##                   use Ctrl-Up/Down to paste command found with the search
-_RHI=0
+_RHI=1
 _RHLEN=0
 hh () {
-	local OUTF LESS A S N
-	unset OPTIND
+	local MOD LESS A S N
+	local OPTIND
 	while getopts "mdtsncflbex" O; do
 		case $O in
 		m)	## `hh -m`           - my commands, exclude other users
@@ -537,13 +539,12 @@ hh () {
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
 		n)	## `hh -n`           - narrow output, hide time and session id
-			OUTF=n;;
+			MOD=n;;
 		c)	## `hh -c`           - show only commands
-			OUTF=c;;
+			MOD=c;;
 		f) 	## `hh -f`           - show working folder history
-			OUTF=f;;
+			MOD=f;;
 		l)	## `hh -l`           - display using 'less'
-			# TODO: Fix passing through 'less'
 			LESS="|less -r +G";;
 		b)	## `hh -b`           - show buffer with last search
 			N=$_RHLEN
@@ -574,7 +575,7 @@ hh () {
 	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
 
 	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
-	_clehhout $OUTF </tmp/clehh-$$
+	_clehhout /tmp/clehh-$$
 	rm -f /tmp/clehh-$$
 	echo "$_CN"
 	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
@@ -582,13 +583,12 @@ hh () {
 
 # rich history colorful output filter
 _clehhout () {
-	local MOD=$1
-	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST
-	local _RHIBUF=()
+	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST L
+	local _RHIB=()
 	_RHBUF=()
 	#set -f   
+	IFS=';'
 	while read -r L; do
-		IFS=';'
 		set -- $L
 		STAT=$4
 		case $STAT in
@@ -616,19 +616,21 @@ _clehhout () {
 			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$1" "$2" "$3" "$4" "$5"
 			shift 5
 		esac
-		printf "%s\n" "$*"
+		printf "%s\n" $*
 		if [[ $STAT =~ ^[0-9] && "$LAST" != "$*" ]]; then
-			_RHIBUF[$_RHI]="$*"
+			_RHIB[$_RHI]="$*"
 			((_RHI++))
 			LAST="$*"
 		fi
-	done
+	done <$1 >/tmp/clehhout-$$
+	eval cat /tmp/clehhout-$$ $LESS
+	rm -f /tmp/clehhout-$$
 
 	_RHI=1
-	RHI2=${#_RHIBUF[@]}
+	RHI2=${#_RHIB[@]}
 	while [ $RHI2 -gt 0 -a $_RHI -lt 1000 ]; do
 		((RHI2--))
-		RHITEM=${_RHIBUF[$RHI2]}
+		RHITEM=${_RHIB[$RHI2]}
 		if [[ ! $RHLIST =~ ::$RHITEM:: ]]; then
 			RHLIST="$RHLIST::$RHITEM::"
 			_RHBUF[$_RHI]=$RHITEM
