@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-03-24 (Aquarius)
+#* version: 2021-04-01 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -660,6 +660,7 @@ bind -x '"\ek": "_clerhup"'		#: Alt-K  up in rich history
 bind -x '"\ej": "_clerhdown"'		#: Alt-J  down in rich history
 bind -x '"\eh": "hh $READLINE_LINE"'	#: Alt-H  serach in rich history using content of command line
 bind -x '"\el": "hh -b"'		#: Alt-L  list commands from rich history buffer
+bind -x '"\em": "_clerhnum"'		#: Alt-M  get the item from history by it's number
 fi
 
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
@@ -814,6 +815,12 @@ _clerhup () {
 	((_RHI++))
 	READLINE_LINE=${_RHBUF[$_RHI]}
 	READLINE_POINT=${#READLINE_LINE}
+}
+
+_clerhnum () {
+	if [[ $READLINE_LINE =~ ^[0-9]+$ ]]; then
+		READLINE_LINE=${_RHBUF[$READLINE_LINE]} && READLINE_POINT=${#READLINE_LINE}
+	fi
 }
 
 # zsh hack to accept notes on cmdline
