@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-04-01 (Aquarius)
+#* version: 2021-04-06 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -658,9 +658,8 @@ if [ $BASH ]; then #: this won't work in zsh
 # init rich history buffer and shortcut keys
 bind -x '"\ek": "_clerhup"'		#: Alt-K  up in rich history
 bind -x '"\ej": "_clerhdown"'		#: Alt-J  down in rich history
-bind -x '"\eh": "hh $READLINE_LINE"'	#: Alt-H  serach in rich history using content of command line
-bind -x '"\el": "hh -b"'		#: Alt-L  list commands from rich history buffer
-bind -x '"\em": "_clerhnum"'		#: Alt-M  get the item from history by it's number
+bind -x '"\eh": "hh -b $READLINE_LINE"'	#: Alt-H  serach in rich history using content of command line
+bind -x '"\el": "_clerhbuf"'		#: Alt-L  list commands from rich history buffer
 fi
 
 ## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
@@ -668,7 +667,7 @@ fi
 _RHI=1		#: current index to history
 _RHLEN=0	#: max index
 hh () {
-	local MOD LESS A S N
+	local MOD OUTF A S N
 	local OPTIND
 	while getopts "mdtsncflbex" O; do
 		case $O in
@@ -682,21 +681,14 @@ hh () {
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
 		n)	## `hh -n`           - narrow output, hide time and session id
 			MOD=n;;
+		b)	## `hh -b`           - show numbered history buffer
+			OUTF="|_clerhbuf" ;;
 		c)	## `hh -c`           - show only commands
 			MOD=c;;
 		f) 	## `hh -f`           - show working folder history
 			MOD=f;;
 		l)	## `hh -l`           - display using 'less'
-			LESS="|less -r +G";;
-		b)	## `hh -b`           - show buffer with last search
-			N=$_RHLEN
-			while [ $N -gt 0 ]; do
-				[ $N -eq $_RHI ] && A='*' || A=' ' #: mark current position in buffer
-				printf "$_CN$_C3$A%6d: $_CN$_C4%s\n" $N "${_RHBUF[$N]}"
-				((N--))
-			done
-			echo "$_CN$_C3 cmd:$_CN$_C4 'hh $_RHARG'"
-			return;;
+			OUTF="|less -r +G";;
 		e)	## `hh -e`           - edit the rich history file
 			vi + $CLE_HIST
 			return;;
@@ -730,11 +722,9 @@ hh () {
 # rich history colorful output filter
 _clehhout () {
 	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST L
-	local _RHIB=()
+	local RHB2=()
+	RHI2=1
 	_RHBUF=()
-	#: this caused a buggy behaviour when expanding e.g. $CLE_D/mod-*
-	#: now I'm not sure why the globbing was turned off by set -f - it could be removed later
-	#set -f   
 	IFS=';'
 	while read -r L; do
 		dbg_var L
@@ -772,21 +762,18 @@ _clehhout () {
 		#: now, thanks to `shift` ev. `set --` the  "$*" contains the string to print and add to buffer
 		printf "%s\n" $*
 		if [[ $STAT =~ ^[0-9] && "$LAST" != "$*" ]]; then
-			_RHIB[$_RHI]="$*"
-			((_RHI++))
+			RHB2[$RHI2]="$*"
+			((RHI2++))
 			LAST="$*"
 		fi
 	done <$1 >/tmp/clehhout-$$
-	eval cat /tmp/clehhout-$$ $LESS
-	rm -f /tmp/clehhout-$$
 
 	#: sort out the commands found - only unique occurences
 	#: ver1 - try to keep timeline and only the last occurence remains
 	_RHI=1
-	RHI2=${#_RHIB[@]}
-	while [ $RHI2 -gt 0 -a $_RHI -lt 1000 ]; do
+	while [ $RHI2 -ge 1 -a $_RHI -lt 100 ]; do
 		((RHI2--))
-		RHITEM=${_RHIB[$RHI2]}
+		RHITEM=${RHB2[$RHI2]}
 		if [[ ! $RHLIST =~ ::$RHITEM:: ]]; then
 			RHLIST="$RHLIST::$RHITEM::"
 			_RHBUF[$_RHI]=$RHITEM
@@ -800,27 +787,35 @@ _clehhout () {
 	#: _RHI   - current index to the array
 	_RHLEN=${#_RHBUF[@]}
 	_RHI=0
+
+	eval cat /tmp/clehhout-$$ $OUTF
+	rm -f /tmp/clehhout-$$
 }
 
 # rich history ip/down shortcut routines
+#: if the current command line contains pure number, use it as an index to history buffer
 _clerhdown () {
-	[ $_RHI -le 0 ] && return
-	((_RHI--))
+	[[ $READLINE_LINE =~ ^[0-9]+$ ]] && _RHI=$READLINE_LINE || ((_RHI--))
+	[ $_RHI -lt 0 ] && _RHI=0
 	READLINE_LINE=${_RHBUF[$_RHI]}
 	READLINE_POINT=${#READLINE_LINE}
 }
 
 _clerhup () {
-	[ $_RHI -ge $_RHLEN ] && return
-	((_RHI++))
+	[[ $READLINE_LINE =~ ^[0-9]+$ ]] && _RHI=$READLINE_LINE || ((_RHI++))
+	[ $_RHI -gt $_RHLEN ] && _RHI=$_RHLEN
 	READLINE_LINE=${_RHBUF[$_RHI]}
 	READLINE_POINT=${#READLINE_LINE}
 }
 
-_clerhnum () {
-	if [[ $READLINE_LINE =~ ^[0-9]+$ ]]; then
-		READLINE_LINE=${_RHBUF[$READLINE_LINE]} && READLINE_POINT=${#READLINE_LINE}
-	fi
+_clerhbuf () {
+	local N=$_RHLEN
+	while [ $N -ge 1 ]; do
+		[ $N -eq $_RHI ] && A='*' || A=' ' #: mark current position in buffer
+		printf "$_CN$_CB$A%6d: $_CN$_C4%s\n" $N "${_RHBUF[$N]}"
+		((N--))
+	done
+	echo "$_CN$_C3 search:$_CN$_C4 'hh $_RHARG'"
 }
 
 # zsh hack to accept notes on cmdline
