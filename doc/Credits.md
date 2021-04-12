@@ -19,4 +19,5 @@
 - Alex Silva (alexsilv@redhat.com) had very inspiring comments and reported
   several bugs. He basically made me to remove a few tweaks that resulted
   in more useful, universal, yet less pushy environment.
+- Milan Siebenburger inspired me to continue working on better rich history
 

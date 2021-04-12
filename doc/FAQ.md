@@ -5,10 +5,12 @@ This question must be answered in multiple parts:
 a) Truth is that the environment startup employs reading and executing of
 kilobytes of code. However on contemporary systems, the delay is virtually
 unnoticeable. Except really slow hardware (e.g. Raspbeery Pi 1)
-b) Here it worths to mention that there are routines executed upon every
+b) after startup the overhead is almost none, comparable with any tweak you
+used to have in .bashrc. No daemon is running in background.
+c) Here it worths to mention that there are routines executed upon every
 prompt string. However they are composed exclusively of shell internal
 functions resulting in fast code even on mentioned raspberry!
-c) The code and tweaks are copied to the destination host. Files are packed
+d) The code and tweaks are copied to the destination host. Files are packed
 with tar, gzipped and pushed over ssh connection. Here the delay caused by
 additional data transfer may be measured but in practice it is hard to spot
 on fast networks. Even oversea connection is initiated sooner than you may
@@ -52,7 +54,7 @@ on ksh compatibility if this proves viable.
 
 
 ## Can I start live session with `mosh` ?
-Not yet, but the functionality is in development
+Yes, install module mod-mosh and use command `lmosh`
 
 
 ## Why CLE doesn't always run in 'screen'?
@@ -74,5 +76,4 @@ and to calculate elapsed time.
 ## `lsu` on debian based systems starts shell without controlling terminal. Why?
 This is a feature of the `su` command there - it detaches terminal from process
 Check `man su` on debian. And use `lsudo` instead.
-
 

@@ -98,15 +98,15 @@ In such case two sets of shell defining items will appear in configuration.
   can be backslash escapes described in `man bash` like e.g. \w, \u, \A, etc
   and following percent enhancements defined in CLE:
 
+   ^g ... git working branch
+
    ^h ... shortened hostname, removed toplevel and subdomain, retaining other
           levels. E.g. six1.lab.brq.redhat.com would appear 'six1.lab.brq'
           (refer to hostname shortening and $CLE_SRE for more options)
 
-   %H ... full host name - the value of $CLE_FHN. Ideally should be FQDN but
+   ^H ... full host name - the value of $CLE_FHN. Ideally should be FQDN but
           it depends on system configuration. CLE makes best effort to obtain
           all domain information and reconstruct the hostname.
-
-   ^H ... full host name
 
    ^i ... remote host IP
 
@@ -151,6 +151,8 @@ In such case two sets of shell defining items will appear in configuration.
           convenient. Note that the value alone can be displayed by placing simple
           '$VAR' into the string. Both ways are useful to watch a variable or
           to display any dynamic content.
+
+   ^^ ... the caret sign itself
 
   You may want to try e.g. following:
 ```
@@ -539,12 +541,12 @@ There are more variables that are named with leading underscore. They are used
 mainly internally, there's no need to access or change them unless you know
 exacly what to do.
 
-- _Cx         where x is any lettrer or number
+- `_Cx`         where x is any lettrer or number
               those variables define colors used in the environment
-- _PE, _Pe    those two contain start and end of ANSI esc sequence for prompt
+- `_PE, _Pe`    those two contain start and end of ANSI esc sequence for prompt
               This is important: color and other special sequences need to be
               enclosed so the shell can count the visible prompt characters.
-- _PN         newline sequence for ZSH
+- `_PN`         newline sequence for ZSH
 
 
 ### More details about some variables
