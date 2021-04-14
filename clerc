@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-04-12 (Aquarius)
+#* version: 2021-04-15 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -107,10 +107,10 @@ CLE_RC=$CLE_DR/`basename $CLE_RC`
 
 # FQDN hack
 CLE_FHN=$HOSTNAME
-CLE_SHN=`eval sed 's:\.[^.]*\.[^.]*$::' <<<$CLE_FHN`
-
 _N=`hostname`
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
+CLE_SHN=`sed 's:\.[^.]*\.[^.]*$::' <<<$CLE_FHN`
+
 CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 
 # where in the deep space CLE grows
@@ -697,33 +697,37 @@ vdump () (
 ## ** Live session wrappers **
 
 # Environment packer
+CLE_XFILES=
 _clepak () {
-	RH=${CLE_DR/\/.*/}
-	RD=${CLE_DR/$RH\//}
+        RH=${CLE_DR/\/.*/}
+        RD=${CLE_DR/$RH\//}
 
-	pushd . >/dev/null
-	if [ $CLE_WS ]; then
-		cd $RH
-		RC=${CLE_RC/$RH\//}
-		TW=${CLE_TW/$RH\//}
-		EN=${CLE_ENV/$RH\//}
-	else
-		RH=/var/tmp/$USER
-		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
-		RC=$RD/rc-$CLE_FHN
-		TW=$RD/tw-$CLE_FHN
-		EN=$RD/env-$CLE_FHN
-		cp $CLE_RC $RC
-		cp $CLE_TW $TW 2>/dev/null
-		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_P..|^_C." >>$EN
-		vdump "$CLE_XVARS" >>$EN
-		cat $CLE_AL >>$EN 2>/dev/null
-		for XFUN in $CLE_XFUN; do
-			declare -f $XFUN >>$EN
+
+        pushd . >/dev/null
+        if [ $CLE_WS ]; then
+                cd $RH
+                RC=${CLE_RC/$RH\//}
+                TW=${CLE_TW/$RH\//}
+                EN=${CLE_ENV/$RH\//}
+        else
+                RH=/var/tmp/$USER
+                mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
+                EN=$RD/env-$CLE_FHN
+		XF=$EN
+		for F in $CLE_XFILES tw rc; do
+			RC=$RD/$F-$CLE_FHN
+			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC"
 		done
-	fi
-	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
+
+                echo "# evironment $CLE_USER@$CLE_FHN" >$EN
+                vdump "CLE_P..|^_C." >>$EN
+                vdump "$CLE_XVARS" >>$EN
+                cat $CLE_AL >>$EN 2>/dev/null
+                for XFUN in $CLE_XFUN; do
+                        declare -f $XFUN >>$EN
+                done
+        fi
+        [ $1 ] && C64=`eval tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }
 

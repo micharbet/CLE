@@ -1,7 +1,7 @@
 ##
 ## ** mod-ltmux: tmux live session wrapper **
 #
-#* version: 2021-02-01
+#* version: 2021-04-15
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -14,23 +14,24 @@
 
 # prepare user's configuration on workstation to transfer
 if [ -z "$CLE_WS" ]; then
-	cp $HOME/.tmux.conf $CLE_D/tmux.conf 2>/dev/null
+	cp $HOME/.tmux.conf $CLE_D/tmuxcf 2>/dev/null && CLE_XFILES="$CLE_XFILES tmuxcf"
 fi
 
 ## `ltmux`     - live tmux session
 ltmux () (
-	CLE_TMUX=$CLE_D/tmux.cle
+	
+	CLE_TMUX=$CLE_D/tmuxcf-cle
 	cat <<-EOT >$CLE_TMUX
-		source-file -q $CLE_TMUX-$CLE_WS
+		# source all possible configurations
 		source-file -q /etc/tmux.conf
+		source-file -q $CLE_DR/tmuxcf${CLE_WS:+-$CLE_WS}
 		source-file -q $HOME/.tmux.conf
-		# set the command that will be run on creatin new window or pane
+		# set the command that will be run on creating new window or pane
 		set -g default-command $CLE_RC
 	EOT
-	tmux -f $CLE_TMUX
+	tmux -f $CLE_TMUX "$@"
 )
 
 # Register ltmux for transfer to remote session
 CLE_XFUN="$CLE_XFUN ltmux"
-CLE_XFILES="$CLE_XFILES tmux.conf"
 

@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-04-12 (Aquarius)
+#* version: 2021-04-15 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -158,15 +158,14 @@ dbg_var CLE_DR
 # FQDN hack
 #: Find the longest - the most complete hostname string.
 #: Sometimes information from $HOSTNAME and command `hostname` differs.
+#: also 'hostname -f' disabled because it requires working net & DNS!
+#:_N=`hostname -f 2>/dev/null`
 CLE_FHN=$HOSTNAME
-#: and prepare shortened hostname without top domain, keep other subdomains
-CLE_SHN=`eval sed 's:\.[^.]*\.[^.]*$::' <<<$CLE_FHN`
-
 _N=`hostname`
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
-#: hostname -f disabled because it requires working net & DNS!
-#:_N=`hostname -f 2>/dev/null`
-#:[ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
+#: and prepare shortened hostname without top domain, keep other subdomains
+CLE_SHN=`sed 's:\.[^.]*\.[^.]*$::' <<<$CLE_FHN`
+
 #: It is also difficult to get local IP addres. There is no simple
 #: and multiplattform way to get it. See commands: ip, ifconfig,
 #: hostname -i/-I, netstat...
@@ -487,7 +486,7 @@ precmd () {
 # run this function before the issued command
 #: This fuction is used within prompt calback.
 preexec () {
-	dbg_print 'preexec()'
+	#dbg_print 'preexec()'
 	_HT=$SECONDS	#: star history timer $_HT
 }
 
@@ -507,9 +506,9 @@ if [ $BASH ]; then
 _clepreex () {
 	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HN=${_HN#*;}	#: strip sequence number
-	dbg_var _HP
-	dbg_var _HN
-	dbg_var BASH_COMMAND
+	#dbg_var _HP
+	#dbg_var _HN
+	#dbg_var BASH_COMMAND
 	echo -n $_CN	#: reset tty colors
 	[ "$_HP" = "$_HN" ] && return
 	_HP=$_HN
@@ -870,44 +869,56 @@ vdump () (
 #: If required for remote session do following:
 #:  -pack the folder with tar, and store as base64 encoded string into $C64
 #: Always: prepare $RH and $RC for live session wrappers
+CLE_XFILES=
 _clepak () {
-	RH=${CLE_DR/\/.*/}	#: resource home is path until first dot
-	RD=${CLE_DR/$RH\//}	#: relative path to resource directory
+        RH=${CLE_DR/\/.*/}      #: resource home is path until first dot
+        RD=${CLE_DR/$RH\//}     #: relative path to resource directory
 
-	pushd . >/dev/null	#: keep curred working directory while using relative paths
-	if [ $CLE_WS ]; then
-		#: this is live session, all files *should* be available, just set vars
-		cd $RH
-		RC=${CLE_RC/$RH\//}
-		TW=${CLE_TW/$RH\//}
-		EN=${CLE_ENV/$RH\//}
-		dbg_print "_clepak: rc already there: $(ls -l $RC)"
-	else
-		#: live session is to be created - copy startup files
-		RH=/var/tmp/$USER
-		dbg_print "_clepak: preparing $RH/$RD"
-		#: by default prepare files in /var/tmp; fall back to the home dir
-		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
-		RC=$RD/rc-$CLE_FHN
-		TW=$RD/tw-$CLE_FHN
-		EN=$RD/env-$CLE_FHN
-		cp $CLE_RC $RC
-		cp $CLE_TW $TW 2>/dev/null
-		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
-		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_P..|^_C." >>$EN
-		vdump "$CLE_XVARS" >>$EN
-		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
-		cat $CLE_AL >>$EN 2>/dev/null
-		#: Add selected functions to transfer
-		for XFUN in $CLE_XFUN; do
-			declare -f $XFUN >>$EN
+	dbg_var  RH
+	dbg_var RD
+	dbg_var CLE_XFILES
+
+        pushd . >/dev/null      #: keep curred working directory while using relative paths
+        if [ $CLE_WS ]; then
+                #: this is live session, all files *should* be available, just set vars
+                cd $RH
+                RC=${CLE_RC/$RH\//}
+                TW=${CLE_TW/$RH\//}
+                EN=${CLE_ENV/$RH\//}
+                dbg_print "_clepak: rc already there: $(ls -l $RC)"
+        else
+                #: live session is to be created - copy startup files
+                RH=/var/tmp/$USER
+                dbg_print "_clepak: preparing $RH/$RD"
+                #: by default prepare files in /var/tmp; fall back to the home dir
+                mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
+                EN=$RD/env-$CLE_FHN
+		#: construct list of files to transfer
+		XF=$EN
+		for F in $CLE_XFILES tw rc; do
+			RC=$RD/$F-$CLE_FHN
+			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC" #: only existing items!
 		done
-	fi
-	#: save the envrironment tarball into $C64 if required
-	#: Note: I've never owned this computer, I had Atari 800XL instead :-)
-	#: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
-	[ $1 ] && C64=`eval tar chzf - $RC $TW $EN 2>/dev/null | base64 | tr -d '\n\r '`
+		#: side effect: $RC now contains relative path to clerc file
+		dbg_var XF
+		dbg_var RC
+
+                #: prepare environment to transfer: color table, prompt settings, WS name and custom exports
+                echo "# evironment $CLE_USER@$CLE_FHN" >$EN
+                vdump "CLE_P..|^_C." >>$EN
+                vdump "$CLE_XVARS" >>$EN
+                echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN                     # dbg
+                cat $CLE_AL >>$EN 2>/dev/null
+                #: Add selected functions to transfer
+                for XFUN in $CLE_XFUN; do
+                        declare -f $XFUN >>$EN
+                done
+        fi
+        #: save the envrironment tarball into $C64 if required
+        #: Note: I've never owned this computer, I had Atari 800XL instead :-)
+        #: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
+        dbg_var PWD
+        [ $1 ] && C64=`eval tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	#:             ^^^^ 'eval' required due to zsh.
 	popd >/dev/null
 }
