@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-04-15 (Aquarius)
+#* version: 2021-04-19 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -45,6 +45,7 @@ dbg_var () (								# dbg
 	eval "V=\$$1"							# dbg
 	[ $CLE_DEBUG ] && printf "DBG: %-16s = %s\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
+dbg_sleep () { sleep $*; }						# dbg
 dbg_print; dbg_print pid:$$						# dbg
 
 #:------------------------------------------------------------:#
@@ -666,9 +667,9 @@ fi
 _RHI=1		#: current index to history
 _RHLEN=0	#: max index
 hh () {
-	local MOD OUTF A S N
+	local MOD OUTF S N
 	local OPTIND
-	while getopts "mdtsncflbex" O; do
+	while getopts "mdtwsncflbex" O; do
 		case $O in
 		m)	## `hh -m`           - my commands, exclude other users
 			S=$S" -e'/.*;$CLE_USER/!d'";;
@@ -676,6 +677,9 @@ hh () {
 			S=$S" -e '/^$(date "+%F") /!d'";;
 		t)	## `hh -t`           - commands from current session
 			S=$S" -e '/.*;$CLE_USER-$$;.*/!d'";;
+		w)	## `hh -w`           - search for commands issued from current working directory`
+			N=${PWD/$HOME/\~}
+			S=$S" -e '/.*;${N//\//\\/};/!d'";;
 		s)	## `hh -s`           - select successful commands only
 			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
 		n)	## `hh -n`           - narrow output, hide time and session id
@@ -702,20 +706,28 @@ hh () {
 
 	_RHARG=$*
 	dbg_var OPTIND
-	dbg_var S
 	shift $((OPTIND-1))
 
-	#
-	#: number (default 100) or search string; sed-escape slashes to '\/'
-	A=${*:-100}
-	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
+	N=+1	#: everything. 'tail -n +1' works like 'cat'
+	if [ $* ]; then
+		#: select either number of records or search string
+		#: replace slashes wit bsckslash-slash for sed with this nice pattern
+		[[ $* =~ ^[0-9]+$ ]] && N=$* || S=$S" -e '/${*//\//\\/}/!d'"
+	else
+		#: fallback to 100 records if there is no search expression
+		[ "$S" ] || N=100
+	fi
+
+	dbg_var N
+	dbg_var S
+	dbg_sleep 3
 
 	#: execute filter stream
-	eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
+	eval "tail -n $N $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
 	_clehhout /tmp/clehh-$$
 	rm -f /tmp/clehh-$$
-	echo "$_CN"
-	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
+#: XXX	echo "$_CN"
+#: XXX	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
 }
 
 # rich history colorful output filter
@@ -808,13 +820,13 @@ _clerhup () {
 }
 
 _clerhbuf () {
-	local N=$_RHLEN
+	local A N=$_RHLEN
 	while [ $N -ge 1 ]; do
 		[ $N -eq $_RHI ] && A='*' || A=' ' #: mark current position in buffer
 		printf "$_CN$_CB$A%6d: $_CN$_C4%s\n" $N "${_RHBUF[$N]}"
 		((N--))
 	done
-	echo "$_CN$_C3 search:$_CN$_C4 'hh $_RHARG'"
+	echo "$_CN$_C3 $_RHLEN records, search:$_CN$_C4 'hh $_RHARG'"
 }
 
 # zsh hack to accept notes on cmdline
