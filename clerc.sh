@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-04-19 (Aquarius)
+#* version: 2021-04-28 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -45,7 +45,7 @@ dbg_var () (								# dbg
 	eval "V=\$$1"							# dbg
 	[ $CLE_DEBUG ] && printf "DBG: %-16s = %s\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
-dbg_sleep () { sleep $*; }						# dbg
+dbg_sleep () { [ $CLE_DEBUG ] && sleep $*; }						# dbg
 dbg_print; dbg_print pid:$$						# dbg
 
 #:------------------------------------------------------------:#
@@ -662,36 +662,36 @@ bind -x '"\eh": "hh -b $READLINE_LINE"'	#: Alt-H  serach in rich history using c
 bind -x '"\el": "_clerhbuf"'		#: Alt-L  list commands from rich history buffer
 fi
 
-## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
-##                   use Ctrl-Up/Down to paste command found with the search
+## `hh [opt] [srch]` - query the rich history
 _RHI=1		#: current index to history
 _RHLEN=0	#: max index
 hh () {
-	local MOD OUTF S N
-	local OPTIND
-	while getopts "mdtwsncflbex" O; do
+	local O S N OPTIND MOD OUT
+	while getopts "a:mtwsncflbex0123456789" O; do
 		case $O in
+		a)	## `hh -a string`    - search for any string in history
+			S=$S"&&/${OPTARG//\//\\/}/" ;;
 		m)	## `hh -m`           - my commands, exclude other users
-			S=$S" -e'/.*;$CLE_USER/!d'";;
-		d)	## `hh -d`           - today's commands
-			S=$S" -e '/^$(date "+%F") /!d'";;
+			S=$S"&& \$2~/$CLE_USER/";;
+		[0-9])	## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
+			S=$S"&& \$1~/$(date -d -${O}days '+%F')/";;
 		t)	## `hh -t`           - commands from current session
-			S=$S" -e '/.*;$CLE_USER-$$;.*/!d'";;
+			S=$S"&& \$2==\"$CLE_USER-$$\"";;
 		w)	## `hh -w`           - search for commands issued from current working directory`
 			N=${PWD/$HOME/\~}
-			S=$S" -e '/.*;${N//\//\\/};/!d'";;
+			S=$S"&& \$5==\"$N\"";;
 		s)	## `hh -s`           - select successful commands only
-			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
+			S=$S"&& \$4==0";;
 		n)	## `hh -n`           - narrow output, hide time and session id
 			MOD=n;;
-		b)	## `hh -b`           - show numbered history buffer
-			OUTF="|_clerhbuf" ;;
 		c)	## `hh -c`           - show only commands
 			MOD=c;;
 		f) 	## `hh -f`           - show working folder history
 			MOD=f;;
+		b)	## `hh -b`           - show unique commands in buffer
+			OUT='>/dev/null';;
 		l)	## `hh -l`           - display using 'less'
-			OUTF="|less -r +G";;
+			OUT='|less -r +G';;
 		e)	## `hh -e`           - edit the rich history file
 			vi + $CLE_HIST
 			return;;
@@ -708,102 +708,69 @@ hh () {
 	dbg_var OPTIND
 	shift $((OPTIND-1))
 
-	N=+1	#: everything. 'tail -n +1' works like 'cat'
+	N=+1	#: everything because 'tail -n +1' works like 'cat'
 	if [ $* ]; then
 		#: select either number of records or search string
 		#: replace slashes wit bsckslash-slash for sed with this nice pattern
-		[[ $* =~ ^[0-9]+$ ]] && N=$* || S=$S" -e '/${*//\//\\/}/!d'"
+		[[ $* =~ ^[0-9]+$ ]] && N=$* || S=$S"&& \$4~/[0..9 ]/ &&/.+;.+;.*;.*;.*;.*${*//\//\\/}/"
 	else
 		#: fallback to 100 records if there is no search expression
 		[ "$S" ] || N=100
 	fi
 
+	dbg_var OUT
 	dbg_var N
 	dbg_var S
 	dbg_sleep 3
+	#: AWK script to search and display in rich history file
+	local AW='BEGIN { FS=";" }
+	//'$S' {	#: search conditions will be added
+		#:     update colors according to exit status
+		CST=CE; CFL=CN; CCM=CL
+		if($4=="0") { CST=CO; CFL=CN; CCM=CL }
+		if($4=="#") { CST=CH; CFL=CH; CCM=CH }
+		if($4=="@") { CST=CS; CFL=CS; CCM=CS }
+		#:     real command can contain semicolon, grab the whole rest of line
+		CMD=substr($0,index($0,$6))
+		#:     output modifiers
+		if(MOD~"n") {
+			FORM=CST " %-9s" CFL " %-20s:" CCM " %s\n" CN
+			printf FORM,$4,$5,CMD
+		}
+		else if(MOD~"c") print CMD
+		else if(MOD~"f") CMD=$5
+		else {
+			FORM=CD "%s" CS " %-13s" CD " %5s" CST " %-5s" CFL " %-10s:" CCM " %s\n" CN
+			printf FORM,$1,$2,$3,$4,$5,CMD
+		}
+		if( $4~/^[0-9 ]+$/ ) CMDS[I++]=CMD
+	}
+	END {	#: now select only unique commands for rich history buffer
+		UNIQ="\n"
+		while(I-- && N<100 ) { #: maximum records
+			C=CMDS[I] "\n"
+			if( ! index(UNIQ,"\n" C) ) { UNIQ=UNIQ C; N++ }
+		}
+		print UNIQ >TREV
+	}'
 
 	#: execute filter stream
-	eval "tail -n $N $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
-	_clehhout /tmp/clehh-$$
-	rm -f /tmp/clehh-$$
-#: XXX	echo "$_CN"
-#: XXX	echo "  $_RHLEN unique matches, use Alt-K/J to browse through commands found above, ALT-L to show them again"
+	local TREV=`mktemp /tmp/clerh.XXXX`
+	eval tail -n $N $CLE_HIST \| awk -v CN='$_CN' -v CL='$_CL' -v CD='$_CB' -v CS='$_Cb' -v CO='$_Cg' -v CE='$_Cr' -v CH='$_Cy' -v MOD='$MOD' -v TREV=$TREV '"$AW"' $OUT
+
+	#: fill the rich history buffer
+	_RHBUF=() #: array of commands from history
+	_RHLEN=0 #: length of the array
+	_RHI=0 #: current index to the array
+	while read S; do
+		[ -n "$S" ] && _RHBUF[$((++_RHLEN))]=$S
+	done <$TREV
+	dbg_var _RHLEN
+	rm -f $TREV
+	[ "$OUT" = '>/dev/null' -o "$MOD" = f ] && _clerhbuf
 }
 
-# rich history colorful output filter
-_clehhout () {
-	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST L
-	local RHB2=()
-	RHI2=1
-	_RHBUF=()
-	IFS=';'
-	while read -r L; do
-		dbg_var L
-		#: it would be easier to use loop with `read DT SID SEC EC DIR CMD`
-		#: but some bash implementations remove IFS from CMD thus rendering
-		#: the command on the output incomplete. e.g. Fedora, Debian implementation
-		#: of bash keeps the separator while RHEL and Centos removes it. Grrrr...
-		set -- $L
-		STAT=$4
-		case $STAT in
-		 0) CE=$_Cg; CC=$_CN;;
-		 @) CE=$_Cc; CC=$_Cc;;
-		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
-		 *) CE=$_Cr; CC=$_CN;;	# wrong record
-		esac
-		
-		case "$MOD" in
-		n)	#: print less information (option -n)
-			printf " $CE%-9s $CC%-20s: $_CL" "$4" "$5"
-			shift 5
-			;;
-		f)	#: print folders (option -f)
-			set -- $5
-			[[ $FOLDS =~ :$1: ]] && continue #: collect unique folders
-			FOLDS=$FOLDS:$1:
-			;;
-		c)	#: print commands only (option -c)
-			shift 5
-			[[ $STAT =~ [^0-9\ ] || "$LAST" == "$*" ]] && continue	#: skip repeating commands
-			;;
-		*)	#: print full record
-			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$1" "$2" "$3" "$4" "$5"
-			shift 5
-		esac
-		#: now, thanks to `shift` ev. `set --` the  "$*" contains the string to print and add to buffer
-		printf "%s\n" $*
-		if [[ $STAT =~ ^[0-9] && "$LAST" != "$*" ]]; then
-			RHB2[$RHI2]="$*"
-			((RHI2++))
-			LAST="$*"
-		fi
-	done <$1 >/tmp/clehhout-$$
-
-	#: sort out the commands found - only unique occurences
-	#: ver1 - try to keep timeline and only the last occurence remains
-	_RHI=1
-	while [ $RHI2 -ge 1 -a $_RHI -lt 100 ]; do
-		((RHI2--))
-		RHITEM=${RHB2[$RHI2]}
-		if [[ ! $RHLIST =~ ::$RHITEM:: ]]; then
-			RHLIST="$RHLIST::$RHITEM::"
-			_RHBUF[$_RHI]=$RHITEM
-			((_RHI++))
-		fi
-	done
-
-	#: result of this function are following shell variables:
-	#: _RHBUF - array of commands from history
-	#: _RHLEN - length of the array
-	#: _RHI   - current index to the array
-	_RHLEN=${#_RHBUF[@]}
-	_RHI=0
-
-	eval cat /tmp/clehhout-$$ $OUTF
-	rm -f /tmp/clehhout-$$
-}
-
-# rich history ip/down shortcut routines
+# rich history up/down shortcut routines
 #: if the current command line contains pure number, use it as an index to history buffer
 _clerhdown () {
 	[[ $READLINE_LINE =~ ^[0-9]+$ ]] && _RHI=$READLINE_LINE || ((_RHI--))
@@ -819,6 +786,7 @@ _clerhup () {
 	READLINE_POINT=${#READLINE_LINE}
 }
 
+#: print out the rich history buffer
 _clerhbuf () {
 	local A N=$_RHLEN
 	while [ $N -ge 1 ]; do

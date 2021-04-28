@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-04-19 (Aquarius)
+#* version: 2021-04-28 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -521,36 +521,36 @@ bind -x '"\eh": "hh -b $READLINE_LINE"'
 bind -x '"\el": "_clerhbuf"'
 fi
 
-## `hh [opt] [srch]` - NEW rich history viewer with paste buffers
-##                   use Ctrl-Up/Down to paste command found with the search
+## `hh [opt] [srch]` - query the rich history
 _RHI=1
 _RHLEN=0
 hh () {
-	local MOD OUTF S N
-	local OPTIND
-	while getopts "mdtwsncflbex" O; do
+	local O S N OPTIND MOD OUT
+	while getopts "a:mtwsncflbex0123456789" O; do
 		case $O in
+		a)	## `hh -a string`    - search for any string in history
+			S=$S"&&/${OPTARG//\//\\/}/" ;;
 		m)	## `hh -m`           - my commands, exclude other users
-			S=$S" -e'/.*;$CLE_USER/!d'";;
-		d)	## `hh -d`           - today's commands
-			S=$S" -e '/^$(date "+%F") /!d'";;
+			S=$S"&& \$2~/$CLE_USER/";;
+		[0-9])	## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
+			S=$S"&& \$1~/$(date -d -${O}days '+%F')/";;
 		t)	## `hh -t`           - commands from current session
-			S=$S" -e '/.*;$CLE_USER-$$;.*/!d'";;
+			S=$S"&& \$2==\"$CLE_USER-$$\"";;
 		w)	## `hh -w`           - search for commands issued from current working directory`
 			N=${PWD/$HOME/\~}
-			S=$S" -e '/.*;${N//\//\\/};/!d'";;
+			S=$S"&& \$5==\"$N\"";;
 		s)	## `hh -s`           - select successful commands only
-			S=$S" -e '/.*;.*;.*;0;.*/!d'";;
+			S=$S"&& \$4==0";;
 		n)	## `hh -n`           - narrow output, hide time and session id
 			MOD=n;;
-		b)	## `hh -b`           - show numbered history buffer
-			OUTF="|_clerhbuf" ;;
 		c)	## `hh -c`           - show only commands
 			MOD=c;;
 		f) 	## `hh -f`           - show working folder history
 			MOD=f;;
+		b)	## `hh -b`           - show unique commands in buffer
+			OUT='>/dev/null';;
 		l)	## `hh -l`           - display using 'less'
-			OUTF="|less -r +G";;
+			OUT='|less -r +G';;
 		e)	## `hh -e`           - edit the rich history file
 			vi + $CLE_HIST
 			return;;
@@ -568,79 +568,53 @@ hh () {
 
 	N=+1
 	if [ $* ]; then
-		[[ $* =~ ^[0-9]+$ ]] && N=$* || S=$S" -e '/${*//\//\\/}/!d'"
+		[[ $* =~ ^[0-9]+$ ]] && N=$* || S=$S"&& \$4~/[0..9 ]/ &&/.+;.+;.*;.*;.*;.*${*//\//\\/}/"
 	else
 		[ "$S" ] || N=100
 	fi
 
+	local AW='BEGIN { FS=";" }
+	//'$S' {
+		CST=CE; CFL=CN; CCM=CL
+		if($4=="0") { CST=CO; CFL=CN; CCM=CL }
+		if($4=="#") { CST=CH; CFL=CH; CCM=CH }
+		if($4=="@") { CST=CS; CFL=CS; CCM=CS }
+		CMD=substr($0,index($0,$6))
+		if(MOD~"n") {
+			FORM=CST " %-9s" CFL " %-20s:" CCM " %s\n" CN
+			printf FORM,$4,$5,CMD
+		}
+		else if(MOD~"c") print CMD
+		else if(MOD~"f") CMD=$5
+		else {
+			FORM=CD "%s" CS " %-13s" CD " %5s" CST " %-5s" CFL " %-10s:" CCM " %s\n" CN
+			printf FORM,$1,$2,$3,$4,$5,CMD
+		}
+		if( $4~/^[0-9 ]+$/ ) CMDS[I++]=CMD
+	}
+	END {
+		UNIQ="\n"
+		while(I-- && N<100 ) {
+			C=CMDS[I] "\n"
+			if( ! index(UNIQ,"\n" C) ) { UNIQ=UNIQ C; N++ }
+		}
+		print UNIQ >TREV
+	}'
 
-	eval "tail -n $N $CLE_HIST ${S:+|sed $S}" >/tmp/clehh-$$
-	_clehhout /tmp/clehh-$$
-	rm -f /tmp/clehh-$$
-}
+	local TREV=`mktemp /tmp/clerh.XXXX`
+	eval tail -n $N $CLE_HIST \| awk -v CN='$_CN' -v CL='$_CL' -v CD='$_CB' -v CS='$_Cb' -v CO='$_Cg' -v CE='$_Cr' -v CH='$_Cy' -v MOD='$MOD' -v TREV=$TREV '"$AW"' $OUT
 
-# rich history colorful output filter
-_clehhout () {
-	local IFS STAT CE CC FOLDS LAST RHI2 RHITEM RHLIST L
-	local RHB2=()
-	RHI2=1
 	_RHBUF=()
-	IFS=';'
-	while read -r L; do
-		set -- $L
-		STAT=$4
-		case $STAT in
-		 0) CE=$_Cg; CC=$_CN;;
-		 @) CE=$_Cc; CC=$_Cc;;
-		 '#'|$|'*') CE=$_CY; CC=$_Cy;;
-		 *) CE=$_Cr; CC=$_CN;;	# wrong record
-		esac
-		
-		case "$MOD" in
-		n)
-			printf " $CE%-9s $CC%-20s: $_CL" "$4" "$5"
-			shift 5
-			;;
-		f)
-			set -- $5
-			[[ $FOLDS =~ :$1: ]] && continue
-			FOLDS=$FOLDS:$1:
-			;;
-		c)
-			shift 5
-			[[ $STAT =~ [^0-9\ ] || "$LAST" == "$*" ]] && continue
-			;;
-		*)
-			printf "$_CB%s $_Cb%-13s $_CB%3s $CE%-5s $CC%-10s: $_CL" "$1" "$2" "$3" "$4" "$5"
-			shift 5
-		esac
-		printf "%s\n" $*
-		if [[ $STAT =~ ^[0-9] && "$LAST" != "$*" ]]; then
-			RHB2[$RHI2]="$*"
-			((RHI2++))
-			LAST="$*"
-		fi
-	done <$1 >/tmp/clehhout-$$
-
-	_RHI=1
-	while [ $RHI2 -ge 1 -a $_RHI -lt 100 ]; do
-		((RHI2--))
-		RHITEM=${RHB2[$RHI2]}
-		if [[ ! $RHLIST =~ ::$RHITEM:: ]]; then
-			RHLIST="$RHLIST::$RHITEM::"
-			_RHBUF[$_RHI]=$RHITEM
-			((_RHI++))
-		fi
-	done
-
-	_RHLEN=${#_RHBUF[@]}
+	_RHLEN=0
 	_RHI=0
-
-	eval cat /tmp/clehhout-$$ $OUTF
-	rm -f /tmp/clehhout-$$
+	while read S; do
+		[ -n "$S" ] && _RHBUF[$((++_RHLEN))]=$S
+	done <$TREV
+	rm -f $TREV
+	[ "$OUT" = '>/dev/null' -o "$MOD" = f ] && _clerhbuf
 }
 
-# rich history ip/down shortcut routines
+# rich history up/down shortcut routines
 _clerhdown () {
 	[[ $READLINE_LINE =~ ^[0-9]+$ ]] && _RHI=$READLINE_LINE || ((_RHI--))
 	[ $_RHI -lt 0 ] && _RHI=0
