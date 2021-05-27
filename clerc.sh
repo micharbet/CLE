@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-04-12 (Zodiac)
+#* version: 2020-11-04 (Zodiac)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2021 by Michael Arbet
+#* Copyright (C) 2016-2020 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -943,6 +943,27 @@ _cledefp
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 4. get values from config file
+# rewrite config of old CLE release					#: transition
+[ -f $CLE_D/cf -a ! -f $CLE_CF ] && cp $CLE_D/cf $CLE_CF		#: transition
+[ -r $CLE_CF ] && read _N <$CLE_CF || _N=Zodiac				#: transition
+[[ $_N =~ Zodiac ]] || {						#: transition
+	_O=$CLE_D/cf-old						#: transition
+	mv -f $CLE_CF $_O 2>/dev/null					#: transition
+	_R="s!^#.*!# $CLE_VER!"						#: transition
+	if [ $CLE_WS ]; then						#: transition
+		#: remove CLE_Px on remote sessions, ensure inheritance	#: transition
+		_R=$_R";/^CLE_P/d"					#: transition
+	else								#: transition
+		#: rename CLE_Px to $CLE_PBx on workstation		#: transition
+		_R=$_R";s/^CLE_P\(.\)='\(.*\)'/CLE_PB\1='\2 '/"		#: transition
+		_R=$_R";s/%/^/g" # replace % with ^			#: transition
+		_R=$_R";s/\^c/^C/g" # replace ^c with ^C		#: transition
+		_R=$_R";s/\^e/^E/g" # replace ^c with ^E		#: transition
+	fi								#: transition
+	[ -f $_O ] && sed -e "$_R" <$_O >$CLE_CF			#: transition
+	rm -f $CLE_D/cle-mod 2>/dev/null # force refresh cle-mod	#: transition
+	unset _O _R							#: transition
+}									#: transition
 _clexe $CLE_CF
 _clepcp
 
