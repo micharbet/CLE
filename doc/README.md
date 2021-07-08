@@ -1,5 +1,7 @@
+<p align="center">
+  <img src="/art/logo.png" width="400" height="313" alt="CLE logo">
+</p>
 
-#   Command Live Environment
 
 ##   Enhanced shell experience
 
@@ -102,7 +104,7 @@ Tested systems include the following:
 - NetBSD
 - FreeBSD
 - OS X (bash v3!)
-- Android (some terminal software requires different tweaks, WIP) 
+- Android (some terminal software requires different tweaks, WIP)
 
 It also works well with at least the following terminal emulators:
 - Terminator, Gnome Terminal, other VTE based teriminals
@@ -141,7 +143,7 @@ CLE itself begun as customized .bash resource file itself and a set of
 utilities. This version worked without 'lssh', instead required installation
 prior first use on remote account or update if anything changed. The setup was
 simplified with the 'cle' script but the installation was still a necessary
-step. Also, .bashrc changes might be unwelcome to other administrators. 
+step. Also, .bashrc changes might be unwelcome to other administrators.
 However this was first, primitive 'life' in command line.
 
 Evolution continues. I removed the setup necessity in an ingenious way - by
@@ -186,3 +188,6 @@ under the users' (your) control and responsibilty
  Find complete text in the file LICENSE.md or at the following URL:
  https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
+## Credits
+- Created by (Michael Arbet)[https://github.com/micharbet]
+- Logo by (Caneco)[https://twitter.com/caneco]
