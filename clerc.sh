@@ -189,7 +189,10 @@ _H=$HOME
 [ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
 dbg_var HOME
-[ $CLE_USER ] || cd		#: just go home on new session
+dbg_var _H
+dbg_var _T
+dbg_var PWD
+[ $PWD = $_T ] && cd		#: go to real home if initiated in temporary home folder
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC` #: regex cuts anything up to first DOTfolder
 dbg_var CLE_D
 mkdir -m 755 -p $CLE_D
