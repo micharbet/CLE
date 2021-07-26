@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2020-11-04 (Zodiac)
+#* version: 2021-07-27 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -204,6 +204,7 @@ CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ENV=$CLE_RD/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
+PROMPT_DIRTRIM=3
 
 # who I am
 #: determine username that will be inherited over the all
@@ -482,7 +483,6 @@ precmd () {
 #: This fuction is used within prompt calback.
 preexec () {
 	dbg_print 'preexec()'
-	echo -n $_CN	#: reset tty colors
 	_HT=$SECONDS	#: star history timer $_HT
 }
 
@@ -502,6 +502,7 @@ if [ $BASH ]; then
 _clepreex () {
 	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HN=${_HN#*;}	#: strip sequence number
+	echo -n $_CN	#: reset tty colors
 	dbg_var _HP
 	dbg_var _HN
 	dbg_var BASH_COMMAND
@@ -995,7 +996,6 @@ _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
-PROMPT_DIRTRIM=3
 
 # completions
 #: Command 'cle' completion
@@ -1029,7 +1029,7 @@ if [ $BASH ]; then
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
 	_N=/usr/share/bash-completion
-	[ -f $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
+	[ -d $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit

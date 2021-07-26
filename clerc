@@ -135,6 +135,7 @@ CLE_WS=${_N/-/}
 CLE_TW=$CLE_RD/tw$_N
 CLE_ENV=$CLE_RD/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
+PROMPT_DIRTRIM=3
 
 # who I am
 _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
@@ -368,7 +369,6 @@ precmd () {
 
 # run this function before the issued command
 preexec () {
-	echo -n $_CN
 	_HT=$SECONDS
 }
 
@@ -383,6 +383,7 @@ if [ $BASH ]; then
 _clepreex () {
 	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HN=${_HN#*;}
+	echo -n $_CN
 	[ "$_HP" = "$_HN" ] && return
 	_HP=$_HN
 	trap "" DEBUG
@@ -778,7 +779,6 @@ _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
-PROMPT_DIRTRIM=3
 
 # completions
 _clecomp () {
@@ -802,7 +802,7 @@ if [ $BASH ]; then
 	# lssh completion
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 	_N=/usr/share/bash-completion
-	[ -f $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
+	[ -d $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
