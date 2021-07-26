@@ -126,7 +126,7 @@ CLE_SH=`basename $BASH$ZSH_NAME`
 _H=$HOME
 [ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H
-[ $CLE_USER ] || cd
+[ $PWD = $_T ] && cd
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
 
@@ -140,6 +140,7 @@ CLE_TW=$CLE_DR/tw$_N
 CLE_ENV=$CLE_DR/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
 CLE_XFUN=
+PROMPT_DIRTRIM=3
 
 # who I am
 _N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
@@ -797,7 +798,6 @@ _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
-PROMPT_DIRTRIM=3
 
 # completions
 _clecomp () {
@@ -821,7 +821,7 @@ if [ $BASH ]; then
 	# lssh completion
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 	_N=/usr/share/bash-completion
-	[ -f $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
+	[ -d $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit

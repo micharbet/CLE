@@ -194,7 +194,7 @@ _H=$HOME
 [ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
 dbg_var HOME
-[ $CLE_USER ] || cd		#: just go home on new session
+[ $PWD = $_T ] && cd		#: go to real home if initiated in temporary home folder
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC` #: regex cuts anything up to first DOTfolder
 dbg_var CLE_D
 mkdir -m 755 -p $CLE_D
@@ -210,6 +210,7 @@ CLE_TW=$CLE_DR/tw$_N
 CLE_ENV=$CLE_DR/env$_N
 CLE_TTY=`tty|tr -d '/dev'`
 CLE_XFUN=	#: list of functions for transfer to remote session
+PROMPT_DIRTRIM=3
 
 # who I am
 #: determine username that will be inherited over the all
@@ -1011,7 +1012,6 @@ _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
 PROMPT_COMMAND=precmd
-PROMPT_DIRTRIM=3
 
 # completions
 #: Command 'cle' completion
@@ -1045,7 +1045,7 @@ if [ $BASH ]; then
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
 	_N=/usr/share/bash-completion
-	[ -f $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
+	[ -d $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
