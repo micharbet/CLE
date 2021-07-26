@@ -122,7 +122,7 @@ CLE_SH=`basename $BASH$ZSH_NAME`
 _H=$HOME
 [ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H
-[ $CLE_USER ] || cd
+[ $PWD = $_T ] && cd
 CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
 mkdir -m 755 -p $CLE_D
 
