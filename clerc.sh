@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-04-28 (Aquarius)
+#* version: 2021-07-27 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -316,25 +316,29 @@ _cleclr () {
 	blue)   C=BbB;;
 	cyan)   C=CcC;;
 	magenta) C=MmM;;
-	white|grey|gray) C=wNW;;
+	grey|gray) C=wNW;;
 	tricolora) C=RBW;;
 	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
-	???|????)    C=$1;; # any 3/4 colors
-	*)      # print help on colors
-		printb "Unknown color '$1' Select predefined scheme:"
-		declare -f _cleclr|sed -n 's/[ \t]*(*\(\<[a-z |]*\)).*/  \1/p'
-		echo Alternatively create your own 3-letter combo using rgbcmykw/RGBCMYKW
-		echo E.g. $_CL cle color rgB
-		return 1
+	*)	C=$1;; # any 3/4 colors
 	esac
 	# decode colors and prompt strings
-	C=x${C}L #: status color will be added later, plus bold command line
-	for I in {1..4};do
+	#: three letters ... dim status part _C0
+	#: four letters .... user defined status color
+	#: five letters .... also user defined commad highlighting (defauld bold)
+	[ ${#C} = 3 ] && C=D${C}L || C=${C}L
+	for I in {0..4};do
 		eval "CI=\$_C${C:$I:1}"
-		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
+		if [ -z "$CI" ]; then
+			echo "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
+			echo "Choose predefined scheme:$_CL"
+			declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
+			printf "\n${_CN}Alternatively create your own 3+letter combo using rgbcmykw/RGBCMYKW\n"
+			printf "E.g.:$_CL cle color rgB\n"
+			return 1
+		fi
 		eval "_C$I=\$CI"
 	done
-	_C0=$_C2$_CD #: dim color for status part 0
+	[ ${C:0:1} = D ] && _C0=$_C1$_CD #: dim color for status part 0
 }
 
 # CLE prompt escapes
