@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-07-27 (Aquarius)
+#* version: 2021-07-30 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -303,12 +303,12 @@ _cletable () {
 		;;
 	esac
 	#: and... special color code for error highlight in prompt
-	_Ce=$_CR$_CL$_CV # err highlight
+	_Ce=$_CR$_CL$_CV #: err highlight
 }
 
 # set prompt colors
 _cleclr () {
-	local C I CI
+	local C I CI E
 	case "$1" in
 	red)    C=RrR;;
 	green)  C=GgG;;
@@ -319,7 +319,7 @@ _cleclr () {
 	grey|gray) C=wNW;;
 	tricolora) C=RBW;;
 	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
-	*)	C=$1;; # any 3/4 colors
+	*)	C=$1;; #: any color combination
 	esac
 	# decode colors and prompt strings
 	#: three letters ... dim status part _C0
@@ -328,17 +328,23 @@ _cleclr () {
 	[ ${#C} = 3 ] && C=D${C}L || C=${C}L
 	for I in {0..4};do
 		eval "CI=\$_C${C:$I:1}"
-		if [ -z "$CI" ]; then
+		# check for exsisting colro, ignore 'dim'
+		if [ -z "$CI" -a ${C:$I:1} != D ]; then
 			echo "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
-			echo "Choose predefined scheme:$_CL"
-			declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
-			printf "\n${_CN}Alternatively create your own 3+letter combo using rgbcmykw/RGBCMYKW\n"
-			printf "E.g.:$_CL cle color rgB\n"
-			return 1
+			E=1	#: error flag
 		fi
 		eval "_C$I=\$CI"
 	done
 	[ ${C:0:1} = D ] && _C0=$_C1$_CD #: dim color for status part 0
+	if [ $E ]; then
+		echo "Choose predefined scheme:$_CL"
+		declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
+		printf "\n${_CN}Alternatively create your own 3+letter combo using rgbcmykw/RGBCMYKW\n"
+		printf "E.g.:$_CL cle color rgB\n"
+		return 1
+	else
+		CLE_CLR=${C:0:5}
+	fi
 }
 
 # CLE prompt escapes
@@ -1049,7 +1055,8 @@ if [ $BASH ]; then
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
 	_N=/usr/share/bash-completion
-	[ -d $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
+	[ -f $_N/bash_completion ] && . $_N/bash_completion
+	[ -f $_N/completions/ssh ] && . $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
@@ -1099,7 +1106,7 @@ cle () {
 	fi
 	case $C in
 	color)  ## `cle color COLOR`       - set prompt color
-		[ $1 ]  && _cleclr $1 && CLE_CLR=$1 && _clesave;;
+		[ $1 ]  && _cleclr $1 && _clesave;;
 	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
 		I=${C:1:1}
 		if [ "$1" ]; then
