@@ -305,34 +305,46 @@ _cletable () {
 
 # set prompt colors
 _cleclr () {
-	local C I CI
-	case "$1" in
-	red)    C=RrR;;
-	green)  C=GgG;;
-	yellow) C=YyY;;
-	blue)   C=BbB;;
-	cyan)   C=CcC;;
-	magenta) C=MmM;;
-	white|grey|gray) C=wNW;;
-	tricolora) C=RBW;;
-	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
-	???|????)    C=$1;; # any 3/4 colors
-	*)      # print help on colors
-		printb "Unknown color '$1' Select predefined scheme:"
-		declare -f _cleclr|sed -n 's/[ \t]*(*\(\<[a-z |]*\)).*/  \1/p'
-		echo Alternatively create your own 3-letter combo using rgbcmykw/RGBCMYKW
-		echo E.g. $_CL cle color rgB
-		return 1
-	esac
-	# decode colors and prompt strings
-	C=x${C}L #: status color will be added later, plus bold command line
-	for I in {1..4};do
-		eval "CI=\$_C${C:$I:1}"
-		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
-		eval "_C$I=\$CI"
-	done
-	_C0=$_C2$_CD #: dim color for status part 0
+        local C I CI E
+        case "$1" in
+        red)    C=RrR;;
+        green)  C=GgG;;
+        yellow) C=YyY;;
+        blue)   C=BbB;;
+        cyan)   C=CcC;;
+        magenta) C=MmM;;
+        grey|gray) C=wNW;;
+        tricolora) C=RBW;;
+        marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
+        *)      C=$1;; #: any color combination
+        esac
+        # decode colors and prompt strings
+        #: three letters ... dim status part _C0
+        #: four letters .... user defined status color
+        #: five letters .... also user defined commad highlighting (defauld bold)
+        [ ${#C} = 3 ] && C=D${C}L || C=${C}L
+        for I in {0..4};do
+                eval "CI=\$_C${C:$I:1}"
+                # check for exsisting color, ignore 'dim' and 'italic as they might not be defined
+                if [[ -z "$CI" && ! ${C:$I:1} =~ [ID] ]]; then
+                        echo "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
+                        E=1     #: error flag
+                fi
+                eval "_C$I=\$CI"
+        done
+        [ ${C:0:1} = D ] && _C0=$_C1$_CD #: dim color for status part 0
+        if [ $E ]; then
+                echo "Choose predefined scheme:$_CL"
+                declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
+                printf "\n${_CN}Alternatively create your own 3-5 letter combo using rgbcmykw/RGBCMYKW\n"
+                printf "E.g.:$_CL cle color rgB\n"
+                _cleclr gray    #: default in case of error
+                return 1
+        else
+                CLE_CLR=${C:0:5}
+        fi
 }
+
 
 # CLE prompt escapes
 #:  - enhanced prompt escape codes introduced with ^ sign
@@ -1082,7 +1094,7 @@ cle () {
 	fi
 	case $C in
 	color)  ## `cle color COLOR`       - set prompt color
-		[ $1 ]  && _cleclr $1 && CLE_CLR=$1 && _clesave;;
+		[ $1 ]  && _cleclr $1 && _clesave;;
 	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
 		I=${C:1:1}
 		if [ "$1" ]; then
