@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-07-27 (Aquarius)
+#* version: 2021-07-30 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -241,8 +241,8 @@ _cleclr () {
 	[ ${#C} = 3 ] && C=D${C}L || C=${C}L
 	for I in {0..4};do
 		eval "CI=\$_C${C:$I:1}"
-		# check for exsisting colro, ignore 'dim'
-		if [ -z "$CI" -a ${C:$I:1} != D ]; then
+		# check for exsisting color, ignore 'dim' and 'italic as they might not be defined
+		if [[ -z "$CI" && ! ${C:$I:1} =~ [ID] ]]; then
 			echo "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
 			E=1
 		fi
@@ -252,8 +252,9 @@ _cleclr () {
 	if [ $E ]; then
 		echo "Choose predefined scheme:$_CL"
 		declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
-		printf "\n${_CN}Alternatively create your own 3+letter combo using rgbcmykw/RGBCMYKW\n"
+		printf "\n${_CN}Alternatively create your own 3-5 letter combo using rgbcmykw/RGBCMYKW\n"
 		printf "E.g.:$_CL cle color rgB\n"
+		_cleclr gray
 		return 1
 	else
 		CLE_CLR=${C:0:5}
