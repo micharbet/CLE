@@ -1,7 +1,7 @@
 ##
 ## ** cle-ed: Tweak and config editor **
 #
-#* version: 2019-05-17
+#* version: 2021-08-24
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -23,34 +23,56 @@ vii () {
 local CLERESTART=""
 case "$1" in
 # CLE shortcuts
-tw)	## `cle ed tw`    -- edit the tweak file
+tw)	## `cle ed tw`                  -- edit the tweak file
 	vii $CLE_TW
 	CLERESTART=1
 	;;
-lcl)	## `cle ed lcl`   -- edit local account's tweak file
+local)	## `cle ed lcl`                 -- edit local account's tweak file
 	vii ~/.cle-local
 	CLERESTART=1
 	;;
-cf)	## `cle ed cf`    -- edit CLE configuration file
+cf)	## `cle ed cf`                  -- edit CLE configuration file
 	vii $CLE_CF
 	CLERESTART=1
 	;;
 # other shortcuts
-brc)	## `cle ed brc`   -- edit .bashrc
+bashrc)	## `cle ed bashrc`              -- edit .bashrc
 	vii ~/.bashrc
 	;;
-vrc)	## `cle ed vrc`   -- edit .vimrc
+vimrc)	## `cle ed vimrc`               -- edit .vimrc
 	vii ~/.vimrc
 	;;
-sshcf)	## `cle ed sshcf` -- edit ssh config	
+ssh-cf)	## `cle ed ssh-cf`              -- edit .ssh/config	
 	vii ~/.ssh/config
 	;;
-sshkh)	## `cle ed sshkh` -- edit ssh known_hosts	
+ssh-kh)	## `cle ed ssh-kh`              -- edit .ssh/known_hosts	
 	vii ~/.ssh/known_hosts
 	;;
+add)	## `cle ed add file [shortcut]` -- add file symlink for editing
+	mkdir -p $CLE_D/ed
+	if [ ! -f $2 ]; then
+		echo cle ed add: no such file $2
+		return 1
+	fi
+	# Normalize the path to file
+	pushd `dirname $2` >/dev/null
+	local FN=`basename $2`
+	local SCUT=${3:-$FN}
+	ln -sf $PWD/$FN $CLE_D/ed/$SCUT
+	echo added:
+	ls -l $CLE_D/ed/$SCUT
+	echo "Now you can use 'cle ed $SCUT'"
+	popd >/dev/null
+	;;
 *)
-	cle help "cle ed"
-	return 1
+	if [ -L $CLE_D/ed/$1 ]; then
+		vii $CLE_D/ed/$1
+	else
+		cle help "cle ed"
+		echo linked files in $CLE_D/ed
+		find $CLE_D/ed -type l
+		return 1
+	fi
 	;;
 esac
 
