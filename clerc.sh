@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-07-30 (Aquarius)
+#* version: 2021-08-24 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -923,12 +923,16 @@ lssh () (
 	#: remote startup
 	#: - create destination folder, unpack tarball and execute the code
 	command ssh -t $* "
-		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
+		#: looking for suitable place in case $HOME is read only or doesn't exist
+		for H in \$HOME /var/tmp/\$USER /tmp\$USER; do
+			mkdir -m 755 -p \$H/`dirname $RC` && break
+		done
+		cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
 		echo $C64|base64 -\$D|tar xzmf -
-		exec \$H/$RC -m $CLE_ARG"
-		#: it is not possible to use `base63 -\$D <<<$C64|tar xzf -`
+		exec bash --rcfile \$H/$RC"
+		#: it is not possible to use `base64 -\$D <<<$C64|tar xzf -`
 		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
 )
 
@@ -940,7 +944,7 @@ lssh () (
 lsudo () (
 	_clepak
 	dbg_print "lsudo runs: $RH/$RC"
-        sudo -i -u ${1:-root} $RH/$RC $CLE_ARG
+        sudo -i -u ${1:-root} bash --rcfile $RH/$RC
 )
 
 ## `lsu [user]`        - su wrapper
@@ -950,16 +954,8 @@ lsu () (
         _clepak
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
-        eval su $S -l ${1:-root} $RH/$RC
+        eval su $S -l ${1:-root} bash --rcfile $RH/$RC
 )
-
-## `lksu [user]`       - ksu wrapper
-#: Kerberized version of 'su'
-lksu () (
-	_clepak
-        ksu ${1:-root} -a -c "cd;$RH/$RC"
-)
-
 
 #:------------------------------------------------------------:#
 #: all fuctions declared, startup continues

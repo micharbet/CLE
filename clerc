@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-07-30 (Aquarius)
+#* version: 2021-08-24 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -724,16 +724,19 @@ lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	_clepak tar
 	command ssh -t $* "
-		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
+		for H in \$HOME /var/tmp/\$USER /tmp\$USER; do
+			mkdir -m 755 -p \$H/`dirname $RC` && break
+		done
+		cd \$H
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
 		echo $C64|base64 -\$D|tar xzmf -
-		exec \$H/$RC -m $CLE_ARG"
+		exec bash --rcfile \$H/$RC"
 )
 
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
 	_clepak
-        sudo -i -u ${1:-root} $RH/$RC $CLE_ARG
+        sudo -i -u ${1:-root} bash --rcfile $RH/$RC
 )
 
 ## `lsu [user]`        - su wrapper
@@ -741,15 +744,8 @@ lsu () (
         _clepak
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
-        eval su $S -l ${1:-root} $RH/$RC
+        eval su $S -l ${1:-root} bash --rcfile $RH/$RC
 )
-
-## `lksu [user]`       - ksu wrapper
-lksu () (
-	_clepak
-        ksu ${1:-root} -a -c "cd;$RH/$RC"
-)
-
 
 
 [ $ZSH_NAME ] && setopt +o NOMATCH

@@ -1,7 +1,7 @@
 ##
-## ** mod-cledk: functions to assist CLE development process **
+## ** cle-devkit: functions to assist CLE development process **
 #
-#* version: 2019-03-27
+#* version: 2021-08-21
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -12,13 +12,21 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
-# where I do development
-CLE_DK=$HOME/d/CLE
+CLE_REPO=https://github.com/micharbet/CLE.git
+
+cd
+CLE_DK=$PWD/CLE
+if [ ! -d $CLE_DK/.git ]; then
+	ask "Clone from github?" && git clone $CLE_REPO || return
+fi
+cd $CLE_DK
+
+
 
 # helper function to find module by incomplete name
-_dkchoosemod () {
+_dk_choosefile () {
 	local F
-	F=`ls modules/* devmods/* 2>/dev/null | grep $1`
+	F=`ls $CLE_DK/modules/* $CLE_DK/devmods/* 2>/dev/null | grep $1`
 	case `wc -w <<<$F` in
 	0)
 		echo no such module: $1
@@ -38,7 +46,7 @@ _dkchoosemod () {
 _cle_e () (
 	cd $CLE_DK
 	if [ $1 ]; then
-		_dkchoosemod $1
+		_dk_choosefile $1
 	else
 		FILENAME=$CLE_DK/clerc.sh
 	fi
@@ -50,7 +58,7 @@ _cle_cp() {
 	local DEST FILENAME
 	pushd $CLE_DK >/dev/null
 	if [ $1 ]; then
-		_dkchoosemod $1
+		_dk_choosefile $1
 		DEST=$CLE_D/`basename $FILENAME`
 	else
 		FILENAME=clerc.sh
@@ -58,16 +66,25 @@ _cle_cp() {
 	fi
 
 	printb " ${_CU}diff $DEST $FILENAME${_Cu}"
-	if diff $DEST $FILENAME; then
+	if diff $DEST $FILENAME >/dev/null; then
 		echo No diff...
 		popd
 	else
 		ask "replace $DEST?" || return
 		cp $FILENAME $DEST
-		popd
+		popd >/dev/null
 		cle reload
 	fi
 }
+
+## `cle ln [mod]`   - symlink a module to the live directory
+_cle_ln() {
+	local DEST FILENAME
+	_dk_choosefile $1
+	DEST=$CLE_D/`basename $FILENAME`
+	ln -s $FILENAME $DEST && cle reload
+}
+
 
 
 ## `cle func`       - list all current bash functions
@@ -75,12 +92,6 @@ _cle_func () {
 	declare -f |sed -n '/_cle.\+\s()/p'
 }
 
-## `cdc`            - shortcut into $HOME/d/cle
-cdc () {
-	cd $CLE_DK
-	printb CLE development kit: $PWD
-	git status
-}
 
 ## `cle commit`     - commit changes into git (also generate clerc from clerc.sh
 _cle_commit () (
