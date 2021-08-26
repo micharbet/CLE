@@ -1,7 +1,7 @@
 ##
 ## ** cle-ed: Tweak and config editor **
 #
-#* version: 2021-08-24
+#* version: 2021-08-26
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -20,36 +20,33 @@ vii () {
 	vi $1
 }
 
-local CLERESTART=""
+local EDIR=$CLE_D/ed
+
+# initialize basic shortcuts
+if [ ! -d $EDIR ]; then
+	mkdir -p $EDIR
+	pushd $EDIR >/dev/null
+	ln -s $CLE_TW tw
+	ln -s ~/.cle-local local
+	ln -s $CLE_CF cf
+	ln -s ~/.bashrc bashrc
+	ln -s ~/.profile profile
+	ln -s ~/.vimrc vimrc
+	ln -s ~/.ssh/config ssh-cf
+	ln -s ~/.ssh/known-hosts ssh-kh
+	popd >/dev/null
+fi
+
 case "$1" in
-# CLE shortcuts
-tw)	## `cle ed tw`                  -- edit the tweak file
-	vii $CLE_TW
-	CLERESTART=1
-	;;
-local)	## `cle ed lcl`                 -- edit local account's tweak file
-	vii ~/.cle-local
-	CLERESTART=1
-	;;
-cf)	## `cle ed cf`                  -- edit CLE configuration file
-	vii $CLE_CF
-	CLERESTART=1
-	;;
-# other shortcuts
-bashrc)	## `cle ed bashrc`              -- edit .bashrc
-	vii ~/.bashrc
-	;;
-vimrc)	## `cle ed vimrc`               -- edit .vimrc
-	vii ~/.vimrc
-	;;
-ssh-cf)	## `cle ed ssh-cf`              -- edit .ssh/config	
-	vii ~/.ssh/config
-	;;
-ssh-kh)	## `cle ed ssh-kh`              -- edit .ssh/known_hosts	
-	vii ~/.ssh/known_hosts
+'')
+	cle help "cle ed"
+	echo " currently available shortcuts:"
+	find $EDIR -type l -print | while read LINK; do
+		printf "$_CL%15s$_CN -> %s\n" `basename $LINK` `readlink $LINK`
+	done
+	return
 	;;
 add)	## `cle ed add file [shortcut]` -- add file symlink for editing
-	mkdir -p $CLE_D/ed
 	if [ ! -f $2 ]; then
 		echo cle ed add: no such file $2
 		return 1
@@ -63,19 +60,28 @@ add)	## `cle ed add file [shortcut]` -- add file symlink for editing
 	ls -l $CLE_D/ed/$SCUT
 	echo "Now you can use 'cle ed $SCUT'"
 	popd >/dev/null
+	return 0
 	;;
-*)
-	if [ -L $CLE_D/ed/$1 ]; then
-		vii $CLE_D/ed/$1
-	else
-		cle help "cle ed"
-		echo linked files in $CLE_D/ed
-		find $CLE_D/ed -type l
-		return 1
-	fi
+ls)	## `cle ed ls`                  -- list everything in the ed folder
+	ls -al $EDIR
+	return
+	;;
+*)	## `cle ed shortcut_to_file`    -- edit a file, make backup
+	local LINK=$EDIR/$1
+	local FILE=`readlink $LINK`
 	;;
 esac
 
-# if restart is recommended, ask for it
-[ $CLERESTART ] && ask "Restart CLE?" && cle reload
+if [ $FILE ]; then
+	echo ed: $FILE
+	cp $LINK $LINK.bk 2>/dev/null
+	vi $LINK
+else
+	echo unknown shortcut: $1
+	return 1
+fi
+
+# Suggest restart if part of CLE was edited
+[[ $FILE =~ cle- ]] && ask "Restart CLE?" && cle reload
+return 0
 

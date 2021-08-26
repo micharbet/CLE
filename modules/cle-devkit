@@ -1,7 +1,7 @@
 ##
 ## ** cle-devkit: functions to assist CLE development process **
 #
-#* version: 2021-08-21
+#* version: 2021-08-24
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -14,12 +14,18 @@
 
 CLE_REPO=https://github.com/micharbet/CLE.git
 
+cdc () {
+	cd $CLE_DK
+	printb CLE development kit: $PWD;
+	git status
+}
+
 cd
 CLE_DK=$PWD/CLE
 if [ ! -d $CLE_DK/.git ]; then
 	ask "Clone from github?" && git clone $CLE_REPO || return
 fi
-cd $CLE_DK
+cdc
 
 
 
