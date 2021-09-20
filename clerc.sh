@@ -143,6 +143,8 @@ CLE_EXE=$CLE_RC
 #: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
 #: breaks rich history.
 dbg_var CLE_PROF
+# current shell
+CLE_SH=`basename $BASH$ZSH_NAME`
 if [ -n "$CLE_PROF" ]; then
 	_clexe /etc/profile
 	_clexe $HOME/.${CLE_SH}rc
@@ -196,9 +198,6 @@ CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Zodiac
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_VER="$CLE_VER debug"			# dbg
-
-# current shell
-CLE_SH=`basename $BASH$ZSH_NAME`
 
 # find writable folder
 #: there can be real situation where a remote account is restricted and have no
