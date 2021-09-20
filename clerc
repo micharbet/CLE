@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-08-18 (Zodiac)
+#* version: 2021-09-21 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -85,13 +85,30 @@ case  $_C in
 esac
 
 
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	source $1
+}
+CLE_EXE=$CLE_RC
+
+# Run profile files
+if [ -n "$CLE_PROF" ]; then
+	_clexe /etc/profile
+	_clexe $HOME/.${CLE_SH}rc
+	unset CLE_PROF
+fi
+
 # Use alias built-ins for startup
 unset -f alias unalias 2>/dev/null
 unalias aa h hh .. ... 2>/dev/null
 
 # Variables init
 
-# First run code
+# First run check
 if [[ $CLE_RC =~ clerc ]]; then
 	CLE_RD=$HOME/.cle-`whoami`
 	mkdir -m 755 -p $CLE_RD
@@ -164,16 +181,6 @@ ask () (
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 )
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1[:$] ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	source $1
-}
-CLE_EXE=$CLE_RC
 
 # Create color table
 _cletable () {
@@ -432,13 +439,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-# Run profile files
-if [ -n "$CLE_PROF" ]; then
-	_clexe /etc/profile
-	_clexe $HOME/.${CLE_SH}rc
-	unset CLE_PROF
-fi
 
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then

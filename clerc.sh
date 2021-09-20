@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-08-18 (Zodiac)
+#* version: 2021-09-21 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -127,6 +127,28 @@ dbg_print ---------------
 dbg_print Resource starts
 dbg_print ---------------
 
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	dbg_print _clexe $1
+	source $1
+}
+CLE_EXE=$CLE_RC
+
+# Run profile files
+#: This must be done now, not later because files may contain confilcting settings.
+#: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
+#: breaks rich history.
+dbg_var CLE_PROF
+if [ -n "$CLE_PROF" ]; then
+	_clexe /etc/profile
+	_clexe $HOME/.${CLE_SH}rc
+	unset CLE_PROF
+fi
+
 # Use alias built-ins for startup
 #: alias & unalias must be available in their natural form during CLE startup
 #: and will be redefined at the end of resource
@@ -138,7 +160,7 @@ unalias aa h hh .. ... 2>/dev/null
 #:------------------------------------------------------------:#
 # Variables init
 
-# First run code
+# First run check
 if [[ $CLE_RC =~ clerc ]]; then
 	dbg_print First run
 	CLE_RD=$HOME/.cle-`whoami`
@@ -244,17 +266,6 @@ ask () (
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 )
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1[:$] ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	dbg_print _clexe $1
-	source $1
-}
-CLE_EXE=$CLE_RC
 
 # Create color table
 #: initialize $_C* variables with terminal compatible escape sequences
@@ -565,17 +576,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-# Run profile files
-#: This must be done now, not later because files may contain confilcting settings.
-#: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
-#: breaks rich history.
-dbg_var CLE_PROF
-if [ -n "$CLE_PROF" ]; then
-	_clexe /etc/profile
-	_clexe $HOME/.${CLE_SH}rc
-	unset CLE_PROF
-fi
 
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
