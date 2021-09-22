@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-21 (Zodiac)
+#* version: 2021-09-22 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -1043,7 +1043,8 @@ if [ $BASH ]; then
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
 	_N=/usr/share/bash-completion
-	[ -d $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
+	_clexe $_N/bash_completion
+	_clexe $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
