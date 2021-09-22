@@ -123,10 +123,9 @@ CLE_EXE=$CLE_RC
 #: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
 #: breaks rich history.
 dbg_var CLE_PROF
-CLE_SH=`basename $BASH$ZSH_NAME`	#: get current shell
 if [ -n "$CLE_PROF" ]; then
 	_clexe /etc/profile
-	_clexe $HOME/.${CLE_SH}rc
+	_clexe $HOME/.bashrc
 	unset CLE_PROF
 fi
 
@@ -549,7 +548,7 @@ _clerh () {
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
 	printf "\n$CLE_MOTD"
-	printb "\n CLE/$CLE_SH $CLE_VER\n"
+	printb "\n CLE $CLE_VER\n"
 	unset CLE_MOTD
 fi
 
@@ -775,9 +774,6 @@ _clerhbuf () {
 	echo "$_CN$_C3 $_RHLEN records, search:$_CN$_C4 'hh $_RHARG'"
 }
 
-# zsh hack to accept notes on cmdline
-[ $ZSH_NAME ] && '#' () { true; }
-
 ##
 ## ** Not-just-internal tools **
 ## `gitwb`           - show current working branch name
@@ -927,11 +923,8 @@ lsu () (
 #:------------------------------------------------------------:#
 #: all fuctions declared, startup continues
 
-#: stop annoying zsh error when '*' doesn't match any file
-[ $ZSH_NAME ] && setopt +o NOMATCH
-
 # record this startup into rich history
-_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}},$CLE_SH]"
+_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}}]"
 [ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_RC [$CLE_VER]"
 
 _clexe $HOME/.cle-local
@@ -972,14 +965,8 @@ esac
 
 # 6. shell specific
 #: $_PE nad $_Pe keep strings to enclosing control charaters in prompt
-if [ $BASH ]; then
-	shopt -s checkwinsize
-	_PE='\['; _Pe='\]'
-else
-	setopt PROMPT_SUBST SH_WORD_SPLIT
-	_PE='%{'; _Pe='%}'
-	_PN=$'\n' # zsh doesn't know '\n' as escape sequence! WTF?
-fi
+shopt -s checkwinsize
+_PE='\['; _Pe='\]'
 
 # 7. craft the prompt string
 _cleps
@@ -1050,7 +1037,7 @@ unalias () {
 [ $CLE_1 ] && cat <<EOT
  It seems you started CLE running '$CLE_1' from command line
  Since this is the first run, consider setup in your profile.
- Run following command to hook CLE into your $HOME/.${CLE_SH}rc:
+ Run following command to hook CLE into your $HOME/.bashrc:
 $_CL    cle deploy
 EOT
 
