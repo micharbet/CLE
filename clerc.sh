@@ -230,7 +230,7 @@ printb () { printf "$_CL$*$_CN\n";}
 # simple question
 ask () (
 	PR="$_CL$* (y/N) $_CN"
-	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
+	read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 )
@@ -440,7 +440,6 @@ _clesave () (
 #: callback. Namely: `precmd` `preexec` `clepreex` `clerh`
 #:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline has different name in zsh
-[ $ZSH_NAME ] && _PST='${pipestatus[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
 precmd () {
 	eval "_EC=$_PST"
@@ -593,25 +592,24 @@ cx () { cd $_XX; }
 ## ** Alias management **
 aa () {
 	local ATMP=$CLE_AL.tmp
-	local Z=${ZSH_NAME:+-L}
 	case "$1" in
 	"")	## `aa`         - show aliases
 		#: also make the output nicer and more easy to read
-		builtin alias $Z|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN	\2/";;
+		builtin alias|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN	\2/";;
 	-s)	## `aa -s`      - save aliases
 		if [ $CLE_WS ]; then
 			#: keep only localy defined aliases on remote sessions
 			#: this allows cleanup - alias removed on workstation is not propagated
 			grep "^alias " $CLE_ENV >$ATMP
-			builtin alias $Z | diff - $ATMP | sed -n 's/^< \(.*\)/\1/p' >$CLE_AL
+			builtin alias | diff - $ATMP | sed -n 's/^< \(.*\)/\1/p' >$CLE_AL
 			rm -f $ATMP
 		else
-			builtin alias $Z >$CLE_AL
+			builtin alias >$CLE_AL
 		fi;;
 	-e)	## `aa -e`      - edit aliases
-		builtin alias $Z >$ATMP
+		builtin alias >$ATMP
 		vi $ATMP
-		[ $ZSH_NAME ] && builtin unalias -m '*' || builtin unalias -a
+		builtin unalias -a
 		. $ATMP
 		rm -f $ATMP;;
 	*=*)	## `aa a='b'`   - create new alias and save

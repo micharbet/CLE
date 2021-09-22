@@ -154,7 +154,7 @@ printb () { printf "$_CL$*$_CN\n";}
 # simple question
 ask () (
 	PR="$_CL$* (y/N) $_CN"
-	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
+	read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 )
@@ -328,7 +328,6 @@ _clesave () (
 
 # prompt callback functions
 _PST='${PIPESTATUS[@]}'
-[ $ZSH_NAME ] && _PST='${pipestatus[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
 precmd () {
 	eval "_EC=$_PST"
@@ -459,22 +458,21 @@ cx () { cd $_XX; }
 ## ** Alias management **
 aa () {
 	local ATMP=$CLE_AL.tmp
-	local Z=${ZSH_NAME:+-L}
 	case "$1" in
 	"")	## `aa`         - show aliases
-		builtin alias $Z|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN	\2/";;
+		builtin alias|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN	\2/";;
 	-s)	## `aa -s`      - save aliases
 		if [ $CLE_WS ]; then
 			grep "^alias " $CLE_ENV >$ATMP
-			builtin alias $Z | diff - $ATMP | sed -n 's/^< \(.*\)/\1/p' >$CLE_AL
+			builtin alias | diff - $ATMP | sed -n 's/^< \(.*\)/\1/p' >$CLE_AL
 			rm -f $ATMP
 		else
-			builtin alias $Z >$CLE_AL
+			builtin alias >$CLE_AL
 		fi;;
 	-e)	## `aa -e`      - edit aliases
-		builtin alias $Z >$ATMP
+		builtin alias >$ATMP
 		vi $ATMP
-		[ $ZSH_NAME ] && builtin unalias -m '*' || builtin unalias -a
+		builtin unalias -a
 		. $ATMP
 		rm -f $ATMP;;
 	*=*)	## `aa a='b'`   - create new alias and save
