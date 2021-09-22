@@ -706,10 +706,11 @@ lssh () (
 		exec bash --rcfile \$H/$RC"
 )
 
+
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
 	_clepak
-        sudo -i -u ${1:-root} bash --rcfile $RH/$RC
+        sudo -i -u ${1:-root} $RH/$RC
 )
 
 ## `lsu [user]`        - su wrapper
@@ -717,7 +718,7 @@ lsu () (
         _clepak
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
-        eval su $S -l ${1:-root} bash --rcfile $RH/$RC
+        eval su $S -l ${1:-root} $RH/$RC
 )
 
 

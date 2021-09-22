@@ -846,6 +846,8 @@ _clepak () {
                 dbg_print "_clepak: rc already there: $(ls -l $RC)"
         else
                 #: live session is to be created - copy startup files
+		#: as per issue #78 "/var/tmp mounted noexec"
+		#: try to create files at any other place first
                 RH=/var/tmp/$USER
                 dbg_print "_clepak: preparing $RH/$RD"
                 #: by default prepare files in /var/tmp; fall back to the home dir
@@ -902,15 +904,14 @@ lssh () (
 		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
 )
 
-#: Following are su* wrappers of different kinds including kerberos
-#: version 'ksu'. They are basically simple, you see. Environment is not
-#: packed and transferred when using them. Instead the original files from
-#: user's home folder are used.
+#: Following are su* wrappers
+#: TODO: consider how to use _clepak and how to execute the environment with regard to issue #78
+
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
 	_clepak
 	dbg_print "lsudo runs: $RH/$RC"
-        sudo -i -u ${1:-root} bash --rcfile $RH/$RC
+        sudo -i -u ${1:-root} $RH/$RC
 )
 
 ## `lsu [user]`        - su wrapper
@@ -920,7 +921,7 @@ lsu () (
         _clepak
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
-        eval su $S -l ${1:-root} bash --rcfile $RH/$RC
+        eval su $S -l ${1:-root} $RH/$RC
 )
 
 #:------------------------------------------------------------:#
