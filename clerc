@@ -89,9 +89,25 @@ esac
 unset -f alias unalias 2>/dev/null
 unalias aa h hh .. ... 2>/dev/null
 
-# Variables init
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	source $1
+}
+CLE_EXE=$CLE_RC
 
-# First run code
+# Run profile files
+CLE_SH=`basename $BASH$ZSH_NAME`
+if [ -n "$CLE_PROF" ]; then
+	_clexe /etc/profile
+	_clexe $HOME/.${CLE_SH}rc
+	unset CLE_PROF
+fi
+
+# Check first run
 if [[ $CLE_RC =~ clerc ]]; then
 	CLE_DR=$HOME/.cle-`whoami`
 	mkdir -m 755 -p $CLE_DR
@@ -118,9 +134,6 @@ CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_REL=`sed -n 's/.*(\(.*\)).*/\1/p' <<<$CLE_VER`
 CLE_REL=dev					# REMOVE THIS ON RELEASE!!!!!
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
-
-# current shell
-CLE_SH=`basename $BASH$ZSH_NAME`
 
 # find writable folder
 _H=$HOME
@@ -169,16 +182,6 @@ ask () (
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 )
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1[:$] ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	source $1
-}
-CLE_EXE=$CLE_RC
 
 # Create color table
 _cletable () {
@@ -436,13 +439,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-# Run profile files
-if [ -n "$CLE_PROF" ]; then
-	_clexe /etc/profile
-	_clexe $HOME/.${CLE_SH}rc
-	unset CLE_PROF
-fi
 
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
@@ -825,8 +821,8 @@ if [ $BASH ]; then
 	# lssh completion
 	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 	_N=/usr/share/bash-completion
-	[ -f $_N/bash_completion ] && . $_N/bash_completion
-	[ -f $_N/completions/ssh ] && . $_N/completions/ssh && complete -F _ssh lssh
+	_clexe $_N/bash_completion
+	_clexe $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit

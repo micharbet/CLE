@@ -122,6 +122,7 @@ case  $_C in
 *)	echo "CLE startup failed: 'case $_C'";;
 esac
 
+#:------------------------------------------------------------:#
 #: Reaching this point means that the script is running as a resource
 #: to the interactive session. Further code must be bash & zsh compatible!
 dbg_print ---------------
@@ -136,10 +137,30 @@ unset -f alias unalias 2>/dev/null
 #: those were causing confilcts, more of them might be added later
 unalias aa h hh .. ... 2>/dev/null
 
-#:------------------------------------------------------------:#
-# Variables init
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	dbg_print _clexe $1
+	source $1
+}
+CLE_EXE=$CLE_RC
 
-# First run code
+# Run profile files
+#: This must be done now, not later because files may contain confilcting settings.
+#: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
+#: breaks rich history.
+dbg_var CLE_PROF
+CLE_SH=`basename $BASH$ZSH_NAME`	#: get current shell
+if [ -n "$CLE_PROF" ]; then
+	_clexe /etc/profile
+	_clexe $HOME/.${CLE_SH}rc
+	unset CLE_PROF
+fi
+
+# Check first run
 if [[ $CLE_RC =~ clerc ]]; then
 	dbg_print First run
 	CLE_DR=$HOME/.cle-`whoami`
@@ -179,9 +200,6 @@ CLE_REL=`sed -n 's/.*(\(.*\)).*/\1/p' <<<$CLE_VER`
 CLE_REL=dev					# REMOVE THIS ON RELEASE!!!!!
 CLE_VER="$CLE_VER debug"			# dbg
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
-
-# current shell
-CLE_SH=`basename $BASH$ZSH_NAME`
 
 # find writable folder
 #: there can be real situation where a remote account is restricted and have no
@@ -247,17 +265,6 @@ ask () (
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 )
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1[:$] ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	dbg_print _clexe $1
-	source $1
-}
-CLE_EXE=$CLE_RC
 
 # Create color table
 #: initialize $_C* variables with terminal compatible escape sequences
@@ -567,17 +574,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-# Run profile files
-#: This must be done now, not later because files may contain confilcting settings.
-#: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
-#: breaks rich history.
-dbg_var CLE_PROF
-if [ -n "$CLE_PROF" ]; then
-	_clexe /etc/profile
-	_clexe $HOME/.${CLE_SH}rc
-	unset CLE_PROF
-fi
 
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
@@ -1052,8 +1048,8 @@ if [ $BASH ]; then
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
 	_N=/usr/share/bash-completion
-	[ -f $_N/bash_completion ] && . $_N/bash_completion
-	[ -f $_N/completions/ssh ] && . $_N/completions/ssh && complete -F _ssh lssh
+	_clexe $_N/bash_completion
+	_clexe $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
