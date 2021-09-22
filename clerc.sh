@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-08-24 (Aquarius)
+#* version: 2021-09-23 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -53,7 +53,7 @@ dbg_print; dbg_print pid:$$						# dbg
 #: First check how is this script executed
 #:  - in case of a shell resource, this will be interactive session,
 #:    prepare basic environment variables and do the shell specific tasks
-#:  - in case of start as a command, open a shell (zsh or bash) and push this file
+#:  - in case of start as a command, open a shell and push this file
 #:    as a resource
 #: Then find out suitable shell and use it to run interactive shell session with
 #: this file as init resource. The $CLE_RC variable must contain full path!
@@ -63,30 +63,18 @@ dbg_var CLE_ARG
 dbg_var CLE_USER
 dbg_var SHELL
 dbg_var BASH
-dbg_var ZSH_NAME
-_C=$SHELL:$BASH:$ZSH_NAME:$0
+_C=$SHELL:$BASH:$0
 dbg_print "startup case: '$_C'"
 _T=/var/tmp/$USER
 case  $_C in
-*zsh::*zsh:*/rc*) # started FROM .zshrc
-	dbg_print sourcing to ZSH - from .zshrc
-	CLE_RC=$0
-	;;
-*clerc*|*:*/rc*) # executed as a command from .cle directory
+*clerc*|*:*/rc*) # executed as a command from .cle-* directory
 	#: IMPORTANT: code in this section must be strictly POSIX compatible with /bin/sh
-	#: Now we're looking for suitable shell: user's login shell first, fallback to bash
-	dbg_print executing as LIVE SESSION, looking for shell
+	dbg_print executing the resource
 	CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
-	SH=$SHELL
 	#: process command line options
+	#: TODO - check if this is still necessary
 	while [ $1 ]; do
 		case $1 in
-		-b*)	SH=`which bash`		# force bash
-			export CLE_ARG='-b'
-			;;
-		-z*)	SH=`which zsh 2>/dev/null || which bash` # try zsh
-			export CLE_ARG='-z'
-			;;
 		-m)	CLE_MOTD=`uptime`
 			export CLE_MOTD
 			;;
@@ -95,29 +83,11 @@ case  $_C in
 		shift
 	done
 	export CLE_PROF=1	#: profile files will be executed
-	case $SH in
-	*zsh)	#: prepare startup environment in zsh way
-		dbg_print found ZSH
-		export ZDOTDIR=$_T
-		mkdir -p $ZDOTDIR
-		ln -sf $CLE_RC $ZDOTDIR/.zshrc
-		exec zsh
-		;;
-	*)	#: fallback to bash
-		dbg_print found BASH
-		exec bash --rcfile $0
-		;;
-	esac
+	exec bash --rcfile $0
 	;;
 *bash:*bash) # bash session resource
 	dbg_print sourcing to BASH
-	#: CLE_RC not necessarily known!
 	CLE_RC=$BASH_SOURCE
-	;;
-*zsh:*zsh) # zsh session resource (started AS TEMPORARY .zshrc)
-	dbg_print sourcing to ZSH - from live session
-	#: CLE_RC already set, exported
-	unset ZDOTDIR
 	;;
 *)	echo "CLE startup failed: 'case $_C'";;
 esac
