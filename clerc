@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-24 (Aquarius)
+#* version: 2021-09-29 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -329,10 +329,10 @@ _clesave () (
 # prompt callback functions
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
-precmd () {
+_cleprecmd () {
+	local IFS S DT C
 	eval "_EC=$_PST"
 	[[ $_EC =~ [1-9] ]] || _EC=0
-	local IFS S DT C
 	unset IFS
 	if [ $BASH ]; then
 		C=$_HN
@@ -343,7 +343,6 @@ precmd () {
 	fi
 	DT=${C/;*}
 	C=${C/$DT;}
-	C="${C#"${C%%[![:space:]]*}"}"
 	if [[ $C =~ ^\# ]]; then
 		_clerh '#' "$PWD" "$C"	# record a note to history
 	elif [ $_HT ]; then	# check timer - indicator of executed command
@@ -355,7 +354,7 @@ precmd () {
 		_CE=''
 		_EC=0
 	fi
-	[ $BASH ] && trap _clepreex DEBUG
+	trap _clepreex DEBUG
 }
 
 CLE_HTF='%F %T'
@@ -705,10 +704,6 @@ lsu () (
 )
 
 
-# record this startup into rich history
-_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}}]"
-[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_RC [$CLE_VER]"
-
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
@@ -750,7 +745,7 @@ _PE='\['; _Pe='\]'
 _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
-PROMPT_COMMAND=precmd
+PROMPT_COMMAND=_cleprecmd
 
 # completions
 _clecomp () {
@@ -800,6 +795,14 @@ $_CL    cle deploy
 EOT
 
 [ -r . ] || cd
+
+# record this startup into rich history
+_T=${CLE_WS:-WS}
+_T=${STY:-$_T}
+_T=${TMUX:-$_T}
+_clerh @ $CLE_TTY "[$_T $HOME ${CLE_RC/$HOME/\~}]"
+[ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
+[ $CLE_DEBUG ] && _C=${CLE_EXE//$HOME/\~}
 
 ##
 ## ** CLE command & control **
@@ -874,12 +877,9 @@ cle () {
 		chmod 755 $P
 		mv -f $P $CLE_RC
 		cle reload;;
-	reload) ## `cle reload [bash|zsh]` - reload CLE
-		[[ $1 =~ ^[bz] ]] && S=-$1
-		[ $S ] && exec $CLE_RC $S
+	reload) ## `cle reload`            - reload CLE
 		unset CLE_EXE
-		. $CLE_RC
-		echo CLE $CLE_VER;;
+		. $CLE_RC && echo CLE reloaded: $CLE_RC $CLE_VER;;
 	mod)    ## `cle mod`               - cle module management
 		ask Activate CLE modules? || return
 		N=cle-mod

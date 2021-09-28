@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-24 (Aquarius)
+#* version: 2021-09-29 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -429,7 +429,7 @@ _clesave () (
 # prompt callback functions
 #: 
 #: Important note about code efficiency:
-#: As precmd function is executed *every* time you push <enter> key, its code
+#: As _cleprecmd function is executed *every* time you push <enter> key, its code
 #: needs to be as simple as possible. All commands here should be internals.
 #: Internal commands don't invoke (fork) new processes and as such they
 #: are much easier to system resources.
@@ -437,14 +437,15 @@ _clesave () (
 #: Not only the actually used expression is shorter but also much faster since `sed`
 #: would be executed as new process from binary file
 #: The same rule applies to CLE internal functions used and called within prompt
-#: callback. Namely: `precmd` `preexec` `clepreex` `clerh`
+#: callback. Namely: `_cleprecmd` `_clepreex` `_clerh`
 #:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
-precmd () {
+_cleprecmd () {
+	local IFS S DT C
+	dbg_var _HT
 	eval "_EC=$_PST"
 	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
-	local IFS S DT C
 	unset IFS
 	if [ $BASH ]; then
 		C=$_HN	#: already prepared by _clepreex()
@@ -455,8 +456,6 @@ precmd () {
 	fi
 	DT=${C/;*}	#: extract date
 	C=${C/$DT;}	#: extract pure command
-	C="${C#"${C%%[![:space:]]*}"}" #: remove leading spaces (needed in zsh)
-	#: ^^^ found here: https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 	if [[ $C =~ ^\# ]]; then
 		_clerh '#' "$PWD" "$C"	# record a note to history
 	elif [ $_HT ]; then	# check timer - indicator of executed command
@@ -468,7 +467,7 @@ precmd () {
 		_CE=''
 		_EC=0 #: reset error code so it doesn not disturb on other prompts
 	fi
-	[ $BASH ] && trap _clepreex DEBUG
+	trap _clepreex DEBUG
 }
 
 CLE_HTF='%F %T'
@@ -481,18 +480,18 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exi
 history -cr $HISTFILE
 _HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`	#: prepare history for comaprison
 _HP=${_HP#*;}	#: strip sequence number
-dbg_var _HP
+#: dbg_var _HP
 _clepreex () {
 	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HN=${_HN#*;}	#: strip sequence number
 	#dbg_var _HP
-	#dbg_var _HN
-	#dbg_var BASH_COMMAND
+	dbg_var _HN
+	dbg_var BASH_COMMAND
 	echo -n $_CN	#: reset tty colors
 	[ "$_HP" = "$_HN" ] && return
 	_HP=$_HN
 	trap "" DEBUG
-	_HT=$SECONDS	#: star history timer $_HT
+	_HT=$SECONDS	#: start history timer $_HT
 }
 
 # rich history record
@@ -683,7 +682,7 @@ hh () {
 	dbg_var OUT
 	dbg_var N
 	dbg_var S
-	dbg_sleep 3
+	#: dbg_sleep 3
 	#: AWK script to search and display in rich history file
 	local AW='BEGIN { FS=";" }
 	//'$S' {	#: search conditions will be added
@@ -908,10 +907,6 @@ lsu () (
 #:------------------------------------------------------------:#
 #: all fuctions declared, startup continues
 
-# record this startup into rich history
-_clerh @ $CLE_TTY "[${STY:-${CLE_WS:-WS}}]"
-[ $CLE_DEBUG ] && _clerh @ $PWD "$CLE_RC [$CLE_VER]"
-
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
@@ -957,7 +952,7 @@ _PE='\['; _Pe='\]'
 _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
-PROMPT_COMMAND=precmd
+PROMPT_COMMAND=_cleprecmd
 
 # completions
 #: Command 'cle' completion
@@ -1017,6 +1012,15 @@ $_CL    cle deploy
 EOT
 
 [ -r . ] || cd #: go home if this is unreadable directory
+
+# record this startup into rich history
+_T=${CLE_WS:-WS}
+_T=${STY:-$_T}
+_T=${TMUX:-$_T}
+_clerh @ $CLE_TTY "[$_T $HOME ${CLE_RC/$HOME/\~}]"
+[ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
+[ $CLE_DEBUG ] && _C=${CLE_EXE//$HOME/\~}
+#: [ $CLE_DEBUG ] && _clerh @ $PWD "[EXE: ${_C//:/ }]"
 
 ##
 ## ** CLE command & control **
@@ -1101,14 +1105,9 @@ cle () {
 		chmod 755 $P
 		mv -f $P $CLE_RC
 		cle reload;;
-	reload) ## `cle reload [bash|zsh]` - reload CLE
-		[[ $1 =~ ^[bz] ]] && S=-$1
-		#: complete re-exec removes unexported variables
-		[ $S ] && exec $CLE_RC $S
-		#: re-sourcing the environment keeps user's settings
+	reload) ## `cle reload`            - reload CLE
 		unset CLE_EXE
-		. $CLE_RC
-		echo CLE $CLE_VER;;
+		. $CLE_RC && echo CLE reloaded: $CLE_RC $CLE_VER;;
 	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code
