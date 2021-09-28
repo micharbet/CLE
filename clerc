@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-23 (Aquarius)
+#* version: 2021-09-24 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -358,19 +358,12 @@ precmd () {
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
-# run this function before the issued command
-preexec () {
-	_HT=$SECONDS
-}
-
 CLE_HTF='%F %T'
 HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
 
-# Bash hack
-if [ $BASH ]; then
-	history -cr $HISTFILE
-	_HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
-	_HP=${_HP#*;}
+history -cr $HISTFILE
+_HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
+_HP=${_HP#*;}
 _clepreex () {
 	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HN=${_HN#*;}
@@ -378,9 +371,8 @@ _clepreex () {
 	[ "$_HP" = "$_HN" ] && return
 	_HP=$_HN
 	trap "" DEBUG
-	preexec "$BASH_COMMAND"
+	_HT=$SECONDS
 }
-fi
 
 # rich history record
 _clerh () {
@@ -492,13 +484,10 @@ h () (
 	done;) 
 )
 
-if [ $BASH ]; then
-# init rich history buffer and shortcut keys
 bind -x '"\ek": "_clerhup"'
 bind -x '"\ej": "_clerhdown"'
 bind -x '"\eh": "hh -b $READLINE_LINE"'
 bind -x '"\el": "_clerhbuf"'
-fi
 
 ## `hh [opt] [srch]` - query the rich history
 _RHI=1
@@ -781,19 +770,11 @@ _clecomp () {
 	done
 }
 
-if [ $BASH ]; then
-	# lssh completion
-	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-	_N=/usr/share/bash-completion
-	_clexe $_N/bash_completion
-	_clexe $_N/completions/ssh && complete -F _ssh lssh
-else
-	# ZSH completions
-	autoload compinit && compinit
-	autoload bashcompinit && bashcompinit
-	compdef lssh=ssh
-fi
-complete -F _clecomp cle
+# lssh completion
+declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
+_N=/usr/share/bash-completion
+_clexe $_N/bash_completion
+_clexe $_N/completions/ssh && complete -F _ssh lssh
 
 # redefine alias builtins
 alias () {

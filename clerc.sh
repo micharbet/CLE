@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-23 (Aquarius)
+#* version: 2021-09-24 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -93,8 +93,8 @@ case  $_C in
 esac
 
 #:------------------------------------------------------------:#
-#: Reaching this point means that the script is running as a resource
-#: to the interactive session. Further code must be bash & zsh compatible!
+#: Reaching this point means that the script is running
+#: as a resource to the interactive session.
 dbg_print ---------------
 dbg_print Resource starts
 dbg_print ---------------
@@ -439,7 +439,7 @@ _clesave () (
 #: The same rule applies to CLE internal functions used and called within prompt
 #: callback. Namely: `precmd` `preexec` `clepreex` `clerh`
 #:
-_PST='${PIPESTATUS[@]}'		#: status of all command in pipeline has different name in zsh
+_PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
 precmd () {
 	eval "_EC=$_PST"
@@ -471,26 +471,17 @@ precmd () {
 	[ $BASH ] && trap _clepreex DEBUG
 }
 
-# run this function before the issued command
-#: This fuction is used within prompt calback.
-preexec () {
-	#dbg_print 'preexec()'
-	_HT=$SECONDS	#: star history timer $_HT
-}
-
 CLE_HTF='%F %T'
 HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exists
 
-# Bash hack
-#: Zsh supports preexec function naturaly. This is bash's workaround.
+#: Bash workaround to Z-shell preexec()function.
 #: This fuction is used within prompt calback. Read code efficiency note above!
 #: _HP and _HN - previous and next command taken from shell history are compared
 #: sequence number have to be cut out as they are not necessarily the same over sessions
-if [ $BASH ]; then
-	history -cr $HISTFILE
-	_HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`	#: prepare history for comaprison
-	_HP=${_HP#*;}	#: strip sequence number
-	dbg_var _HP
+history -cr $HISTFILE
+_HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`	#: prepare history for comaprison
+_HP=${_HP#*;}	#: strip sequence number
+dbg_var _HP
 _clepreex () {
 	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HN=${_HN#*;}	#: strip sequence number
@@ -501,9 +492,8 @@ _clepreex () {
 	[ "$_HP" = "$_HN" ] && return
 	_HP=$_HN
 	trap "" DEBUG
-	preexec "$BASH_COMMAND"
+	_HT=$SECONDS	#: star history timer $_HT
 }
-fi
 
 # rich history record
 #: This fuction is used within prompt calback. Read code efficiency note above!
@@ -629,13 +619,10 @@ h () (
 	done;) 
 )
 
-if [ $BASH ]; then #: this won't work in zsh
-# init rich history buffer and shortcut keys
 bind -x '"\ek": "_clerhup"'		#: Alt-K  up in rich history
 bind -x '"\ej": "_clerhdown"'		#: Alt-J  down in rich history
 bind -x '"\eh": "hh -b $READLINE_LINE"'	#: Alt-H  serach in rich history using content of command line
 bind -x '"\el": "_clerhbuf"'		#: Alt-L  list commands from rich history buffer
-fi
 
 ## `hh [opt] [srch]` - query the rich history
 _RHI=1		#: current index to history
@@ -975,8 +962,6 @@ PROMPT_COMMAND=precmd
 # completions
 #: Command 'cle' completion
 #: as an addition, prompt strings are filled for convenience :)
-#: And, thanks to nice people on stackoverflow.com I know it can be used in both shells
-#: https://stackoverflow.com/questions/3249432/can-a-bash-tab-completion-script-be-used-in-zsh
 _clecomp () {
 	#: list of subcommands, this might be reworked to have possibility of expansion
 	#: with modules (TODO)
@@ -997,22 +982,14 @@ _clecomp () {
 	done
 }
 
-if [ $BASH ]; then
-	# lssh completion
-	#: there are two possibilities of ssh completion _known_hosts is more common...
-	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-	#: while _ssh is better
-	#: The path is valid at least on fedora and debian with installed bash-completion package
-	_N=/usr/share/bash-completion
-	_clexe $_N/bash_completion
-	_clexe $_N/completions/ssh && complete -F _ssh lssh
-else
-	# ZSH completions
-	autoload compinit && compinit
-	autoload bashcompinit && bashcompinit
-	compdef lssh=ssh
-fi
-complete -F _clecomp cle
+# lssh completion
+#: there are two possibilities of ssh completion _known_hosts is more common...
+declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
+#: while _ssh is better
+#: The path is valid at least on fedora and debian with installed bash-completion package
+_N=/usr/share/bash-completion
+_clexe $_N/bash_completion
+_clexe $_N/completions/ssh && complete -F _ssh lssh
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess
