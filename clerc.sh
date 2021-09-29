@@ -352,15 +352,13 @@ _cle_r () {
 	printf "    \\@@@\\__,-~-__,\n     \`&@@@@@69@@/\n        ^&@@@@&*\n$_CN\n"
 }
 
-# override default prompt strings with configured values
+# combine default/inherited prompt strings with values from config file
 _clepcp () {
 	local I
-	#: use CLE_PBx values and override with CLE_PZx for zsh
-	#: check function _clesc that transforms bash escapes into zsh
+	#: use CLE_PBx
 	for I in 0 1 2 3 T; do
 		eval "CLE_P$I=\${CLE_PB$I:-\$CLE_P$I}"
-		[ $ZSH_NAME ] && eval "CLE_P$I=\${CLE_PZ$I:-\$CLE_P$I}"
-		[ $1 ] && unset CLE_P{B,Z}$I
+		# MAYBE REMOVE THIS [ $1 ] && unset CLE_P{B,Z}$I
 	done
 }
 
@@ -376,7 +374,7 @@ _cledefp () {
 	CLE_P0='^E \t '
 	CLE_P1='\u '
 	CLE_P2='^h '
-	CLE_P3='\w ^$ '
+	CLE_P3='\w \$ '
 	CLE_PT='\u@^H'
 	#: decide by username and if the host is remote
 	case "$USER-${CLE_WS#$CLE_FHN}" in
@@ -390,7 +388,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	vdump "CLE_CLR|CLE_PB.|CLE_PZ."
+	vdump "CLE_CLR|CLE_PB."
 ) >$CLE_CF
 
 
@@ -892,7 +890,7 @@ done
 _cledefp
 
 # 2. override with inherited strings
-[ $CLE_WS ] && _clepcp x
+# MAYBEREMOVETHIS [ $CLE_WS ] && _clepcp x
 
 # 3. create color table if necessary
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
