@@ -440,11 +440,11 @@ _clesave () (
 #: callback. Namely: `_cleprecmd` `_clepreex` `_clerh`
 #:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
-[ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround, check behaviour on OSX, though, ev. remove this line
+[ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround
 _cleprecmd () {
+	eval "_EC=$_PST"
 	local IFS S DT C
 	dbg_var _HT
-	eval "_EC=$_PST"
 	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
 	unset IFS
 	if [ $BASH ]; then
@@ -914,8 +914,10 @@ for M in $CLE_D/mod-*; do
 	_clexe $M
 done
 
-#: Enhnace PATH by user's own bin folder
-[[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
+#: Enhnace PATH by user's own bin folders
+for _T in $HOME/bin $HOME/.local/bin; do
+	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T
+done
 
 # create the prompt in several steps
 # 1. default prompt strings
