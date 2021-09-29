@@ -79,9 +79,9 @@ CLE_EXE=$CLE_RC
 # Run profile files
 if [ -n "$CLE_PROF" ]; then
 	_clexe /etc/profile
-	_clexe $HOME/.bashrc
 	unset CLE_PROF
 fi
+_clexe $HOME/.bashrc
 
 # Check first run
 if [[ $CLE_RC =~ clerc ]]; then
@@ -242,41 +242,19 @@ _cleclr () {
 
 # CLE prompt escapes
 _clesc () (
-	EXTESC="
+	CLESC="
 	 -e 's/\^i/\$CLE_IP/g'
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\$(gitwb)/g'
 	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^[E]/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
-	 -e 's/\^[C]\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
+	 -e 's/\^E/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
+	 -e 's/\^C\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
-	[ $ZSH_NAME ] && SHESC="-e 's/\\\\n/\$_PN/g'
-	 -e 's/\\^[$%#]/%#/g'
-	 -e 's/\\\\d/%D{%a %b %d}/g'
-	 -e 's/\\\\D/%D/g'
-	 -e 's/\\\\h/%m/g'
-	 -e 's/\\\\H/%M/g'
-	 -e 's/\\\\j/%j/g'
-	 -e 's/\\\\l/%l/g'
-	 -e 's/\\\\s/zsh/g'
-	 -e 's/\\\\t/%*/g'
-	 -e 's/\\\\T/%D{%r}/g'
-	 -e 's/\\\\@/%@/g'
-	 -e 's/\\\\A/%T/g'
-	 -e 's/\\\\u/%n/g'
-	 -e 's/\\\\w/%$PROMPT_DIRTRIM~/g'
-	 -e 's/\\\\W/%1~/g'
-	 -e 's/\\\\!/%!/g'
-	 -e 's/\\\\#/%i/g'
-	 -e 's/\\\\\[/%{/g'
-	 -e 's/\\\\\]/%}/g'
-	 -e 's/\\\\\\\\/\\\\/g'
-	" || SHESC="-e 's/\^[$%#]/\\\\\$/g'"
-	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
+	SUBS=`tr -d '\n\t' <<<$CLESC`
 	eval sed "$SUBS" <<<"$*"
 )
 
@@ -330,8 +308,8 @@ _clesave () (
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
 _cleprecmd () {
-	local IFS S DT C
 	eval "_EC=$_PST"
+	local IFS S DT C
 	[[ $_EC =~ [1-9] ]] || _EC=0
 	unset IFS
 	if [ $BASH ]; then
@@ -711,7 +689,9 @@ for M in $CLE_D/mod-*; do
 	_clexe $M
 done
 
-[[ -d $HOME/bin && ! $PATH =~ $HOME/bin ]] && PATH=$PATH:$HOME/bin
+for _T in $HOME/bin $HOME/.local/bin; do
+	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T
+done
 
 # create the prompt in several steps
 # 1. default prompt strings
@@ -764,6 +744,7 @@ _clecomp () {
 		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
 	done
 }
+complete -F _clecomp cle
 
 # lssh completion
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh

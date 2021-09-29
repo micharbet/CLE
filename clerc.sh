@@ -125,9 +125,9 @@ CLE_EXE=$CLE_RC
 dbg_var CLE_PROF
 if [ -n "$CLE_PROF" ]; then
 	_clexe /etc/profile
-	_clexe $HOME/.bashrc
 	unset CLE_PROF
 fi
+_clexe $HOME/.bashrc
 
 # Check first run
 if [[ $CLE_RC =~ clerc ]]; then
@@ -328,52 +328,20 @@ _cleclr () {
 #:  - enhanced prompt escape codes introduced with ^ sign
 #:  - bash uses backslash while zsh percent sign for their prompt escapes
 _clesc () (
-	#: CLE extensions
-	EXTESC="
+	CLESC="
 	 -e 's/\^i/\$CLE_IP/g'
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\$(gitwb)/g'
 	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^[E]/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
-	 -e 's/\^[C]\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
+	 -e 's/\^E/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
+	 -e 's/\^C\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
-	#:  bash/zsh prompt compatibility
-	#: there are missing translations:
-	#:  \a Bell character
-	#:  \e ESC
-	#:  \r Carriage return
-	#:  \nnn ASCII octal character
-	#:  \v Bash version, who the f... needs this?
-	#:  \V ... same ^^^
-	#: so much backslashes due to multiple string expansions and `eval` at the end
-	[ $ZSH_NAME ] && SHESC="-e 's/\\\\n/\$_PN/g'
-	 -e 's/\\^[$%#]/%#/g'
-	 -e 's/\\\\d/%D{%a %b %d}/g'
-	 -e 's/\\\\D/%D/g'
-	 -e 's/\\\\h/%m/g'
-	 -e 's/\\\\H/%M/g'
-	 -e 's/\\\\j/%j/g'
-	 -e 's/\\\\l/%l/g'
-	 -e 's/\\\\s/zsh/g'
-	 -e 's/\\\\t/%*/g'
-	 -e 's/\\\\T/%D{%r}/g'
-	 -e 's/\\\\@/%@/g'
-	 -e 's/\\\\A/%T/g'
-	 -e 's/\\\\u/%n/g'
-	 -e 's/\\\\w/%$PROMPT_DIRTRIM~/g'
-	 -e 's/\\\\W/%1~/g'
-	 -e 's/\\\\!/%!/g'
-	 -e 's/\\\\#/%i/g'
-	 -e 's/\\\\\[/%{/g'
-	 -e 's/\\\\\]/%}/g'
-	 -e 's/\\\\\\\\/\\\\/g'
-	" || SHESC="-e 's/\^[$%#]/\\\\\$/g'"
 	#: compose substitute command, remove unwanted characters
-	SUBS=`tr -d '\n\t' <<<$SHESC$EXTESC`
+	SUBS=`tr -d '\n\t' <<<$CLESC`
 	eval sed "$SUBS" <<<"$*"
 )
 
@@ -978,6 +946,7 @@ _clecomp () {
 		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
 	done
 }
+complete -F _clecomp cle
 
 # lssh completion
 #: there are two possibilities of ssh completion _known_hosts is more common...
