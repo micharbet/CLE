@@ -412,13 +412,8 @@ _cleprecmd () {
 	dbg_var _HT
 	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
 	unset IFS
-	if [ $BASH ]; then
-		C=$_HN	#: already prepared by _clepreex()
-		history -a	#: immediately record commands so they are available in new shell sessions
-	else
-		C=`fc -lt ";$CLE_HTF;" -1`	#: get recent command, strip sequence number
-		C=${C#*;}
-	fi
+	C=$_HN	#: already prepared by _clepreex()
+	history -a	#: immediately record commands so they are available in new shell sessions
 	DT=${C/;*}	#: extract date
 	C=${C/$DT;}	#: extract pure command
 	if [[ $C =~ ^\# ]]; then
@@ -822,8 +817,7 @@ _clepak () {
         #: Note: I've never owned this computer, I had Atari 800XL instead :-)
         #: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
         dbg_var PWD
-        [ $1 ] && C64=`eval tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
-	#:             ^^^^ 'eval' required due to zsh.
+        [ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }
 
@@ -965,14 +959,14 @@ alias () {
 }
 
 unalias () {
-	[ "$1" = -a ] && cp $CLE_AL $CLE_AL.bk  # BASH only!
+	[ "$1" = -a ] && cp $CLE_AL $CLE_AL.bk
 	builtin unalias "$@"
 	aa -s
 }
 
 # check manual/initial run
 [ $CLE_1 ] && cat <<EOT
- It seems you started CLE running '$CLE_1' from command line
+ It seems you started CLE running file '$CLE_1'.
  Since this is the first run, consider setup in your profile.
  Run following command to hook CLE into your $HOME/.bashrc:
 $_CL    cle deploy

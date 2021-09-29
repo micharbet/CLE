@@ -311,13 +311,8 @@ _cleprecmd () {
 	local IFS S DT C
 	[[ $_EC =~ [1-9] ]] || _EC=0
 	unset IFS
-	if [ $BASH ]; then
-		C=$_HN
-		history -a
-	else
-		C=`fc -lt ";$CLE_HTF;" -1`
-		C=${C#*;}
-	fi
+	C=$_HN
+	history -a
 	DT=${C/;*}
 	C=${C/$DT;}
 	if [[ $C =~ ^\# ]]; then
@@ -647,7 +642,7 @@ _clepak () {
                         declare -f $XFUN >>$EN
                 done
         fi
-        [ $1 ] && C64=`eval tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
+        [ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }
 
@@ -761,14 +756,14 @@ alias () {
 }
 
 unalias () {
-	[ "$1" = -a ] && cp $CLE_AL $CLE_AL.bk  # BASH only!
+	[ "$1" = -a ] && cp $CLE_AL $CLE_AL.bk
 	builtin unalias "$@"
 	aa -s
 }
 
 # check manual/initial run
 [ $CLE_1 ] && cat <<EOT
- It seems you started CLE running '$CLE_1' from command line
+ It seems you started CLE running file '$CLE_1'.
  Since this is the first run, consider setup in your profile.
  Run following command to hook CLE into your $HOME/.bashrc:
 $_CL    cle deploy
