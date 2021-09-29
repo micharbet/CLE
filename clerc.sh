@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-29 (Aquarius)
+#* version: 2021-09-30 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -326,7 +326,6 @@ _cleclr () {
 
 # CLE prompt escapes
 #:  - enhanced prompt escape codes introduced with ^ sign
-#:  - bash uses backslash while zsh percent sign for their prompt escapes
 _clesc () (
 	CLESC="
 	 -e 's/\^i/\$CLE_IP/g'
@@ -579,7 +578,7 @@ aa () {
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
 h () (
-	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
+	(HISTTIMEFORMAT=";$CLE_HTF;" history "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
 	done;) 
 )
@@ -625,7 +624,7 @@ hh () {
 		x)	## `hh -x`           - remove the most recent history record
 			# TODO: maybe some args, numbers, etc
 			sed -i '$ d' $CLE_HIST
-			[ $BASH ] && history -d -2	#: also from regular BASH (!) history
+			history -d -2	#: also remove from regular BASH history
 			return;;
 		*)	cle help hh;return
 		esac
@@ -758,8 +757,7 @@ mdfilter () {
 vdump () (
 	#: awk: 1. exits when reaches functions
 	#:      2. finds variables matching regular expression
-	#:      3. replaces weird escape sequence '\C-[' from zsh to normal '\E'
-	typeset 2>/dev/null | awk '/.* \(\)/{exit} /(^'$1')=/{gsub(/\\C-\[/,"\\E");print}'
+	declare | awk '/^('$1')=/{print}'
 )
 
 #:------------------------------------------------------------:#
@@ -811,9 +809,9 @@ _clepak () {
 
                 #: prepare environment to transfer: color table, prompt settings, WS name and custom exports
                 echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-                vdump "CLE_P..|^_C." >>$EN
+                vdump "CLE_PB.|^_C." >>$EN
                 vdump "$CLE_XVARS" >>$EN
-                echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN                     # dbg
+                vdump "CLE_DEBUG" >>$EN                     # dbg
                 cat $CLE_AL >>$EN 2>/dev/null
                 #: Add selected functions to transfer
                 for XFUN in $CLE_XFUN; do
@@ -1009,15 +1007,11 @@ cle () {
 	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
 		I=${C:1:1}
 		if [ "$1" ]; then
-			#: obtain shell prefix
-			#: if the propmt string is bash compatible, store it into $CLE_PBx
-			#: otherwise use $CLE_PZx
-			P=B; [[ $* =~ % && -n "$ZSH_NAME" ]] && P=Z || unset CLE_PZ$I
 			#: store the value only if it's different
 			#: this is to prevent situation when inherited value is set in configuration
 			#: causing to break the inheritance later
 			S=$*
-			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }" || :
+			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_PB$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
 			vdump CLE_P$I
 		fi;;

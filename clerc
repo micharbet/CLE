@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-29 (Aquarius)
+#* version: 2021-09-30 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -455,7 +455,7 @@ aa () {
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
 h () (
-	([ $BASH ] && HISTTIMEFORMAT=";$CLE_HTF;" history "$@" || fc -lt ";$CLE_HTF;" "$@")|( IFS=';'; while read -r N DT C;do
+	(HISTTIMEFORMAT=";$CLE_HTF;" history "$@")|( IFS=';'; while read -r N DT C;do
 		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
 	done;) 
 )
@@ -501,7 +501,7 @@ hh () {
 		x)	## `hh -x`           - remove the most recent history record
 			# TODO: maybe some args, numbers, etc
 			sed -i '$ d' $CLE_HIST
-			[ $BASH ] && history -d -2
+			history -d -2
 			return;;
 		*)	cle help hh;return
 		esac
@@ -609,7 +609,7 @@ mdfilter () {
 
 ## `vdump 'regexp'`  - dump variables in reusable way
 vdump () (
-	typeset 2>/dev/null | awk '/.* \(\)/{exit} /(^'$1')=/{gsub(/\\C-\[/,"\\E");print}'
+	declare | awk '/^('$1')=/{print}'
 )
 
 
@@ -640,7 +640,7 @@ _clepak () {
 		done
 
                 echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-                vdump "CLE_P..|^_C." >>$EN
+                vdump "CLE_PB.|^_C." >>$EN
                 vdump "$CLE_XVARS" >>$EN
                 cat $CLE_AL >>$EN 2>/dev/null
                 for XFUN in $CLE_XFUN; do
@@ -802,9 +802,8 @@ cle () {
 	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
 		I=${C:1:1}
 		if [ "$1" ]; then
-			P=B; [[ $* =~ % && -n "$ZSH_NAME" ]] && P=Z || unset CLE_PZ$I
 			S=$*
-			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }" || :
+			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_PB$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
 			vdump CLE_P$I
 		fi;;
