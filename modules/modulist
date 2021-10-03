@@ -1,4 +1,3 @@
-mod-fsps:2019-12-12:f02502403ca8c29a066ec6893667be39:Filesystem and processess utilities
 mod-git:2019-03-12:fe120e9fb29e9bd2554f4869e1548ddd:GIT helpers / shorcuts
 mod-lksu:2021-08-23:66424422a838eb6289e603f32114815a:ksu (kerberized su) live session wrapper
 mod-lscreen:2021-02-01:928fcd41a97fd333e8b518402248640c:GNU screen wrapper
@@ -9,5 +8,5 @@ cle-devkit:2021-08-24:f6c7165b2e45b8adbd56292f8d230f2e:functions to assist CLE d
 cle-ed:2021-08-26:9c14ebc52a120be6b1e28e527cd963bc:Tweak and config editor
 cle-mod:2019-08-19:aeeac9f42ecc0768aadad29b24247cfd:CLE module management
 cle-palette:2019-11-15:c2e35da133afb28dfccf71231a8bd92e:Color palettes for OSC4 capable terminals
-cle-prompt:2019-03-31:d27abf5272c54db1d6b8196c9b43884d:pre-configured prompt themes
+cle-prompt:2021-09-30:9c5c66acca40d8ec1161d849b8b0ca85:pre-configured prompt themes
 cle-rcmove:2018-09-23:7e0fd7ef0564a72b3e2dbfd15dcd6e0e:Move resource files to different folder
