@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-22 (Zodiac)
+#* version: 2021-10-03 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -366,7 +366,7 @@ _clesc () (
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
-	 -e 's/\^g/\$(gitwb)/g'
+	 -e 's/\^g/\$(_clegitwb)/g'
 	 -e 's/\^?/\$_EC/g'
 	 -e 's/\^[E]/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
 	 -e 's/\^[C]\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
@@ -454,7 +454,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	vdump "CLE_CLR|CLE_PB.|CLE_PZ."
+	_clevdump "CLE_CLR|CLE_PB.|CLE_PZ."
 ) >$CLE_CF
 
 
@@ -562,7 +562,7 @@ _clerh () {
 		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				VD=`vdump $V`
+				VD=`_clevdump $V`
 				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done;;
@@ -614,7 +614,7 @@ fi
 ## ** cd command enhancements **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
-- () { cd - >/dev/null; vdump OLDPWD;}
+- () { cd - >/dev/null; _clevdump OLDPWD;}
 .. () { cd ..;}
 ... () { cd ../..;}
 ## `xx` & `cx`   - bookmark $PWD & use later
@@ -724,10 +724,8 @@ _clehhout () (
 # zsh hack to accept notes on cmdline
 [ $ZSH_NAME ] && '#' () { true; }
 
-##
-## ** Not-just-internal tools **
-## `gitwb`           - show current working branch name
-gitwb () (
+#: show current working branch name
+_clegitwb () (
 	# go down the folder tree and look for .git
 	#: Because this function is supposed to use in prompt we want to save
 	#: cpu cycles. Do not call `git` if not necessary.
@@ -739,12 +737,11 @@ gitwb () (
 	)
 
 
-## `mdfilter`        - markdown acsii highlighter
-#: Highly sophisticated filter :-D
+#: Highly sophisticated .md format highlighter :-D
 #: Just replaces special strings in markdown files and augments the output
 #: with escape codes to highlight.
 #: Not perfect, but it helps and is simple, isn't it?
-mdfilter () {
+_clemdf () {
 	sed -e "s/^###\(.*\)/$_CL\1$_CN/"\
 	 -e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/"\
 	 -e "s/^#\( *\)\(.*\)/\1$_CL$_CV \2 $_CN/"\
@@ -754,8 +751,8 @@ mdfilter () {
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
-## `vdump 'regexp'`  - dump variables in reusable way
-vdump () (
+#: dump variables in reusable way
+_clevdump () (
 	#: awk: 1. exits when reaches functions
 	#:      2. finds variables matching regular expression
 	#:      3. replaces weird escape sequence '\C-[' from zsh to normal '\E'
@@ -797,8 +794,8 @@ _clepak () {
 		cp $CLE_TW $TW 2>/dev/null
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_SRE|CLE_P..|^_C." >>$EN
-		vdump "$CLE_EXP" >>$EN
+		_clevdump "CLE_SRE|CLE_P..|^_C." >>$EN
+		_clevdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN 2>/dev/null
 	fi
@@ -1108,7 +1105,7 @@ cle () {
 			S=$*
 			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
-			vdump CLE_P$I
+			_clevdump CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
 		case "$1" in
@@ -1181,7 +1178,7 @@ cle () {
 		grep -q "# .* $N:" $P || { printb Module download failed; rm -f $P; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
-		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	case $1 in									# dbg
@@ -1194,7 +1191,7 @@ cle () {
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`
@@ -1203,7 +1200,7 @@ cle () {
 		#: choose one to read
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N |mdfilter|less -r; break
+			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf|less -r; break
 		done;;
 	"")	#: do nothing, just show off
 		_clebnr
