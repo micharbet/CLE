@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-03 (Zodiac)
+#* version: 2021-10-04 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -865,6 +865,7 @@ lscreen () (
 	#: list all screens with that name and find how many of them are there
 	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
 	NS=`wc -w <<<$SCRS`
+	reset #: it is sometimes necessary to reset terminal
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		#: No session with given name found, prepare to start new session

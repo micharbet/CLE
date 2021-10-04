@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-03 (Zodiac)
+#* version: 2021-10-04 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2020 by Michael Arbet
 
@@ -662,6 +662,7 @@ lscreen () (
 	[ "$1" = -j ] && NM=${2:-.}
 	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
 	NS=`wc -w <<<$SCRS`
+	reset
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		SCF=$CLE_D/screenrc
