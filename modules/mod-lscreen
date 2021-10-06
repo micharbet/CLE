@@ -26,6 +26,7 @@ lscreen () (
 	#: list all screens with that name and find how many of them are there
 	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
 	NS=`wc -w <<<$SCRS`
+	reset #: sometimes it's necessary to reset terminal
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		#: No session with given name found, prepare to start new session

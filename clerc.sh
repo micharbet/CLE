@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-30 (Aquarius)
+#* version: 2021-10-06 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -225,10 +225,10 @@ EOT
 }
 
 # boldprint
-printb () { printf "$_CL$*$_CN\n";}
+_clepbold () { printf "$_CL$*$_CN\n";}
 
 # simple question
-ask () (
+_cleask () (
 	PR="$_CL$* (y/N) $_CN"
 	read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
@@ -332,7 +332,7 @@ _clesc () (
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
-	 -e 's/\^g/\$(gitwb)/g'
+	 -e 's/\^g/\$(_clegit)/g'
 	 -e 's/\^?/\$_EC/g'
 	 -e 's/\^E/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
 	 -e 's/\^C\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
@@ -387,14 +387,14 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	vdump "CLE_CLR|CLE_PB."
+	_clevdump "CLE_CLR|CLE_PB."
 ) >$CLE_CF
 
 
 # prompt callback functions
 #: 
 #: Important note about code efficiency:
-#: As _cleprecmd function is executed *every* time you push <enter> key, its code
+#: As _cleprompt function is executed *every* time you push <enter> key, its code
 #: needs to be as simple as possible. All commands here should be internals.
 #: Internal commands don't invoke (fork) new processes and as such they
 #: are much easier to system resources.
@@ -402,11 +402,11 @@ _clesave () (
 #: Not only the actually used expression is shorter but also much faster since `sed`
 #: would be executed as new process from binary file
 #: The same rule applies to CLE internal functions used and called within prompt
-#: callback. Namely: `_cleprecmd` `_clepreex` `_clerh`
+#: callback. Namely: `_cleprompt` `_clepreex` `_clerh`
 #:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround
-_cleprecmd () {
+_cleprompt () {
 	eval "_EC=$_PST"
 	local IFS S DT C
 	dbg_var _HT
@@ -478,7 +478,7 @@ _clerh () {
 		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				VD=`vdump $V`
+				VD=`_clevdump $V`
 				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done;;
@@ -491,14 +491,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-# print MOTD + more
-if [ "$CLE_MOTD" ]; then
-	[ -f /etc/motd ] && cat /etc/motd
-	printf "\n$CLE_MOTD"
-	printb "\n CLE $CLE_VER\n"
-	unset CLE_MOTD
-fi
 
 # read inherited environment
 [ $CLE_WS ] && _clexe $CLE_ENV
@@ -530,7 +522,7 @@ fi
 ## ** cd command enhancements **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
-- () { cd - >/dev/null; vdump OLDPWD;}
+- () { cd - >/dev/null; _clevdump OLDPWD;}
 .. () { cd ..;}
 ... () { cd ../..;}
 ## `xx` & `cx`   - bookmark $PWD & use later
@@ -718,10 +710,8 @@ _clerhbuf () {
 	echo "$_CN$_C3 $_RHLEN records, search:$_CN$_C4 'hh $_RHARG'"
 }
 
-##
-## ** Not-just-internal tools **
-## `gitwb`           - show current working branch name
-gitwb () (
+#: show current working branch
+_clegit () (
 	# go down the folder tree and look for .git
 	#: Because this function is supposed to use in prompt we want to save
 	#: cpu cycles. Do not call `git` if not necessary.
@@ -733,12 +723,11 @@ gitwb () (
 )
 
 
-## `mdfilter`        - markdown acsii highlighter
-#: Highly sophisticated filter :-D
+#: Highly sophisticated markdown ascii filter :-D
 #: Just replaces special strings in markdown files and augments the output
 #: with escape codes to highlight.
 #: Not perfect, but it helps and is simple, isn't it?
-mdfilter () {
+_clemdf () {
 	sed -e "s/^###\(.*\)/$_CL\1$_CN/"\
 	 -e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/"\
 	 -e "s/^#\( *\)\(.*\)/\1$_CL$_CV \2 $_CN/"\
@@ -748,8 +737,8 @@ mdfilter () {
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
-## `vdump 'regexp'`  - dump variables in reusable way
-vdump () (
+#: dump variables in reusable way
+_clevdump () (
 	#: awk: 1. exits when reaches functions
 	#:      2. finds variables matching regular expression
 	declare | awk '/^('$1')=/{print}'
@@ -804,9 +793,9 @@ _clepak () {
 
                 #: prepare environment to transfer: color table, prompt settings, WS name and custom exports
                 echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-                vdump "CLE_PB.|^_C." >>$EN
-                vdump "$CLE_XVARS" >>$EN
-                vdump "CLE_DEBUG" >>$EN                     # dbg
+                _clevdump "CLE_PB.|^_C." >>$EN
+                _clevdump "$CLE_XVARS" >>$EN
+                _clevdump "CLE_DEBUG" >>$EN                     # dbg
                 cat $CLE_AL >>$EN 2>/dev/null
                 #: Add selected functions to transfer
                 for XFUN in $CLE_XFUN; do
@@ -825,7 +814,7 @@ _clepak () {
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	_clepak tar
-	[ $CLE_DEBUG ] && printb "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
+	[ $CLE_DEBUG ] && _clepbold "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
 	#: remote startup
 	#: - create destination folder, unpack tarball and execute the code
 	command ssh -t $* "
@@ -849,7 +838,7 @@ lssh () (
 lsudo () (
 	_clepak
 	dbg_print "lsudo runs: $RH/$RC"
-        sudo -i -u ${1:-root} $RH/$RC
+        sudo -i -u ${1:-root} sh $RH/$RC
 )
 
 ## `lsu [user]`        - su wrapper
@@ -868,9 +857,17 @@ lsu () (
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
-for M in $CLE_D/mod-*; do
-	_clexe $M
+for _T in $CLE_D/mod-*; do
+	_clexe $_T
 done
+
+# print MOTD + more
+if [ "$CLE_MOTD" ]; then
+	[ -f /etc/motd ] && cat /etc/motd
+	printf "\n$CLE_MOTD"
+	_clepbold "\n CLE $CLE_VER\n"
+	unset CLE_MOTD
+fi
 
 #: Enhnace PATH by user's own bin folders
 for _T in $HOME/bin $HOME/.local/bin; do
@@ -912,7 +909,7 @@ _PE='\['; _Pe='\]'
 _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
-PROMPT_COMMAND=_cleprecmd
+PROMPT_COMMAND=_cleprompt
 
 # completions
 #: Command 'cle' completion
@@ -1007,7 +1004,7 @@ cle () {
 			S=$*
 			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_PB$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
-			vdump CLE_P$I
+			_clevdump CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
 		case "$1" in
@@ -1023,7 +1020,7 @@ cle () {
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
 			if [ -f $CLE_CF ]; then
-				printb $_CU$CLE_CF:
+				_clepbold $_CU$CLE_CF:
 				cat $CLE_CF
 			else
 				echo Default/Inherited configuration
@@ -1039,8 +1036,8 @@ cle () {
 		unset CLE_1
 		I='# Command Live Environment'
 		S=$HOME/.${SHELL##*/}rc	#: hook into user's login shell rc
-		grep -A1 "$I" $S && printb CLE is already hooked in $S && return 1
-		ask "Do you want to add CLE to $S?" || return
+		grep -A1 "$I" $S && _clepbold CLE is already hooked in $S && return 1
+		_cleask "Do you want to add CLE to $S?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
@@ -1054,8 +1051,8 @@ cle () {
 		echo current: $CLE_VER
 		echo "new:     $S"
 		I=`diff $CLE_RC $P` && { echo No difference; return 1;}
-		ask Do you want to see diff? && cat <<<"$I"
-		ask Do you want to install new version? || return
+		_cleask Do you want to see diff? && cat <<<"$I"
+		_cleask Do you want to install new version? || return
 		#: now replace CLE code
 		B=$CLE_D/rc.bk
 		cp $CLE_RC $B
@@ -1068,15 +1065,15 @@ cle () {
 	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code
-		ask Activate CLE modules? || return
+		_cleask Activate CLE modules? || return
 		N=cle-mod
 		P=$CLE_D/$N
 		curl -k $CLE_SRC/modules/$N >$P
-		grep -q "# .* $N:" $P || { printb Module download failed; rm -f $P; return 1;}
+		grep -q "# .* $N:" $P || { _clepbold Module download failed; rm -f $P; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
-		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_DR: $CLE_DR; ls -l $CLE_DR;;	# dbg
+		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+	ls)	_clepbold CLE_D: $CLE_D; ls -l $CLE_D; _clepbold CLE_DR: $CLE_DR; ls -l $CLE_DR;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	case $1 in									# dbg
 		"")	dbg_var CLE_DEBUG ;;							# dbg
@@ -1088,7 +1085,7 @@ cle () {
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`
@@ -1097,7 +1094,7 @@ cle () {
 		#: choose one to read
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N |mdfilter|less -r; break
+			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf|less -r; break
 		done;;
 	"")	#: do nothing, just show off
 		_clebnr

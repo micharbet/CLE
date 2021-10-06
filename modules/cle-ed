@@ -82,6 +82,6 @@ else
 fi
 
 # Suggest restart if part of CLE was edited
-[[ $FILE =~ cle- ]] && ask "Restart CLE?" && cle reload
+[[ $FILE =~ cle- ]] && _cleask "Restart CLE?" && cle reload
 return 0
 

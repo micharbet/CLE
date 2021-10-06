@@ -54,17 +54,17 @@ if [ -e $NEWRD ]; then
 fi
 
 # Do it!
-ask "moving folder: $CLE_DR -> $NEWRD ?"
+_cleask "moving folder: $CLE_DR -> $NEWRD ?"
 mv $CLE_DR $NEWRD
 
 # replace paths in .bashrc hook
 local NEWRC=$NEWRD/rc
-printb "editing .bashrc:"
+_clebold "editing .bashrc:"
 sed -i "s;$CLE_RC;$NEWRC;g" $BRC
 command grep -A1 "Command Live Environment" $BRC
 
 # restart the environment to fix the rest values
-printb "cle reload"
+_clebold "cle reload"
 CLE_RC=$NEWRC
 cle reload
 

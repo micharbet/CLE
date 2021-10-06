@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-09-30 (Aquarius)
+#* version: 2021-10-06 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -149,10 +149,10 @@ EOT
 }
 
 # boldprint
-printb () { printf "$_CL$*$_CN\n";}
+_clepbold () { printf "$_CL$*$_CN\n";}
 
 # simple question
-ask () (
+_cleask () (
 	PR="$_CL$* (y/N) $_CN"
 	read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
@@ -247,7 +247,7 @@ _clesc () (
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
-	 -e 's/\^g/\$(gitwb)/g'
+	 -e 's/\^g/\$(_clegit)/g'
 	 -e 's/\^?/\$_EC/g'
 	 -e 's/\^E/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
 	 -e 's/\^C\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
@@ -299,14 +299,14 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	vdump "CLE_CLR|CLE_PB."
+	_clevdump "CLE_CLR|CLE_PB."
 ) >$CLE_CF
 
 
 # prompt callback functions
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
-_cleprecmd () {
+_cleprompt () {
 	eval "_EC=$_PST"
 	local IFS S DT C
 	[[ $_EC =~ [1-9] ]] || _EC=0
@@ -364,7 +364,7 @@ _clerh () {
 		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				VD=`vdump $V`
+				VD=`_clevdump $V`
 				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done;;
@@ -377,14 +377,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-# print MOTD + more
-if [ "$CLE_MOTD" ]; then
-	[ -f /etc/motd ] && cat /etc/motd
-	printf "\n$CLE_MOTD"
-	printb "\n CLE $CLE_VER\n"
-	unset CLE_MOTD
-fi
 
 # read inherited environment
 [ $CLE_WS ] && _clexe $CLE_ENV
@@ -410,7 +402,7 @@ fi
 ## ** cd command enhancements **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
-- () { cd - >/dev/null; vdump OLDPWD;}
+- () { cd - >/dev/null; _clevdump OLDPWD;}
 .. () { cd ..;}
 ... () { cd ../..;}
 ## `xx` & `cx`   - bookmark $PWD & use later
@@ -578,10 +570,7 @@ _clerhbuf () {
 	echo "$_CN$_C3 $_RHLEN records, search:$_CN$_C4 'hh $_RHARG'"
 }
 
-##
-## ** Not-just-internal tools **
-## `gitwb`           - show current working branch name
-gitwb () (
+_clegit () (
 	# go down the folder tree and look for .git
 	while [ "$PWD" != / ]; do
 		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
@@ -591,8 +580,7 @@ gitwb () (
 )
 
 
-## `mdfilter`        - markdown acsii highlighter
-mdfilter () {
+_clemdf () {
 	sed -e "s/^###\(.*\)/$_CL\1$_CN/"\
 	 -e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/"\
 	 -e "s/^#\( *\)\(.*\)/\1$_CL$_CV \2 $_CN/"\
@@ -602,8 +590,7 @@ mdfilter () {
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
-## `vdump 'regexp'`  - dump variables in reusable way
-vdump () (
+_clevdump () (
 	declare | awk '/^('$1')=/{print}'
 )
 
@@ -635,8 +622,8 @@ _clepak () {
 		done
 
                 echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-                vdump "CLE_PB.|^_C." >>$EN
-                vdump "$CLE_XVARS" >>$EN
+                _clevdump "CLE_PB.|^_C." >>$EN
+                _clevdump "$CLE_XVARS" >>$EN
                 cat $CLE_AL >>$EN 2>/dev/null
                 for XFUN in $CLE_XFUN; do
                         declare -f $XFUN >>$EN
@@ -664,7 +651,7 @@ lssh () (
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
 	_clepak
-        sudo -i -u ${1:-root} $RH/$RC
+        sudo -i -u ${1:-root} sh $RH/$RC
 )
 
 ## `lsu [user]`        - su wrapper
@@ -679,9 +666,17 @@ lsu () (
 _clexe $HOME/.cle-local
 _clexe $CLE_AL
 _clexe $CLE_TW
-for M in $CLE_D/mod-*; do
-	_clexe $M
+for _T in $CLE_D/mod-*; do
+	_clexe $_T
 done
+
+# print MOTD + more
+if [ "$CLE_MOTD" ]; then
+	[ -f /etc/motd ] && cat /etc/motd
+	printf "\n$CLE_MOTD"
+	_clepbold "\n CLE $CLE_VER\n"
+	unset CLE_MOTD
+fi
 
 for _T in $HOME/bin $HOME/.local/bin; do
 	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T
@@ -719,7 +714,7 @@ _PE='\['; _Pe='\]'
 _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
-PROMPT_COMMAND=_cleprecmd
+PROMPT_COMMAND=_cleprompt
 
 # completions
 _clecomp () {
@@ -800,7 +795,7 @@ cle () {
 			S=$*
 			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_PB$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
-			vdump CLE_P$I
+			_clevdump CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
 		case "$1" in
@@ -816,7 +811,7 @@ cle () {
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
 			if [ -f $CLE_CF ]; then
-				printb $_CU$CLE_CF:
+				_clepbold $_CU$CLE_CF:
 				cat $CLE_CF
 			else
 				echo Default/Inherited configuration
@@ -832,8 +827,8 @@ cle () {
 		unset CLE_1
 		I='# Command Live Environment'
 		S=$HOME/.${SHELL##*/}rc
-		grep -A1 "$I" $S && printb CLE is already hooked in $S && return 1
-		ask "Do you want to add CLE to $S?" || return
+		grep -A1 "$I" $S && _clepbold CLE is already hooked in $S && return 1
+		_cleask "Do you want to add CLE to $S?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
@@ -844,8 +839,8 @@ cle () {
 		echo current: $CLE_VER
 		echo "new:     $S"
 		I=`diff $CLE_RC $P` && { echo No difference; return 1;}
-		ask Do you want to see diff? && cat <<<"$I"
-		ask Do you want to install new version? || return
+		_cleask Do you want to see diff? && cat <<<"$I"
+		_cleask Do you want to install new version? || return
 		B=$CLE_D/rc.bk
 		cp $CLE_RC $B
 		chmod 755 $P
@@ -855,23 +850,23 @@ cle () {
 		unset CLE_EXE
 		. $CLE_RC && echo CLE reloaded: $CLE_RC $CLE_VER;;
 	mod)    ## `cle mod`               - cle module management
-		ask Activate CLE modules? || return
+		_cleask Activate CLE modules? || return
 		N=cle-mod
 		P=$CLE_D/$N
 		curl -k $CLE_SRC/modules/$N >$P
-		grep -q "# .* $N:" $P || { printb Module download failed; rm -f $P; return 1;}
+		grep -q "# .* $N:" $P || { _clepbold Module download failed; rm -f $P; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
-		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		I=`curl -sk $CLE_SRC/doc/index.md`
 		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N |mdfilter|less -r; break
+			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf|less -r; break
 		done;;
 	"")
 		_clebnr

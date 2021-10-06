@@ -16,14 +16,14 @@ CLE_REPO=https://github.com/micharbet/CLE.git
 
 cdc () {
 	cd $CLE_DK
-	printb CLE development kit: $PWD;
+	_clebold CLE development kit: $PWD;
 	git status
 }
 
 cd
 CLE_DK=$PWD/CLE
 if [ ! -d $CLE_DK/.git ]; then
-	ask "Clone from github?" && git clone $CLE_REPO || return
+	_cleask "Clone from github?" && git clone $CLE_REPO || return
 fi
 cdc
 
@@ -71,12 +71,12 @@ _cle_cp() {
 		DEST=$CLE_RC
 	fi
 
-	printb " ${_CU}diff $DEST $FILENAME${_Cu}"
+	_clebold " ${_CU}diff $DEST $FILENAME${_Cu}"
 	if diff $DEST $FILENAME >/dev/null; then
 		echo No diff...
 		popd
 	else
-		ask "replace $DEST?" || return
+		_cleask "replace $DEST?" || return
 		cp $FILENAME $DEST
 		popd >/dev/null
 		cle reload
