@@ -1051,7 +1051,7 @@ cle () {
 		echo current: $CLE_VER
 		echo "new:     $S"
 		diff $CLE_RC $N >/dev/null && { echo No difference; return 1;}
-		ask Do you want to install new version? || return
+		_cleask Do you want to install new version? || return
 		#: now replace CLE code
 		cp $CLE_RC $CLE_D/rc.bk
 		chmod 755 $N

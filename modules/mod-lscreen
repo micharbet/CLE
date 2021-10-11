@@ -64,7 +64,7 @@ lscreen () (
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
 			#: we found more screens with simiilar names, choose one!
-			printb "${_CU}Current '$NM' sessions:"
+			_clebold "${_CU}Current '$NM' sessions:"
 			PS3="$_CL choose # to join: $_CN"
 			select SN in $SCRS;do
 				[ $SN ] && break

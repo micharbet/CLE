@@ -25,7 +25,7 @@ gipul () {
 ## `gipus`            - git push into origin / current working branch
 gipus () {
 	BRANCH=`git symbolic-ref --short HEAD`
-	printb git push -u origin $BRANCH 
+	_clebold git push -u origin $BRANCH 
 	git push -u origin $BRANCH 
 }
 
