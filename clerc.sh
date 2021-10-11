@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-05 (Zodiac)
+#* version: 2021-10-11 (Zodiac)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2020 by Michael Arbet
+#* Copyright (C) 2016-2021 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -256,10 +256,10 @@ EOT
 }
 
 # boldprint
-printb () { printf "$_CL$*$_CN\n";}
+_clebold () { printf "$_CL$*$_CN\n";}
 
 # simple question
-ask () (
+_cleask () (
 	PR="$_CL$* (y/N) $_CN"
 	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
@@ -580,7 +580,7 @@ _clerh () {
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
 	printf "\n$CLE_MOTD"
-	printb "\n CLE/$CLE_SH $CLE_VER\n"
+	_clebold "\n CLE/$CLE_SH $CLE_VER\n"
 	unset CLE_MOTD
 fi
 
@@ -810,7 +810,7 @@ _clepak () {
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	_clepak tar
-	[ $CLE_DEBUG ] && printb "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
+	[ $CLE_DEBUG ] && _clebold "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
 	#: remote startup
 	#: - create destination folder, unpack tarball and execute the code
 	command ssh -t $* "
@@ -879,7 +879,7 @@ lscreen () (
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
 			#: we found more screens with simiilar names, choose one!
-			printb "${_CU}Current '$NM' sessions:"
+			_clebold "${_CU}Current '$NM' sessions:"
 			PS3="$_CL choose # to join: $_CN"
 			select SN in $SCRS;do
 				[ $SN ] && break
@@ -1122,7 +1122,7 @@ cle () {
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
 			if [ -f $CLE_CF ]; then
-				printb $_CU$CLE_CF:
+				_clebold $_CU$CLE_CF:
 				cat $CLE_CF
 			else
 				echo Default/Inherited configuration
@@ -1138,8 +1138,8 @@ cle () {
 		unset CLE_1
 		I='# Command Live Environment'
 		S=$HOME/.${SHELL##*/}rc	#: hook into user's login shell rc
-		grep -A1 "$I" $S && printb CLE is already hooked in $S && return 1
-		ask "Do you want to add CLE to $S?" || return
+		grep -A1 "$I" $S && _clebold CLE is already hooked in $S && return 1
+		_cleask "Do you want to add CLE to $S?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
@@ -1153,8 +1153,8 @@ cle () {
 		echo current: $CLE_VER
 		echo "new:     $S"
 		I=`diff $CLE_RC $N` && { echo No difference; return 1;}
-		ask Do you want to see diff? && cat <<<"$I"
-		ask Do you want to install new version? || return
+		_cleask Do you want to see diff? && cat <<<"$I"
+		_cleask Do you want to install new version? || return
 		#: now replace CLE code
 		cp $CLE_RC $CLE_D/rc.bk
 		chmod 755 $N
@@ -1177,15 +1177,15 @@ cle () {
 	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code
-		ask Activate CLE modules? || return
+		_cleask Activate CLE modules? || return
 		N=cle-mod
 		P=$CLE_D/$N
 		curl -k $CLE_SRC/modules/$N >$P
-		grep -q "# .* $N:" $P || { printb Module download failed; rm -f $P; return 1;}
+		grep -q "# .* $N:" $P || { _clebold Module download failed; rm -f $P; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
 		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
+	ls)	_clebold CLE_D: $CLE_D; ls -l $CLE_D; _clebold CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	case $1 in									# dbg
 		"")	dbg_var CLE_DEBUG ;;							# dbg

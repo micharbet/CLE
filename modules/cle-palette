@@ -1,11 +1,11 @@
 ##
 ## ** cle-palette: Color palettes for OSC4 capable terminals **
 #
-#* version: 2019-11-15
+#* version: 2021-10-11
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2019 by Michael Arbet 
+#* Copyright (C) 2019-2021 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -286,7 +286,7 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 	;;
 
 "")	# show available palettes
-	printb "${_CU}Avaliable palettes:${_Cu}"
+	_clebold "${_CU}Avaliable palettes:${_Cu}"
 	declare -f | sed -n 's/.*_pal_\([[:graph:]]*\).*/- \1/p'
 	printf "${_CL}Current colors:$_CN"
 	if [ -f $PALMOD ]; then
