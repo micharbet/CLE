@@ -184,7 +184,7 @@ update)	## `cle mod update`    - update all modules
 		MSTAT=`_clemodstat $MOD`
 		[ "$MSTAT" = "U" ] && MUPD="$MUPD $MOD"
 	done
-	[ $MUPD ] || { echo Everything up to date.; return; }
+	[ "$MUPD" ] || { echo Everything up to date.; return; }
 	_clebold Modules to update:$_CN $MUPD
 	_cleask "Continue?" || return
 	mkdir -p $CLE_D/off
