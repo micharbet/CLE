@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-06 (Aquarius)
+#* version: 2021-10-11 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -1044,7 +1044,7 @@ cle () {
 		N=$CLE_D/rc.new
 		#: update by default from the own branch
 		#: master brach or other can be specified in parameter
-		curl -k ${CLE_SRC/CLE_REL/${1:-CLE_REL}}/clerc >$N #: use different branch if specified
+		curl -k ${CLE_SRC/$CLE_REL/${1:-$CLE_REL}}/clerc >$N #: use different branch if specified
 		#: check correct download and its version
 		S=`sed -n 's/^#\* version: //p' $N`
 		[ "$S" ] || { echo "Download error"; return 1; }

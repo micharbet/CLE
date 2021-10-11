@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-06 (Aquarius)
+#* version: 2021-10-11 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -833,7 +833,7 @@ cle () {
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
 		N=$CLE_D/rc.new
-		curl -k ${CLE_SRC/CLE_REL/${1:-CLE_REL}}/clerc >$N
+		curl -k ${CLE_SRC/$CLE_REL/${1:-$CLE_REL}}/clerc >$N
 		S=`sed -n 's/^#\* version: //p' $N`
 		[ "$S" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
