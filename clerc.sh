@@ -1041,25 +1041,29 @@ cle () {
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
-		P=$CLE_D/rc.new
+		N=$CLE_D/rc.new
 		#: update by default from the own branch
 		#: master brach or other can be specified in parameter
-		curl -k ${CLE_SRC/CLE_REL/${1:-CLE_REL}}/clerc >$P #: use different branch if specified
+		curl -k ${CLE_SRC/CLE_REL/${1:-CLE_REL}}/clerc >$N #: use different branch if specified
 		#: check correct download and its version
-		S=`sed -n 's/^#\* version: //p' $P`
+		S=`sed -n 's/^#\* version: //p' $N`
 		[ "$S" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
 		echo "new:     $S"
-		I=`diff $CLE_RC $P` && { echo No difference; return 1;}
-		_cleask Do you want to see diff? && cat <<<"$I"
-		_cleask Do you want to install new version? || return
+		diff $CLE_RC $N >/dev/null && { echo No difference; return 1;}
+		ask Do you want to install new version? || return
 		#: now replace CLE code
-		B=$CLE_D/rc.bk
-		cp $CLE_RC $B
-		chmod 755 $P
-		mv -f $P $CLE_RC
-		cle reload;;
-	reload) ## `cle reload`            - reload CLE
+		cp $CLE_RC $CLE_D/rc.bk
+		chmod 755 $N
+		mv -f $N $CLE_RC
+		cle reload
+		#: update modules if necessary
+		N=cle-mod
+		[ -f "$CLE_D/$N" ] || return
+		echo updating modules
+		curl -k $CLE_SRC/modules/$N >$CLE_D/$N && cle mod update
+		;;
+	reload) ## `cle reload           ` - reload CLE
 		unset CLE_EXE
 		. $CLE_RC && echo CLE reloaded: $CLE_RC $CLE_VER;;
 	mod)    ## `cle mod`               - cle module management
