@@ -225,7 +225,7 @@ EOT
 }
 
 # boldprint
-_clepbold () { printf "$_CL$*$_CN\n";}
+_clebold () { printf "$_CL$*$_CN\n";}
 
 # simple question
 _cleask () (
@@ -814,7 +814,7 @@ _clepak () {
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	_clepak tar
-	[ $CLE_DEBUG ] && _clepbold "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
+	[ $CLE_DEBUG ] && _clebold "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
 	#: remote startup
 	#: - create destination folder, unpack tarball and execute the code
 	command ssh -t $* "
@@ -865,7 +865,7 @@ done
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
 	printf "\n$CLE_MOTD"
-	_clepbold "\n CLE $CLE_VER\n"
+	_clebold "\n CLE $CLE_VER\n"
 	unset CLE_MOTD
 fi
 
@@ -1020,7 +1020,7 @@ cle () {
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
 			if [ -f $CLE_CF ]; then
-				_clepbold $_CU$CLE_CF:
+				_clebold $_CU$CLE_CF:
 				cat $CLE_CF
 			else
 				echo Default/Inherited configuration
@@ -1036,7 +1036,7 @@ cle () {
 		unset CLE_1
 		I='# Command Live Environment'
 		S=$HOME/.${SHELL##*/}rc	#: hook into user's login shell rc
-		grep -A1 "$I" $S && _clepbold CLE is already hooked in $S && return 1
+		grep -A1 "$I" $S && _clebold CLE is already hooked in $S && return 1
 		_cleask "Do you want to add CLE to $S?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
@@ -1073,11 +1073,11 @@ cle () {
 		N=cle-mod
 		P=$CLE_D/$N
 		curl -k $CLE_SRC/modules/$N >$P
-		grep -q "# .* $N:" $P || { _clepbold Module download failed; rm -f $P; return 1;}
+		grep -q "# .* $N:" $P || { _clebold Module download failed; rm -f $P; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
 		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	ls)	_clepbold CLE_D: $CLE_D; ls -l $CLE_D; _clepbold CLE_DR: $CLE_DR; ls -l $CLE_DR;;	# dbg
+	ls)	_clebold CLE_D: $CLE_D; ls -l $CLE_D; _clebold CLE_DR: $CLE_DR; ls -l $CLE_DR;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	case $1 in									# dbg
 		"")	dbg_var CLE_DEBUG ;;							# dbg
