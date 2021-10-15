@@ -593,7 +593,7 @@ _clemdf () {
 	 -e "s/\*\*\(.*\)\*\*/$_CL\1$_CN/"\
 	 -e "s/\<_\(.*\)_\>/$_CU\1$_Cu/g"\
 	 -e "s/\`\`\`/$_CD~~~~~~~~~~~~~~~~~$_CN/"\
-	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
+	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g" | less -erFX
 }
 
 _clevdump () (
@@ -865,13 +865,13 @@ cle () {
 		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf | less -erFX;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf;;
 	doc)	## `cle doc`               - show documentation
 		I=`curl -sk $CLE_SRC/doc/index.md`
 		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf|less -r; break
+			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf; break
 		done;;
 	"")
 		_clebnr

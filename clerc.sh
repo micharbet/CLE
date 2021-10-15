@@ -743,7 +743,7 @@ _clemdf () {
 	 -e "s/\*\*\(.*\)\*\*/$_CL\1$_CN/"\
 	 -e "s/\<_\(.*\)_\>/$_CU\1$_Cu/g"\
 	 -e "s/\`\`\`/$_CD~~~~~~~~~~~~~~~~~$_CN/"\
-	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
+	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g" | less -erFX
 }
 
 #: dump variables in reusable way
@@ -1094,7 +1094,7 @@ cle () {
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf | less -erFX;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`
@@ -1103,7 +1103,7 @@ cle () {
 		#: choose one to read
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf|less -r; break
+			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf; break
 		done;;
 	"")	#: do nothing, just show off
 		_clebnr
