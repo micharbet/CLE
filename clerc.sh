@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-11 (Aquarius)
+#* version: 2021-10-15 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -711,16 +711,25 @@ _clerhbuf () {
 }
 
 #: show current working branch
-_clegit () (
-	# go down the folder tree and look for .git
-	#: Because this function is supposed to use in prompt we want to save
-	#: cpu cycles. Do not call `git` if not necessary.
-	while [ "$PWD" != / ]; do
-		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
-		cd ..
-	done
-	return 1  # not in git repository
-)
+#: define this function only on hosts where git is installed
+if which git >/dev/null 2>&1; then
+	_clegit () (
+		# go down the folder tree and look for .git
+		#: Because this function is supposed to use in prompt we want to save
+		#: cpu cycles. Do not call `git` if not necessary.
+		while [ "$PWD" != / ]; do
+			if [ -d .git ]; then
+				#: verify dirty status
+				git diff-index --quiet HEAD -- && CH="(%s)" || CH="$_CR(%s !)"
+				printf "$CH" "$(git symbolic-ref --short HEAD)"
+			fi
+			cd ..
+		done
+	)
+else
+	#: otherwise just an empty one
+	_clegit () { return; };
+fi
 
 
 #: Highly sophisticated markdown ascii filter :-D
@@ -948,11 +957,7 @@ _clexe $_N/completions/ssh && complete -F _ssh lssh
 #: those definitions must be here, only after config and tweaks not to mess
 #: with builtin shell functions during startup. This also speeds up the thing
 alias () {
-	if [ -n "$1" ]; then
-		aa "$@"
-	else
-		builtin alias
-	fi
+	[ -n "$1" ] && aa "$@" || builtin alias
 }
 
 unalias () {

@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-11 (Aquarius)
+#* version: 2021-10-15 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -570,14 +570,20 @@ _clerhbuf () {
 	echo "$_CN$_C3 $_RHLEN records, search:$_CN$_C4 'hh $_RHARG'"
 }
 
-_clegit () (
-	# go down the folder tree and look for .git
-	while [ "$PWD" != / ]; do
-		[ -d .git ] && { git symbolic-ref --short HEAD; return; }
-		cd ..
-	done
-	return 1  # not in git repository
-)
+if which git >/dev/null 2>&1; then
+	_clegit () (
+		# go down the folder tree and look for .git
+		while [ "$PWD" != / ]; do
+			if [ -d .git ]; then
+				git diff-index --quiet HEAD -- && CH="(%s)" || CH="$_CR(%s !)"
+				printf "$CH" "$(git symbolic-ref --short HEAD)"
+			fi
+			cd ..
+		done
+	)
+else
+	_clegit () { return; };
+fi
 
 
 _clemdf () {
@@ -743,11 +749,7 @@ _clexe $_N/completions/ssh && complete -F _ssh lssh
 
 # redefine alias builtins
 alias () {
-	if [ -n "$1" ]; then
-		aa "$@"
-	else
-		builtin alias
-	fi
+	[ -n "$1" ] && aa "$@" || builtin alias
 }
 
 unalias () {
