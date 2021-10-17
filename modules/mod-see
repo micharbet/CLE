@@ -1,0 +1,112 @@
+##
+## ** mod-see: logfile highlighter **
+#
+#* version: 2021-10-17
+#* author:  Michael Arbet (marbet@redhat.com)
+#* license: GNU GPL v2
+#* Copyright (C) 2013-2021 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+
+
+see () (
+	# Note new style of inline help!
+	# this can be added to functions
+	# for now there needs to be both
+	:
+	: "see [-t sec] [-f file|-l] [RE1] [RE2] [RE3]"
+	## `see [-t sec] [-f file|-l] [RE1] [RE2] [RE3]`
+	: ""
+	: "Parses the text through regular expressions and highlights"
+	: "up to three selected words. It reads either stdin or specified "
+	: "file. Timestamps are printed in regular intervals."
+	: ""
+	# defaults
+	TSTAMP=60
+	INFILE=""
+
+	function usage() {
+		declare -f see | sed -n 's/^\s*: \"\(.*\)\";*/\1/p' 
+	}
+
+	while getopts "hnt:f:l" OPT
+	do
+		case $OPT in
+		f)
+			: "  -f file  open filename instead of stdin"
+			INFILE=$OPTARG
+			if [ ! -f $OPTARG ]; then
+				echo file $OPTARG not found
+				exit 1
+			fi
+			;;
+		l)
+			: "  -l       read /var/log/messages"
+			INFILE=/var/log/messages
+			;;
+		t)
+			: "  -t nsec  change timestamps interval, default 60 seconds, use 0 to suppress"
+			TSTAMP=$OPTARG
+			;;
+		*)
+			usage
+			exit 1
+			;;
+		esac
+	done
+	shift $((OPTIND-1))
+
+	# Prepare search/replace expressions to colorize found words
+	# - maximum three words (regular expressions)
+	RE1=
+	RE2=
+	RE3=
+	case $# in
+	0)	RE="" # just don't highlight anything if no words were specified
+		;;
+	1)	RE="s/($1)/$_CG\\1$_CN/"g
+		;;
+	2)	RE1="s/($1)/$_CG\\1$_CN/"g
+		RE2="s/($2)/$_CY\\1$_CN/"g
+		RE="$RE1;$RE2"
+		;;
+	3)
+		RE1="s/($1)/$_CG\\1$_CN/"g
+		RE2="s/($2)/$_CY\\1$_CN/"g
+		RE3="s/($3)/$_CC\\1$_CN/"g
+		RE="$RE1;$RE2;$RE3"
+		;;
+	*)
+		usage
+		exit 1
+		;;
+	esac
+
+	# Add date/time, hostname and process highlight
+	# bold only so there are no too many colors
+	RE="s/^(\\w+\\s+[0-9]+\\s+..:..:..\\s+\\w+\\s+[^:]+:)/$_CL\\1$_CN/;$RE"
+	# Blue versions
+	#RE="s/^(\\w+\\s+[0-9]+\\s+..:..:..)\\s+(\\w+\\s+[^:]+:)/$_CB\\1$_Cb \\2$_CN/;$RE"
+
+	STAMPID=''
+	# ensure timestamps printed in the background process
+	if [ $TSTAMP -gt 0 ]; then
+		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CR[%Y-%m-%d %T] -- ${INFILE:-STDIN}$_CN'; sleep 60; done" &
+		STAMPID=$!
+		trap "date '+$_CR[%Y-%m-%d %T] -- unsee$_CN'; kill $STAMPID" EXIT
+	fi
+
+	# read and highlight
+	if [ $INFILE ]; then
+		tail -f $INFILE | sed -E -e "$RE"
+	else
+		sed -E -e "$RE"
+	fi
+)
+
+CLE_XFUN="$CLE_XFUN see"
+
