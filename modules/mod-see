@@ -1,7 +1,7 @@
 ##
 ## ** mod-see: logfile highlighter **
 #
-#* version: 2021-10-17
+#* version: 2021-10-23
 #* author:  Michael Arbet (marbet@redhat.com)
 #* license: GNU GPL v2
 #* Copyright (C) 2013-2021 by Michael Arbet 
@@ -18,19 +18,20 @@ see () (
 	# this can be added to functions
 	# for now there needs to be both
 	:
-	: "see [-t sec] [-f file|-l] [RE1] [RE2] [RE3]"
-	## `see [-t sec] [-f file|-l] [RE1] [RE2] [RE3]`
+	: "see [-t sec] [-f file|-l] [RE ...]"
+	## `see [-t sec] [-f file|-l] [RE ...]`
 	: ""
-	: "Parses the text through regular expressions and highlights"
-	: "up to three selected words. It reads either stdin or specified "
-	: "file. Timestamps are printed in regular intervals."
+	: "Continuously reads stdin or specified file like tail -f while highighing"
+	: "date/time at the begining of each line and also colorize words or regular"
+	: "expressions provided as the arguments. As an addition timestamps are"
+	: "printed every 60 seconds - configurable value"
 	: ""
 	# defaults
 	TSTAMP=60
 	INFILE=""
 
 	function usage() {
-		declare -f see | sed -n 's/^\s*: \"\(.*\)\";*/\1/p' 
+		declare -f see | sed -n 's/^\s*: \"\(.*\)\";*/\1/p' | _clemdf
 	}
 
 	while getopts "hnt:f:l" OPT
@@ -60,44 +61,26 @@ see () (
 	done
 	shift $((OPTIND-1))
 
-	# Prepare search/replace expressions to colorize found words
-	# - maximum three words (regular expressions)
-	RE1=
-	RE2=
-	RE3=
-	case $# in
-	0)	RE="" # just don't highlight anything if no words were specified
-		;;
-	1)	RE="s/($1)/$_CG\\1$_CN/"g
-		;;
-	2)	RE1="s/($1)/$_CG\\1$_CN/"g
-		RE2="s/($2)/$_CY\\1$_CN/"g
-		RE="$RE1;$RE2"
-		;;
-	3)
-		RE1="s/($1)/$_CG\\1$_CN/"g
-		RE2="s/($2)/$_CY\\1$_CN/"g
-		RE3="s/($3)/$_CC\\1$_CN/"g
-		RE="$RE1;$RE2;$RE3"
-		;;
-	*)
-		usage
-		exit 1
-		;;
-	esac
-
-	# Add date/time, hostname and process highlight
-	# bold only so there are no too many colors
+	# date/time, hostname and process highlight
+	# in bold only so there are no too many colors
 	RE="s/^(\\w+\\s+[0-9]+\\s+..:..:..\\s+\\w+\\s+[^:]+:)/$_CL\\1$_CN/;$RE"
-	# Blue versions
-	#RE="s/^(\\w+\\s+[0-9]+\\s+..:..:..)\\s+(\\w+\\s+[^:]+:)/$_CB\\1$_Cb \\2$_CN/;$RE"
+	
+	# Prepare search/replace expressions to colorize words
+	HICOLORS="MCGYR" # colors in reverse order
+	CI=${#HICOLORS}
+	for WORD in $*; do
+		[ $CI -gt 0 ] && ((CI--))
+		eval "HC=\$_C${HICOLORS:$CI:1}"
+		RE="$RE;s/($WORD)/$HC\\1$_CN/g"
+		# echo "$HC$CI: $WORD$_CN"
+	done
 
-	STAMPID=''
 	# ensure timestamps printed in the background process
+	STAMPID=''
 	if [ $TSTAMP -gt 0 ]; then
-		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CR[%Y-%m-%d %T] -- ${INFILE:-STDIN}$_CN'; sleep 60; done" &
+		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CB[%Y-%m-%d %T] -- ${INFILE:-STDIN}$_CN'; sleep $TSTAMP; done" &
 		STAMPID=$!
-		trap "date '+$_CR[%Y-%m-%d %T] -- unsee$_CN'; kill $STAMPID" EXIT
+		trap "date '+$_CB[%Y-%m-%d %T] -- unsee$_CN'; kill $STAMPID" EXIT
 	fi
 
 	# read and highlight

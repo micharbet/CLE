@@ -447,11 +447,6 @@ h () (
 	done;) 
 )
 
-bind -x '"\ek": "_clerhup"'
-bind -x '"\ej": "_clerhdown"'
-bind -x '"\eh": "hh -b $READLINE_LINE"'
-bind -x '"\el": "_clerhbuf"'
-
 ## `hh [opt] [srch]` - query the rich history
 _RHI=1
 _RHLEN=0
@@ -569,6 +564,11 @@ _clerhbuf () {
 	done
 	echo "$_CN$_C3 $_RHLEN records, search:$_CN$_C4 'hh $_RHARG'"
 }
+
+bind -x '"\ek": "_clerhup"'
+bind -x '"\ej": "_clerhdown"'
+bind -x '"\eh": "hh -b $READLINE_LINE"'
+bind -x '"\el": "_clerhbuf"'
 
 if which git >/dev/null 2>&1; then
 	_clegit () (

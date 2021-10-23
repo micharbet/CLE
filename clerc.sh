@@ -570,11 +570,6 @@ h () (
 	done;) 
 )
 
-bind -x '"\ek": "_clerhup"'		#: Alt-K  up in rich history
-bind -x '"\ej": "_clerhdown"'		#: Alt-J  down in rich history
-bind -x '"\eh": "hh -b $READLINE_LINE"'	#: Alt-H  serach in rich history using content of command line
-bind -x '"\el": "_clerhbuf"'		#: Alt-L  list commands from rich history buffer
-
 ## `hh [opt] [srch]` - query the rich history
 _RHI=1		#: current index to history
 _RHLEN=0	#: max index
@@ -709,6 +704,12 @@ _clerhbuf () {
 	done
 	echo "$_CN$_C3 $_RHLEN records, search:$_CN$_C4 'hh $_RHARG'"
 }
+
+#: keyboard shortcuts to rich history
+bind -x '"\ek": "_clerhup"'		#: Alt-K  up in rich history
+bind -x '"\ej": "_clerhdown"'		#: Alt-J  down in rich history
+bind -x '"\eh": "hh -b $READLINE_LINE"'	#: Alt-H  serach in rich history using content of command line
+bind -x '"\el": "_clerhbuf"'		#: Alt-L  list commands from rich history buffer
 
 #: show current working branch
 #: define this function only on hosts where git is installed
