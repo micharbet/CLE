@@ -1,7 +1,7 @@
 ##
 ## ** mod-see: logfile highlighter **
 #
-#* version: 2021-10-23
+#* version: 2021-10-24
 #* author:  Michael Arbet (marbet@redhat.com)
 #* license: GNU GPL v2
 #* Copyright (C) 2013-2021 by Michael Arbet 
@@ -18,43 +18,36 @@ see () (
 	# this can be added to functions
 	# for now there needs to be both
 	:
-	: "see [-t sec] [-f file|-l] [RE ...]"
+	: '`see [-t sec] [-f file|-l] [RE ...]`'
 	## `see [-t sec] [-f file|-l] [RE ...]`
-	: ""
-	: "Continuously reads stdin or specified file like tail -f while highighing"
-	: "date/time at the begining of each line and also colorize words or regular"
-	: "expressions provided as the arguments. As an addition timestamps are"
-	: "printed every 60 seconds - configurable value"
-	: ""
+	: ''
+	: 'Continuously reads stdin or specified file like tail -f. The `see` hihglights'
+	: 'date/time at the begining of each line and also colorizes words or regular'
+	: 'expressions provided as the arguments. As an addition timestamps are'
+	: 'printed every 60 seconds - configurable value'
+	: ''
 	# defaults
 	TSTAMP=60
 	INFILE=""
 
-	function usage() {
-		declare -f see | sed -n 's/^\s*: \"\(.*\)\";*/\1/p' | _clemdf
-	}
-
 	while getopts "hnt:f:l" OPT
 	do
 		case $OPT in
-		f)
-			: "  -f file  open filename instead of stdin"
+		f)	: '  -f file  open filename instead of stdin'
 			INFILE=$OPTARG
 			if [ ! -f $OPTARG ]; then
 				echo file $OPTARG not found
 				exit 1
 			fi
 			;;
-		l)
-			: "  -l       read /var/log/messages"
+		l)	: '  -l       read /var/log/messages'
 			INFILE=/var/log/messages
 			;;
-		t)
-			: "  -t nsec  change timestamps interval, default 60 seconds, use 0 to suppress"
+		t)	: '  -t nsec  change timestamps interval, default 60 seconds, use 0 to suppress'
 			TSTAMP=$OPTARG
 			;;
-		*)
-			usage
+		*)	# usage
+			declare -f see | sed -n "s/^\s*: '\(.*\)';*/\1/p" | _clemdf
 			exit 1
 			;;
 		esac
@@ -63,33 +56,34 @@ see () (
 
 	# date/time, hostname and process highlight
 	# in bold only so there are no too many colors
-	RE="s/^(\\w+\\s+[0-9]+\\s+..:..:..\\s+\\w+\\s+[^:]+:)/$_CL\\1$_CN/;$RE"
+	RE="s/^\\(\\w\\+\\s\\+[0-9]\\+\\s\\+..:..:..\\s\\+\\w\\+\\s\\+[^:]\\+:\\)/$_CL\\1$_CN/;$RE"
 	
 	# Prepare search/replace expressions to colorize words
-	HICOLORS="MCGYR" # colors in reverse order
+	HICOLORS="MYR" # colors in reverse order
 	CI=${#HICOLORS}
 	for WORD in $*; do
 		[ $CI -gt 0 ] && ((CI--))
 		eval "HC=\$_C${HICOLORS:$CI:1}"
-		RE="$RE;s/($WORD)/$HC\\1$_CN/g"
-		# echo "$HC$CI: $WORD$_CN"
+		RE="$RE;s/\\($WORD\\)/$HC\\1$_CN/g"
+		# echo "$HC$CI: $WORD$_CN"   # dbg
 	done
 
 	# ensure timestamps printed in the background process
 	STAMPID=''
 	if [ $TSTAMP -gt 0 ]; then
-		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CB[%Y-%m-%d %T] -- ${INFILE:-STDIN}$_CN'; sleep $TSTAMP; done" &
+		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CB[%Y-%m-%d %T] $_Cb${INFILE:-STDIN}$_CN'; sleep $TSTAMP; done" &
 		STAMPID=$!
-		trap "date '+$_CB[%Y-%m-%d %T] -- unsee$_CN'; kill $STAMPID" EXIT
+		trap "date '+$_CB[%Y-%m-%d %T] unsee$_CN'; kill $STAMPID" EXIT
 	fi
 
 	# read and highlight
 	if [ $INFILE ]; then
-		tail -f $INFILE | sed -E -e "$RE"
+		tail -f $INFILE | sed -e "$RE"
 	else
-		sed -E -e "$RE"
+		sed -e "$RE"
 	fi
 )
 
+# export this function to subsequent live sessions
 CLE_XFUN="$CLE_XFUN see"
 
