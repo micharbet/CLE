@@ -334,8 +334,8 @@ _clesc () (
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\$(_clegit)/g'
 	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^E/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
-	 -e 's/\^C\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
+	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[\$_CN\$_C0\\\\]/g'
+	 -e 's/\^C\(.\)/\\\\[\\\$_C\1\\\\]/g'
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
 	"
@@ -363,7 +363,7 @@ _clepcp () {
 
 # craft the prompt from defined strings
 _cleps () {
-	[ "$CLE_PT" ] && PS1="$_PE\${_CT}$(_clesc $CLE_PT)\${_Ct}$_Pe" || PS1=''
+	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1=''
 	PS1=$PS1`_clesc "^C0$CLE_P0^C1$CLE_P1^C2$CLE_P2^C3$CLE_P3^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
 }
@@ -721,7 +721,7 @@ if which git >/dev/null 2>&1; then
 		while [ "$PWD" != / ]; do
 			if [ -d .git ]; then
 				#: verify dirty status
-				git diff-index --quiet HEAD -- && CH="(%s)" || CH="$_CR(%s !)"
+				git diff-index --quiet HEAD -- && CH="(%s)" || CH="(%s !)"
 				printf "$CH" "$(git symbolic-ref --short HEAD)"
 			fi
 			cd ..
@@ -910,12 +910,7 @@ screen*) CLE_PT='\u'
 *)	_CT=$'\e]0;'; _Ct=$'\007';;
 esac
 
-# 6. shell specific
-#: $_PE nad $_Pe keep strings to enclosing control charaters in prompt
-shopt -s checkwinsize
-_PE='\['; _Pe='\]'
-
-# 7. craft the prompt string
+# 6. craft the prompt string
 _cleps
 _cleclr ${CLE_CLR:-$_DC}
 
