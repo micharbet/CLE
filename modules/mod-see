@@ -59,7 +59,7 @@ see () (
 	RE="s/^\\(\\w\\+\\s\\+[0-9]\\+\\s\\+..:..:..\\s\\+\\w\\+\\s\\+[^:]\\+:\\)/$_CL\\1$_CN/;$RE"
 	
 	# Prepare search/replace expressions to colorize words
-	HICOLORS="MYR" # colors in reverse order
+	HICOLORS="GYR" # colors in reverse order
 	CI=${#HICOLORS}
 	for WORD in $*; do
 		[ $CI -gt 0 ] && ((CI--))

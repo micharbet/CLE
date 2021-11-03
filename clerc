@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-15 (Aquarius)
+#* version: 2021-11-03 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -247,7 +247,7 @@ _clesc () (
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
-	 -e 's/\^g/\$(_clegit)/g'
+	 -e 's/\^g/\\\\[\$_GITC\\\\]\$_GITB/g'
 	 -e 's/\^?/\$_EC/g'
 	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[\$_CN\$_C0\\\\]/g'
 	 -e 's/\^C\(.\)/\\\\[\\\$_C\1\\\\]/g'
@@ -315,6 +315,7 @@ _cleprompt () {
 	history -a
 	DT=${C/;*}
 	C=${C/$DT;}
+	[[ $PS1 =~ _GIT ]] && _clegit
 	if [[ $C =~ ^\# ]]; then
 		_clerh '#' "$PWD" "$C"	# record a note to history
 	elif [ $_HT ]; then	# check timer - indicator of executed command
@@ -571,16 +572,19 @@ bind -x '"\eh": "hh -b $READLINE_LINE"'
 bind -x '"\el": "_clerhbuf"'
 
 if which git >/dev/null 2>&1; then
-	_clegit () (
+	_clegit () {
 		# go down the folder tree and look for .git
-		while [ "$PWD" != / ]; do
-			if [ -d .git ]; then
-				git diff-index --quiet HEAD -- && CH="(%s)" || CH="(%s !)"
-				printf "$CH" "$(git symbolic-ref --short HEAD)"
+		local D=$PWD
+		_GITC=
+		_GITB=
+		while [ "$D" != '' ]; do
+			if [ -d $D/.git ]; then
+				git diff-index --quiet HEAD -- && CH="%s" || { CH="%s!"; _GITC=$_Cr; }
+				printf -v _GITB "$CH" "$(git symbolic-ref --short HEAD)"
 			fi
-			cd ..
+			D=${D%/*}
 		done
-	)
+	}
 else
 	_clegit () { return; };
 fi

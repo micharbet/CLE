@@ -1,13 +1,13 @@
 mod-git:2019-03-12:98d20eebd84f204b3d231c11d4460b2d:GIT helpers / shorcuts
+mod-lksu:2021-08-23:66424422a838eb6289e603f32114815a:ksu (kerberized su) live session wrapper
+mod-lscreen:2021-02-01:ddbe619c61d62420a3ff118dfbcfdfe6:GNU screen wrapper
+mod-ltmux:2021-04-15:05df4c9267a3b7cc0816f88d12593f68:tmux live session wrapper
 mod-mancolor:2018-08-29:4cb76858862d9809fd7d5ecd821ded51:Colorize man pages
 mod-mosh:2019-11-16:992b3e33800b0b62934422d3566e2a42:Live session with `lmosh` command
-mod-ltmux:2021-04-15:05df4c9267a3b7cc0816f88d12593f68:tmux live session wrapper
-mod-lscreen:2021-02-01:ddbe619c61d62420a3ff118dfbcfdfe6:GNU screen wrapper
-mod-see:2021-10-23:74d193ab8ab7be969adf04268e2f241b:logfile highlighter
-mod-lksu:2021-08-23:66424422a838eb6289e603f32114815a:ksu (kerberized su) live session wrapper
+mod-see:2021-10-24:b225bce4b303020e454dbaab93caabc5:logfile highlighter
+cle-devkit:2021-08-24:7ad7f3dedcd6557999fada1003b30f29:functions to assist CLE development process
 cle-ed:2021-08-26:dba06b2a73479315535f3e9c0bd371c6:Tweak and config editor
+cle-mod:2019-08-19:7828c8cf5c20f62d21560c7b928ced9f:CLE module management
+cle-palette:2019-11-15:1ff55306403933a8c01d35edf5ce11c3:Color palettes for OSC4 capable terminals
 cle-prompt:2021-09-30:9c5c66acca40d8ec1161d849b8b0ca85:pre-configured prompt themes
 cle-rcmove:2018-09-23:15507fd17d688302ad66fdf4a26f5264:Move resource files to different folder
-cle-mod:2019-08-19:7828c8cf5c20f62d21560c7b928ced9f:CLE module management
-cle-devkit:2021-08-24:7ad7f3dedcd6557999fada1003b30f29:functions to assist CLE development process
-cle-palette:2019-11-15:1ff55306403933a8c01d35edf5ce11c3:Color palettes for OSC4 capable terminals
