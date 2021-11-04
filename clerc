@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-11-03 (Aquarius)
+#* version: 2021-11-04 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -576,11 +576,10 @@ if which git >/dev/null 2>&1; then
 		# go down the folder tree and look for .git
 		local D=$PWD
 		_GITC=
-		_GITB=
 		while [ "$D" != '' ]; do
 			if [ -d $D/.git ]; then
-				git diff-index --quiet HEAD -- && CH="%s" || { CH="%s!"; _GITC=$_Cr; }
-				printf -v _GITB "$CH" "$(git symbolic-ref --short HEAD)"
+				git diff-index --quiet HEAD -- || _GITC=$_Cr
+				printf -v _GITB $'\ue0a0%s' "$(git symbolic-ref --short HEAD)"
 			fi
 			D=${D%/*}
 		done
