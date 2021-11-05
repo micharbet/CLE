@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-11-04 (Aquarius)
+#* version: 2021-11-06 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -721,6 +721,7 @@ if which git >/dev/null 2>&1; then
 		#: cpu cycles. Do not call `git` if not necessary.
 		local D=$PWD
 		_GITC=
+		_GITB=
 		while [ "$D" != '' ]; do
 			if [ -d $D/.git ]; then
 				#: verify dirty status
