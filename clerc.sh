@@ -248,14 +248,16 @@ _cletable () {
 	#: Note: dim and italic not available everywhere (e.g. RHEL)
 	_CI=`tput sitm`;_Ci=`tput ritm`
 	_CD=`tput dim`
-	_Ck=$_CN$(tput setaf 0)
-	_Cr=$_CN$(tput setaf 1)
-	_Cg=$_CN$(tput setaf 2)
-	_Cy=$_CN$(tput setaf 3)
-	_Cb=$_CN$(tput setaf 4)
-	_Cm=$_CN$(tput setaf 5)
-	_Cc=$_CN$(tput setaf 6)
-	_Cw=$_CN$(tput setaf 7)
+	#: WARNING, verify if $_CN is still necessary
+	#: HERE USED TO BE "$_CN" before each color
+	_Ck=$(tput setaf 0)
+	_Cr=$(tput setaf 1)
+	_Cg=$(tput setaf 2)
+	_Cy=$(tput setaf 3)
+	_Cb=$(tput setaf 4)
+	_Cm=$(tput setaf 5)
+	_Cc=$(tput setaf 6)
+	_Cw=$(tput setaf 7)
 	case `tput colors` in
 	8)
 		_CK=$_Ck$_CL
@@ -268,14 +270,15 @@ _cletable () {
 		_CW=$_Cw$_CL
 		;;
 	*)
-		_CK=$_CN$(tput setaf 8)$_CL
-		_CR=$_CN$(tput setaf 9)$_CL
-		_CG=$_CN$(tput setaf 10)$_CL
-		_CY=$_CN$(tput setaf 11)$_CL
-		_CB=$_CN$(tput setaf 12)$_CL
-		_CM=$_CN$(tput setaf 13)$_CL
-		_CC=$_CN$(tput setaf 14)$_CL
-		_CW=$_CN$(tput setaf 15)$_CL
+		#: AGAIN HERE USED TO BE "$_CN" before each color
+		_CK=$(tput setaf 8)$_CL
+		_CR=$(tput setaf 9)$_CL
+		_CG=$(tput setaf 10)$_CL
+		_CY=$(tput setaf 11)$_CL
+		_CB=$(tput setaf 12)$_CL
+		_CM=$(tput setaf 13)$_CL
+		_CC=$(tput setaf 14)$_CL
+		_CW=$(tput setaf 15)$_CL
 		;;
 	esac
 	#: and... special color code for error highlight in prompt
