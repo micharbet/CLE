@@ -79,7 +79,8 @@ _cle_cp() {
 		_cleask "replace $DEST?" || return
 		cp $FILENAME $DEST
 		popd >/dev/null
-		cle reload
+		[[ $FILENAME =~ /-mod ]] && cle reload
+		return 0
 	fi
 }
 

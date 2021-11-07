@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-11-04 (Aquarius)
+#* version: 2021-11-06 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -163,19 +163,20 @@ _cleask () (
 _cletable () {
 	_C_=$TERM
 	_CN=`tput sgr0`
+	_Cn=$_CN
 	_CL=`tput bold`
 	_CU=`tput smul`;_Cu=`tput rmul`
 	_CV=`tput rev`
 	_CI=`tput sitm`;_Ci=`tput ritm`
 	_CD=`tput dim`
-	_Ck=$_CN$(tput setaf 0)
-	_Cr=$_CN$(tput setaf 1)
-	_Cg=$_CN$(tput setaf 2)
-	_Cy=$_CN$(tput setaf 3)
-	_Cb=$_CN$(tput setaf 4)
-	_Cm=$_CN$(tput setaf 5)
-	_Cc=$_CN$(tput setaf 6)
-	_Cw=$_CN$(tput setaf 7)
+	_Ck=$(tput setaf 0)
+	_Cr=$(tput setaf 1)
+	_Cg=$(tput setaf 2)
+	_Cy=$(tput setaf 3)
+	_Cb=$(tput setaf 4)
+	_Cm=$(tput setaf 5)
+	_Cc=$(tput setaf 6)
+	_Cw=$(tput setaf 7)
 	case `tput colors` in
 	8)
 		_CK=$_Ck$_CL
@@ -188,14 +189,14 @@ _cletable () {
 		_CW=$_Cw$_CL
 		;;
 	*)
-		_CK=$_CN$(tput setaf 8)$_CL
-		_CR=$_CN$(tput setaf 9)$_CL
-		_CG=$_CN$(tput setaf 10)$_CL
-		_CY=$_CN$(tput setaf 11)$_CL
-		_CB=$_CN$(tput setaf 12)$_CL
-		_CM=$_CN$(tput setaf 13)$_CL
-		_CC=$_CN$(tput setaf 14)$_CL
-		_CW=$_CN$(tput setaf 15)$_CL
+		_CK=$(tput setaf 8)$_CL
+		_CR=$(tput setaf 9)$_CL
+		_CG=$(tput setaf 10)$_CL
+		_CY=$(tput setaf 11)$_CL
+		_CB=$(tput setaf 12)$_CL
+		_CM=$(tput setaf 13)$_CL
+		_CC=$(tput setaf 14)$_CL
+		_CW=$(tput setaf 15)$_CL
 		;;
 	esac
 	_Ce=$_CR$_CL$_CV
@@ -249,7 +250,7 @@ _clesc () (
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\\\\[\$_GITC\\\\]\$_GITB/g'
 	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[\$_CN\$_C0\\\\]/g'
+	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[\$_Cn\$_C0\\\\]/g'
 	 -e 's/\^C\(.\)/\\\\[\\\$_C\1\\\\]/g'
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
@@ -576,6 +577,7 @@ if which git >/dev/null 2>&1; then
 		# go down the folder tree and look for .git
 		local D=$PWD
 		_GITC=
+		_GITB=
 		while [ "$D" != '' ]; do
 			if [ -d $D/.git ]; then
 				git diff-index --quiet HEAD -- || _GITC=$_Cr

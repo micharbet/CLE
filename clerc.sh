@@ -242,6 +242,7 @@ _cletable () {
 	dbg_print "_cletable updating color table"
 	_C_=$TERM	#: save terminal type of this table
 	_CN=`tput sgr0`
+	_Cn=$_CN #: for use inside prompt, may get additional color codes
 	_CL=`tput bold`
 	_CU=`tput smul`;_Cu=`tput rmul`
 	_CV=`tput rev`
@@ -337,7 +338,7 @@ _clesc () (
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\\\\[\$_GITC\\\\]\$_GITB/g'
 	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[\$_CN\$_C0\\\\]/g'
+	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[\$_Cn\$_C0\\\\]/g'
 	 -e 's/\^C\(.\)/\\\\[\\\$_C\1\\\\]/g'
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
