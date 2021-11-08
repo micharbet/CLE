@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-11-06 (Aquarius)
+#* version: 2021-11-08 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -837,7 +837,7 @@ lssh () (
 	#: - create destination folder, unpack tarball and execute the code
 	command ssh -t $* "
 		#: looking for suitable place in case $HOME is read only or doesn't exist
-		for H in \$HOME /var/tmp/\$USER /tmp\$USER; do
+		for H in \$HOME /var/tmp/\$USER /tmp/\$USER; do
 			mkdir -m 755 -p \$H/`dirname $RC` && break
 		done
 		cd \$H
