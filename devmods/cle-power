@@ -1,0 +1,87 @@
+#
+## ** cle-power: powerprompt-like **
+#
+#* version: 2021-11-07
+#* author:  Michael Arbet (marbet@redhat.com)
+#* home:    https://github.com/micharbet/CLE
+#* license: GNU GPL v2
+#* Copyright (C) 2021 by Michael Arbet 
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+
+# ALL STILL VERY EXPERIMENTAL
+
+# New normal - override color reset inside prmpt
+#_Cn=$_CN$'\E[30;47m'
+#_Cp=$'\E[37;40m' # prompt ending
+
+#not needed anymore
+#_Cn=$_CN$'\E[48;5;236;30m'
+#_Cp=$_CN$'\E[38;5;236;40m'
+#_CP=$'\E[38;5;250;40m'
+
+# light grey
+_P0=251
+_P1=250
+_P2=249
+_P3=248
+_P4=240
+
+# dark grey
+_P0=233
+_P1=234
+_P2=235
+_P3=236
+_P4=240
+
+# blue
+#_P0=22
+#_P1=23
+#_P2=24
+#_P3=25
+#_P4=26
+
+# backgrounds
+_PB0=$'\e[48;5;'$_P0'm'
+_PB1=$'\e[48;5;'$_P1'm'
+_PB2=$'\e[48;5;'$_P2'm'
+_PB3=$'\e[48;5;'$_P3'm'
+_PB4=$'\e[48;5;'$_P4'm'
+
+# foregrounds
+_PF0=$'\e[38;5;'$_P0'm'
+_PF1=$'\e[38;5;'$_P1'm'
+_PF2=$'\e[38;5;'$_P2'm'
+_PF3=$'\e[38;5;'$_P3'm'
+_PF4=$'\e[38;5;'$_P4'm'
+
+_Cn=$_PB0
+# Remove newlines from prompt, multilines look ugly
+#PS1=`_clesc "$_PPB ^C0$CLE_P0^Cn  ^C1$CLE_P1^Cn  ^C2$CLE_P2^Cn  ^C3$CLE_P3^Cn $_PPE^CN^C4 " | sed 's/\(.\)\\\\n/\1\$_CN\\n\$_Cn/g'`
+#PS1=`_clesc "$_PPB ^C0$CLE_P0^Cn  ^C1$CLE_P1^Cn  ^C2$CLE_P2^Cn  ^C3$CLE_P3^Cn $_PPE^CN^C4 " | sed 's/\\\\n//g'`
+
+# Cut and remmeber starting newline
+NL0=
+if [[ $CLE_P0 =~ ^\\n ]]; then
+	CLE_P0=${CLE_P0/\\n/}
+	NL0='\n'
+fi
+
+# Enhance PS1
+#PS1="^Cn^C0$CLE_P0 ^Cn ^C1$CLE_P1 ^Cn ^C2$CLE_P2 ^Cn ^C3$CLE_P3 ^Cn^Cp^CN^C4 "
+PS1="\\[$_PB0"$'\e[30m'"\\]^C0$CLE_P0^CN"
+PS1=$PS1"\\[$_PF0$_PB1\\] ^C1$CLE_P1^CN"
+PS1=$PS1"\\[$_PF1$_PB2\\] ^C2$CLE_P2^CN"
+PS1=$PS1"\\[$_PF2$_PB3\\] ^C3$CLE_P3^CN"
+PS1=$PS1"\\[$_PF3$_PB4\\]^CW^CN\\[$_PF4\\]^CN^C4 "
+
+# replace newlines; remove \$
+#PS1=$(sed -e 's/\\n/ ^Cn^Cp^CN\n^Cn/g' -e 's/\\\$//' <<<$PS1)
+PS1=$(sed -e 's/\\n/ ^CN\n/g' -e 's/\\\$//' <<<$PS1)
+
+#_clevdump PS1
+PS1=$(_clesc "$NL0$PS1") 
+#_clevdump PS1
