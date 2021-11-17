@@ -29,56 +29,80 @@ getbg () {
 	read R G B <<<$R2
 }
 
-# get background RGB values and calculate power-shades
+# get background RGB values
 getbg
 echo RGB: $R $G $B
-# calulations are ok for dark backgrounds
-R0=$((0x$R*90/100))
-G0=$((0x$G*90/100))
-B0=$((0x$B*90/100))
 
-R1=$((0x$R*120/100))
-G1=$((0x$G*120/100))
-B1=$((0x$B*120/100))
+# ensure decent shades even on black background
+if [ $R$G$B = "000000" ]; then
+	R=10
+	G=10
+	B=10
+fi
 
-R2=$((0x$R*140/100))
-G2=$((0x$G*140/100))
-B2=$((0x$B*140/100))
+# identify dark/light background and adjust shade cofficients
+if [ $((0x$G)) -lt 128 ]; then
+	X0=90
+	X1=120
+	X2=140
+	X3=160
+	X4=250
+else
+	X0=120
+	X1=90
+	X2=80
+	X3=70
+	X4=40
+fi
 
-R3=$((0x$R*160/100))
-G3=$((0x$G*160/100))
-B3=$((0x$B*160/100))
+# calculate power-shades
+R0=$((0x$R*$X0/100))
+G0=$((0x$G*$X0/100))
+B0=$((0x$B*$X0/100))
 
-R4=$((0x$R*250/100))
-G4=$((0x$G*250/100))
-B4=$((0x$B*250/100))
+R1=$((0x$R*$X1/100))
+G1=$((0x$G*$X1/100))
+B1=$((0x$B*$X1/100))
+
+R2=$((0x$R*$X2/100))
+G2=$((0x$G*$X2/100))
+B2=$((0x$B*$X2/100))
+
+R3=$((0x$R*$X3/100))
+G3=$((0x$G*$X3/100))
+B3=$((0x$B*$X3/100))
+
+R4=$((0x$R*$X4/100))
+G4=$((0x$G*$X4/100))
+B4=$((0x$B*$X4/100))
 
 
-_P0="$R0;$G0;$B0"
-_P1="$R1;$G1;$B1"
-_P2="$R2;$G2;$B2"
-_P3="$R3;$G3;$B3"
-_P4="$R4;$G4;$B4"
+# complete RGB sequences
+P0="$R0;$G0;$B0"
+P1="$R1;$G1;$B1"
+P2="$R2;$G2;$B2"
+P3="$R3;$G3;$B3"
+P4="$R4;$G4;$B4"
 
-#echo $_P0
-#echo $_P1
-#echo $_P2
-#echo $_P3
-#echo $_P4
+#echo $P0
+#echo $P1
+#echo $P2
+#echo $P3
+#echo $P4
 
-# backgrounds
-_PB0=$'\e[48;2;'$_P0'm'
-_PB1=$'\e[48;2;'$_P1'm'
-_PB2=$'\e[48;2;'$_P2'm'
-_PB3=$'\e[48;2;'$_P3'm'
-_PB4=$'\e[48;2;'$_P4'm'
+# backgrounds ANSI ESC's
+PB0=$'\e[48;2;'$P0'm'
+PB1=$'\e[48;2;'$P1'm'
+PB2=$'\e[48;2;'$P2'm'
+PB3=$'\e[48;2;'$P3'm'
+PB4=$'\e[48;2;'$P4'm'
 
-# foregrounds
-_PF0=$'\e[38;2;'$_P0'm'
-_PF1=$'\e[38;2;'$_P1'm'
-_PF2=$'\e[38;2;'$_P2'm'
-_PF3=$'\e[38;2;'$_P3'm'
-_PF4=$'\e[38;2;'$_P4'm'
+# foregrounds ANSI ESC's
+PF0=$'\e[38;2;'$P0'm'
+PF1=$'\e[38;2;'$P1'm'
+PF2=$'\e[38;2;'$P2'm'
+PF3=$'\e[38;2;'$P3'm'
+PF4=$'\e[38;2;'$P4'm'
 
 _Cn=$_PB0
 _Ce=$_CR	#error highligt without reverse
@@ -92,11 +116,11 @@ if [[ $CLE_P0 =~ ^\\n ]]; then
 fi
 
 # Power-enhance PS1
-PS1="\\[$_PB0"$'\e[30m'"\\]^C0$CLE_P0^CN"
-PS1=$PS1"\\[$_PF0$_PB1\\] ^C1$CLE_P1^CN"
-PS1=$PS1"\\[$_PF1$_PB2\\] ^C2$CLE_P2^CN"
-PS1=$PS1"\\[$_PF2$_PB3\\] ^C3$CLE_P3^CN"
-PS1=$PS1"\\[$_PF3$_PB4\\]^CW^CN\\[$_PF4\\]^CN^C4 "
+PS1="\\[$PB0"$'\e[30m'"\\]^C0$CLE_P0^CN"
+PS1=$PS1"\\[$PF0$PB1\\] ^C1$CLE_P1^CN"
+PS1=$PS1"\\[$PF1$PB2\\] ^C2$CLE_P2^CN"
+PS1=$PS1"\\[$PF2$PB3\\] ^C3$CLE_P3^CN"
+PS1=$PS1"\\[$PF3$PB4\\]^CW^CN\\[$PF4\\]^CN^C4 "
 
 # replace newlines; remove \$
 PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
