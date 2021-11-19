@@ -1,7 +1,7 @@
 #
 ## ** cle-power: powerprompt-like **
 #
-#* version: 2021-11-17
+#* version: 2021-11-18
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -13,8 +13,10 @@
 # of the License, or (at your option) any later version.
 
 # ALL STILL VERY EXPERIMENTAL
+# and useless in screen
 
 # function to grab RGB values of background
+# TODO: doesn't work in TMUX
 getbg () {
 	local OLDSTTY=$(stty -g)
 	stty raw -echo min 0
@@ -29,53 +31,52 @@ getbg () {
 	read R G B <<<$R2
 }
 
-# get background RGB values
+# get background RGB values and calculate luminance
 getbg
+#R=20
+#G=20
+#B=20
 echo RGB: $R $G $B
+Y=$((0x$Rx299+0x$G*587+0x$B*114))
+Y=$(($Y/1000))
+echo Y: $Y
 
-# ensure decent shades even on black background
-if [ $R$G$B = "000000" ]; then
-	R=10
-	G=10
-	B=10
+# Identify dark/light background and adjust shade cofficients
+# Value of 89 is just in the middle between 0 and 178 which is maximum
+# luminanace calculated with above formula when RGB=#ffffff. I do not know
+# if this is exactly the middle luminance from human perception but in terminal
+# world, the background is either dark or light. Anything close to middle
+# would be hard to use
+#
+if [ $Y -lt 89 ]; then
+	# dark background, shade towards light tones
+	X0=90
+	X1=110
+	X2=130
+	X3=150
+	X4=240
+else
+	# light background, shade to darker
+	X0=105
+	X1=95
+	X2=90
+	X3=85
+	X4=50
 fi
 
-# identify dark/light background and adjust shade cofficients
-if [ $((0x$G)) -lt 128 ]; then
-	X0=90
-	X1=120
-	X2=140
-	X3=160
-	X4=250
-else
-	X0=120
-	X1=90
-	X2=80
-	X3=70
-	X4=40
+# ensure decent shades even on black background
+if [ $Y -lt 5 ]; then
+	R=7
+	G=7
+	B=7
 fi
 
 # calculate power-shades
-R0=$((0x$R*$X0/100))
-G0=$((0x$G*$X0/100))
-B0=$((0x$B*$X0/100))
-
-R1=$((0x$R*$X1/100))
-G1=$((0x$G*$X1/100))
-B1=$((0x$B*$X1/100))
-
-R2=$((0x$R*$X2/100))
-G2=$((0x$G*$X2/100))
-B2=$((0x$B*$X2/100))
-
-R3=$((0x$R*$X3/100))
-G3=$((0x$G*$X3/100))
-B3=$((0x$B*$X3/100))
-
-R4=$((0x$R*$X4/100))
-G4=$((0x$G*$X4/100))
-B4=$((0x$B*$X4/100))
-
+for C in R G B; do
+	for I in 0 1 2 3 4; do
+		eval "$C$I=\$((0x\$$C*\$X$I/100)); [ \$$C$I -gt 255 ] && $C$I=255"
+	done
+done
 
 # complete RGB sequences
 P0="$R0;$G0;$B0"
