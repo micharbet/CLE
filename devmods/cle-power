@@ -1,7 +1,7 @@
 #
 ## ** cle-power: powerprompt-like **
 #
-#* version: 2021-11-18
+#* version: 2021-11-24
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -105,7 +105,7 @@ PF2=$'\e[38;2;'$P2'm'
 PF3=$'\e[38;2;'$P3'm'
 PF4=$'\e[38;2;'$P4'm'
 
-_Cn=$_PB0
+_Cn=
 _Ce=$_CR	#error highligt without reverse
 _Cp=$'\E[37;40m' # prompt ending
 
@@ -131,7 +131,7 @@ PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
 #PS1=$(sed -e 's/\\n/ ^CN\n/g' -e 's/\\\$//' <<<$PS1)
 
 #_clevdump PS1
-#PS1=$(_clesc "$NL0$PS1") 
-PS1=$(_clesc "$PS1") 
+PS1=$(_clesc "$NL0$PS1") 
+#PS1=$(_clesc "$PS1") 
 #_clevdump PS1
 

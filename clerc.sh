@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-11-08 (Aquarius)
+#* version: 2021-11-24 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -242,15 +242,13 @@ _cletable () {
 	dbg_print "_cletable updating color table"
 	_C_=$TERM	#: save terminal type of this table
 	_CN=`tput sgr0`
-	_Cn=$_CN #: for use inside prompt, may get additional color codes
+	_Cn=$'\E[0m' #: for use inside prompt, may get additional color codes
 	_CL=`tput bold`
 	_CU=`tput smul`;_Cu=`tput rmul`
 	_CV=`tput rev`
 	#: Note: dim and italic not available everywhere (e.g. RHEL)
 	_CI=`tput sitm`;_Ci=`tput ritm`
 	_CD=`tput dim`
-	#: WARNING, verify if $_CN is still necessary
-	#: HERE USED TO BE "$_CN" before each color
 	_Ck=$(tput setaf 0)
 	_Cr=$(tput setaf 1)
 	_Cg=$(tput setaf 2)
@@ -271,7 +269,6 @@ _cletable () {
 		_CW=$_Cw$_CL
 		;;
 	*)
-		#: AGAIN HERE USED TO BE "$_CN" before each color
 		_CK=$(tput setaf 8)$_CL
 		_CR=$(tput setaf 9)$_CL
 		_CG=$(tput setaf 10)$_CL
@@ -338,7 +335,8 @@ _clesc () (
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\\\\[\$_GITC\\\\]\$_GITB/g'
 	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[\$_Cn\$_C0\\\\]/g'
+	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[$_Cn\$_C0\\\\]/g'
+	 -e 's/\^C\([0-9]\)/\\\\[$_Cn\\\$_C\1\\\\]/g'
 	 -e 's/\^C\(.\)/\\\\[\\\$_C\1\\\\]/g'
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
 	 -e 's/\^\^/\^/g'
@@ -358,17 +356,18 @@ _cle_r () {
 # combine default/inherited prompt strings with values from config file
 _clepcp () {
 	local I
-	#: use CLE_PBx
 	for I in 0 1 2 3 T; do
 		eval "CLE_P$I=\${CLE_PB$I:-\$CLE_P$I}"
-		# MAYBE REMOVE THIS [ $1 ] && unset CLE_P{B,Z}$I
 	done
 }
 
 # craft the prompt from defined strings
 _cleps () {
-	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1=''
-	PS1=$PS1`_clesc "^C0$CLE_P0^C1$CLE_P1^C2$CLE_P2^C3$CLE_P3^CN^C4"`
+	local I
+	[ "$CLE_PT" ] && PS1="\\[$_CT$(_clesc $CLE_PT)$_Ct\\]" || PS1=''
+	for I in 0 1 2 3 4 ; do
+		eval "PS1=\$PS1\$(_clesc \"^C$I\$CLE_P$I\")"
+	done
 	PS2=`_clesc "^C3>>> ^CN^C4"`
 }
 
