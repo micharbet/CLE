@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-11-24 (Aquarius)
+#* version: 2021-12-05 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -366,7 +366,7 @@ _cleps () {
 	local I
 	[ "$CLE_PT" ] && PS1="\\[$_CT$(_clesc $CLE_PT)$_Ct\\]" || PS1=''
 	for I in 0 1 2 3 4 ; do
-		eval "PS1=\$PS1\$(_clesc \"^C$I\$CLE_P$I\")"
+		eval "PS1=\$PS1\$(_clesc \"^CN^C$I\$CLE_P$I\")"
 	done
 	PS2=`_clesc "^C3>>> ^CN^C4"`
 }
@@ -397,15 +397,15 @@ _clesave () (
 # prompt callback functions
 #: 
 #: Important note about code efficiency:
-#: As _cleprompt function is executed *every* time you push <enter> key, its code
-#: needs to be as simple as possible. All commands here should be internals.
-#: Internal commands don't invoke (fork) new processes and as such they
-#: are much easier to system resources.
-#: E.g. construction `C=${C#*;}` could be written as C=$(sed 's/[^;]*;\(.*\)/\1/' <<<$C)
-#: Not only the actually used expression is shorter but also much faster since `sed`
+#: The _cleprompt function is executed *every* time you push <enter> key
+#: so its code needs to be as simple as possible. All commands here should
+#: ideally be bash internals. They don't invoke (fork) new processes and
+#: as such they are much easier to system resources.
+#: E.g. instead of C=$(sed 's/[^;]*;\(.*\)/\1/' <<<$C) we use `C=${C#*;}` 
+#: Not only the latter expression is shorter but also much faster since `sed`
 #: would be executed as new process from binary file
-#: The same rule applies to CLE internal functions used and called within prompt
-#: callback. Namely: `_cleprompt` `_clepreex` `_clerh`
+#: The same rule applies to CLE internal functions used and called within
+#: prompt callback. Namely: `_cleprompt` `_clepreex` `_clerh`
 #:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround
