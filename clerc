@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-11-24 (Aquarius)
+#* version: 2021-12-13 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -199,6 +199,7 @@ _cletable () {
 		_CW=$(tput setaf 15)$_CL
 		;;
 	esac
+	#_Ce=$_CR$_CL
 	_Ce=$_CR$_CL$_CV
 }
 
@@ -250,7 +251,7 @@ _clesc () (
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\\\\[\$_GITC\\\\]\$_GITB/g'
 	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[$_Cn\$_C0\\\\]/g'
+	 -e 's/\^E/\\\\[\$_CE\\\\](\$_EC)\\\\[$_Cn\$_C0\\\\]/g'
 	 -e 's/\^C\([0-9]\)/\\\\[$_Cn\\\$_C\1\\\\]/g'
 	 -e 's/\^C\(.\)/\\\\[\\\$_C\1\\\\]/g'
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
@@ -280,7 +281,7 @@ _cleps () {
 	local I
 	[ "$CLE_PT" ] && PS1="\\[$_CT$(_clesc $CLE_PT)$_Ct\\]" || PS1=''
 	for I in 0 1 2 3 4 ; do
-		eval "PS1=\$PS1\$(_clesc \"^C$I\$CLE_P$I\")"
+		eval "PS1=\$PS1\$(_clesc \"^CN^C$I\$CLE_P$I\")"
 	done
 	PS2=`_clesc "^C3>>> ^CN^C4"`
 }
@@ -312,6 +313,7 @@ _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
 _cleprompt () {
 	eval "_EC=$_PST"
+	_EC=${_EC// /-}
 	local IFS S DT C
 	[[ $_EC =~ [1-9] ]] || _EC=0
 	unset IFS

@@ -91,20 +91,6 @@ P4="$R4;$G4;$B4"
 #echo $P3
 #echo $P4
 
-# backgrounds ANSI ESC's
-PB0=$'\e[48;2;'$P0'm'
-PB1=$'\e[48;2;'$P1'm'
-PB2=$'\e[48;2;'$P2'm'
-PB3=$'\e[48;2;'$P3'm'
-PB4=$'\e[48;2;'$P4'm'
-
-# foregrounds ANSI ESC's
-PF0=$'\e[38;2;'$P0'm'
-PF1=$'\e[38;2;'$P1'm'
-PF2=$'\e[38;2;'$P2'm'
-PF3=$'\e[38;2;'$P3'm'
-PF4=$'\e[38;2;'$P4'm'
-
 _Cn=
 _Ce=$_CR	#error highligt without reverse
 _Cp=$'\E[37;40m' # prompt ending
@@ -117,14 +103,16 @@ if [[ $CLE_P0 =~ ^\\n ]]; then
 fi
 
 # Power-enhance PS1
-PS1="\\[$PB0"$'\e[30m'"\\]^C0$CLE_P0^CN"
-PS1=$PS1"\\[$PF0$PB1\\] ^C1$CLE_P1^CN"
-PS1=$PS1"\\[$PF1$PB2\\] ^C2$CLE_P2^CN"
-PS1=$PS1"\\[$PF2$PB3\\] ^C3$CLE_P3^CN"
-PS1=$PS1"\\[$PF3$PB4\\]^CW^CN\\[$PF4\\]^CN^C4 "
+PS1=$"\\[\e[38;2;\${P0}m\\]\\[\e[48;2;\${P0}m\e[30m\\]^C0$CLE_P0^CN"
+PS1=$PS1$"\\[\e[38;2;\${P0}m\e[48;2;\${P1}m\\] ^C1$CLE_P1^CN"
+PS1=$PS1$"\\[\e[38;2;\${P1}m\e[48;2;\${P2}m\\] ^C2$CLE_P2^CN"
+PS1=$PS1$"\\[\e[38;2;\${P2}m\e[48;2;\${P3}m\\] ^C3$CLE_P3^CN"
+PS1=$PS1$"\\[\e[38;2;\${P3}m\e[48;2;\${P4}m\\]^CW^CN\\[\e[38;2;\${P4}m\\]^CN^C4 "
 
 # replace newlines; remove \$
 PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
+# different '^E' processing (doesn't work!)
+#PS1=$(sed "s/\^E/\\\\[\$_CE\\\\]\\\\[\${_CV}\\\\]\$_EC$_CN\\\\[$_Cn\$_C0\\\\]/g" <<<$PS1)
 
 # or leave them ?
 #PS1=$(sed -e 's/\\n/ ^Cn^Cp^CN\n^Cn/g' -e 's/\\\$//' <<<$PS1)
@@ -134,4 +122,5 @@ PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
 PS1=$(_clesc "$NL0$PS1") 
 #PS1=$(_clesc "$PS1") 
 #_clevdump PS1
+
 

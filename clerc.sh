@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-12-05 (Aquarius)
+#* version: 2021-12-13 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -280,7 +280,8 @@ _cletable () {
 		;;
 	esac
 	#: and... special color code for error highlight in prompt
-	_Ce=$_CR$_CL$_CV #: err highlight
+	_Ce=$_CR$_CL #: err highlight
+	#_Ce=$_CR$_CL$_CV #: err highlight
 }
 
 # set prompt colors
@@ -335,7 +336,7 @@ _clesc () (
 	 -e 's/\^U/\$CLE_USER/g'
 	 -e 's/\^g/\\\\[\$_GITC\\\\]\$_GITB/g'
 	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^E/\\\\[\$_CE\\\\]\[\$_EC\]\\\\[$_Cn\$_C0\\\\]/g'
+	 -e 's/\^E/\\\\[\$_CE\\\\](\$_EC)\\\\[$_Cn\$_C0\\\\]/g'
 	 -e 's/\^C\([0-9]\)/\\\\[$_Cn\\\$_C\1\\\\]/g'
 	 -e 's/\^C\(.\)/\\\\[\\\$_C\1\\\\]/g'
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
@@ -411,6 +412,7 @@ _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround
 _cleprompt () {
 	eval "_EC=$_PST"
+	_EC=${_EC// /-}
 	local IFS S DT C
 	dbg_var _HT
 	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
