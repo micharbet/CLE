@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-12-13 (Aquarius)
+#* version: 2021-12-18 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -365,7 +365,7 @@ _clepcp () {
 # craft the prompt from defined strings
 _cleps () {
 	local I
-	[ "$CLE_PT" ] && PS1="\\[$_CT$(_clesc $CLE_PT)$_Ct\\]" || PS1=''
+	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1=''
 	for I in 0 1 2 3 4 ; do
 		eval "PS1=\$PS1\$(_clesc \"^CN^C$I\$CLE_P$I\")"
 	done
