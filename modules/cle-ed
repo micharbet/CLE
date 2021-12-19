@@ -1,7 +1,7 @@
 ##
 ## ** cle-ed: Tweak and config editor **
 #
-#* version: 2021-08-26
+#* version: 2021-12-19
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -49,7 +49,12 @@ case "$1" in
 add)	## `cle ed add file [shortcut]` -- add file symlink for editing
 	if [ ! -f $2 ]; then
 		echo cle ed add: no such file $2
-		return 1
+		if _cleask "create and edit now?";then
+			touch $2
+			vi $2
+		else
+			return 1
+		fi
 	fi
 	# Normalize the path to file
 	pushd `dirname $2` >/dev/null
@@ -63,6 +68,7 @@ add)	## `cle ed add file [shortcut]` -- add file symlink for editing
 	return 0
 	;;
 ls)	## `cle ed ls`                  -- list everything in the ed folder
+	_clebold " Shortcuts in $EDIR:"
 	ls -al $EDIR
 	return
 	;;
