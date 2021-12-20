@@ -6,7 +6,7 @@ mod-mancolor:2018-08-29:4cb76858862d9809fd7d5ecd821ded51:Colorize man pages
 mod-mosh:2019-11-16:992b3e33800b0b62934422d3566e2a42:Live session with `lmosh` command
 mod-see:2021-10-24:b225bce4b303020e454dbaab93caabc5:logfile highlighter
 cle-devkit:2021-08-24:4b77a87801d8c873c36e1861e000f6aa:functions to assist CLE development process
-cle-ed:2021-08-26:dba06b2a73479315535f3e9c0bd371c6:Tweak and config editor
+cle-ed:2021-12-19:e2d013786a044d5b48f861e3c15ec752:Tweak and config editor
 cle-mod:2019-08-19:7828c8cf5c20f62d21560c7b928ced9f:CLE module management
 cle-palette:2019-11-15:1ff55306403933a8c01d35edf5ce11c3:Color palettes for OSC4 capable terminals
 cle-prompt:2021-11-08:43be334473238a14313e42de15b35cab:pre-configured prompt themes

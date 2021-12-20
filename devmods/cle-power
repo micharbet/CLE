@@ -1,7 +1,7 @@
 #
 ## ** cle-power: powerprompt-like **
 #
-#* version: 2021-11-24
+#* version: 2021-12-20
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -17,28 +17,27 @@
 
 # function to grab RGB values of background
 # TODO: doesn't work in TMUX
-getbg () {
-	local OLDSTTY=$(stty -g)
-	stty raw -echo min 0
-	echo -en "\e]11;?\e\\" >/dev/tty
-	read -t 0.1 -r -d '\' </dev/tty
-	stty $OLDSTTY
-	#_clevdump REPLY
-	R1=`sed 's/^.*\;//;s/[^rgb:0-9a-f/]//g' <<<$REPLY`
-	R2=`sed 's;.\+rgb:\(..\)../\(..\)../\(..\)...\+;\1 \2 \3;' <<<$REPLY`
-	#_clevdump R1
-	#_clevdump R2
-	read R G B <<<$R2
-}
+#
 
-# get background RGB values and calculate luminance
-getbg
-#R=20
-#G=20
-#B=20
-echo RGB: $R $G $B
+local R RR G GG B BB Y X0 X1 X2 X3 X4
+local I C
+
+# get RGB values from background
+local R1 R2
+local OLDSTTY=$(stty -g)
+stty raw -echo min 0
+echo -en "\e]11;?\e\\" >/dev/tty
+read -t 0.1 -r -d '\' </dev/tty
+stty $OLDSTTY
+R1=`sed 's/^.*\;//;s/[^rgb:0-9a-f/]//g' <<<$REPLY`
+R2=`sed 's;.\+rgb:\(..\)../\(..\)../\(..\)...\+;\1 \2 \3;' <<<$REPLY`
+read R G B <<<$R2
+
+# calculate luminance
 Y=$((0x$Rx299+0x$G*587+0x$B*114))
 Y=$(($Y/1000))
+
+echo RGB: $R $G $B
 echo Y: $Y
 
 # Identify dark/light background and adjust shade cofficients
@@ -50,18 +49,18 @@ echo Y: $Y
 #
 if [ $Y -lt 89 ]; then
 	# dark background, shade towards light tones
-	X0=90
-	X1=110
-	X2=130
-	X3=150
-	X4=240
+	X0=75
+	X1=90
+	X2=105
+	X3=120
+	X4=200
 else
 	# light background, shade to darker
-	X0=105
-	X1=95
-	X2=90
-	X3=85
-	X4=50
+	X0=120
+	X1=105
+	X2=95
+	X3=90
+	X4=60
 fi
 
 # ensure decent shades even on black background
@@ -72,28 +71,26 @@ if [ $Y -lt 5 ]; then
 fi
 
 # calculate power-shades
-for C in R G B; do
-	for I in 0 1 2 3 4; do
-		eval "$C$I=\$((0x\$$C*\$X$I/100)); [ \$$C$I -gt 255 ] && $C$I=255"
+# from $R $G $B, through variables $RR $GG $BB
+# create $_R0 .. $_R4
+for I in 0 1 2 3 4; do
+	for C in R G B; do
+		eval "$C$C=\$((0x\$$C*\$X$I/100)); [ \$$C$C -gt 255 ] && $C$C=255"
 	done
+	eval "_R$I='$RR;$GG;$BB'"
 done
 
-# complete RGB sequences
-P0="$R0;$G0;$B0"
-P1="$R1;$G1;$B1"
-P2="$R2;$G2;$B2"
-P3="$R3;$G3;$B3"
-P4="$R4;$G4;$B4"
+# RGB intros
+_RB=$'\e[48;2;'	# background
+_RF=$'\e[38;2;'	# foreground
 
-#echo $P0
-#echo $P1
-#echo $P2
-#echo $P3
-#echo $P4
+echo $_R0
+echo $_R1
+echo $_R2
+echo $_R3
+echo $_R4
 
-_Cn=
-_Ce=$_CR	#error highligt without reverse
-_Cp=$'\E[37;40m' # prompt ending
+_Cn=			# color reset before prompt colors destroys powerline
 
 # Cut and remmeber starting newline
 NL0=
@@ -103,11 +100,12 @@ if [[ $CLE_P0 =~ ^\\n ]]; then
 fi
 
 # Power-enhance PS1
-PS1=$"\\[\e[38;2;\${P0}m\\]\\[\e[48;2;\${P0}m\e[30m\\]^C0$CLE_P0^CN"
-PS1=$PS1$"\\[\e[38;2;\${P0}m\e[48;2;\${P1}m\\] ^C1$CLE_P1^CN"
-PS1=$PS1$"\\[\e[38;2;\${P1}m\e[48;2;\${P2}m\\] ^C2$CLE_P2^CN"
-PS1=$PS1$"\\[\e[38;2;\${P2}m\e[48;2;\${P3}m\\] ^C3$CLE_P3^CN"
-PS1=$PS1$"\\[\e[38;2;\${P3}m\e[48;2;\${P4}m\\]^CW^CN\\[\e[38;2;\${P4}m\\]^CN^C4 "
+#PS1=$"\\[\e[38;2;\${_R0}m\\]\\[\e[48;2;\${_R0}m\e[30m\\]^C0$CLE__R0^CN"
+PS1=$"\\[\${_RB}\${_R0}m\\]^C0$CLE_P0^CN"
+PS1=$PS1$"\\[\${_RF}\${_R0}m\${_RB}\${_R1}m\\] ^C1$CLE_P1^CN"
+PS1=$PS1$"\\[\${_RF}\${_R1}m\${_RB}\${_R2}m\\] ^C2$CLE_P2^CN"
+PS1=$PS1$"\\[\${_RF}\${_R2}m\${_RB}\${_R3}m\\] ^C3$CLE_P3^CN"
+PS1=$PS1$"\\[\${_RF}\${_R3}m\${_RB}\${_R4}m\\]^CW^CN\\[\${_RF}\${_R4}m\\]^CN^C4 "
 
 # replace newlines; remove \$
 PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
@@ -122,5 +120,4 @@ PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
 PS1=$(_clesc "$NL0$PS1") 
 #PS1=$(_clesc "$PS1") 
 #_clevdump PS1
-
 

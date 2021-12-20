@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-12-18 (Aquarius)
+#* version: 2021-12-20 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2021 by Michael Arbet
 
@@ -280,7 +280,7 @@ _cletable () {
 		;;
 	esac
 	#: and... special color code for error highlight in prompt
-	_Ce=$_CR$_CL #: err highlight
+	_Ce=$_CR #: err highlight
 	#_Ce=$_CR$_CL$_CV #: err highlight
 }
 
@@ -329,22 +329,19 @@ _cleclr () {
 # CLE prompt escapes
 #:  - enhanced prompt escape codes introduced with ^ sign
 _clesc () (
-	CLESC="
-	 -e 's/\^i/\$CLE_IP/g'
-	 -e 's/\^h/\$CLE_SHN/g'
-	 -e 's/\^H/\$CLE_FHN/g'
-	 -e 's/\^U/\$CLE_USER/g'
-	 -e 's/\^g/\\\\[\$_GITC\\\\]\$_GITB/g'
-	 -e 's/\^?/\$_EC/g'
-	 -e 's/\^E/\\\\[\$_CE\\\\](\$_EC)\\\\[$_Cn\$_C0\\\\]/g'
-	 -e 's/\^C\([0-9]\)/\\\\[$_Cn\\\$_C\1\\\\]/g'
-	 -e 's/\^C\(.\)/\\\\[\\\$_C\1\\\\]/g'
-	 -e 's/\^v\([[:alnum:]_]*\)/\1=\$\1/g'
-	 -e 's/\^\^/\^/g'
-	"
-	#: compose substitute command, remove unwanted characters
-	SUBS=`tr -d '\n\t' <<<$CLESC`
-	eval sed "$SUBS" <<<"$*"
+	sed \
+	 -e 's/\^i/\${CLE_IP}/g'\
+	 -e 's/\^h/\${CLE_SHN}/g'\
+	 -e 's/\^H/\${CLE_FHN}/g'\
+	 -e 's/\^U/\${CLE_USER}/g'\
+	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
+	 -e 's/\^?/\${_EC}/g'\
+	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C0}\\]/g'\
+	 -e 's/\^C\([0-9]\)/\\[${_Cn}${_C\1}\\]/g'\
+	 -e 's/\^C\(.\)/\\[${_C\1}\\]/g'\
+	 -e 's/\^v\([[:alnum:]_]*\)/\1=\${\1}/g'\
+	 -e 's/\^\^/\^/g'\
+	<<<"$*"
 )
 
 _cle_r () {
