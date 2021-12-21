@@ -1,7 +1,7 @@
 #
 ## ** cle-power: powerprompt-like **
 #
-#* version: 2021-12-20
+#* version: 2021-12-21
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -23,6 +23,7 @@ local R RR G GG B BB Y X0 X1 X2 X3 X4
 local I C
 
 # get RGB values from background
+# https://superuser.com/questions/157563/programmatic-access-to-current-xterm-background-color
 local R1 R2
 local OLDSTTY=$(stty -g)
 stty raw -echo min 0
@@ -37,8 +38,8 @@ read R G B <<<$R2
 Y=$((0x$Rx299+0x$G*587+0x$B*114))
 Y=$(($Y/1000))
 
-echo RGB: $R $G $B
-echo Y: $Y
+#echo RGB: $R $G $B
+#echo Y: $Y
 
 # Identify dark/light background and adjust shade cofficients
 # Value of 89 is just in the middle between 0 and 178 which is maximum
@@ -78,39 +79,35 @@ for I in 0 1 2 3 4; do
 		eval "$C$C=\$((0x\$$C*\$X$I/100)); [ \$$C$C -gt 255 ] && $C$C=255"
 	done
 	eval "_R$I='$RR;$GG;$BB'"
+#	eval echo "_R$I: \$_R$I"
 done
 
 # RGB intros
 _RB=$'\e[48;2;'	# background
 _RF=$'\e[38;2;'	# foreground
 
-echo $_R0
-echo $_R1
-echo $_R2
-echo $_R3
-echo $_R4
-
 _Cn=			# color reset before prompt colors destroys powerline
 
 # Cut and remmeber starting newline
 NL0=
 if [[ $CLE_P0 =~ ^\\n ]]; then
-	#CLE_P0=${CLE_P0/\\n/}
 	NL0='\n'
 fi
 
 # Power-enhance PS1
 #PS1=$"\\[\e[38;2;\${_R0}m\\]\\[\e[48;2;\${_R0}m\e[30m\\]^C0$CLE__R0^CN"
-PS1=$"\\[\${_RB}\${_R0}m\\]^C0$CLE_P0^CN"
-PS1=$PS1$"\\[\${_RF}\${_R0}m\${_RB}\${_R1}m\\] ^C1$CLE_P1^CN"
-PS1=$PS1$"\\[\${_RF}\${_R1}m\${_RB}\${_R2}m\\] ^C2$CLE_P2^CN"
-PS1=$PS1$"\\[\${_RF}\${_R2}m\${_RB}\${_R3}m\\] ^C3$CLE_P3^CN"
-PS1=$PS1$"\\[\${_RF}\${_R3}m\${_RB}\${_R4}m\\]^CW^CN\\[\${_RF}\${_R4}m\\]^CN^C4 "
+# TODO: remove initial and trailing spaces from CLE_Px, powerline adds own
+[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1='';
+PS1=$PS1"\\[\${_RB}\${_R0}m\\] ^C0$CLE_P0 ^CN"
+PS1=$PS1"\\[\${_RF}\${_R0}m\${_RB}\${_R1}m\\] ^C1$CLE_P1 ^CN"
+PS1=$PS1"\\[\${_RF}\${_R1}m\${_RB}\${_R2}m\\] ^C2$CLE_P2 ^CN"
+PS1=$PS1"\\[\${_RF}\${_R2}m\${_RB}\${_R3}m\\] ^C3$CLE_P3 ^CN"
+PS1=$PS1"\\[\${_RF}\${_R3}m\${_RB}\${_R4}m\\]^CW^CN\\[\${_RF}\${_R4}m\\]^CN^C4 "
+
+# TODO: create function _clepower similar to _clesc to simply add backgrounds an delimiters
 
 # replace newlines; remove \$
 PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
-# different '^E' processing (doesn't work!)
-#PS1=$(sed "s/\^E/\\\\[\$_CE\\\\]\\\\[\${_CV}\\\\]\$_EC$_CN\\\\[$_Cn\$_C0\\\\]/g" <<<$PS1)
 
 # or leave them ?
 #PS1=$(sed -e 's/\\n/ ^Cn^Cp^CN\n^Cn/g' -e 's/\\\$//' <<<$PS1)
@@ -118,6 +115,5 @@ PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
 
 #_clevdump PS1
 PS1=$(_clesc "$NL0$PS1") 
-#PS1=$(_clesc "$PS1") 
 #_clevdump PS1
 
