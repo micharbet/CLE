@@ -1,7 +1,7 @@
 #
 ## ** cle-power: powerprompt-like **
 #
-#* version: 2021-12-21
+#* version: 2021-12-27
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -13,107 +13,100 @@
 # of the License, or (at your option) any later version.
 
 # ALL STILL VERY EXPERIMENTAL
-# and useless in screen
-
-# function to grab RGB values of background
-# TODO: doesn't work in TMUX
+# TODO: doesn't work in TMUX and GNU Screen
 #
 
-local R RR G GG B BB Y X0 X1 X2 X3 X4
-local I C
+_clepowershades () {
+	local RGB OLDSTTY R RR G GG B BB Y X I
 
-# get RGB values from background
-# https://superuser.com/questions/157563/programmatic-access-to-current-xterm-background-color
-local R1 R2
-local OLDSTTY=$(stty -g)
-stty raw -echo min 0
-echo -en "\e]11;?\e\\" >/dev/tty
-read -t 0.1 -r -d '\' </dev/tty
-stty $OLDSTTY
-R1=`sed 's/^.*\;//;s/[^rgb:0-9a-f/]//g' <<<$REPLY`
-R2=`sed 's;.\+rgb:\(..\)../\(..\)../\(..\)...\+;\1 \2 \3;' <<<$REPLY`
-read R G B <<<$R2
+	# get RGB values from background
+	# https://superuser.com/questions/157563/programmatic-access-to-current-xterm-background-color
+	local OLDSTTY=$(stty -g)
+	stty raw -echo min 0
+	echo -en "\e]11;?\e\\" >/dev/tty
+	read -t 0.1 -r -d '\' </dev/tty
+	stty $OLDSTTY
+	# _clevdump REPLY
+	RGB=`sed 's;.\+rgb:\(..\)../\(..\)../\(..\)...\+;\1 \2 \3;' <<<$REPLY`
+	read R G B <<<$RGB
 
-# calculate luminance
-Y=$((0x$Rx299+0x$G*587+0x$B*114))
-Y=$(($Y/1000))
+	# calculate luminance
+	Y=$((0x$Rx299+0x$G*587+0x$B*114))
+	Y=$(($Y/1000))
 
-#echo RGB: $R $G $B
-#echo Y: $Y
+	#echo RGB: $R $G $B
+	#echo Y: $Y
 
-# Identify dark/light background and adjust shade cofficients
-# Value of 89 is just in the middle between 0 and 178 which is maximum
-# luminanace calculated with above formula when RGB=#ffffff. I do not know
-# if this is exactly the middle luminance from human perception but in terminal
-# world, the background is either dark or light. Anything close to middle
-# would be hard to use
-#
-if [ $Y -lt 89 ]; then
-	# dark background, shade towards light tones
-	X0=75
-	X1=90
-	X2=105
-	X3=120
-	X4=200
-else
-	# light background, shade to darker
-	X0=120
-	X1=105
-	X2=95
-	X3=90
-	X4=60
-fi
+	# Identify dark/light background and adjust shade cofficients
+	# Value of 89 is just in the middle between 0 and 178 which is maximum
+	# luminanace calculated with above formula when RGB=#ffffff. I do not know
+	# if this is exactly the middle luminance from human perception but in terminal
+	# world, the background is either dark or light. Anything close to middle
+	# would be hard to use
+	#
+	if [ $Y -lt 89 ]; then
+		# dark background, shade towards light tones
+		X=(75 90 105 120 200)
+	else
+		# light background, shade to darker
+		X=(120 105 95 90 60)
+	fi
 
-# ensure decent shades even on black background
-if [ $Y -lt 5 ]; then
-	R=7
-	G=7
-	B=7
-fi
+	# ensure decent shades even on black background
+	if [ $Y -lt 5 ]; then
+		R=7
+		G=7
+		B=7
+	fi
 
-# calculate power-shades
-# from $R $G $B, through variables $RR $GG $BB
-# create $_R0 .. $_R4
-for I in 0 1 2 3 4; do
-	for C in R G B; do
-		eval "$C$C=\$((0x\$$C*\$X$I/100)); [ \$$C$C -gt 255 ] && $C$C=255"
+	# calculate power-shades
+	# from $R $G $B, through variables $RR $GG $BB
+	# create $_R0 .. $_R4
+	for I in 0 1 2 3 4; do
+		RR=$((0x$R*${X[I]}/100)); [ $RR -gt 255 ] && RR=255
+		GG=$((0x$G*${X[I]}/100)); [ $GG -gt 255 ] && GG=255
+		BB=$((0x$B*${X[I]}/100)); [ $BB -gt 255 ] && BB=255
+		_P[$I]="$RR;$GG;$BB"
+	#	echo _P $I : ${_P[$I]}
 	done
-	eval "_R$I='$RR;$GG;$BB'"
-#	eval echo "_R$I: \$_R$I"
-done
 
-# RGB intros
-_RB=$'\e[48;2;'	# background
-_RF=$'\e[38;2;'	# foreground
+	# RGB intros
+	_PB=$'\e[48;2;'	# background
+	_PF=$'\e[38;2;'	# foreground
 
-_Cn=			# color reset before prompt colors destroys powerline
+	_Cn=			# color reset before prompt colors would destroy powerline
+}
 
-# Cut and remmeber starting newline
-NL0=
-if [[ $CLE_P0 =~ ^\\n ]]; then
-	NL0='\n'
-fi
+_clepower () {
+	# Cut and remmeber starting newline
+	NL0=
+	if [[ $CLE_P0 =~ ^\\n ]]; then
+		NL0='\n'
+	fi
 
-# Power-enhance PS1
-#PS1=$"\\[\e[38;2;\${_R0}m\\]\\[\e[48;2;\${_R0}m\e[30m\\]^C0$CLE__R0^CN"
-# TODO: remove initial and trailing spaces from CLE_Px, powerline adds own
-[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1='';
-PS1=$PS1"\\[\${_RB}\${_R0}m\\] ^C0$CLE_P0 ^CN"
-PS1=$PS1"\\[\${_RF}\${_R0}m\${_RB}\${_R1}m\\] ^C1$CLE_P1 ^CN"
-PS1=$PS1"\\[\${_RF}\${_R1}m\${_RB}\${_R2}m\\] ^C2$CLE_P2 ^CN"
-PS1=$PS1"\\[\${_RF}\${_R2}m\${_RB}\${_R3}m\\] ^C3$CLE_P3 ^CN"
-PS1=$PS1"\\[\${_RF}\${_R3}m\${_RB}\${_R4}m\\]^CW^CN\\[\${_RF}\${_R4}m\\]^CN^C4 "
+	# Power-enhance PS1
+	# TODO: remove initial and trailing spaces from CLE_Px, powerline adds own
+	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1='';
+	PS1=$PS1"\\[\${_PB}\${_P[0]}m\\] ^C0$CLE_P0 ^CN"
+	PS1=$PS1"\\[\${_PF}\${_P[0]}m\${_PB}\${_P[1]}m\\] ^C1$CLE_P1 ^CN"
+	PS1=$PS1"\\[\${_PF}\${_P[1]}m\${_PB}\${_P[2]}m\\] ^C2$CLE_P2 ^CN"
+	PS1=$PS1"\\[\${_PF}\${_P[2]}m\${_PB}\${_P[3]}m\\] ^C3$CLE_P3 ^CN"
+	PS1=$PS1"\\[\${_PF}\${_P[3]}m\${_PB}\${_P[4]}m\\]^CW^CN\\[\${_PF}\${_P[4]}m\\]^CN^C4 "
 
-# TODO: create function _clepower similar to _clesc to simply add backgrounds an delimiters
+	# TODO: create function _clepower similar to _clesc to simply add backgrounds an delimiters
 
-# replace newlines; remove \$
-PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
+	# replace newlines; remove \$
+	PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
 
-# or leave them ?
-#PS1=$(sed -e 's/\\n/ ^Cn^Cp^CN\n^Cn/g' -e 's/\\\$//' <<<$PS1)
-#PS1=$(sed -e 's/\\n/ ^CN\n/g' -e 's/\\\$//' <<<$PS1)
+	# or leave them ?
+	#PS1=$(sed -e 's/\\n/ ^Cn^Cp^CN\n^Cn/g' -e 's/\\\$//' <<<$PS1)
+	#PS1=$(sed -e 's/\\n/ ^CN\n/g' -e 's/\\\$//' <<<$PS1)
 
-#_clevdump PS1
-PS1=$(_clesc "$NL0$PS1") 
-#_clevdump PS1
+	#_clevdump PS1
+	PS1=$(_clesc "$NL0$PS1") 
+	#_clevdump PS1
+}
+
+_clepowershades
+_clepower
 
