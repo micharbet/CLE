@@ -1,7 +1,7 @@
 #
 ## ** cle-power: powerprompt-like **
 #
-#* version: 2021-12-27
+#* version: 2022-01-05
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -14,28 +14,27 @@
 
 # ALL STILL VERY EXPERIMENTAL
 # TODO: doesn't work in TMUX and GNU Screen
-#
 
-_clepowershades () {
-	local RGB OLDSTTY R RR G GG B BB Y X I
-
-	# get RGB values from background
-	# https://superuser.com/questions/157563/programmatic-access-to-current-xterm-background-color
+# get RGB values from background
+# https://superuser.com/questions/157563/programmatic-access-to-current-xterm-background-color
+_clepowerbg () {
 	local OLDSTTY=$(stty -g)
 	stty raw -echo min 0
 	echo -en "\e]11;?\e\\" >/dev/tty
 	read -t 0.1 -r -d '\' </dev/tty
 	stty $OLDSTTY
 	# _clevdump REPLY
-	RGB=`sed 's;.\+rgb:\(..\)../\(..\)../\(..\)...\+;\1 \2 \3;' <<<$REPLY`
-	read R G B <<<$RGB
+	sed 's;.\+rgb:\(..\)../\(..\)../\(..\)...\+;\1 \2 \3;' <<<$REPLY
+}
 
+# calculate power shades based on backgroung RGB values
+_clepowershades () {
+	local LUM I X R RR G GG B BB
+	
+	read R G B <<<$(_clepowerbg)
 	# calculate luminance
-	Y=$((0x$Rx299+0x$G*587+0x$B*114))
-	Y=$(($Y/1000))
-
-	#echo RGB: $R $G $B
-	#echo Y: $Y
+	LUM=$((0x$Rx299+0x$G*587+0x$B*114))
+	LUM=$(($LUM/1000))
 
 	# Identify dark/light background and adjust shade cofficients
 	# Value of 89 is just in the middle between 0 and 178 which is maximum
@@ -43,8 +42,9 @@ _clepowershades () {
 	# if this is exactly the middle luminance from human perception but in terminal
 	# world, the background is either dark or light. Anything close to middle
 	# would be hard to use
+	# Values in X array are in percent
 	#
-	if [ $Y -lt 89 ]; then
+	if [ $LUM -lt 89 ]; then
 		# dark background, shade towards light tones
 		X=(75 90 105 120 200)
 	else
@@ -53,7 +53,7 @@ _clepowershades () {
 	fi
 
 	# ensure decent shades even on black background
-	if [ $Y -lt 5 ]; then
+	if [ $LUM -lt 5 ]; then
 		R=7
 		G=7
 		B=7
@@ -73,38 +73,53 @@ _clepowershades () {
 	# RGB intros
 	_PB=$'\e[48;2;'	# background
 	_PF=$'\e[38;2;'	# foreground
-
-	_Cn=			# color reset before prompt colors would destroy powerline
 }
 
+# fuction to add power shades to the prompt string
+# For now also removes newlines - TODO: think how to handle them better to allow
+# multiline power prompt
+#
+_clepoweresc () {
+	sed \
+	-e 's/\\\$//' \
+	-e 's/\\n//g' \
+	-e 's/\^P34/\\[\${_CN}\${_PF}\${_P[3]}m\${_PB}\${_P[4]}m\\]^CW^CN\\[\${_PF}\${_P[4]}m\\]^CN^C4/' \
+	-e 's/\^P\([0-9]\)\([0-9]\)/\\[\${_CN}\${_PF}\${_P[\1]}m\${_PB}\${_P[\2]}m\\]/g' \
+	<<<"$*"
+}
+
+# Craft the power prompt
 _clepower () {
+	local PS PX NL0 I
+
+	# color reset before prompt colors would destroy powerline
+	_Cn=
+
 	# Cut and remmeber starting newline
+	# Can be removed if I find better way to handle multiline power prompt
 	NL0=
 	if [[ $CLE_P0 =~ ^\\n ]]; then
 		NL0='\n'
 	fi
 
-	# Power-enhance PS1
-	# TODO: remove initial and trailing spaces from CLE_Px, powerline adds own
-	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1='';
-	PS1=$PS1"\\[\${_PB}\${_P[0]}m\\] ^C0$CLE_P0 ^CN"
-	PS1=$PS1"\\[\${_PF}\${_P[0]}m\${_PB}\${_P[1]}m\\] ^C1$CLE_P1 ^CN"
-	PS1=$PS1"\\[\${_PF}\${_P[1]}m\${_PB}\${_P[2]}m\\] ^C2$CLE_P2 ^CN"
-	PS1=$PS1"\\[\${_PF}\${_P[2]}m\${_PB}\${_P[3]}m\\] ^C3$CLE_P3 ^CN"
-	PS1=$PS1"\\[\${_PF}\${_P[3]}m\${_PB}\${_P[4]}m\\]^CW^CN\\[\${_PF}\${_P[4]}m\\]^CN^C4 "
+	# start with window title
+	[ "$CLE_PT" ] && PS="\\[\${_CT}$CLE_PT\${_Ct}\\]^P00" || PS='^P00';
 
-	# TODO: create function _clepower similar to _clesc to simply add backgrounds an delimiters
+	# Power-enhance original prompt parts
+	for I in 0 1 2 3; do
+		# get the current prompt part
+		PX=CLE_P$I
+		PX=${!PX}
+		# trim starting and trailing spaces
+		PX=${PX%%*( )}
+		PX=${PX##*( )}
+		PX="^C$I$PX ^P$I$((I+1)) "
+		PS=$PS$PX
+		#_clevdump PS
+	done
 
-	# replace newlines; remove \$
-	PS1=$(sed -e 's/\\n//g' -e 's/\\\$//' <<<$PS1)
-
-	# or leave them ?
-	#PS1=$(sed -e 's/\\n/ ^Cn^Cp^CN\n^Cn/g' -e 's/\\\$//' <<<$PS1)
-	#PS1=$(sed -e 's/\\n/ ^CN\n/g' -e 's/\\\$//' <<<$PS1)
-
-	#_clevdump PS1
-	PS1=$(_clesc "$NL0$PS1") 
-	#_clevdump PS1
+	PS=`_clepoweresc "$PS"`
+	PS1=`_clesc "$NL0$PS"`
 }
 
 _clepowershades
