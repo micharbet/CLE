@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-12-20 (Aquarius)
+#* version: 2022-01-07 (Aquarius)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2021 by Michael Arbet
+#* Copyright (C) 2016-2022 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -42,7 +42,7 @@
 # Debugging helpers							# dbg
 dbg_print () { [ $CLE_DEBUG ] && echo "DBG: $*" >/dev/tty; }		# dbg
 dbg_var () (								# dbg
-	eval "V=\$$1"							# dbg
+	V=${!1}								# dbg
 	[ $CLE_DEBUG ] && printf "DBG: %-16s = %s\n" $1 "$V" >/dev/tty	# dbg
 )									# dbg
 dbg_sleep () { [ $CLE_DEBUG ] && sleep $*; }						# dbg
@@ -361,11 +361,8 @@ _clepcp () {
 
 # craft the prompt from defined strings
 _cleps () {
-	local I
 	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1=''
-	for I in 0 1 2 3 4 ; do
-		eval "PS1=\$PS1\$(_clesc \"^CN^C$I\$CLE_P$I\")"
-	done
+	PS1=$PS1`_clesc "^CN^C0$CLE_P0^CN^C1$CLE_P1^CN^C2$CLE_P2^CN^C3$CLE_P3^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
 }
 
