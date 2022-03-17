@@ -1,7 +1,7 @@
 ##
 ## ** mod-see: logfile highlighter **
 #
-#* version: 2021-10-24
+#* version: 2022-03-17
 #* author:  Michael Arbet (marbet@redhat.com)
 #* license: GNU GPL v2
 #* Copyright (C) 2013-2021 by Michael Arbet 
@@ -15,7 +15,7 @@
 
 see () (
 	# Note new style of inline help!
-	# this can be added to functions
+	# this can be added to functions and as such help is readable on remote sessions
 	# for now there needs to be both
 	:
 	: '`see [-t sec] [-f file|-l] [RE ...]`'
@@ -29,6 +29,7 @@ see () (
 	# defaults
 	TSTAMP=60
 	INFILE=""
+	HL=""
 
 	while getopts "hnt:f:l" OPT
 	do
@@ -47,31 +48,34 @@ see () (
 			TSTAMP=$OPTARG
 			;;
 		*)	# usage
-			declare -f see | sed -n "s/^\s*: '\(.*\)';*/\1/p" | _clemdf
+			declare -f see | sed -n "s/^ *: *'\(.*\)';/\1/p" | _clemdf
 			exit 1
 			;;
 		esac
 	done
 	shift $((OPTIND-1))
 
-	# date/time, hostname and process highlight
-	# in bold only so there are no too many colors
-	RE="s/^\\(\\w\\+\\s\\+[0-9]\\+\\s\\+..:..:..\\s\\+\\w\\+\\s\\+[^:]\\+:\\)/$_CL\\1$_CN/;$RE"
-	
+	# date/time, hostname and process downlight
+	# in dim only so the content is more apparent
+	RE="s/^\(.*\s*..:..:..\s*[^:]*:\)/$_CD\1$_CN/"
+	# echo "RE='$RE'" # dbg
+
 	# Prepare search/replace expressions to colorize words
 	HICOLORS="GYR" # colors in reverse order
 	CI=${#HICOLORS}
 	for WORD in $*; do
 		[ $CI -gt 0 ] && ((CI--))
 		eval "HC=\$_C${HICOLORS:$CI:1}"
-		RE="$RE;s/\\($WORD\\)/$HC\\1$_CN/g"
+		RE="$RE;s/\($WORD\)/$HC\1$_CN/g"
+		HL="$HL|$WORD"
+		# echo "RE='$RE'" # dbg
 		# echo "$HC$CI: $WORD$_CN"   # dbg
 	done
 
 	# ensure timestamps printed in the background process
 	STAMPID=''
 	if [ $TSTAMP -gt 0 ]; then
-		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CB[%Y-%m-%d %T] $_Cb${INFILE:-STDIN}$_CN'; sleep $TSTAMP; done" &
+		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CB[%Y-%m-%d %T] $_Cb${INFILE:-STDIN}$_CN$_Cb${HL:+$HL|}$_CN'; sleep $TSTAMP; done" &
 		STAMPID=$!
 		trap "date '+$_CB[%Y-%m-%d %T] unsee$_CN'; kill $STAMPID" EXIT
 	fi
