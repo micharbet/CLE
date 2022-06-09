@@ -1,10 +1,10 @@
 ##
 ## ** mod-see: logfile highlighter **
 #
-#* version: 2022-03-17
+#* version: 2022-06-09
 #* author:  Michael Arbet (marbet@redhat.com)
 #* license: GNU GPL v2
-#* Copyright (C) 2013-2021 by Michael Arbet 
+#* Copyright (C) 2013-2022 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -18,8 +18,8 @@ see () (
 	# this can be added to functions and as such help is readable on remote sessions
 	# for now there needs to be both
 	:
-	: '`see [-t sec] [-f file|-l] [RE ...]`'
-	## `see [-t sec] [-f file|-l] [RE ...]`
+	: '`see [-t sec] [-f file|-l] [-i] [-g regexp]  [RE ...]`'
+	## `see [-t sec] [-f file|-l]  [-i] [-g regexp] [RE ...]`
 	: ''
 	: 'Continuously reads stdin or specified file like tail -f. The `see` hihglights'
 	: 'date/time at the begining of each line and also colorizes words or regular'
@@ -30,21 +30,29 @@ see () (
 	TSTAMP=60
 	INFILE=""
 	HL=""
+	GREX=
+	IGN=
 
-	while getopts "hnt:f:l" OPT
+	while getopts "ht:f:g:il" OPT
 	do
 		case $OPT in
-		f)	: '  -f file  open filename instead of stdin'
+		f)	: '  -f file     open filename instead of stdin'
 			INFILE=$OPTARG
 			if [ ! -f $OPTARG ]; then
 				echo file $OPTARG not found
 				exit 1
 			fi
 			;;
-		l)	: '  -l       read /var/log/messages'
+		l)	: '  -l          read /var/log/messages'
 			INFILE=/var/log/messages
 			;;
-		t)	: '  -t nsec  change timestamps interval, default 60 seconds, use 0 to suppress'
+		g)	: '  -g regexp   filter (grep) only lines containing regular expression'
+			GREX="/$OPTARG/!d"
+			;;
+		i)	: '  -i          ignore case'
+			IGN=i
+			;;
+		t)	: '  -t nsec     change timestamps interval, default 60 seconds, use 0 to suppress'
 			TSTAMP=$OPTARG
 			;;
 		*)	# usage
@@ -57,17 +65,18 @@ see () (
 
 	# date/time, hostname and process downlight
 	# in dim only so the content is more apparent
-	RE="s/^\(.*\s*..:..:..\s*[^:]*:\)/$_CD\1$_CN/"
+	RE="$GREX;s/^\(.*\s*..:..:..\s*[^:]*:\)/$_CD\1$_CN/"
 	# echo "RE='$RE'" # dbg
 
 	# Prepare search/replace expressions to colorize words
-	HICOLORS="GYR" # colors in reverse order
+	HICOLORS="MGYR" # colors in reverse order
 	CI=${#HICOLORS}
-	for WORD in $*; do
+	for WORD in "$@"; do
+		WORD=${WORD/:/\\:} # escape delimiter in regexp
 		[ $CI -gt 0 ] && ((CI--))
 		eval "HC=\$_C${HICOLORS:$CI:1}"
-		RE="$RE;s/\($WORD\)/$HC\1$_CN/g"
-		HL="$HL|$WORD"
+		RE="$RE;s:\($WORD\):$HC\1$_CN:g$IGN"
+		HL="$HL \"$WORD\""
 		# echo "RE='$RE'" # dbg
 		# echo "$HC$CI: $WORD$_CN"   # dbg
 	done
@@ -75,7 +84,7 @@ see () (
 	# ensure timestamps printed in the background process
 	STAMPID=''
 	if [ $TSTAMP -gt 0 ]; then
-		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CB[%Y-%m-%d %T] $_Cb${INFILE:-STDIN}$_CN$_Cb${HL:+$HL|}$_CN'; sleep $TSTAMP; done" &
+		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CB[%Y-%m-%d %T] $_Cb${INFILE:-STDIN}$_CN$_Cb${HL:+$HL}$_CN'; sleep $TSTAMP; done" &
 		STAMPID=$!
 		trap "date '+$_CB[%Y-%m-%d %T] unsee$_CN'; kill $STAMPID" EXIT
 	fi
