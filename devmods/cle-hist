@@ -1,7 +1,7 @@
 ##
 ## ** cle-hist: Rich history manipulations **
 #
-#* version: 2022-03-17
+#* version: 2022-07-23
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -48,21 +48,36 @@ import) ## `cle hist import`   -- import old .badh_history into rich file
 	echo "Use command 'hh $CLE_USER-OLD' to search them"
 	unset HF HL HT
 	;;
+arch)	## `cle hist arch [list|clean|LABEL]`     -- archive rich history file, optionally add label
+	mkdir -p $CLE_D/history
+	case "$2" in
+	list)
+		wc -l $CLE_D/history/*
+		;;
+	clean)
+		echo TODO
+		;;
+	*)
+		cp $CLE_HIST $CLE_D/history/`date +%y-%m-%d-%H:%M:%S${2:+-$2}`
+		;;
+	esac
+	;;
 fix) ## `cle hist fix`      -- fix issues in rich history file
 	echo TODO...
 	;;
 del) ## `cle hist del STR`  -- delete rich history records by search STR
 	echo TODO...
 	;;
-rest) ## `cle hist rest`     -- restore rich history from backup
-	echo TODO...
+only0)	## `cle hist only0`    -- remove unsuccessfull commands
+	cle hist arch before-only0
+	sed -n '/.*;.*;.*;0;.*;.*/p' $CLE_HIST >$CLE_HIST-0
+	wc -l $CLE_HIST $CLE_HIST-0
 	;;
-arch) ## `cle hist arch`     -- archive rich history file
-	mkdir -p $CLE_D/history
-	cp $CLE_HIST $CLE_D/history/`date +%y%m%d-%H%M%S`
+dedup)	## `cle hist dedup`     -- remove duplicates from history
+	cle hist arch before-dedup
+	DEDUP='{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }'
 	;;
-*)
-	cle help "cle hist"
+*)	cle help "cle hist"
 	;;
 esac
 
