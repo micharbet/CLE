@@ -1,7 +1,7 @@
 ##
 ## ** cle-hist: Rich history manipulations **
 #
-#* version: 2022-07-23
+#* version: 2022-08-14
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -12,72 +12,82 @@
 # as published by the Free Software Foundation; either version 2
 # of the License, or (at your option) any later version.
 
-case "$1" in
-import) ## `cle hist import`   -- import old .badh_history into rich file
-	HF=$HOME/.bash_history
-	[ $2 ] && HF=$2 # another history file on cmdline
-	if grep "/un/known" $CLE_HIST >/dev/null; then
-		ask "Rich history contains imported items, do you want to import again?" || return
-	else
-		ask "Do you want to import $HF into your rich history?" || return
-	fi
-	echo "Importing $HF into $CLE_HIST"
-	RHTEMP=`mktemp /tmp/RH-XXXXX`
-	HN=0
-	cat $HF | while read HL; do
-		# check if it is timestamp
-		if [[ "$HL" =~ ^#[0-9]*$ ]]; then
-			HT=`sed 's/#//' <<<$HL`
-			read HL
+_cle_hist () (
+	echo argc=$#
+	echo 1=$1
+	echo 2=$2
+	echo 3=$3
+
+	case "$1" in
+	import) ## `cle hist import`   -- import old .bash_history into rich file
+		HF=$HOME/.bash_history
+		[ $2 ] && HF=$2 # another history file on cmdline
+		if grep "/un/known" $CLE_HIST >/dev/null; then
+			ask "Rich history contains imported items, do you want to import again?" || return
 		else
-			# no timestamp for this item
-			HT=0
+			ask "Do you want to import $HF into your rich history?" || return
 		fi
-		HT=`date --date=@$HT +"$HISTTIMEFORMAT"`
-		# create rich history record into temp file
-		echo $HT $CLE_USER-OLD 0 /un/known $HL >>$RHTEMP
-		# progress gauge
-		[ $HN -lt 10 ] && HN=$((HN+1)) || { echo -n .; HN=0; }
-	done
-	echo
-	# merge rich history, the imported records to the beginning
-	HN=`wc -l $RHTEMP|cut -d' ' -f1`
-	cat $CLE_HIST >>$RHTEMP
-	mv -f $RHTEMP $CLE_HIST
-	echo "Done: $HN records processed"
-	echo "Use command 'hh $CLE_USER-OLD' to search them"
-	unset HF HL HT
-	;;
-arch)	## `cle hist arch [list|clean|LABEL]`     -- archive rich history file, optionally add label
-	mkdir -p $CLE_D/history
-	case "$2" in
-	list)
-		wc -l $CLE_D/history/*
+		echo "Importing $HF into $CLE_HIST"
+		RHTEMP=`mktemp /tmp/RH-XXXXX`
+		HN=0
+		cat $HF | while read HL; do
+			# check if it is timestamp
+			if [[ "$HL" =~ ^#[0-9]*$ ]]; then
+				HT=`sed 's/#//' <<<$HL`
+				read HL
+			else
+				# no timestamp for this item
+				HT=0
+			fi
+			HT=`date --date=@$HT +"$HISTTIMEFORMAT"`
+			# create rich history record into temp file
+			echo $HT $CLE_USER-OLD 0 /un/known $HL >>$RHTEMP
+			# progress gauge
+			[ $HN -lt 10 ] && HN=$((HN+1)) || { echo -n .; HN=0; }
+		done
+		echo
+		# merge rich history, the imported records to the beginning
+		HN=`wc -l $RHTEMP|cut -d' ' -f1`
+		cat $CLE_HIST >>$RHTEMP
+		mv -f $RHTEMP $CLE_HIST
+		echo "Done: $HN records processed"
+		echo "Use command 'hh $CLE_USER-OLD' to search them"
+		unset HF HL HT
 		;;
-	clean)
-		echo TODO
+	arch)	## `cle hist arch [list|clean|LABEL]`     -- archive rich history file, optionally add label
+		mkdir -p $CLE_D/history
+		case "$2" in
+		list)
+			wc -l $CLE_D/history/*
+			;;
+		clean)
+			echo TODO
+			;;
+		*)
+			cp $CLE_HIST $CLE_D/history/`date +%y-%m-%d-%H:%M:%S${2:+-$2}`
+			;;
+		esac
 		;;
-	*)
-		cp $CLE_HIST $CLE_D/history/`date +%y-%m-%d-%H:%M:%S${2:+-$2}`
+	fix) ## `cle hist fix`      -- fix issues in rich history file
+		echo TODO...
+		;;
+	del) ## `cle hist del STR`  -- delete rich history records by search STR
+		echo TODO...
+		;;
+	only0)	## `cle hist only0`    -- remove unsuccessfull commands
+		cle hist arch before-only0
+		sed -n '/.*;.*;.*;0;.*;.*/p' $CLE_HIST >$CLE_HIST-0
+		wc -l $CLE_HIST $CLE_HIST-0
+		;;
+	dedup)	## `cle hist dedup`     -- remove duplicates from history
+		cle hist arch before-dedup
+		DEDUP='{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }'
+		;;
+	*)	cle help "cle hist"
 		;;
 	esac
-	;;
-fix) ## `cle hist fix`      -- fix issues in rich history file
-	echo TODO...
-	;;
-del) ## `cle hist del STR`  -- delete rich history records by search STR
-	echo TODO...
-	;;
-only0)	## `cle hist only0`    -- remove unsuccessfull commands
-	cle hist arch before-only0
-	sed -n '/.*;.*;.*;0;.*;.*/p' $CLE_HIST >$CLE_HIST-0
-	wc -l $CLE_HIST $CLE_HIST-0
-	;;
-dedup)	## `cle hist dedup`     -- remove duplicates from history
-	cle hist arch before-dedup
-	DEDUP='{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }'
-	;;
-*)	cle help "cle hist"
-	;;
-esac
+)
+
+echo "sourced $BASH_SOURCE"
+cle hist "$@"
 

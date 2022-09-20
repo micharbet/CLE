@@ -1,4 +1,3 @@
-
 # How to live with CLE
 
 This document explains the philosophy of the environment and provides all

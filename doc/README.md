@@ -6,7 +6,7 @@
 CLE is a resource that can be loaded upon interactive shell startup. It makes
 regular work with command line easier by adding fancy features named below:
 
- - a colorized and customizable **prompt** string including server time and
+- a [colorized] and customizable **prompt** string including server time and
    exit code with highlighting
  - it allows you to save/edit and reuse **aliases** in an easy way
  - rich **history** with timestamps, return codes and additional information

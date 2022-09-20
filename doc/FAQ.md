@@ -25,7 +25,7 @@ Minilal requirements are as follows:
 - coreutils: tar, base64, sed, su, sudo
 - network commands: curl, ssh
 - ncurses: tput
-- optional: screen, ksu
+- optional: tmux, screen, ksu
 Generally, the base installation matches the requirements. CLE is developed
 and tested on following operating systems:
 - Linux (various distributions, the oldest one RHEL/CentOS 5)
@@ -39,8 +39,7 @@ proven with app Termux.
 Simple answer is no.
 First, there are many implementations of busybox with various level of
 compiled-in utilities. This makes it quite difficult to rely on particular
-commandi and even if the functionality is there, it may be simplified.
-Second, `ash` is missing some features of larger shells. Particularly,
+functionality.  Second, `ash` is missing some features of larger shells. Particularly,
 there is no regular expression comparison like e.g. `[[ $VAR =~ ^string ]]`.
 
 
@@ -48,24 +47,21 @@ there is no regular expression comparison like e.g. `[[ $VAR =~ ^string ]]`.
 As those re too different from bash, it is not possible to write common code.
 
 
-## Will CLE work on ksh?
-Maybe... maybe yes. I plan to check this option and will eventually work
-on ksh compatibility if this proves viable.
+## Will CLE work on other bash compatible shells?
+No. Although those are to some degree compatible with bash there are subtle
+differences that make it difficult to create a really portable code. The attempt in 
+the release 'Zodiac' - which worked in bash and zsh, both proved that development became times more difficult with minimal effect while code complexity increased.
 
 
 ## Can I start live session with `mosh` ?
 Yes, install module mod-mosh and use command `lmosh`
 
 
-## Why CLE doesn't always run in 'screen'?
+## Why CLE doesn't always run in 'screen' or 'tmux'?
 CLE doesn't tweak remote account in any way. New shell is started in regular
-way, with resources defined by system.
-Use `lscreen` wrapper instead of regular 'screen'
-
-
-## Why tmux session is started with plain old boring prompt?
-Same reason as in 'screen'.
-Except that there is not live tmux wrapper yet. It's planned enhancement.
+way, with resources defined by the system.
+Install respective module and use `lscreen` or `ltmux` to enable CLE in terminal
+multiplexers
 
 
 ## Why I do not see rich history record of the command that runs in another window?
