@@ -1,10 +1,9 @@
-mod-git:2019-03-12:fe120e9fb29e9bd2554f4869e1548ddd:GIT helpers / shorcuts
+mod-git:2021-10-11:579befe2f3ffc412ccbe696336ec8db7:GIT helpers / shorcuts
 mod-mancolor:2018-08-29:4cb76858862d9809fd7d5ecd821ded51:Colorize man pages
-mod-richpaste:2020-11-02:7276eefe6f27aebd64fffc58aa9e4266:Rich history viewer with paste buffer (experimental)
 mod-mosh:2019-11-16:992b3e33800b0b62934422d3566e2a42:Live session with `lmosh` command
-mod-fsps:2019-12-12:f02502403ca8c29a066ec6893667be39:Filesystem and processess utilities
-cle-ed:2019-05-17:baf24c81a2cc27572803a84526c85eaf:Tweak and config editor
-cle-mod:2019-08-19:aeeac9f42ecc0768aadad29b24247cfd:CLE module management
+mod-richpaste:2020-11-02:7276eefe6f27aebd64fffc58aa9e4266:Rich history viewer with paste buffer (experimental)
+cle-ed:2021-10-11:a6b78ec4bc880aac7a6b1c60fa451ffe:Tweak and config editor
+cle-mod:2021-10-11:4cf73b6a0dc5130ff2b5d27807ce0c55:CLE module management
+cle-palette:2021-10-11:4d168a44d231e8bdd5f96d2f04ed8e12:Color palettes for OSC4 capable terminals
 cle-prompt:2019-03-31:d27abf5272c54db1d6b8196c9b43884d:pre-configured prompt themes
-cle-rcmove:2018-09-23:c00dc60dddf2366e64cf44b36b7e208d:Move resource files to different folder
-cle-palette:2019-11-15:c2e35da133afb28dfccf71231a8bd92e:Color palettes for OSC4 capable terminals
+cle-rcmove:2021-10-11:2480e89d3b20b9e461b089881cd216cf:Move resource files to different folder

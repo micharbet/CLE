@@ -1,11 +1,11 @@
 ##
 ## ** cle-mod: CLE module management **
 #
-#* version: 2019-08-19
+#* version: 2021-10-11
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2019 by Michael Arbet 
+#* Copyright (C) 2016-2021 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -123,8 +123,8 @@ _clemodadd () {
 #
 case "$1" in
 ls)	## `cle mod ls`        - list modules
-	printb "Repository:  $_CN$CLE_SRC"
-	printb "Local store: $_CN$CLE_D"
+	_clebold "Repository:  $_CN$CLE_SRC"
+	_clebold "Local store: $_CN$CLE_D"
 	_clemodindex
 	echo
 	for MOD in `_clemodlist`; do
@@ -152,7 +152,7 @@ add)	## `cle mod add [mod]` - install module from repository
 	# show selected module details
 	echo
 	_clemodet $MOD
-	ask "Do you want to install this module?" || return
+	_cleask "Do you want to install this module?" || return
 	_clemodadd $MOD
 	;;
 rm)	## `cle mod rm [mod]`  - delete module
@@ -171,7 +171,7 @@ rm)	## `cle mod rm [mod]`  - delete module
 	fi
 	[ $MOD ] || return
 	_clemodet $MOD
-	ask "Do yo want to remove this?" || return
+	_cleask "Do yo want to remove this?" || return
 	mkdir -p $CLE_D/off
 	mv -f $CLE_D/$MOD $CLE_D/off
 	echo Module $MOD moved into $CLE_D/off
@@ -184,9 +184,9 @@ update)	## `cle mod update`    - update all modules
 		MSTAT=`_clemodstat $MOD`
 		[ "$MSTAT" = "U" ] && MUPD="$MUPD $MOD"
 	done
-	[ $MUPD ] || { echo Everything up tu date.; return; }
-	printb Modules to update:$_CN $MUPD
-	ask "Continue?" || return
+	[ "$MUPD" ] || { echo Everything up to date.; return; }
+	_clebold Modules to update:$_CN $MUPD
+	_cleask "Continue?" || return
 	mkdir -p $CLE_D/off
 	for MOD in $MUPD; do
 		cp -f $CLE_D/$MOD $CLE_D/off
@@ -194,9 +194,9 @@ update)	## `cle mod update`    - update all modules
 	done
 	;;
 '')
-	printb " ${_CU}CLE module management"
-	printb "Repository:  $_CN$CLE_SRC"
-	printb "Local store: $_CN$CLE_D"
+	_clebold " ${_CU}CLE module management"
+	_clebold "Repository:  $_CN$CLE_SRC"
+	_clebold "Local store: $_CN$CLE_D"
 	echo
 	cle help "cle mod"
 	;;

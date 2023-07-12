@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-07-27 (Zodiac)
+#* version: 2023-07-12 (Zodiac)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2020 by Michael Arbet
+#* Copyright (C) 2016-2023 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -127,6 +127,30 @@ dbg_print ---------------
 dbg_print Resource starts
 dbg_print ---------------
 
+# execute script and log its filename into CLE_EXE
+# also ensure the script will be executed only once
+_clexe () {
+	[ -f "$1" ] || return 1
+	[[ $CLE_EXE =~ :$1[:$] ]] && return
+	CLE_EXE=$CLE_EXE:$1
+	dbg_print _clexe $1
+	source $1
+}
+CLE_EXE=$CLE_RC
+
+# Run profile files
+#: This must be done now, not later because files may contain confilcting settings.
+#: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
+#: breaks rich history.
+dbg_var CLE_PROF
+# current shell
+CLE_SH=`basename $BASH$ZSH_NAME`
+if [ -n "$CLE_PROF" ]; then
+	_clexe /etc/profile
+	_clexe $HOME/.${CLE_SH}rc
+	unset CLE_PROF
+fi
+
 # Use alias built-ins for startup
 #: alias & unalias must be available in their natural form during CLE startup
 #: and will be redefined at the end of resource
@@ -138,7 +162,7 @@ unalias aa h hh .. ... 2>/dev/null
 #:------------------------------------------------------------:#
 # Variables init
 
-# First run code
+# First run check
 if [[ $CLE_RC =~ clerc ]]; then
 	dbg_print First run
 	CLE_RD=$HOME/.cle-`whoami`
@@ -174,9 +198,6 @@ CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/Zodiac
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
 CLE_VER="$CLE_VER debug"			# dbg
-
-# current shell
-CLE_SH=`basename $BASH$ZSH_NAME`
 
 # find writable folder
 #: there can be real situation where a remote account is restricted and have no
@@ -235,26 +256,15 @@ EOT
 }
 
 # boldprint
-printb () { printf "$_CL$*$_CN\n";}
+_clebold () { printf "$_CL$*$_CN\n";}
 
 # simple question
-ask () (
+_cleask () (
 	PR="$_CL$* (y/N) $_CN"
 	[ $ZSH_NAME ] && read -ks "?$PR" || read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
 	[ "$REPLY" = "y" ]
 )
-
-# execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
-_clexe () {
-	[ -f "$1" ] || return 1
-	[[ $CLE_EXE =~ :$1[:$] ]] && return
-	CLE_EXE=$CLE_EXE:$1
-	dbg_print _clexe $1
-	source $1
-}
-CLE_EXE=$CLE_RC
 
 # Create color table
 #: initialize $_C* variables with terminal compatible escape sequences
@@ -305,34 +315,46 @@ _cletable () {
 
 # set prompt colors
 _cleclr () {
-	local C I CI
-	case "$1" in
-	red)    C=RrR;;
-	green)  C=GgG;;
-	yellow) C=YyY;;
-	blue)   C=BbB;;
-	cyan)   C=CcC;;
-	magenta) C=MmM;;
-	white|grey|gray) C=wNW;;
-	tricolora) C=RBW;;
-	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
-	???|????)    C=$1;; # any 3/4 colors
-	*)      # print help on colors
-		printb "Unknown color '$1' Select predefined scheme:"
-		declare -f _cleclr|sed -n 's/[ \t]*(*\(\<[a-z |]*\)).*/  \1/p'
-		echo Alternatively create your own 3-letter combo using rgbcmykw/RGBCMYKW
-		echo E.g. $_CL cle color rgB
-		return 1
-	esac
-	# decode colors and prompt strings
-	C=x${C}L #: status color will be added later, plus bold command line
-	for I in {1..4};do
-		eval "CI=\$_C${C:$I:1}"
-		[ -z "$CI" ] && printb "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
-		eval "_C$I=\$CI"
-	done
-	_C0=$_C2$_CD #: dim color for status part 0
+        local C I CI E
+        case "$1" in
+        red)    C=RrR;;
+        green)  C=GgG;;
+        yellow) C=YyY;;
+        blue)   C=BbB;;
+        cyan)   C=CcC;;
+        magenta) C=MmM;;
+        grey|gray) C=wNW;;
+        tricolora) C=RBW;;
+        marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
+        *)      C=$1;; #: any color combination
+        esac
+        # decode colors and prompt strings
+        #: three letters ... dim status part _C0
+        #: four letters .... user defined status color
+        #: five letters .... also user defined commad highlighting (defauld bold)
+        [ ${#C} = 3 ] && C=D${C}L || C=${C}L
+        for I in {0..4};do
+                eval "CI=\$_C${C:$I:1}"
+                # check for exsisting color, ignore 'dim' and 'italic as they might not be defined
+                if [[ -z "$CI" && ! ${C:$I:1} =~ [ID] ]]; then
+                        echo "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
+                        E=1     #: error flag
+                fi
+                eval "_C$I=\$CI"
+        done
+        [ ${C:0:1} = D ] && _C0=$_C1$_CD #: dim color for status part 0
+        if [ $E ]; then
+                echo "Choose predefined scheme:$_CL"
+                declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
+                printf "\n${_CN}Alternatively create your own 3-5 letter combo using rgbcmykw/RGBCMYKW\n"
+                printf "E.g.:$_CL cle color rgB\n"
+                _cleclr gray    #: default in case of error
+                return 1
+        else
+                CLE_CLR=${C:0:5}
+        fi
 }
+
 
 # CLE prompt escapes
 #:  - enhanced prompt escape codes introduced with ^ sign
@@ -344,7 +366,7 @@ _clesc () (
 	 -e 's/\^h/\$CLE_SHN/g'
 	 -e 's/\^H/\$CLE_FHN/g'
 	 -e 's/\^U/\$CLE_USER/g'
-	 -e 's/\^g/\$(gitwb)/g'
+	 -e 's/\^g/\$(_clegitwb)/g'
 	 -e 's/\^?/\$_EC/g'
 	 -e 's/\^[E]/\\$_PE\$_CE\\$_Pe\[\$_EC\]\\$_PE\$_CN\$_C0\\$_Pe/g'
 	 -e 's/\^[C]\(.\)/\\$_PE\\\$_C\1\\$_Pe/g'
@@ -432,7 +454,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	vdump "CLE_CLR|CLE_PB.|CLE_PZ."
+	_clevdump "CLE_CLR|CLE_PB.|CLE_PZ."
 ) >$CLE_CF
 
 
@@ -540,7 +562,7 @@ _clerh () {
 		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				VD=`vdump $V`
+				VD=`_clevdump $V`
 				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done;;
@@ -554,22 +576,11 @@ _clerh () {
 } >>$CLE_HIST
 
 
-# Run profile files
-#: This must be done now, not later because files may contain confilcting settings.
-#: E.g. there might be vte.sh defining own PROMPT_COMMAND and this completely
-#: breaks rich history.
-dbg_var CLE_PROF
-if [ -n "$CLE_PROF" ]; then
-	_clexe /etc/profile
-	_clexe $HOME/.${CLE_SH}rc
-	unset CLE_PROF
-fi
-
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
 	printf "\n$CLE_MOTD"
-	printb "\n CLE/$CLE_SH $CLE_VER\n"
+	_clebold "\n CLE/$CLE_SH $CLE_VER\n"
 	unset CLE_MOTD
 fi
 
@@ -603,7 +614,7 @@ fi
 ## ** cd command enhancements **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
-- () { cd - >/dev/null; vdump OLDPWD;}
+- () { cd - >/dev/null; _clevdump OLDPWD;}
 .. () { cd ..;}
 ... () { cd ../..;}
 ## `xx` & `cx`   - bookmark $PWD & use later
@@ -713,10 +724,8 @@ _clehhout () (
 # zsh hack to accept notes on cmdline
 [ $ZSH_NAME ] && '#' () { true; }
 
-##
-## ** Not-just-internal tools **
-## `gitwb`           - show current working branch name
-gitwb () (
+#: show current working branch name
+_clegitwb () (
 	# go down the folder tree and look for .git
 	#: Because this function is supposed to use in prompt we want to save
 	#: cpu cycles. Do not call `git` if not necessary.
@@ -728,12 +737,11 @@ gitwb () (
 	)
 
 
-## `mdfilter`        - markdown acsii highlighter
-#: Highly sophisticated filter :-D
+#: Highly sophisticated .md format highlighter :-D
 #: Just replaces special strings in markdown files and augments the output
 #: with escape codes to highlight.
 #: Not perfect, but it helps and is simple, isn't it?
-mdfilter () {
+_clemdf () {
 	sed -e "s/^###\(.*\)/$_CL\1$_CN/"\
 	 -e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/"\
 	 -e "s/^#\( *\)\(.*\)/\1$_CL$_CV \2 $_CN/"\
@@ -743,8 +751,8 @@ mdfilter () {
 	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
-## `vdump 'regexp'`  - dump variables in reusable way
-vdump () (
+#: dump variables in reusable way
+_clevdump () (
 	#: awk: 1. exits when reaches functions
 	#:      2. finds variables matching regular expression
 	#:      3. replaces weird escape sequence '\C-[' from zsh to normal '\E'
@@ -786,8 +794,8 @@ _clepak () {
 		cp $CLE_TW $TW 2>/dev/null
 		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
 		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		vdump "CLE_SRE|CLE_P..|^_C." >>$EN
-		vdump "$CLE_EXP" >>$EN
+		_clevdump "CLE_SRE|CLE_P..|^_C." >>$EN
+		_clevdump "$CLE_EXP" >>$EN
 		echo "CLE_DEBUG='$CLE_DEBUG'" >>$EN			# dbg
 		cat $CLE_AL >>$EN 2>/dev/null
 	fi
@@ -802,14 +810,14 @@ _clepak () {
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	_clepak tar
-	[ $CLE_DEBUG ] && printb "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
+	[ $CLE_DEBUG ] && _clebold "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
 	#: remote startup
 	#: - create destination folder, unpack tarball and execute the code
 	command ssh -t $* "
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
-		echo $C64|base64 -\$D|tar xzmf -
+		echo $C64|base64 -\$D|tar xzmf - 2>/dev/null
 		exec \$H/$RC -m $CLE_ARG"
 		#: it is not possible to use `base63 -\$D <<<$C64|tar xzf -`
 		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
@@ -857,6 +865,7 @@ lscreen () (
 	#: list all screens with that name and find how many of them are there
 	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
 	NS=`wc -w <<<$SCRS`
+	reset #: it is sometimes necessary to reset terminal
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		#: No session with given name found, prepare to start new session
@@ -870,7 +879,7 @@ lscreen () (
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
 			#: we found more screens with simiilar names, choose one!
-			printb "${_CU}Current '$NM' sessions:"
+			_clebold "${_CU}Current '$NM' sessions:"
 			PS3="$_CL choose # to join: $_CN"
 			select SN in $SCRS;do
 				[ $SN ] && break
@@ -1032,7 +1041,8 @@ if [ $BASH ]; then
 	#: while _ssh is better
 	#: The path is valid at least on fedora and debian with installed bash-completion package
 	_N=/usr/share/bash-completion
-	[ -d $_N ] && . $_N/bash_completion && . $_N/completions/ssh && complete -F _ssh lssh
+	_clexe $_N/bash_completion
+	_clexe $_N/completions/ssh && complete -F _ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
@@ -1082,7 +1092,7 @@ cle () {
 	fi
 	case $C in
 	color)  ## `cle color COLOR`       - set prompt color
-		[ $1 ]  && _cleclr $1 && CLE_CLR=$1 && _clesave;;
+		[ $1 ]  && _cleclr $1 && _clesave;;
 	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
 		I=${C:1:1}
 		if [ "$1" ]; then
@@ -1096,7 +1106,7 @@ cle () {
 			S=$*
 			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_P$P$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
-			vdump CLE_P$I
+			_clevdump CLE_P$I
 		fi;;
 	title)	## `cle title off|string`  - turn off window title or set the string
 		case "$1" in
@@ -1112,7 +1122,7 @@ cle () {
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
 			if [ -f $CLE_CF ]; then
-				printb $_CU$CLE_CF:
+				_clebold $_CU$CLE_CF:
 				cat $CLE_CF
 			else
 				echo Default/Inherited configuration
@@ -1128,29 +1138,34 @@ cle () {
 		unset CLE_1
 		I='# Command Live Environment'
 		S=$HOME/.${SHELL##*/}rc	#: hook into user's login shell rc
-		grep -A1 "$I" $S && printb CLE is already hooked in $S && return 1
-		ask "Do you want to add CLE to $S?" || return
+		grep -A1 "$I" $S && _clebold CLE is already hooked in $S && return 1
+		_cleask "Do you want to add CLE to $S?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
 		cle reload;;
 	update) ## `cle update [master]`   - install fresh version of CLE
-		P=$CLE_D/rc.new
+		N=$CLE_D/rc.new
 		#: update by default from the own branch
 		#: master brach or other can be specified in parameter
-		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$P
+		curl -k ${CLE_SRC/Zodiac/${1:-Zodiac}}/clerc >$N
 		#: check correct download and its version
-		S=`sed -n 's/^#\* version: //p' $P`
+		S=`sed -n 's/^#\* version: //p' $N`
 		[ "$S" ] || { echo "Download error"; return 1; }
 		echo current: $CLE_VER
 		echo "new:     $S"
-		I=`diff $CLE_RC $P` && { echo No difference; return 1;}
-		ask Do you want to see diff? && cat <<<"$I"
-		ask Do you want to install new version? || return
+		I=`diff $CLE_RC $N` && { echo No difference; return 1;}
+		_cleask Do you want to see diff? && cat <<<"$I"
+		_cleask Do you want to install new version? || return
 		#: now replace CLE code
-		B=$CLE_D/rc.bk
-		cp $CLE_RC $B
-		chmod 755 $P
-		mv -f $P $CLE_RC
-		cle reload;;
+		cp $CLE_RC $CLE_D/rc.bk
+		chmod 755 $N
+		mv -f $N $CLE_RC
+		cle reload
+		#: update modules if necessary
+		N=cle-mod
+		[ -f "$CLE_D/$N" ] || return
+		echo updating modules
+		curl -k $CLE_SRC/modules/$N >$CLE_D/$N && cle mod update
+		;;
 	reload) ## `cle reload [bash|zsh]` - reload CLE
 		[[ $1 =~ ^[bz] ]] && S=-$1
 		#: complete re-exec removes unexported variables
@@ -1162,15 +1177,15 @@ cle () {
 	mod)    ## `cle mod`               - cle module management
 		#: this is just a fallback to initialize modularity
 		#: downloaded cle-mod overrides this code
-		ask Activate CLE modules? || return
+		_cleask Activate CLE modules? || return
 		N=cle-mod
 		P=$CLE_D/$N
 		curl -k $CLE_SRC/modules/$N >$P
-		grep -q "# .* $N:" $P || { printb Module download failed; rm -f $P; return 1;}
+		grep -q "# .* $N:" $P || { _clebold Module download failed; rm -f $P; return 1;}
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
-		vdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	ls)	printb CLE_D: $CLE_D; ls -l $CLE_D; printb CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
+		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+	ls)	_clebold CLE_D: $CLE_D; ls -l $CLE_D; _clebold CLE_RD: $CLE_RD; ls -l $CLE_RD;;	# dbg
 	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
 	debug)	case $1 in									# dbg
 		"")	dbg_var CLE_DEBUG ;;							# dbg
@@ -1182,7 +1197,7 @@ cle () {
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | mdfilter | less -erFX;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`
@@ -1191,7 +1206,7 @@ cle () {
 		#: choose one to read
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N |mdfilter|less -r; break
+			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf|less -r; break
 		done;;
 	"")	#: do nothing, just show off
 		_clebnr
