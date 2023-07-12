@@ -91,7 +91,7 @@ To avoid such situation perform following steps after deployment:
 3. start new session (new terminal window) if everything works, close
    the previous one
 
-See section 'Variables' in document _HOWTO.md_ for more details about
+See section 'Variables' in document [[HOWTO]] for more details about
 how $CLE_USER is determined and used.
 
 
@@ -223,5 +223,5 @@ aliases. special prompt settings (see next section) etc.
 CLE is highly extensible. Did I tell this? really? Well, you can add new
 fuctions, replace existing ones or add more functionality into 'cle'
 command itself. Either use existing module or write your own.
-Read more in _Modules.md_ 
+Read more in [[Modules]]
 

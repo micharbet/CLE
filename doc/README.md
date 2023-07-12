@@ -6,7 +6,7 @@
 CLE is a resource that can be loaded upon interactive shell startup. It makes
 regular work with command line easier by adding fancy features named below:
 
-- a [colorized] and customizable **prompt** string including server time and
+- a **colorized** and customizable **prompt** string including server time and
    exit code with highlighting
  - it allows you to save/edit and reuse **aliases** in an easy way
  - rich **history** with timestamps, return codes and additional information
@@ -84,6 +84,8 @@ Find more helpful information directly from command line:
 - `cle help` to show all commands defined byt he environment
 - `cle doc`  to download and display documentation files
 
+For more inormation read [[HOWTO]] and [[FAQ]]
+
 
 ## 2. Compatibility
 
@@ -157,15 +159,7 @@ customizable environment! Use `lssh` instead of `ssh` or `lsu` instead of
 initiate CLE sessions. In biology terms, the environment can spread own DNA
 giving the word 'live' it's true meaning. Or at least closer. [1]
 
-CLE versions have no numbers but rather names. As of 2016 following releases
-were issued:
-- Spring, Easter, MayDay - 2016, very old versions
-- HAlpha - 2017, code cleanup and high optimization
-- RedH - 2017, adding new features
-- Nova - 2018, big improvements, new features again, like rich history
-- Zodiac - 2019, current release, basically the same functions as Nova
-  but almost complete rewrite to ensure compatibility with Z-shell plus
-  improved environment transfer incl. prompt settings, aliases and variables.
+CLE versions have no numbers but rather names. Read more in [[ReleaseNotes]]
 
 Also while CLE is big tweak itself, it tries to respect users and their own
 settings. Initial versions used to be pushy, defining a lot of aliases, of
@@ -177,7 +171,7 @@ one have been minimalized. The motto is: "Less tweaks, more options!"
 under the users' (your) control and responsibilty
 
 
-## 5. LICENSE
+## 5. [[LICENSE]]
  This program is free software; you can redistribute it and/or
  modify it under the terms of the GNU General Public License
  as published by the Free Software Foundation; either version 2

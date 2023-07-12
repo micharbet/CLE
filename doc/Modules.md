@@ -110,7 +110,7 @@ URL of style `file://....` is used.
 ### cle-mod - the mods management
 This one allows installations and removal other modules. The modularity is
 built in CLE but module maintenace is kept in separate file. First request
-to 'cle mod [operation]' downloads and install this file and then performs
+to `cle mod [operation]` downloads and install this file and then performs
 the action. The 'cle-mod' is not required however. If you install/or create
 your own modules manually they will work without this one.
 

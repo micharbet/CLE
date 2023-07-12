@@ -590,19 +590,18 @@ single idea has to be included (keeping the main code as small as possible).
 Very specific functions have been (re)moved into modules and it is the users
 choice to include them into his/her environment. It is also possible and easy
 to write your own modules. This topic is covered in a separate document.
-Read _Modules.md_ to learn more.
+Read [[Modules]] to learn more.
 
 CLE itself is a tweak but it can be customized even further. One way might
 appear to be by editing the 'rc' file itself but this is discouraged. There are files
 dedicated to exactly this goal. Find more information on how to use them
-in the document _TipsAndTweaks.md_
+in the document [[TipsAndTweaks]]
 
 In case of an issue in the main resource (the clerc file), if you feel some important
 functionality is missing or if you just wrote a nice module that you
-want to share follow the document _Contribute.md_
+want to share follow the document [[ContributeAndFeedback]]
 
-Love CLE? Hate it? Do you want to improve something? Read _Feedback.md_ and
-chose any of the options how to report.
+Love CLE? Hate it? Do you want to improve something? Read [[ContributeAndFeedback]] and chose any of the options how to report.
 
 
 ### Thank you for reading and using!

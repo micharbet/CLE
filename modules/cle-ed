@@ -32,8 +32,8 @@ if [ ! -d $EDIR ]; then
 	ln -s ~/.bashrc bashrc
 	ln -s ~/.profile profile
 	ln -s ~/.vimrc vimrc
-	ln -s ~/.ssh/config ssh-cf
-	ln -s ~/.ssh/known-hosts ssh-kh
+	ln -s ~/.ssh/config sshcf
+	ln -s ~/.ssh/known-hosts sshkh
 	popd >/dev/null
 fi
 

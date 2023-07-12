@@ -838,7 +838,7 @@ lssh () (
 		cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
-		echo $C64|base64 -\$D|tar xzmf -
+		echo $C64|base64 -\$D|tar xzmf - 2>/dev/null
 		exec bash --rcfile \$H/$RC"
 		#: it is not possible to use `base64 -\$D <<<$C64|tar xzf -`
 		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)

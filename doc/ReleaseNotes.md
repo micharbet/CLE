@@ -74,4 +74,4 @@ Apr 2017
 ## Spring
 21 Mar 2017
 
-## Numbered versions 3.x
+[[Credits]]

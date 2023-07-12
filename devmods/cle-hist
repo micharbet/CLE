@@ -13,10 +13,10 @@
 # of the License, or (at your option) any later version.
 
 _cle_hist () (
-	echo argc=$#
-	echo 1=$1
-	echo 2=$2
-	echo 3=$3
+#	echo argc=$#
+#	echo 1=$1
+#	echo 2=$2
+#	echo 3=$3
 
 	case "$1" in
 	import) ## `cle hist import`   -- import old .bash_history into rich file
@@ -54,20 +54,6 @@ _cle_hist () (
 		echo "Use command 'hh $CLE_USER-OLD' to search them"
 		unset HF HL HT
 		;;
-	arch)	## `cle hist arch [list|clean|LABEL]`     -- archive rich history file, optionally add label
-		mkdir -p $CLE_D/history
-		case "$2" in
-		list)
-			wc -l $CLE_D/history/*
-			;;
-		clean)
-			echo TODO
-			;;
-		*)
-			cp $CLE_HIST $CLE_D/history/`date +%y-%m-%d-%H:%M:%S${2:+-$2}`
-			;;
-		esac
-		;;
 	fix) ## `cle hist fix`      -- fix issues in rich history file
 		echo TODO...
 		;;
@@ -79,15 +65,39 @@ _cle_hist () (
 		sed -n '/.*;.*;.*;0;.*;.*/p' $CLE_HIST >$CLE_HIST-0
 		wc -l $CLE_HIST $CLE_HIST-0
 		;;
-	dedup)	## `cle hist dedup`     -- remove duplicates from history
+	dedup)	## `cle hist dedup`    -- remove duplicates from history
 		cle hist arch before-dedup
 		DEDUP='{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }'
+		awk "$DEDUP" $CLE_HIST
+		;;
+	arch)	## `cle hist arch [LABEL]`  -- archive rich history, optionally add label
+		## `cle hist arch list`     -- list rich history archives
+		## `cle hist arch clean`    -- remove old archives, keep recent 5
+		mkdir -p $CLE_D/history
+		cd $CLE_D/history || return 1
+		case "$2" in
+		list)
+			wc -l * | grep -v total
+			printf " -----------------\n%9s %s\n" LINES FILE
+			;;
+		clean)
+			TOREMOVE=`ls -tr | head -n -5` #keep recent 5
+			[ -z "$TOREMOVE" ] && return
+			echo $TOREMOVE
+			_cleask "delete those files?" && rm $TOREMOVE
+			;;
+		*)
+			# create new archive
+			cp $CLE_HIST $CLE_D/history/`date +%y-%m-%d-%H:%M:%S${2:+-$2}`
+			;;
+		esac
 		;;
 	*)	cle help "cle hist"
 		;;
 	esac
 )
 
-echo "sourced $BASH_SOURCE"
+#echo "sourced $BASH_SOURCE"
 cle hist "$@"
+unset _cle_hist
 
