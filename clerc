@@ -631,7 +631,7 @@ lssh () (
 	command ssh -t $* "
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
-		echo $C64|base64 -\$D|tar xzmf -
+		echo $C64|base64 -\$D|tar xzmf - 2>/dev/null
 		exec \$H/$RC -m $CLE_ARG"
 )
 

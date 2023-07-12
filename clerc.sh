@@ -817,7 +817,7 @@ lssh () (
 		H=/var/tmp/\$USER; mkdir -m 755 -p \$H; cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
-		echo $C64|base64 -\$D|tar xzmf -
+		echo $C64|base64 -\$D|tar xzmf - 2>/dev/null
 		exec \$H/$RC -m $CLE_ARG"
 		#: it is not possible to use `base63 -\$D <<<$C64|tar xzf -`
 		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
