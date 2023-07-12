@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2021-10-11 (Zodiac)
+#* version: 2023-07-12 (Zodiac)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2021 by Michael Arbet
+#* Copyright (C) 2016-2023 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
