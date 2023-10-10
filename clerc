@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2022-09-20 (Aquarius)
+#* version: 2023-10-10 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -249,6 +249,7 @@ _clesc () (
 	 -e 's/\^h/\${CLE_SHN}/g'\
 	 -e 's/\^H/\${CLE_FHN}/g'\
 	 -e 's/\^U/\${CLE_USER}/g'\
+	 -e 's/\^s/\${_SEC}/g'\
 	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
 	 -e 's/\^?/\${_EC}/g'\
 	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C0}\\]/g'\
@@ -274,11 +275,12 @@ _clepcp () {
 	done
 }
 
-# craft the prompt from defined strings
+# craft prompts from defined strings
 _cleps () {
 	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1=''
-	PS1=$PS1`_clesc "^CN^C0$CLE_P0^CN^C1$CLE_P1^CN^C2$CLE_P2^CN^C3$CLE_P3^CN^C4"`
+	PS1=$PS1`_clesc "^CN^C1$CLE_P1^CN^C2$CLE_P2^CN^C3$CLE_P3^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
+	PS9=`_clesc "^CN^C0$CLE_P0"`
 }
 
 # default prompt strings and colors
@@ -306,24 +308,25 @@ _clesave () (
 # prompt callback functions
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
+_C=
+_CP=
 _cleprompt () {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
-	local IFS S DT C
+	local IFS
 	[[ $_EC =~ [1-9] ]] || _EC=0
 	unset IFS
-	C=$_HN
 	history -a
-	DT=${C/;*}
-	C=${C/$DT;}
 	[[ $PS1 =~ _GIT ]] && _clegit
-	if [[ $C =~ ^\# ]]; then
-		_clerh '#' "$PWD" "$C"	# record a note to history
-	elif [ $_HT ]; then	# check timer - indicator of executed command
-		S=$((SECONDS-${_HT:-$SECONDS}))
-		_clerh "$DT" $S "$_EC" "$PWD" "$C"
+	if [[ $_C =~ ^\# ]]; then
+		_clerh '#' "$PWD" "$_C"	# record a note to history
+	elif [ "$_C" ]; then	# check if a command was issued
+		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
+		echo "${PS9@P}"
+		[ "$_C" != "$_CP" ] && _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_C"
+		_CP=$_C
 		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce"
-		_HT=
+		_C=
 	else
 		_CE=''
 		_EC=0
@@ -335,16 +338,16 @@ CLE_HTF='%F %T'
 HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
 
 history -cr $HISTFILE
-_HP=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
-_HP=${_HP#*;}
 _clepreex () {
-	_HN=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
-	_HN=${_HN#*;}
 	echo -n $_CN
-	[ "$_HP" = "$_HN" ] && return
-	_HP=$_HN
+	#echo "_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
+	[ "$BASH_COMMAND" = "_cleprompt" ] && _C= && return
+	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
+	_HR=${_HR#*;}
+	_DT=${_HR/;*}
+	_C=${_HR/$_DT;}
 	trap "" DEBUG
-	_HT=$SECONDS
+	_TIM=$SECONDS
 }
 
 # rich history record
@@ -654,7 +657,7 @@ lssh () (
 		done
 		cd \$H
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
-		echo $C64|base64 -\$D|tar xzmf -
+		echo $C64|base64 -\$D|tar xzmf - 2>/dev/null
 		exec bash --rcfile \$H/$RC"
 )
 
@@ -775,7 +778,7 @@ _T=${STY:-$_T}
 _T=${TMUX:-$_T}
 _clerh @ $CLE_TTY "[$_T $HOME ${CLE_RC/$HOME/\~}]"
 [ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
-[ $CLE_DEBUG ] && _C=${CLE_EXE//$HOME/\~}
+#[ $CLE_DEBUG ] && _C=${CLE_EXE//$HOME/\~}
 
 ##
 ## ** CLE command & control **
