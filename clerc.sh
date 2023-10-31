@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-10-10 (Aquarius)
+#* version: 2023-10-20 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -337,7 +337,7 @@ _clesc () (
 	 -e 's/\^U/\${CLE_USER}/g'\
 	 -e 's/\^s/\${_SEC}/g'\
 	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
-	 -e 's/\^?/\${_EC}/g'\
+	 -e 's/\^[?e]/\${_EC}/g'\
 	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C0}\\]/g'\
 	 -e 's/\^C\([0-9]\)/\\[${_Cn}${_C\1}\\]/g'\
 	 -e 's/\^C\(.\)/\\[${_C\1}\\]/g'\
@@ -409,29 +409,29 @@ _clesave () (
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround
 _C=
-_CP=
 _cleprompt () {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
-	local IFS  		#: VERIFY WHY I NEED LOCAL IFS
-	[[ $_EC =~ [1-9] ]] || _EC=0 #: just one zero if all ok
+	local IFS  		#: TODO: VERIFY WHY I NEED LOCAL IFS
+	#: Error code highlight
+	[[ $_EC =~ [1-9] ]] && _CE=$_Ce || { _EC=0; _CE=; }
 	unset IFS
 	history -a	#: immediately record commands so they are available in new shell sessions
 	[[ $PS1 =~ _GIT ]] && _clegit
+	#: TODO: note recording does not work! :#
 	if [[ $_C =~ ^\# ]]; then
+		dbg_print "recording note '$_C'"
 		_clerh '#' "$PWD" "$_C"	# record a note to history
 	elif [ "$_C" ]; then	# check if a command was issued
 		dbg_print "$_C0>>>>  End of command output  '$_C' <<<<$_CN"
 		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
-		echo "${PS9@P}"				#: printout afterexecution prompt PS9
-		[ "$_C" != "$_CP" ] && _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_C"
-		_CP=$_C
-		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce" #: highlight error code
-		_C=
+		echo "${PS9@P}"			#: printout afterexecution prompt PS9
+		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_C"
 	else
 		#: no command issued
-		_CE=''
-		_EC=0 #: reset error code so it doesn not disturb on other prompts
+		#: reset error code and color so it doesn not disturb on later prompts
+		_CE=
+		_EC=0
 	fi
 	trap _clepreex DEBUG
 }
@@ -444,7 +444,7 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exi
 history -cr $HISTFILE
 _clepreex () {
 	echo -n $_CN	#: reset tty colors after any prompt
-	#echo "_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
+	dbg_print "_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
 	[ "$BASH_COMMAND" = "_cleprompt" ] && _C= && return
 	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` #: get new history record
 	_HR=${_HR#*;}	#: strip sequence number
@@ -458,12 +458,15 @@ _clepreex () {
 
 # rich history record
 #: This fuction is used within prompt calback. Read code efficiency note above!
+_CP=	#: previos command
 _clerh () {
 	local DT RC REX ID V VD W
 	#: three to five arguments, timestamp and elapsed seconds may be missing
-	dbg_print _clerh $# arguments
-	dbg_print _clerh "$@"
+	dbg_print "_clerh $# arguments: '$@'"
 	case $# in
+		#: here is an exception, calling the 'date' binary
+		#: but only in special cases when no real command was executed
+		#: means - not a big overhead
 	3)	DT=`date "+$CLE_HTF"`;SC='';;
 	4)	DT=`date "+$CLE_HTF"`;SC=$1;shift;;
 	5)	DT=$1;SC=$2;shift 2;;
@@ -471,6 +474,10 @@ _clerh () {
 	#: ignore commands that dont want to be recorded
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
 	[[ $3 =~ $REX ]] && return
+	#: ignore repeating commands
+	[ "$3" = "$_CP" ] && return
+	dbg_print "Cmd='$3' PrevCmd='$_CP'"
+	_CP=$3
 	#: working dir (substitute home with ~)
 	W=${2/$HOME/\~}
 	#: create timestamp if missing
@@ -487,9 +494,10 @@ _clerh () {
 			fi
 		done;;
 	xx) # directory bookmark
-		dbg_print "directory bookmark: $ID;;*;$W;"
-		echo -E "$ID;;*;$W;" ;;
+		dbg_print "directory bookmark: $PWD;"
+		echo -E "$ID;;*;$PWD;" ;;
 	\#*) #: notes to rich history
+		#: TODO: this does not work
 		dbg_print "note: $ID;;#;$W;$3"
 		echo -E "$ID;;#;$W;$3" ;;
 	*) #: regular commands
@@ -502,7 +510,11 @@ _clerh () {
 # read inherited environment
 [ $CLE_WS ] && _clexe $CLE_ENV
 
-# colorize LS
+#: A few pre-defined aliases
+#: otherwise the CLE does not contain too much customized aliases and functions
+#: in order not to mess with the user's habits
+
+# colorized LS
 case $OSTYPE in
 linux*)		alias ls='ls --color=auto';;
 darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
@@ -510,7 +522,7 @@ FreeBSD*)       alias ls='ls -G "$@"';;
 *)		alias ls='ls -F';; # at least some file type indication
 esac
 
-# colorized GREP except on busybox
+# colorized GREP (except on busybox)
 #: busybox identified by symlinked 'grep' file
 if [ -L `command which grep` ];then
 	#: Fedora defines this mess :(
@@ -581,6 +593,7 @@ h () (
 _RHI=1		#: current index to history
 _RHLEN=0	#: max index
 hh () {
+	#: TODO: error in readind directory bookmark
 	local O S N OPTIND MOD OUT
 	while getopts "a:mtwsncflbex0123456789" O; do
 		case $O in
