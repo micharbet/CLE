@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-10-20 (Aquarius)
+#* version: 2023-11-03 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -280,8 +280,7 @@ _cletable () {
 		;;
 	esac
 	#: and... special color code for error highlight in prompt
-	_Ce=$_CR #: err highlight
-	#_Ce=$_CR$_CL$_CV #: err highlight
+	_Ce=$_CR$_CL #: err highlight
 }
 
 # set prompt colors
@@ -300,11 +299,13 @@ _cleclr () {
 	*)	C=$1;; #: any color combination
 	esac
 	# decode colors and prompt strings
+	# TODO: edit notes after finish updating colr codes
 	#: three letters ... dim status part _C0
 	#: four letters .... user defined status color
 	#: five letters .... also user defined commad highlighting (defauld bold)
-	[ ${#C} = 3 ] && C=D${C}L || C=${C}L
-	for I in {0..4};do
+	#[ ${#C} = 3 ] && C=D${C}L || C=${C}L
+	C=x${C}L  #: x - index shifter; L -  default bold for command itself
+	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
 		# check for exsisting color, ignore 'dim' and 'italic as they might not be defined
 		if [[ -z "$CI" && ! ${C:$I:1} =~ [ID] ]]; then
@@ -313,7 +314,8 @@ _cleclr () {
 		fi
 		eval "_C$I=\$CI"
 	done
-	[ ${C:0:1} = D ] && _C0=$_C1$_CD #: dim color for status part 0
+	#[ ${C:0:1} = D ] && _C0=$_C1$_CD #: dim color for
+	_C5=$_C2$_CD #: dim color for status
 	if [ $E ]; then
 		echo "Choose predefined scheme:$_CL"
 		declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
@@ -322,7 +324,7 @@ _cleclr () {
 		_cleclr gray	#: default in case of error
 		return 1
 	else
-		CLE_CLR=${C:0:5}
+		CLE_CLR=${C:1:4}
 	fi
 }
 
@@ -338,7 +340,7 @@ _clesc () (
 	 -e 's/\^s/\${_SEC}/g'\
 	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
 	 -e 's/\^[?e]/\${_EC}/g'\
-	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C0}\\]/g'\
+	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
 	 -e 's/\^C\([0-9]\)/\\[${_Cn}${_C\1}\\]/g'\
 	 -e 's/\^C\(.\)/\\[${_C\1}\\]/g'\
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\${\1}/g'\
@@ -356,27 +358,30 @@ _cle_r () {
 # combine default/inherited prompt strings with values from config file
 _clepcp () {
 	local I
-	for I in 0 1 2 3 T; do
-		eval "CLE_P$I=\${CLE_PB$I:-\$CLE_P$I}"
+	for I in 1 2 3 T B A; do
+		eval "_P$I=\${CLE_P$I:-\$_P$I}"
 	done
 }
 
 # craft prompts from defined strings
 _cleps () {
 	dbg_print ' _cleps'
-	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1=''
-	PS1=$PS1`_clesc "^CN^C1$CLE_P1^CN^C2$CLE_P2^CN^C3$CLE_P3^CN^C4"`
+	[ "$_PT" ] && PS1="\\[\${_CT}$(_clesc $_PT)\${_Ct}\\]" || PS1=''
+	PS1=$PS1`_clesc "^CN^C1$_P1^CN^C2$_P2^CN^C3$_P3^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
-	PS9=`_clesc "^CN^C0$CLE_P0"`	#: new PS9 - after execution prompt
+	[ "$_PB" ] && PSB=`_clesc "^CN^C5$_PB"`	#: PSB - before execution
+	[ "$_PA" ] && PSA=`_clesc "^CN^CA$_PA"`	#: PSA - after execution
 }
 
 # default prompt strings and colors
 _cledefp () {
-	CLE_P0='^E \t '
-	CLE_P1='\u '
-	CLE_P2='^h '
-	CLE_P3='\w \$ '
-	CLE_PT='\u@^H'
+	# TODO: reconsider following expansions, maybe plain defaults would be enough
+	_P1=${_P1:-'\u '}
+	_P2=${_P2:-'^h '}
+	_P3=${_P3:-'\w \$ '}
+	_PB=
+	_PA=${_PA:-'-<(^e)>-'}	#: the eye :-D
+	_PT=${_PT:-'\u@^H'}
 	#: decide by username and if the host is remote
 	case "$USER-${CLE_WS#$CLE_FHN}" in
 	root-)	_DC=red;;	#: root@workstation
@@ -389,7 +394,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	_clevdump "CLE_CLR|CLE_PB."
+	_clevdump "CLE_CLR|CLE_P."
 ) >$CLE_CF
 
 
@@ -415,6 +420,7 @@ _cleprompt () {
 	local IFS  		#: TODO: VERIFY WHY I NEED LOCAL IFS
 	#: Error code highlight
 	[[ $_EC =~ [1-9] ]] && _CE=$_Ce || { _EC=0; _CE=; }
+	_CA=${_CE:-$_C5}	#: afterexec marker color
 	unset IFS
 	history -a	#: immediately record commands so they are available in new shell sessions
 	[[ $PS1 =~ _GIT ]] && _clegit
@@ -423,9 +429,9 @@ _cleprompt () {
 		dbg_print "recording note '$_C'"
 		_clerh '#' "$PWD" "$_C"	# record a note to history
 	elif [ "$_C" ]; then	# check if a command was issued
-		dbg_print "$_C0>>>>  End of command output  '$_C' <<<<$_CN"
+		dbg_print "$_C5>>>>  End of command output  '$_C' <<<<$_CN"
 		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
-		echo "${PS9@P}"			#: printout afterexecution prompt PS9
+		[ "$PSA" ] && echo "${PSA@P}"			#: printout afterexecution marker
 		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_C"
 	else
 		#: no command issued
@@ -443,15 +449,18 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exi
 #: This fuction is used within prompt calback. Read code efficiency note above!
 history -cr $HISTFILE
 _clepreex () {
-	echo -n $_CN	#: reset tty colors after any prompt
-	dbg_print "_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
+	dbg_print "${_CN}_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
 	[ "$BASH_COMMAND" = "_cleprompt" ] && _C= && return
 	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` #: get new history record
 	_HR=${_HR#*;}	#: strip sequence number
 	_DT=${_HR/;*}	#: extract date and time
 	_C=${_HR/$_DT;}	#: extract pure command
+	[ $_PT ] && printf "$_CT$_C$_Ct"	#: executed command to the title
+	[ "$PSB" ] && echo "${PSB@P}"		#: beforexec marker
+
+	echo -n $_CN	#: reset tty colors after any prompt
 	dbg_var _HR
-	dbg_print "$_C0>>>> Start of command output '$_C' -> '$BASH_COMMAND' <<<<$_CN"
+	dbg_print "$_C5>>>> Start of command output '$_C' -> '$BASH_COMMAND' <<<<$_CN"
 	trap "" DEBUG
 	_TIM=$SECONDS	#: start history timer $_TIM
 }
@@ -826,7 +835,7 @@ _clepak () {
 
                 #: prepare environment to transfer: color table, prompt settings, WS name and custom exports
                 echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-                _clevdump "CLE_PB.|^_C." >>$EN
+                _clevdump "_P.|^_C." >>$EN
                 _clevdump "$CLE_XVARS" >>$EN
                 _clevdump "CLE_DEBUG" >>$EN                     # dbg
                 cat $CLE_AL >>$EN 2>/dev/null
@@ -946,15 +955,20 @@ _clecomp () {
 	#: list of subcommands, this might be reworked to have possibility of expansion
 	#: with modules (TODO)
 	#: 'cle deploy' is hidden intentionaly
-	local A=(color p0 p1 p2 p3 cf mod env update reload doc help)
+	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help)
+	local F= #: PLACEHOLDER for _cle_* functions
+	local E= #: PLACEHOLDER for cle-* modules
 	local C
 	COMPREPLY=()
 	case $3 in
-	p0) COMPREPLY="'$CLE_P0'";;
-	p1) COMPREPLY="'$CLE_P1'";;
-	p2) COMPREPLY="'$CLE_P2'";;
-	p3) COMPREPLY="'$CLE_P3'";;
-	#'') COMPREPLY=$A;;
+	p1) COMPREPLY="'$_P1'";;
+	p2) COMPREPLY="'$_P2'";;
+	p3) COMPREPLY="'$_P3'";;
+	pb) COMPREPLY="'$_PB'";;
+	pa) COMPREPLY="'$_PA'";;
+	pt) COMPREPLY="'$_PT'";;
+	# color) COMPREPLY="'$CLE_CLR'";;	#:  TODO remove if not necessary
+	'') COMPREPLY=$A;;
 	esac
 	[ "$3" != "$1" ] && return
 	for C in ${A[@]}; do
@@ -1025,7 +1039,7 @@ cle () {
 			#: this is to prevent situation when inherited value is set in configuration
 			#: causing to break the inheritance later
 			S=$*
-			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_PB$I='$*';_clepcp;_cleps;_clesave; }" || :
+			eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
 			_clevdump CLE_P$I
 		fi;;

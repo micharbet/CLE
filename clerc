@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-10-10 (Aquarius)
+#* version: 2023-11-03 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -199,8 +199,7 @@ _cletable () {
 		_CW=$(tput setaf 15)$_CL
 		;;
 	esac
-	_Ce=$_CR
-	#_Ce=$_CR$_CL$_CV
+	_Ce=$_CR$_CL
 }
 
 # set prompt colors
@@ -219,8 +218,10 @@ _cleclr () {
 	*)	C=$1;;
 	esac
 	# decode colors and prompt strings
-	[ ${#C} = 3 ] && C=D${C}L || C=${C}L
-	for I in {0..4};do
+	# TODO: edit notes after finish updating colr codes
+	#[ ${#C} = 3 ] && C=D${C}L || C=${C}L
+	C=x${C}L
+	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
 		# check for exsisting color, ignore 'dim' and 'italic as they might not be defined
 		if [[ -z "$CI" && ! ${C:$I:1} =~ [ID] ]]; then
@@ -229,7 +230,8 @@ _cleclr () {
 		fi
 		eval "_C$I=\$CI"
 	done
-	[ ${C:0:1} = D ] && _C0=$_C1$_CD
+	#[ ${C:0:1} = D ] && _C0=$_C1$_CD
+	_C5=$_C2$_CD
 	if [ $E ]; then
 		echo "Choose predefined scheme:$_CL"
 		declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
@@ -238,7 +240,7 @@ _cleclr () {
 		_cleclr gray
 		return 1
 	else
-		CLE_CLR=${C:0:5}
+		CLE_CLR=${C:1:4}
 	fi
 }
 
@@ -251,8 +253,8 @@ _clesc () (
 	 -e 's/\^U/\${CLE_USER}/g'\
 	 -e 's/\^s/\${_SEC}/g'\
 	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
-	 -e 's/\^?/\${_EC}/g'\
-	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C0}\\]/g'\
+	 -e 's/\^[?e]/\${_EC}/g'\
+	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
 	 -e 's/\^C\([0-9]\)/\\[${_Cn}${_C\1}\\]/g'\
 	 -e 's/\^C\(.\)/\\[${_C\1}\\]/g'\
 	 -e 's/\^v\([[:alnum:]_]*\)/\1=\${\1}/g'\
@@ -270,26 +272,29 @@ _cle_r () {
 # combine default/inherited prompt strings with values from config file
 _clepcp () {
 	local I
-	for I in 0 1 2 3 T; do
-		eval "CLE_P$I=\${CLE_PB$I:-\$CLE_P$I}"
+	for I in 1 2 3 T B A; do
+		eval "_P$I=\${CLE_P$I:-\$_P$I}"
 	done
 }
 
 # craft prompts from defined strings
 _cleps () {
-	[ "$CLE_PT" ] && PS1="\\[\${_CT}$(_clesc $CLE_PT)\${_Ct}\\]" || PS1=''
-	PS1=$PS1`_clesc "^CN^C1$CLE_P1^CN^C2$CLE_P2^CN^C3$CLE_P3^CN^C4"`
+	[ "$_PT" ] && PS1="\\[\${_CT}$(_clesc $_PT)\${_Ct}\\]" || PS1=''
+	PS1=$PS1`_clesc "^CN^C1$_P1^CN^C2$_P2^CN^C3$_P3^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
-	PS9=`_clesc "^CN^C0$CLE_P0"`
+	[ "$_PB" ] && PSB=`_clesc "^CN^C5$_PB"`
+	[ "$_PA" ] && PSA=`_clesc "^CN^CA$_PA"`
 }
 
 # default prompt strings and colors
 _cledefp () {
-	CLE_P0='^E \t '
-	CLE_P1='\u '
-	CLE_P2='^h '
-	CLE_P3='\w \$ '
-	CLE_PT='\u@^H'
+	# TODO: reconsider following expansions, maybe plain defaults would be enough
+	_P1=${_P1:-'\u '}
+	_P2=${_P2:-'^h '}
+	_P3=${_P3:-'\w \$ '}
+	_PB=
+	_PA=${_PA:-'-<(^e)>-'}
+	_PT=${_PT:-'\u@^H'}
 	case "$USER-${CLE_WS#$CLE_FHN}" in
 	root-)	_DC=red;;
 	*-)	_DC=marley;;
@@ -301,7 +306,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	_clevdump "CLE_CLR|CLE_PB."
+	_clevdump "CLE_CLR|CLE_P."
 ) >$CLE_CF
 
 
@@ -309,12 +314,12 @@ _clesave () (
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
 _C=
-_CP=
 _cleprompt () {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
 	local IFS
-	[[ $_EC =~ [1-9] ]] || _EC=0
+	[[ $_EC =~ [1-9] ]] && _CE=$_Ce || { _EC=0; _CE=; }
+	_CA=${_CE:-$_C5}
 	unset IFS
 	history -a
 	[[ $PS1 =~ _GIT ]] && _clegit
@@ -322,13 +327,10 @@ _cleprompt () {
 		_clerh '#' "$PWD" "$_C"	# record a note to history
 	elif [ "$_C" ]; then	# check if a command was issued
 		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
-		echo "${PS9@P}"
-		[ "$_C" != "$_CP" ] && _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_C"
-		_CP=$_C
-		[ "$_EC" = 0 ] && _CE="" || _CE="$_Ce"
-		_C=
+		[ "$PSA" ] && echo "${PSA@P}"
+		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_C"
 	else
-		_CE=''
+		_CE=
 		_EC=0
 	fi
 	trap _clepreex DEBUG
@@ -339,18 +341,21 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
 
 history -cr $HISTFILE
 _clepreex () {
-	echo -n $_CN
-	#echo "_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
 	[ "$BASH_COMMAND" = "_cleprompt" ] && _C= && return
 	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HR=${_HR#*;}
 	_DT=${_HR/;*}
 	_C=${_HR/$_DT;}
+	[ $_PT ] && printf "$_CT$_C$_Ct"
+	[ "$PSB" ] && echo "${PSB@P}"
+
+	echo -n $_CN
 	trap "" DEBUG
 	_TIM=$SECONDS
 }
 
 # rich history record
+_CP=
 _clerh () {
 	local DT RC REX ID V VD W
 	case $# in
@@ -360,6 +365,8 @@ _clerh () {
 	esac
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
 	[[ $3 =~ $REX ]] && return
+	[ "$3" = "$_CP" ] && return
+	_CP=$3
 	W=${2/$HOME/\~}
 	ID="$DT;$CLE_USER-$$"
 	REX='^\$[A-Za-z0-9_]+'
@@ -374,7 +381,7 @@ _clerh () {
 			fi
 		done;;
 	xx) # directory bookmark
-		echo -E "$ID;;*;$W;" ;;
+		echo -E "$ID;;*;$PWD;" ;;
 	\#*)
 		echo -E "$ID;;#;$W;$3" ;;
 	*)
@@ -386,7 +393,8 @@ _clerh () {
 # read inherited environment
 [ $CLE_WS ] && _clexe $CLE_ENV
 
-# colorize LS
+
+# colorized LS
 case $OSTYPE in
 linux*)		alias ls='ls --color=auto';;
 darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
@@ -394,7 +402,7 @@ FreeBSD*)       alias ls='ls -G "$@"';;
 *)		alias ls='ls -F';; # at least some file type indication
 esac
 
-# colorized GREP except on busybox
+# colorized GREP (except on busybox)
 if [ -L `command which grep` ];then
 	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep 2>/dev/null
 else
@@ -636,7 +644,7 @@ _clepak () {
 		done
 
                 echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-                _clevdump "CLE_PB.|^_C." >>$EN
+                _clevdump "_P.|^_C." >>$EN
                 _clevdump "$CLE_XVARS" >>$EN
                 cat $CLE_AL >>$EN 2>/dev/null
                 for XFUN in $CLE_XFUN; do
@@ -728,15 +736,20 @@ PROMPT_COMMAND=_cleprompt
 
 # completions
 _clecomp () {
-	local A=(color p0 p1 p2 p3 cf mod env update reload doc help)
+	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help)
+	local F=
+	local E=
 	local C
 	COMPREPLY=()
 	case $3 in
-	p0) COMPREPLY="'$CLE_P0'";;
-	p1) COMPREPLY="'$CLE_P1'";;
-	p2) COMPREPLY="'$CLE_P2'";;
-	p3) COMPREPLY="'$CLE_P3'";;
-	#'') COMPREPLY=$A;;
+	p1) COMPREPLY="'$_P1'";;
+	p2) COMPREPLY="'$_P2'";;
+	p3) COMPREPLY="'$_P3'";;
+	pb) COMPREPLY="'$_PB'";;
+	pa) COMPREPLY="'$_PA'";;
+	pt) COMPREPLY="'$_PT'";;
+	# color) COMPREPLY="'$CLE_CLR'";;
+	'') COMPREPLY=$A;;
 	esac
 	[ "$3" != "$1" ] && return
 	for C in ${A[@]}; do
@@ -799,7 +812,7 @@ cle () {
 		I=${C:1:1}
 		if [ "$1" ]; then
 			S=$*
-			eval "[ \"\$S\" != \"\$CLE_P$I\" ] && { CLE_PB$I='$*';_clepcp;_cleps;_clesave; }" || :
+			eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
 		else
 			_clevdump CLE_P$I
 		fi;;
