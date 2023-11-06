@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-03 (Aquarius)
+#* version: 2023-11-06 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -355,34 +355,30 @@ _cle_r () {
 	printf "    \\@@@\\__,-~-__,\n     \`&@@@@@69@@/\n        ^&@@@@&*\n$_CN\n"
 }
 
-# combine default/inherited prompt strings with values from config file
-_clepcp () {
-	local I
-	for I in 1 2 3 T B A; do
-		eval "_P$I=\${CLE_P$I:-\$_P$I}"
-	done
-}
-
 # craft prompts from defined strings
 _cleps () {
 	dbg_print ' _cleps'
-	[ "$_PT" ] && PS1="\\[\${_CT}$(_clesc $_PT)\${_Ct}\\]" || PS1=''
-	PS1=$PS1`_clesc "^CN^C1$_P1^CN^C2$_P2^CN^C3$_P3^CN^C4"`
+	local PT PA PB
+	PT=${CLE_PT:-$_PT}
+	PA=${CLE_PA:-$_PA}
+	PB=${CLE_PB:-$_PB}
+	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
+	PS1=$PS1`_clesc "^CN^C1${CLE_P1:-$_P1}^CN^C2${CLE_P2:-$_P2}^CN^C3${CLE_P3:-$_P3}^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
-	[ "$_PB" ] && PSB=`_clesc "^CN^C5$_PB"`	#: PSB - before execution
-	[ "$_PA" ] && PSA=`_clesc "^CN^CA$_PA"`	#: PSA - after execution
+	[ "$PB" ] && PSB=`_clesc "^CN^C5$PB"`	#: PSB - before execution
+	[ "$PA" ] && PSA=`_clesc "^CN^CA$PA"`	#: PSA - after execution
 }
 
 # default prompt strings and colors
+#: Those defaults are get overridden on remote sessions through $CLE_ENV file
 _cledefp () {
-	# TODO: reconsider following expansions, maybe plain defaults would be enough
-	_P1=${_P1:-'\u '}
-	_P2=${_P2:-'^h '}
-	_P3=${_P3:-'\w \$ '}
+	_P1='\u '
+	_P2='^h '
+	_P3='\w \$ '
 	_PB=
-	_PA=${_PA:-'-<(^e)>-'}	#: the eye :-D
-	_PT=${_PT:-'\u@^H'}
-	#: decide by username and if the host is remote
+	_PA='-<(^e)>-'	#: the eye :-D
+	_PT='\u@^H'
+	#: decide color by username and if the host is remote
 	case "$USER-${CLE_WS#$CLE_FHN}" in
 	root-)	_DC=red;;	#: root@workstation
 	*-)	_DC=marley;;	#: user's basic color scheme
@@ -515,9 +511,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-# read inherited environment
-[ $CLE_WS ] && _clexe $CLE_ENV
 
 #: A few pre-defined aliases
 #: otherwise the CLE does not contain too much customized aliases and functions
@@ -799,30 +792,30 @@ _clevdump () (
 #: Always: prepare $RH and $RC for live session wrappers
 CLE_XFILES=
 _clepak () {
-        RH=${CLE_DR/\/.*/}      #: resource home is path until first dot
-        RD=${CLE_DR/$RH\//}     #: relative path to resource directory
+	RH=${CLE_DR/\/.*/}      #: resource home is path until first dot
+	RD=${CLE_DR/$RH\//}     #: relative path to resource directory
 
 	dbg_var  RH
 	dbg_var RD
 	dbg_var CLE_XFILES
 
-        pushd . >/dev/null      #: keep curred working directory while using relative paths
-        if [ $CLE_WS ]; then
-                #: this is live session, all files *should* be available, just set vars
-                cd $RH
-                RC=${CLE_RC/$RH\//}
-                TW=${CLE_TW/$RH\//}
-                EN=${CLE_ENV/$RH\//}
-                dbg_print "_clepak: rc already there: $(ls -l $RC)"
-        else
-                #: live session is to be created - copy startup files
+	pushd . >/dev/null      #: keep curred working directory while using relative paths
+	if [ $CLE_WS ]; then
+		#: this is live session, all files *should* be available, just set vars
+		cd $RH
+		RC=${CLE_RC/$RH\//}
+		TW=${CLE_TW/$RH\//}
+		EN=${CLE_ENV/$RH\//}
+		dbg_print "_clepak: rc already there: $(ls -l $RC)"
+	else
+		#: live session is to be created - copy startup files
 		#: as per issue #78 "/var/tmp mounted noexec"
 		#: try to create files at any other place first
-                RH=/var/tmp/$USER
-                dbg_print "_clepak: preparing $RH/$RD"
-                #: by default prepare files in /var/tmp; fall back to the home dir
-                mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
-                EN=$RD/env-$CLE_FHN
+		RH=/var/tmp/$USER
+		dbg_print "_clepak: preparing $RH/$RD"
+		#: by default prepare files in /var/tmp; fall back to the home dir
+		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
+		EN=$RD/env-$CLE_FHN
 		#: construct list of files to transfer
 		XF=$EN
 		for F in $CLE_XFILES tw rc; do
@@ -833,22 +826,22 @@ _clepak () {
 		dbg_var XF
 		dbg_var RC
 
-                #: prepare environment to transfer: color table, prompt settings, WS name and custom exports
-                echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-                _clevdump "_P.|^_C." >>$EN
-                _clevdump "$CLE_XVARS" >>$EN
-                _clevdump "CLE_DEBUG" >>$EN                     # dbg
-                cat $CLE_AL >>$EN 2>/dev/null
-                #: Add selected functions to transfer
-                for XFUN in $CLE_XFUN; do
-                        declare -f $XFUN >>$EN
-                done
-        fi
-        #: save the envrironment tarball into $C64 if required
-        #: Note: I've never owned this computer, I had Atari 800XL instead :-)
-        #: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
-        dbg_var PWD
-        [ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
+		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
+		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
+		_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' >>$EN #: translate _Px to CLE_Px - new defaults
+		_clevdump "$CLE_XVARS" >>$EN
+		_clevdump "CLE_DEBUG" >>$EN                     # dbg
+		cat $CLE_AL >>$EN 2>/dev/null
+		#: Add selected functions to transfer
+		for XFUN in $CLE_XFUN; do
+			declare -f $XFUN >>$EN
+		done
+	fi
+	#: save the envrironment tarball into $C64 if required
+	#: Note: I've never owned this computer, I had Atari 800XL instead :-)
+	#: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
+	dbg_var PWD
+	[ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }
 
@@ -920,15 +913,14 @@ done
 # 1. default prompt strings
 _cledefp
 
-# 2. override with inherited strings
-# MAYBEREMOVETHIS [ $CLE_WS ] && _clepcp x
+# 2. read inherited environment
+[ $CLE_WS ] && _clexe $CLE_ENV
 
-# 3. create color table if necessary
-[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
-
-# 4. get values from config file
+# 3. get values from config file
 _clexe $CLE_CF
-_clepcp
+
+# 4. create color table if necessary
+[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
 
 # 5. terminal specific
 #: $_CT and $_Ct are codes to create window title
@@ -961,14 +953,14 @@ _clecomp () {
 	local C
 	COMPREPLY=()
 	case $3 in
-	p1) COMPREPLY="'$_P1'";;
-	p2) COMPREPLY="'$_P2'";;
-	p3) COMPREPLY="'$_P3'";;
-	pb) COMPREPLY="'$_PB'";;
-	pa) COMPREPLY="'$_PA'";;
-	pt) COMPREPLY="'$_PT'";;
-	# color) COMPREPLY="'$CLE_CLR'";;	#:  TODO remove if not necessary
-	'') COMPREPLY=$A;;
+	p1) COMPREPLY="'${CLE_P1:-$_P1}'";;
+	p2) COMPREPLY="'${CLE_P2:-$_P2}'";;
+	p3) COMPREPLY="'${CLE_P3:-$_P3}'";;
+	pb) COMPREPLY="'${CLE_PB:-$_PB}'";;
+	pa) COMPREPLY="'${CLE_PA:-$_PA}'";;
+	pt) COMPREPLY="'${CLE_PT:-$_PT}'";;
+	color) COMPREPLY="'$CLE_CLR'";;
+	# '') COMPREPLY=$A;;	#:  TODO remove if not necessary
 	esac
 	[ "$3" != "$1" ] && return
 	for C in ${A[@]}; do
@@ -1021,35 +1013,29 @@ _clerh @ $CLE_TTY "[$_T $HOME ${CLE_RC/$HOME/\~}]"
 ## ** CLE command & control **
 cle () {
 	local C I P S N
-	C=$1;shift
-	if declare -f _cle_$C >/dev/null;then #: check if an add-on function exists
+	C=$1;shift      #: subcommand; now $@ contains the rest of command line
+	if declare -f _cle_$C >/dev/null;then #: check if an add-on function _cle_*() exists
 		_cle_$C $*
 		return $?
-	elif [ -f $CLE_D/cle-$C ]; then	#: check module
+	elif [ -f $CLE_D/cle-$C ]; then #: alternatively check if module cle-* exists
 		. $CLE_D/cle-$C $*
 		return $?
 	fi
+	#: fallback to built-in options
 	case $C in
 	color)  ## `cle color COLOR`       - set prompt color
 		[ $1 ]  && _cleclr $1 && _clesave;;
-	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
-		I=${C:1:1}
-		if [ "$1" ]; then
-			#: store the value only if it's different
-			#: this is to prevent situation when inherited value is set in configuration
-			#: causing to break the inheritance later
-			S=$*
-			eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
-		else
-			_clevdump CLE_P$I
-		fi;;
-	title)	## `cle title off|string`  - turn off window title or set the string
+	p?)	## `cle pX [str]`          - show/define prompt parts
+		I=`tr '[a-z]' '[A-Z]' <<<"${C:1:1}"`
 		case "$1" in
-		off)	CLE_PT='';;
-		'')	_clepcp;;
-		*)	cle pT "$*";;
+		'')	_clevdump CLE_P$I;;
+		' ')	unset CLE_P$I;;
+		*)	S=$*
+			#eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
+			eval "CLE_P$I='$*'";;
 		esac
-		_cleps;;
+		_cleps;_clesave
+		;;
 	cf)	## `cle cf [ed|reset|rev]` - view/edit/reset/revert configuration
 		case "$1" in
 		ed)	vi $CLE_CF  && . $CLE_RC;;
