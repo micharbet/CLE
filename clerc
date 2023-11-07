@@ -38,9 +38,8 @@
 
 # Startup sequence
 export CLE_RC
-_C=$SHELL:$BASH:$0
 _T=/var/tmp/$USER
-case  $_C in
+case $SHELL:$BASH:$0 in
 *clerc*|*:*/rc*) # executed as a command from .cle-* directory
 	CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
 	while [ $1 ]; do
@@ -272,7 +271,7 @@ _cle_r () {
 # craft prompts from defined strings
 _cleps () {
 	local PT PA PB
-	PT=${CLE_PT:-$_PT}
+	[ "$_ST" ] && PT=$_ST || PT=${CLE_PT:-$_PT}
 	PA=${CLE_PA:-$_PA}
 	PB=${CLE_PB:-$_PB}
 	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
@@ -308,7 +307,7 @@ _clesave () (
 # prompt callback functions
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
-_C=
+_CMD=
 _cleprompt () {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
@@ -318,12 +317,10 @@ _cleprompt () {
 	unset IFS
 	history -a
 	[[ $PS1 =~ _GIT ]] && _clegit
-	if [[ $_C =~ ^\# ]]; then
-		_clerh '#' "$PWD" "$_C"	# record a note to history
-	elif [ "$_C" ]; then	# check if a command was issued
+	if [ "$_CMD" ]; then	# check if a command was issued
 		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
 		[ "$PSA" ] && echo "${PSA@P}"
-		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_C"
+		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
 		_CE=
 		_EC=0
@@ -336,12 +333,16 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
 
 history -cr $HISTFILE
 _clepreex () {
-	[ "$BASH_COMMAND" = "_cleprompt" ] && _C= && return
 	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HR=${_HR#*;}
 	_DT=${_HR/;*}
-	_C=${_HR/$_DT;}
-	[ $_PT ] && printf "$_CT$_C$_Ct"
+	_CMD=${_HR/$_DT;}
+	if [[ $_CMD =~ ^\# ]]; then
+		_clerh '#' "$PWD" "$_CMD"
+	fi
+	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return
+	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
+	[ "$_PT" ] && printf "$_CT$_SC$_Ct"
 	[ "$PSB" ] && echo "${PSB@P}"
 
 	echo -n $_CN
@@ -350,7 +351,7 @@ _clepreex () {
 }
 
 # rich history record
-_CP=
+_CPR=
 _clerh () {
 	local DT RC REX ID V VD W
 	case $# in
@@ -360,8 +361,8 @@ _clerh () {
 	esac
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
 	[[ $3 =~ $REX ]] && return
-	[ "$3" = "$_CP" ] && return
-	_CP=$3
+	[ "$3" = "$_CPR" ] && return
+	_CPR=$3
 	W=${2/$HOME/\~}
 	ID="$DT;$CLE_USER-$$"
 	REX='^\$[A-Za-z0-9_]+'
@@ -709,7 +710,7 @@ _CT=$'\e]0;'; _Ct=$'\007'
 case $TERM in
 linux)	 CLE_PT='';;
 screen*) printf "$_CT screen: $CLE_USER@$CLE_SHN$_Ct"
-	CLE_PT='\u'
+	_ST='\u'
 	_CT=$'\ek'; _Ct=$'\e\\';;
 esac
 
@@ -775,7 +776,6 @@ _T=${STY:-$_T}
 _T=${TMUX:-$_T}
 _clerh @ $CLE_TTY "[$_T $HOME ${CLE_RC/$HOME/\~}]"
 [ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
-#[ $CLE_DEBUG ] && _C=${CLE_EXE//$HOME/\~}
 
 ##
 ## ** CLE command & control **

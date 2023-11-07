@@ -63,10 +63,9 @@ dbg_var CLE_ARG
 dbg_var CLE_USER
 dbg_var SHELL
 dbg_var BASH
-_C=$SHELL:$BASH:$0
-dbg_print "startup case: '$_C'"
+dbg_print "startup case: '$SHELL:$BASH:$0'"
 _T=/var/tmp/$USER
-case  $_C in
+case $SHELL:$BASH:$0 in
 *clerc*|*:*/rc*) # executed as a command from .cle-* directory
 	#: IMPORTANT: code in this section must be strictly POSIX compatible with /bin/sh
 	dbg_print executing the resource
@@ -360,7 +359,7 @@ _cle_r () {
 _cleps () {
 	dbg_print ' _cleps'
 	local PT PA PB
-	PT=${CLE_PT:-$_PT}
+	[ "$_ST" ] && PT=$_ST || PT=${CLE_PT:-$_PT}	#: _ST - shortened title for screen and tmux
 	PA=${CLE_PA:-$_PA}
 	PB=${CLE_PB:-$_PB}
 	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
@@ -410,7 +409,7 @@ _clesave () (
 #:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: bash3 workaround
-_C=
+_CMD=
 _cleprompt () {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
@@ -422,14 +421,11 @@ _cleprompt () {
 	history -a	#: immediately record commands so they are available in new shell sessions
 	[[ $PS1 =~ _GIT ]] && _clegit
 	#: TODO: note recording does not work! :#
-	if [[ $_C =~ ^\# ]]; then
-		dbg_print "recording note '$_C'"
-		_clerh '#' "$PWD" "$_C"	# record a note to history
-	elif [ "$_C" ]; then	# check if a command was issued
-		dbg_print "$_C5>>>>  End of command output  '$_C' <<<<$_CN"
+	if [ "$_CMD" ]; then	# check if a command was issued
+		dbg_print "$_C5>>>>  End of command output  '$_CMD' <<<<$_CN"
 		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
 		[ "$PSA" ] && echo "${PSA@P}"			#: printout afterexecution marker
-		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_C"
+		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
 		#: no command issued
 		#: reset error code and color so it doesn not disturb on later prompts
@@ -446,25 +442,31 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exi
 #: This fuction is used within prompt calback. Read code efficiency note above!
 history -cr $HISTFILE
 _clepreex () {
-	dbg_print "${_CN}_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
-	[ "$BASH_COMMAND" = "_cleprompt" ] && _C= && return
 	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` #: get new history record
-	_HR=${_HR#*;}	#: strip sequence number
-	_DT=${_HR/;*}	#: extract date and time
-	_C=${_HR/$_DT;}	#: extract pure command
-	[ $_PT ] && printf "$_CT$_C$_Ct"	#: executed command to the title
+	_HR=${_HR#*;}		#: strip sequence number
+	_DT=${_HR/;*}		#: extract date and time
+	_CMD=${_HR/$_DT;}	#: extract pure command
+	dbg_print "${_CN}_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
+	dbg_print "${_CN}_clepreex:         _CMD = '$_CMD'"
+	if [[ $_CMD =~ ^\# ]]; then
+		dbg_print "recording note '$_CMD'"
+		_clerh '#' "$PWD" "$_CMD"	#: record a note to history
+	fi
+	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return	#: no command issued
+	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}	#: shorten command to display in terminal title
+	[ "$_PT" ] && printf "$_CT$_SC$_Ct"	#: show executed command in the title
 	[ "$PSB" ] && echo "${PSB@P}"		#: beforexec marker
 
 	echo -n $_CN	#: reset tty colors after any prompt
 	dbg_var _HR
-	dbg_print "$_C5>>>> Start of command output '$_C' -> '$BASH_COMMAND' <<<<$_CN"
+	dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
 	trap "" DEBUG
 	_TIM=$SECONDS	#: start history timer $_TIM
 }
 
 # rich history record
 #: This fuction is used within prompt calback. Read code efficiency note above!
-_CP=	#: previos command
+_CPR=	#: previously recorded command
 _clerh () {
 	local DT RC REX ID V VD W
 	#: three to five arguments, timestamp and elapsed seconds may be missing
@@ -481,9 +483,9 @@ _clerh () {
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
 	[[ $3 =~ $REX ]] && return
 	#: ignore repeating commands
-	[ "$3" = "$_CP" ] && return
-	dbg_print "Cmd='$3' PrevCmd='$_CP'"
-	_CP=$3
+	[ "$3" = "$_CPR" ] && return	#: do not record repeating items
+	dbg_print "Cmd='$3' PrevCmd='$_CPR'"
+	_CPR=$3
 	#: working dir (substitute home with ~)
 	W=${2/$HOME/\~}
 	#: create timestamp if missing
@@ -922,7 +924,7 @@ _CT=$'\e]0;'; _Ct=$'\007'	#: generic titling escapes
 case $TERM in
 linux)	 CLE_PT='';;	#: no tits on text console
 screen*) printf "$_CT screen: $CLE_USER@$CLE_SHN$_Ct"	#: set main screen  title
-	CLE_PT='\u'			#: titles inside the screen should be short
+	_ST='\u'			#: titles inside the screen should be short
 	_CT=$'\ek'; _Ct=$'\e\\';;	#: screen's specific codes to set internal title
 #: TODO: add tmux options
 esac
@@ -999,7 +1001,6 @@ _T=${STY:-$_T}
 _T=${TMUX:-$_T}
 _clerh @ $CLE_TTY "[$_T $HOME ${CLE_RC/$HOME/\~}]"
 [ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
-#[ $CLE_DEBUG ] && _C=${CLE_EXE//$HOME/\~}
 
 ##
 ## ** CLE command & control **
