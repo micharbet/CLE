@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-06 (Aquarius)
+#* version: 2023-11-07 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -237,6 +237,7 @@ _cleask () (
 
 # Create color table
 #: initialize $_C* variables with terminal compatible escape sequences
+#: use them with enhanced prompt definition as "^C*"
 #: following are basic ones:
 _cletable () {
 	dbg_print "_cletable updating color table"
@@ -408,7 +409,7 @@ _clesave () (
 #: prompt callback. Namely: `_cleprompt` `_clepreex` `_clerh`
 #:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
-[ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: RHEL5/bash3 workaround
+[ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: bash3 workaround
 _C=
 _cleprompt () {
 	eval "_EC=$_PST"
@@ -889,13 +890,6 @@ lsu () (
 #:------------------------------------------------------------:#
 #: all fuctions declared, startup continues
 
-_clexe $HOME/.cle-local
-_clexe $CLE_AL
-_clexe $CLE_TW
-for _T in $CLE_D/mod-*; do
-	_clexe $_T
-done
-
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
@@ -904,40 +898,38 @@ if [ "$CLE_MOTD" ]; then
 	unset CLE_MOTD
 fi
 
-#: Enhnace PATH by user's own bin folders
+# Enhnace PATH
 for _T in $HOME/bin $HOME/.local/bin; do
 	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T
 done
 
-# create the prompt in several steps
-# 1. default prompt strings
-_cledefp
+_cledefp	#: prompt defaults
 
-# 2. read inherited environment
+# execute modules, tweaks and aliases
+for _T in $CLE_D/mod-*; do
+	_clexe $_T
+done
+_clexe $CLE_AL
+_clexe $HOME/.cle-local
+_clexe $CLE_TW
+
 [ $CLE_WS ] && _clexe $CLE_ENV
+_clexe $CLE_CF	#: override defaults with values from config file
 
-# 3. get values from config file
-_clexe $CLE_CF
-
-# 4. create color table if necessary
-[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
-
-# 5. terminal specific
-#: $_CT and $_Ct are codes to create window title
-#: also in screen the title should be short and obviously no title on text console
-
+# terminal specific stuff
+[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable	# create color table if necessary
+_CT=$'\e]0;'; _Ct=$'\007'	#: generic titling escapes
 case $TERM in
-linux)	 CLE_PT='';;	# no tits on console
-screen*) CLE_PT='\u'
-	printf "\e]0; screen: $CLE_USER@$CLE_FHN$_Ct\007"
-	_CT=$'\ek'; _Ct=$'\e\\';;
-*)	_CT=$'\e]0;'; _Ct=$'\007';;
+linux)	 CLE_PT='';;	#: no tits on text console
+screen*) printf "$_CT screen: $CLE_USER@$CLE_SHN$_Ct"	#: set main screen  title
+	CLE_PT='\u'			#: titles inside the screen should be short
+	_CT=$'\ek'; _Ct=$'\e\\';;	#: screen's specific codes to set internal title
+#: TODO: add tmux options
 esac
 
-# 6. craft the prompt string
+# craft the prompt
 _cleps
 _cleclr ${CLE_CLR:-$_DC}
-
 PROMPT_COMMAND=_cleprompt
 
 # completions
@@ -1042,11 +1034,11 @@ cle () {
 		reset)	mv -f $CLE_CF $CLE_CF-bk;;
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
+			_clebold "$_CU Default/Inherited configuration:"
+			_clevdump _P. CLE_CLR
 			if [ -f $CLE_CF ]; then
-				_clebold $_CU$CLE_CF:
+				_clebold "$_CU$CLE_CF":
 				cat $CLE_CF
-			else
-				echo Default/Inherited configuration
 			fi
 			return;;
 		esac

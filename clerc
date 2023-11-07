@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-03 (Aquarius)
+#* version: 2023-11-07 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -269,32 +269,27 @@ _cle_r () {
 	printf "    \\@@@\\__,-~-__,\n     \`&@@@@@69@@/\n        ^&@@@@&*\n$_CN\n"
 }
 
-# combine default/inherited prompt strings with values from config file
-_clepcp () {
-	local I
-	for I in 1 2 3 T B A; do
-		eval "_P$I=\${CLE_P$I:-\$_P$I}"
-	done
-}
-
 # craft prompts from defined strings
 _cleps () {
-	[ "$_PT" ] && PS1="\\[\${_CT}$(_clesc $_PT)\${_Ct}\\]" || PS1=''
-	PS1=$PS1`_clesc "^CN^C1$_P1^CN^C2$_P2^CN^C3$_P3^CN^C4"`
+	local PT PA PB
+	PT=${CLE_PT:-$_PT}
+	PA=${CLE_PA:-$_PA}
+	PB=${CLE_PB:-$_PB}
+	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
+	PS1=$PS1`_clesc "^CN^C1${CLE_P1:-$_P1}^CN^C2${CLE_P2:-$_P2}^CN^C3${CLE_P3:-$_P3}^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
-	[ "$_PB" ] && PSB=`_clesc "^CN^C5$_PB"`
-	[ "$_PA" ] && PSA=`_clesc "^CN^CA$_PA"`
+	[ "$PB" ] && PSB=`_clesc "^CN^C5$PB"`
+	[ "$PA" ] && PSA=`_clesc "^CN^CA$PA"`
 }
 
 # default prompt strings and colors
 _cledefp () {
-	# TODO: reconsider following expansions, maybe plain defaults would be enough
-	_P1=${_P1:-'\u '}
-	_P2=${_P2:-'^h '}
-	_P3=${_P3:-'\w \$ '}
+	_P1='\u '
+	_P2='^h '
+	_P3='\w \$ '
 	_PB=
-	_PA=${_PA:-'-<(^e)>-'}
-	_PT=${_PT:-'\u@^H'}
+	_PA='-<(^e)>-'
+	_PT='\u@^H'
 	case "$USER-${CLE_WS#$CLE_FHN}" in
 	root-)	_DC=red;;
 	*-)	_DC=marley;;
@@ -389,9 +384,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-# read inherited environment
-[ $CLE_WS ] && _clexe $CLE_ENV
 
 
 # colorized LS
@@ -623,35 +615,35 @@ _clevdump () (
 # Environment packer
 CLE_XFILES=
 _clepak () {
-        RH=${CLE_DR/\/.*/}
-        RD=${CLE_DR/$RH\//}
+	RH=${CLE_DR/\/.*/}
+	RD=${CLE_DR/$RH\//}
 
 
-        pushd . >/dev/null
-        if [ $CLE_WS ]; then
-                cd $RH
-                RC=${CLE_RC/$RH\//}
-                TW=${CLE_TW/$RH\//}
-                EN=${CLE_ENV/$RH\//}
-        else
-                RH=/var/tmp/$USER
-                mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
-                EN=$RD/env-$CLE_FHN
+	pushd . >/dev/null
+	if [ $CLE_WS ]; then
+		cd $RH
+		RC=${CLE_RC/$RH\//}
+		TW=${CLE_TW/$RH\//}
+		EN=${CLE_ENV/$RH\//}
+	else
+		RH=/var/tmp/$USER
+		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
+		EN=$RD/env-$CLE_FHN
 		XF=$EN
 		for F in $CLE_XFILES tw rc; do
 			RC=$RD/$F-$CLE_FHN
 			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC"
 		done
 
-                echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-                _clevdump "_P.|^_C." >>$EN
-                _clevdump "$CLE_XVARS" >>$EN
-                cat $CLE_AL >>$EN 2>/dev/null
-                for XFUN in $CLE_XFUN; do
-                        declare -f $XFUN >>$EN
-                done
-        fi
-        [ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
+		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
+		_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' >>$EN
+		_clevdump "$CLE_XVARS" >>$EN
+		cat $CLE_AL >>$EN 2>/dev/null
+		for XFUN in $CLE_XFUN; do
+			declare -f $XFUN >>$EN
+		done
+	fi
+	[ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }
 
@@ -685,13 +677,6 @@ lsu () (
 )
 
 
-_clexe $HOME/.cle-local
-_clexe $CLE_AL
-_clexe $CLE_TW
-for _T in $CLE_D/mod-*; do
-	_clexe $_T
-done
-
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
@@ -700,38 +685,37 @@ if [ "$CLE_MOTD" ]; then
 	unset CLE_MOTD
 fi
 
+# Enhnace PATH
 for _T in $HOME/bin $HOME/.local/bin; do
 	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T
 done
 
-# create the prompt in several steps
-# 1. default prompt strings
 _cledefp
 
-# 2. override with inherited strings
-# MAYBEREMOVETHIS [ $CLE_WS ] && _clepcp x
+# execute modules, tweaks and aliases
+for _T in $CLE_D/mod-*; do
+	_clexe $_T
+done
+_clexe $CLE_AL
+_clexe $HOME/.cle-local
+_clexe $CLE_TW
 
-# 3. create color table if necessary
-[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable
-
-# 4. get values from config file
+[ $CLE_WS ] && _clexe $CLE_ENV
 _clexe $CLE_CF
-_clepcp
 
-# 5. terminal specific
-
+# terminal specific stuff
+[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable	# create color table if necessary
+_CT=$'\e]0;'; _Ct=$'\007'
 case $TERM in
-linux)	 CLE_PT='';;	# no tits on console
-screen*) CLE_PT='\u'
-	printf "\e]0; screen: $CLE_USER@$CLE_FHN$_Ct\007"
+linux)	 CLE_PT='';;
+screen*) printf "$_CT screen: $CLE_USER@$CLE_SHN$_Ct"
+	CLE_PT='\u'
 	_CT=$'\ek'; _Ct=$'\e\\';;
-*)	_CT=$'\e]0;'; _Ct=$'\007';;
 esac
 
-# 6. craft the prompt string
+# craft the prompt
 _cleps
 _cleclr ${CLE_CLR:-$_DC}
-
 PROMPT_COMMAND=_cleprompt
 
 # completions
@@ -742,14 +726,14 @@ _clecomp () {
 	local C
 	COMPREPLY=()
 	case $3 in
-	p1) COMPREPLY="'$_P1'";;
-	p2) COMPREPLY="'$_P2'";;
-	p3) COMPREPLY="'$_P3'";;
-	pb) COMPREPLY="'$_PB'";;
-	pa) COMPREPLY="'$_PA'";;
-	pt) COMPREPLY="'$_PT'";;
-	# color) COMPREPLY="'$CLE_CLR'";;
-	'') COMPREPLY=$A;;
+	p1) COMPREPLY="'${CLE_P1:-$_P1}'";;
+	p2) COMPREPLY="'${CLE_P2:-$_P2}'";;
+	p3) COMPREPLY="'${CLE_P3:-$_P3}'";;
+	pb) COMPREPLY="'${CLE_PB:-$_PB}'";;
+	pa) COMPREPLY="'${CLE_PA:-$_PA}'";;
+	pt) COMPREPLY="'${CLE_PT:-$_PT}'";;
+	color) COMPREPLY="'$CLE_CLR'";;
+	# '') COMPREPLY=$A;;
 	esac
 	[ "$3" != "$1" ] && return
 	for C in ${A[@]}; do
@@ -808,32 +792,28 @@ cle () {
 	case $C in
 	color)  ## `cle color COLOR`       - set prompt color
 		[ $1 ]  && _cleclr $1 && _clesave;;
-	p?)	## `cle p0-p3 [str]`       - show/define prompt parts
-		I=${C:1:1}
-		if [ "$1" ]; then
-			S=$*
-			eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
-		else
-			_clevdump CLE_P$I
-		fi;;
-	title)	## `cle title off|string`  - turn off window title or set the string
+	p?)	## `cle pX [str]`          - show/define prompt parts
+		I=`tr '[a-z]' '[A-Z]' <<<"${C:1:1}"`
 		case "$1" in
-		off)	CLE_PT='';;
-		'')	_clepcp;;
-		*)	cle pT "$*";;
+		'')	_clevdump CLE_P$I;;
+		' ')	unset CLE_P$I;;
+		*)	S=$*
+			#eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
+			eval "CLE_P$I='$*'";;
 		esac
-		_cleps;;
+		_cleps;_clesave
+		;;
 	cf)	## `cle cf [ed|reset|rev]` - view/edit/reset/revert configuration
 		case "$1" in
 		ed)	vi $CLE_CF  && . $CLE_RC;;
 		reset)	mv -f $CLE_CF $CLE_CF-bk;;
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
+			_clebold "$_CU Default/Inherited configuration:"
+			_clevdump _P. CLE_CLR
 			if [ -f $CLE_CF ]; then
-				_clebold $_CU$CLE_CF:
+				_clebold "$_CU$CLE_CF":
 				cat $CLE_CF
-			else
-				echo Default/Inherited configuration
 			fi
 			return;;
 		esac
