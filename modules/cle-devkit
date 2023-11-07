@@ -72,6 +72,7 @@ _cle_cp() {
 	fi
 
 	_clebold " ${_CU}diff $DEST $FILENAME${_Cu}"
+	ls -l $FILENAME $DEST
 	if diff $DEST $FILENAME >/dev/null; then
 		echo No diff...
 		popd
