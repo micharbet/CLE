@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-07 (Aquarius)
+#* version: 2023-11-09 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -599,17 +599,17 @@ _RHI=1		#: current index to history
 _RHLEN=0	#: max index
 hh () {
 	#: TODO: error in readind directory bookmark
-	local O S N OPTIND MOD OUT
+	local O S N C OPTIND MOD OUT
 	while getopts "a:mtwsncflbex0123456789" O; do
 		case $O in
 		a)	## `hh -a string`    - search for any string in history
 			S=$S"&&/${OPTARG//\//\\/}/" ;;
 		m)	## `hh -m`           - my commands, exclude other users
-			S=$S"&& \$2~/$CLE_USER/";;
+			S=$S"&& \$2~/^$CLE_USER-/";;
 		[0-9])	## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
 			S=$S"&& \$1~/$(date -d -${O}days '+%F')/";;
 		t)	## `hh -t`           - commands from current session
-			S=$S"&& \$2==\"$CLE_USER-$$\"";;
+			S=$S"&& \$2==\"^$CLE_USER-$$\"";;
 		w)	## `hh -w`           - search for commands issued from current working directory`
 			N=${PWD/$HOME/\~}
 			S=$S"&& \$5==\"$N\"";;
@@ -637,15 +637,18 @@ hh () {
 		esac
 	done
 
-	_RHARG=$*
+	_RHARG="$*"	#: save the search arguments for future reference
 	dbg_var OPTIND
 	shift $((OPTIND-1))
 
-	N=+1	#: everything because 'tail -n +1' works like 'cat'
-	if [ $* ]; then
-		#: select either number of records or search string
-		#: replace slashes wit bsckslash-slash for sed with this nice pattern
-		[[ $* =~ ^[0-9]+$ ]] && N=$* || S=$S"&& \$4~/[0..9 ]/ &&/.+;.+;.*;.*;.*;.*${*//\//\\/}/"
+	N=+1	#: everything by dfault because 'tail -n +1' works like 'cat'
+	if [ "$*" ]; then
+		#: select either number of records or compose search string
+		[[ $* =~ ^[0-9]+$ ]] && N=$* || {
+			C=${*//\//\\/}		#: replace slashes wit bsckslash-slash for awk with this nice pattern
+			C=${C/ /\\ }
+			S=$S"&& \$4~/[0..9 ]/ && /.+;.+;.*;.*;.*;.*$C/"
+		}
 	else
 		#: fallback to 100 records if there is no search expression
 		[ "$S" ] || N=100
@@ -661,7 +664,7 @@ hh () {
 		#:     update colors according to exit status
 		CST=CE; CFL=CN; CCM=CL
 		if($4=="0") { CST=CO; CFL=CN; CCM=CL }
-		if($4=="#") { CST=CH; CFL=CH; CCM=CH }
+		if($4=="#" || $4=="$") { CST=CH; CFL=CH; CCM=CH }
 		if($4=="@") { CST=CS; CFL=CS; CCM=CS }
 		#:     real command can contain semicolon, grab the whole rest of line
 		CMD=substr($0,index($0,$6))
@@ -684,23 +687,24 @@ hh () {
 			C=CMDS[I] "\n"
 			if( ! index(UNIQ,"\n" C) ) { UNIQ=UNIQ C; N++ }
 		}
-		print UNIQ >TREV
+		print UNIQ >REVB
 	}'
 
 	#: execute filter stream
-	local TREV=`mktemp /tmp/clerh.XXXX`
-	eval tail -n $N $CLE_HIST \| awk -v CN='$_CN' -v CL='$_CL' -v CD='$_CB' -v CS='$_Cb' -v CO='$_Cg' -v CE='$_Cr' -v CH='$_Cy' -v MOD='$MOD' -v TREV=$TREV '"$AW"' $OUT
+	local REVB=`mktemp /tmp/clerh.XXXX`	#: reverse history buffer
+	eval tail -n $N $CLE_HIST \| awk -v CN='$_CN' -v CL='$_CL' -v CD='$_CB' -v CS='$_Cb' -v CO='$_Cg' -v CE='$_Cr' -v CH='$_Cy' -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
 
 	#: fill the rich history buffer
 	_RHBUF=() #: array of commands from history
 	_RHLEN=0 #: length of the array
 	_RHI=0 #: current index to the array
-	while read S; do
+	while read -r S; do		#: RAW read with -r !!!
 		[ -n "$S" ] && _RHBUF[$((++_RHLEN))]=$S
-	done <$TREV
+	done <$REVB
+	rm -f $REVB
 	dbg_var _RHLEN
-	rm -f $TREV
 	[ "$OUT" = '>/dev/null' -o "$MOD" = f ] && _clerhbuf
+	[ $_RHLEN != 0 ] 	#: return error code if nothing has been found
 }
 
 # rich history up/down shortcut routines
@@ -727,7 +731,7 @@ _clerhbuf () {
 		printf "$_CN$_CB$A%6d: $_CN$_C4%s\n" $N "${_RHBUF[$N]}"
 		((N--))
 	done
-	echo "$_CN$_C3 $_RHLEN records, search:$_CN$_C4 'hh $_RHARG'"
+	echo "$_CN$_CD $_RHLEN records ${_RHARG:+'hh $_RHARG'}"
 }
 
 #: keyboard shortcuts to rich history
@@ -1019,7 +1023,7 @@ cle () {
 	color)  ## `cle color COLOR`       - set prompt color
 		[ $1 ]  && _cleclr $1 && _clesave;;
 	p?)	## `cle pX [str]`          - show/define prompt parts
-		I=`tr '[a-z]' '[A-Z]' <<<"${C:1:1}"`
+		I=${C:1:1}; I=${I^}
 		case "$1" in
 		'')	_clevdump CLE_P$I;;
 		' ')	unset CLE_P$I;;
