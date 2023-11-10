@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-09 (Aquarius)
+#* version: 2023-11-10 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -598,21 +598,25 @@ h () (
 _RHI=1		#: current index to history
 _RHLEN=0	#: max index
 hh () {
-	#: TODO: error in readind directory bookmark
-	local O S N C OPTIND MOD OUT
+	local O S N D C OPTIND MOD OUT
+	#: process commandline options into variables:
+	#: $S   .. awk search string is composed out of comandline options
+	#: $D   .. days condition set is separate, there are 'or' inside
+	#: $MOD .. output modifers
 	while getopts "a:mtwsncflbex0123456789" O; do
 		case $O in
-		a)	## `hh -a string`    - search for any string in history
-			S=$S"&&/${OPTARG//\//\\/}/" ;;
-		m)	## `hh -m`           - my commands, exclude other users
-			S=$S"&& \$2~/^$CLE_USER-/";;
-		[0-9])	## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
-			S=$S"&& \$1~/$(date -d -${O}days '+%F')/";;
 		t)	## `hh -t`           - commands from current session
 			S=$S"&& \$2==\"^$CLE_USER-$$\"";;
 		w)	## `hh -w`           - search for commands issued from current working directory`
 			N=${PWD/$HOME/\~}
 			S=$S"&& \$5==\"$N\"";;
+		m)	## `hh -m`           - my commands, exclude other users
+			S=$S"&& \$2~/^$CLE_USER-/";;
+		[0-9])	## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
+			C="\$1~/$(date -d -${O}days '+%F')/"	#: one day condition
+			[ "$D" ] && D="$D || $C" || D="$C";;	#: add to days 'or' condition set
+		a)	## `hh -a string`    - search for any string in history
+			S=$S"&&/${OPTARG//\//\\/}/" ;;
 		s)	## `hh -s`           - select successful commands only
 			S=$S"&& \$4==0";;
 		n)	## `hh -n`           - narrow output, hide time and session id
@@ -629,13 +633,14 @@ hh () {
 			vi + $CLE_HIST
 			return;;
 		x)	## `hh -x`           - remove the most recent history record
-			# TODO: maybe some args, numbers, etc
+			# TODO: maybe... number of lines to remove ev. string? Or add enhanced functionality to a module?
 			sed -i '$ d' $CLE_HIST
 			history -d -2	#: also remove from regular BASH history
 			return;;
 		*)	cle help hh;return
 		esac
 	done
+	S=$S"${D:+&& ( $D )}"		#: add days 'or' conditions (if any) to the serach string
 
 	_RHARG="$*"	#: save the search arguments for future reference
 	dbg_var OPTIND
@@ -660,14 +665,14 @@ hh () {
 	#: dbg_sleep 3
 	#: AWK script to search and display in rich history file
 	local AW='BEGIN { FS=";" }
-	//'$S' {	#: search conditions will be added
-		#:     update colors according to exit status
+	//'$S' {	#: search conditions will be pushed here from shell variable $S
+		CMD=substr($0,index($0,$6))	#: real command can contain semicolon, grab the whole rest of line
+		#:     update colors according to status in $4
 		CST=CE; CFL=CN; CCM=CL
 		if($4=="0") { CST=CO; CFL=CN; CCM=CL }
 		if($4=="#" || $4=="$") { CST=CH; CFL=CH; CCM=CH }
+		if($4=="*") { CST=CH; CFL=CH; CCM=CH; CMD="cd "$5 }
 		if($4=="@") { CST=CS; CFL=CS; CCM=CS }
-		#:     real command can contain semicolon, grab the whole rest of line
-		CMD=substr($0,index($0,$6))
 		#:     output modifiers
 		if(MOD~"n") {
 			FORM=CST " %-9s" CFL " %-20s:" CCM " %s\n" CN
@@ -679,7 +684,7 @@ hh () {
 			FORM=CD "%s" CS " %-13s" CD " %5s" CST " %-5s" CFL " %-10s:" CCM " %s\n" CN
 			printf FORM,$1,$2,$3,$4,$5,CMD
 		}
-		if( $4~/^[0-9 ]+$/ ) CMDS[I++]=CMD
+		if( $4~/^[0-9 *]+$/ ) CMDS[I++]=CMD
 	}
 	END {	#: now select only unique commands for rich history buffer
 		UNIQ="\n"

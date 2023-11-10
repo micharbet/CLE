@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-09 (Aquarius)
+#* version: 2023-11-10 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -457,20 +457,21 @@ h () (
 _RHI=1
 _RHLEN=0
 hh () {
-	local O S N C OPTIND MOD OUT
+	local O S N D C OPTIND MOD OUT
 	while getopts "a:mtwsncflbex0123456789" O; do
 		case $O in
-		a)	## `hh -a string`    - search for any string in history
-			S=$S"&&/${OPTARG//\//\\/}/" ;;
-		m)	## `hh -m`           - my commands, exclude other users
-			S=$S"&& \$2~/^$CLE_USER-/";;
-		[0-9])	## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
-			S=$S"&& \$1~/$(date -d -${O}days '+%F')/";;
 		t)	## `hh -t`           - commands from current session
 			S=$S"&& \$2==\"^$CLE_USER-$$\"";;
 		w)	## `hh -w`           - search for commands issued from current working directory`
 			N=${PWD/$HOME/\~}
 			S=$S"&& \$5==\"$N\"";;
+		m)	## `hh -m`           - my commands, exclude other users
+			S=$S"&& \$2~/^$CLE_USER-/";;
+		[0-9])	## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
+			C="\$1~/$(date -d -${O}days '+%F')/"
+			[ "$D" ] && D="$D || $C" || D="$C";;
+		a)	## `hh -a string`    - search for any string in history
+			S=$S"&&/${OPTARG//\//\\/}/" ;;
 		s)	## `hh -s`           - select successful commands only
 			S=$S"&& \$4==0";;
 		n)	## `hh -n`           - narrow output, hide time and session id
@@ -487,13 +488,14 @@ hh () {
 			vi + $CLE_HIST
 			return;;
 		x)	## `hh -x`           - remove the most recent history record
-			# TODO: maybe some args, numbers, etc
+			# TODO: maybe... number of lines to remove ev. string? Or add enhanced functionality to a module?
 			sed -i '$ d' $CLE_HIST
 			history -d -2
 			return;;
 		*)	cle help hh;return
 		esac
 	done
+	S=$S"${D:+&& ( $D )}"
 
 	_RHARG="$*"
 	shift $((OPTIND-1))
@@ -511,11 +513,12 @@ hh () {
 
 	local AW='BEGIN { FS=";" }
 	//'$S' {
+		CMD=substr($0,index($0,$6))
 		CST=CE; CFL=CN; CCM=CL
 		if($4=="0") { CST=CO; CFL=CN; CCM=CL }
 		if($4=="#" || $4=="$") { CST=CH; CFL=CH; CCM=CH }
+		if($4=="*") { CST=CH; CFL=CH; CCM=CH; CMD="cd "$5 }
 		if($4=="@") { CST=CS; CFL=CS; CCM=CS }
-		CMD=substr($0,index($0,$6))
 		if(MOD~"n") {
 			FORM=CST " %-9s" CFL " %-20s:" CCM " %s\n" CN
 			printf FORM,$4,$5,CMD
@@ -526,7 +529,7 @@ hh () {
 			FORM=CD "%s" CS " %-13s" CD " %5s" CST " %-5s" CFL " %-10s:" CCM " %s\n" CN
 			printf FORM,$1,$2,$3,$4,$5,CMD
 		}
-		if( $4~/^[0-9 ]+$/ ) CMDS[I++]=CMD
+		if( $4~/^[0-9 *]+$/ ) CMDS[I++]=CMD
 	}
 	END {
 		UNIQ="\n"
