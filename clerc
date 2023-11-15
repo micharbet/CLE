@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 ##
 ## ** CLE : Command Live Environment **
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-10 (Aquarius)
+#* version: 2023-11-14 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -20,11 +20,11 @@
 # -seamless remote CLE session, with no installation - use 'lssh' instead 'ssh'
 # -local live session - lsu/lsudo (su/sudo wrappers)
 # -setup from command line, eg. 'cle color RGB'
-# -find more using 'cle help' and 'cle doc'
+# -documentation available with 'cle help' and 'cle doc'
 #
 # Quick setup:
 # 1. Download and execute this file within your shell session
-# 2. Integrate it into your profile:
+# 2. Integrate into your profile:
 #	$ . clerc
 #	$ cle deploy
 # 3. Enjoy!
@@ -38,10 +38,8 @@
 
 # Startup sequence
 export CLE_RC
-_T=/var/tmp/$USER
-case $SHELL:$BASH:$0 in
-*clerc*|*:*/rc*) # executed as a command from .cle-* directory
-	CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
+case "$SHELL:$0" in
+*clerc*|*:*/rc*) # executed as a command
 	while [ $1 ]; do
 		case $1 in
 		-m)	CLE_MOTD=`uptime`
@@ -54,10 +52,10 @@ case $SHELL:$BASH:$0 in
 	export CLE_PROF=1
 	exec bash --rcfile $0
 	;;
-*bash:*bash) # bash session resource
+*sh:*bash) # bash session resource
 	CLE_RC=$BASH_SOURCE
 	;;
-*)	echo "CLE startup failed: 'case $_C'";;
+*)	echo "CLE startup failed";;
 esac
 
 
@@ -66,7 +64,6 @@ unset -f alias unalias 2>/dev/null
 unalias aa h hh .. ... 2>/dev/null
 
 # execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
 _clexe () {
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1[:$] ]] && return
@@ -92,46 +89,47 @@ if [[ $CLE_RC =~ clerc ]]; then
 	CLE_RC=$CLE_1
 fi
 
-# CLE_RC can be relative path, make it full
-CLE_DR=$(cd `dirname $CLE_RC`;pwd;)
-CLE_RC=$CLE_DR/`basename $CLE_RC`
+CLE_DR=$(cd ${CLE_RC%/*};pwd;)
+CLE_RC=$CLE_DR/${CLE_RC##*/}
 
 # FQDN hack
 CLE_FHN=$HOSTNAME
 _N=`hostname`
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
-CLE_SHN=`sed 's:\.[^.]*\.[^.]*$::' <<<$CLE_FHN`
+CLE_SHN=${CLE_FHN%.*.*}
 
-CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
+_N=${SSH_CONNECTION% *}; CLE_IP=${_N##* }
 
 # where in the deep space CLE grows
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
-CLE_REL=`sed -n 's/.*(\(.*\)).*/\1/p' <<<$CLE_VER`
+_N=${CLE_VER%)*}; CLE_REL=${_N#* (}
 CLE_REL=dev					# REMOVE THIS ON RELEASE!!!!!
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
 
 # find writable folder
+_T=/var/tmp/$USER
 _H=$HOME
 [ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H
 [ $PWD = $_T ] && cd
-CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC`
+_N=.${CLE_RC#*.}
+CLE_D=$_H/${_N%/*}
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
 CLE_CF=$CLE_D/cf-$CLE_FHN
 CLE_AL=$CLE_D/al
 CLE_HIST=$_H/.clehistory
-_N=`sed 's:.*/rc1*::' <<<$CLE_RC`
-CLE_WS=${_N/-/}
+_N=${CLE_RC#$CLE_DR/rc}
+CLE_WS=${_N#-}
 CLE_TW=$CLE_DR/tw$_N
 CLE_ENV=$CLE_DR/env$_N
-CLE_TTY=`tty|tr -d '/dev'`
+_N=`tty`; _N=${_N#/dev}; CLE_TTY=${_N//\/}
 CLE_XFUN=
 PROMPT_DIRTRIM=3
 
 # who I am
-_N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
+_N=${CLE_RC#*cle-}; _N=${_N%/rc*}
 export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 
 # Internal functions
@@ -139,8 +137,8 @@ export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 _clebnr () {
 cat <<EOT
 
-$_CC   ___| |     ____| $_CN Command Live Environment activated
-$_CB  |     |     __|   $_CN ...bit of life to the command line
+$_CC   ___| |     ____| $_CN     Command Live Environment
+$_CB  |     |     __|   $_CN brings life to the command line!
 $_Cb  |     |     |     $_CN Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
 $_Cb$_CD \____|_____|_____| $_CN Uncover the magic:$_CL less $CLE_RC$_CN
 
@@ -217,25 +215,23 @@ _cleclr () {
 	*)	C=$1;;
 	esac
 	# decode colors and prompt strings
-	# TODO: edit notes after finish updating colr codes
 	#[ ${#C} = 3 ] && C=D${C}L || C=${C}L
 	C=x${C}L
 	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
-		# check for exsisting color, ignore 'dim' and 'italic as they might not be defined
+		# check for exsisting color, ignore if 'dim' and 'italic' are empty
 		if [[ -z "$CI" && ! ${C:$I:1} =~ [ID] ]]; then
 			echo "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
 			E=1
 		fi
 		eval "_C$I=\$CI"
 	done
-	#[ ${C:0:1} = D ] && _C0=$_C1$_CD
 	_C5=$_C2$_CD
 	if [ $E ]; then
-		echo "Choose predefined scheme:$_CL"
+		printf "Choose a predefined scheme: "
 		declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
-		printf "\n${_CN}Alternatively create your own 3-5 letter combo using rgbcmykw/RGBCMYKW\n"
-		printf "E.g.:$_CL cle color rgB\n"
+		printf "\nAlternatively create your own 3 or 4 letter combo using rgbcmykw/RGBCMYKW\n"
+		printf " e.g.:$_CL cle color rgB\n"
 		_cleclr gray
 		return 1
 	else
@@ -342,7 +338,7 @@ _clepreex () {
 	fi
 	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return
 	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
-	[ "$_PT" ] && printf "$_CT$_SC$_Ct"
+	[ "$_PT" ] && printf "$_CT%s$_Ct" $_SC
 	[ "$PSB" ] && echo "${PSB@P}"
 
 	echo -n $_CN
@@ -662,7 +658,7 @@ lssh () (
 	_clepak tar
 	command ssh -t $* "
 		for H in \$HOME /var/tmp/\$USER /tmp/\$USER; do
-			mkdir -m 755 -p \$H/`dirname $RC` && break
+			mkdir -m 755 -p \$H/${RC%/*} && break
 		done
 		cd \$H
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d

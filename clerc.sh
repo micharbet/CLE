@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 ##
 ## ** CLE : Command Live Environment **
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-10 (Aquarius)
+#* version: 2023-11-14 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2022 by Michael Arbet
 
@@ -20,11 +20,11 @@
 # -seamless remote CLE session, with no installation - use 'lssh' instead 'ssh'
 # -local live session - lsu/lsudo (su/sudo wrappers)
 # -setup from command line, eg. 'cle color RGB'
-# -find more using 'cle help' and 'cle doc'
+# -documentation available with 'cle help' and 'cle doc'
 #
 # Quick setup:
 # 1. Download and execute this file within your shell session
-# 2. Integrate it into your profile:
+# 2. Integrate into your profile:
 #	$ . clerc
 #	$ cle deploy
 # 3. Enjoy!
@@ -51,10 +51,10 @@ dbg_print; dbg_print pid:$$						# dbg
 #:------------------------------------------------------------:#
 # Startup sequence
 #: First check how is this script executed
-#:  - in case of a shell resource, this will be interactive session,
-#:    prepare basic environment variables and do the shell specific tasks
-#:  - in case of start as a command, open a shell and push this file
-#:    as a resource
+#:  - if started as a command, re-execute bash and push this file as a resource
+#:    This happens when run for the frst time and may happen in live sessions
+#:  - if running as a shell resource, this means an interactive session,
+#:    prepare the whole live environment
 #: Then find out suitable shell and use it to run interactive shell session with
 #: this file as init resource. The $CLE_RC variable must contain full path!
 export CLE_RC
@@ -63,15 +63,12 @@ dbg_var CLE_ARG
 dbg_var CLE_USER
 dbg_var SHELL
 dbg_var BASH
-dbg_print "startup case: '$SHELL:$BASH:$0'"
-_T=/var/tmp/$USER
-case $SHELL:$BASH:$0 in
-*clerc*|*:*/rc*) # executed as a command from .cle-* directory
-	#: IMPORTANT: code in this section must be strictly POSIX compatible with /bin/sh
+dbg_var BASH_SOURCE
+dbg_print "startup case: '$SHELL:$0'"
+case "$SHELL:$0" in
+*clerc*|*:*/rc*) # executed as a command
 	dbg_print executing the resource
-	CLE_RC=$(cd `dirname $0`;pwd;)/$(basename $0) # full path to this file
 	#: process command line options
-	#: TODO - check if this is still necessary
 	while [ $1 ]; do
 		case $1 in
 		-m)	CLE_MOTD=`uptime`
@@ -84,11 +81,11 @@ case $SHELL:$BASH:$0 in
 	export CLE_PROF=1	#: profile files will be executed
 	exec bash --rcfile $0
 	;;
-*bash:*bash) # bash session resource
+*sh:*bash) # bash session resource
 	dbg_print sourcing to BASH
 	CLE_RC=$BASH_SOURCE
 	;;
-*)	echo "CLE startup failed: 'case $_C'";;
+*)	echo "CLE startup failed";;
 esac
 
 #:------------------------------------------------------------:#
@@ -102,12 +99,13 @@ dbg_print ---------------
 #: alias & unalias must be available in their natural form during CLE startup
 #: and will be redefined at the end of resource
 unset -f alias unalias 2>/dev/null
-#: remove particular aliases that might be defined e.g. in .bashrc
-#: those were causing confilcts, more of them might be added later
+#: remove particular aliases that might be already defined e.g. in .bashrc
+#: those were causing confilcts
 unalias aa h hh .. ... 2>/dev/null
 
 # execute script and log its filename into CLE_EXE
-# also ensure the script will be executed only once
+#: also ensure the script will be executed only once
+#: always use function _clexe to execute particular files
 _clexe () {
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1[:$] ]] && return
@@ -133,38 +131,40 @@ if [[ $CLE_RC =~ clerc ]]; then
 	dbg_print First run
 	CLE_DR=$HOME/.cle-`whoami`
 	mkdir -m 755 -p $CLE_DR
-	CLE_1=$CLE_DR/rc1
+	CLE_1=$CLE_DR/rc1	#: rc1 is used not to disrupt already installed environment if it exists
 	cp $CLE_RC $CLE_1
 	chmod 755 $CLE_1
 	CLE_RC=$CLE_1
 fi
 
-# CLE_RC can be relative path, make it full
-CLE_DR=$(cd `dirname $CLE_RC`;pwd;)
-CLE_RC=$CLE_DR/`basename $CLE_RC`
+#: CLE_RC can be relative path, convert to full
+CLE_DR=$(cd ${CLE_RC%/*};pwd;)
+CLE_RC=$CLE_DR/${CLE_RC##*/}
 dbg_var CLE_RC
 dbg_var CLE_DR
 
 # FQDN hack
-#: Find the longest - the most complete hostname string.
+#: Find the longest - the most complete hostname string. Best effort.
 #: Sometimes information from $HOSTNAME and command `hostname` differs.
-#: also 'hostname -f' disabled because it requires working net & DNS!
-#:_N=`hostname -f 2>/dev/null`
+#: also 'hostname -f' isn't used as it requires flawlessly configured 
+#: networking and DNS
 CLE_FHN=$HOSTNAME
 _N=`hostname`
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
-#: and prepare shortened hostname without top domain, keep other subdomains
-CLE_SHN=`sed 's:\.[^.]*\.[^.]*$::' <<<$CLE_FHN`
+#: now prepare shortened hostname by stripping top domain and keep the rest subdomains
+CLE_SHN=${CLE_FHN%.*.*}
 
 #: It is also difficult to get local IP addres. There is no simple
 #: and multiplattform way to get it. See commands: ip, ifconfig,
 #: hostname -i/-I, netstat...
 #: Thus, on workstation its just empty string :-( Better than 5 IP's from `hostname -i`
-CLE_IP=${CLE_IP:-`cut -d' ' -f3 <<<$SSH_CONNECTION`}
+_N=${SSH_CONNECTION% *}; CLE_IP=${_N##* }
 
 # where in the deep space CLE grows
+#: can't find better/faster method than 'sed'
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
-CLE_REL=`sed -n 's/.*(\(.*\)).*/\1/p' <<<$CLE_VER`
+_N=${CLE_VER%)*}; CLE_REL=${_N#* (}
+dbg_var CLE_REL
 CLE_REL=dev					# REMOVE THIS ON RELEASE!!!!!
 CLE_VER="$CLE_VER debug"			# dbg
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
@@ -172,16 +172,18 @@ CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
 # find writable folder
 #: there can be real situation where a remote account is restricted and have no
 #: home folder. In such case CLE can save config and other files into /var/tmp.
-#: Note, Live sessions have their respurce files always in /var/tmp/$USER but
+#: Note, Live sessions have their resource files always in /var/tmp/$USER but
 #: this must not be writable in subsequent lsu/lsudo sessions.
 #:  $CLE_D   is path to writable folder for config, aliases and other runtime files
 #:  $CLE_DR  is path to folder containing startup resources
+_T=/var/tmp/$USER
 _H=$HOME
 [ -w $_H ] || _H=$_T
 [ -r $HOME ] || HOME=$_H	#: fix home dir if broken - must be at least readable
 dbg_var HOME
 [ $PWD = $_T ] && cd		#: go to real home if initiated in temporary home folder
-CLE_D=$_H/`sed 's:/.*/\(\..*\)/.*:\1:' <<<$CLE_RC` #: regex cuts anything up to first DOTfolder
+_N=.${CLE_RC#*.}		#: get the first DOTfolder (it can be .cle-name or .config/cle-name)
+CLE_D=$_H/${_N%/*}		#: and use as writable path
 dbg_var CLE_D
 mkdir -m 755 -p $CLE_D
 
@@ -189,12 +191,15 @@ mkdir -m 755 -p $CLE_D
 CLE_CF=$CLE_D/cf-$CLE_FHN	#: NFS homes may keep configs for several hosts
 CLE_AL=$CLE_D/al
 CLE_HIST=$_H/.clehistory
-_N=`sed 's:.*/rc1*::' <<<$CLE_RC` #: resource suffix contains workstation name
+_N=${CLE_RC#$CLE_DR/rc}	#: resource suffix '-workstation' to be used for other files
 dbg_print "_N should contain resource suffix. here it is: '$_N'"
-CLE_WS=${_N/-/}
+CLE_WS=${_N#-}	#: remember origina workstation name on remote sessions
 CLE_TW=$CLE_DR/tw$_N
 CLE_ENV=$CLE_DR/env$_N
-CLE_TTY=`tty|tr -d '/dev'`
+#: TODO get rid of this CLE_TTY as it seems this variable is not really needed
+#:   - change rich history record to indicate WS or workstation name in fifth column
+#:   - remove CLE_TTY from lscreen session name
+_N=`tty`; _N=${_N#/dev}; CLE_TTY=${_N//\/}	#: tty name without slashes
 CLE_XFUN=	#: list of functions for transfer to remote session
 PROMPT_DIRTRIM=3
 
@@ -205,9 +210,10 @@ PROMPT_DIRTRIM=3
 #: - /any/folder/.cle-username/rcfile
 #: - /any/folder/.config/cle-username/rcfile
 #: important is the dot (hidden folder), word 'cle' with dash
-_N=`sed -n 's;.*cle-\(.*\)/.*;\1;p' <<<$CLE_RC`
-export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+_N=${CLE_RC#*cle-}; _N=${_N%/rc*}
+dbg_print "found username _N=$_N"
 dbg_var CLE_USER
+export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 
 #:------------------------------------------------------------:#
 # Internal functions
@@ -215,8 +221,8 @@ dbg_var CLE_USER
 _clebnr () {
 cat <<EOT
 
-$_CC   ___| |     ____| $_CN Command Live Environment activated
-$_CB  |     |     __|   $_CN ...bit of life to the command line
+$_CC   ___| |     ____| $_CN     Command Live Environment
+$_CB  |     |     __|   $_CN brings life to the command line!
 $_Cb  |     |     |     $_CN Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
 $_Cb$_CD \____|_____|_____| $_CN Uncover the magic:$_CL less $CLE_RC$_CN
 
@@ -299,28 +305,25 @@ _cleclr () {
 	*)	C=$1;; #: any color combination
 	esac
 	# decode colors and prompt strings
-	# TODO: edit notes after finish updating colr codes
-	#: three letters ... dim status part _C0
-	#: four letters .... user defined status color
-	#: five letters .... also user defined commad highlighting (defauld bold)
+	#: three letters ... colors for p1-p3
+	#: four letters .... fourth letter defines command color instead of bold
 	#[ ${#C} = 3 ] && C=D${C}L || C=${C}L
-	C=x${C}L  #: x - index shifter; L -  default bold for command itself
+	C=x${C}L	#: x - index shifter; L -  default bold for command itself
 	for I in {1..4};do
 		eval "CI=\$_C${C:$I:1}"
-		# check for exsisting color, ignore 'dim' and 'italic as they might not be defined
+		# check for exsisting color, ignore if 'dim' and 'italic' are empty
 		if [[ -z "$CI" && ! ${C:$I:1} =~ [ID] ]]; then
 			echo "Wrong color code '${C:$I:1}' in $1" && CI=$_CN
 			E=1	#: error flag
 		fi
 		eval "_C$I=\$CI"
 	done
-	#[ ${C:0:1} = D ] && _C0=$_C1$_CD #: dim color for
-	_C5=$_C2$_CD #: dim color for status
+	_C5=$_C2$_CD	#: dim color for status
 	if [ $E ]; then
-		echo "Choose predefined scheme:$_CL"
+		printf "Choose a predefined scheme: "
 		declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
-		printf "\n${_CN}Alternatively create your own 3-5 letter combo using rgbcmykw/RGBCMYKW\n"
-		printf "E.g.:$_CL cle color rgB\n"
+		printf "\nAlternatively create your own 3 or 4 letter combo using rgbcmykw/RGBCMYKW\n"
+		printf " e.g.:$_CL cle color rgB\n"
 		_cleclr gray	#: default in case of error
 		return 1
 	else
@@ -454,7 +457,7 @@ _clepreex () {
 	fi
 	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return	#: no command issued
 	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}	#: shorten command to display in terminal title
-	[ "$_PT" ] && printf "$_CT$_SC$_Ct"	#: show executed command in the title
+	[ "$_PT" ] && printf "$_CT%s$_Ct" $_SC	#: show executed command in the title
 	[ "$PSB" ] && echo "${PSB@P}"		#: beforexec marker
 
 	echo -n $_CN	#: reset tty colors after any prompt
@@ -867,7 +870,7 @@ lssh () (
 	command ssh -t $* "
 		#: looking for suitable place in case $HOME is read only or doesn't exist
 		for H in \$HOME /var/tmp/\$USER /tmp/\$USER; do
-			mkdir -m 755 -p \$H/`dirname $RC` && break
+			mkdir -m 755 -p \$H/${RC%/*} && break
 		done
 		cd \$H
 		export CLE_DEBUG='$CLE_DEBUG'	# dbg
