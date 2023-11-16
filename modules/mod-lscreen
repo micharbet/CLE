@@ -1,11 +1,11 @@
 ##
 ## ** mod-lscreen: GNU screen wrapper **
 #
-#* version: 2021-02-01
+#* version: 2023-11-15
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2021 by Michael Arbet 
+#* Copyright (C) 2021-2023 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,18 +21,17 @@
 lscreen () (
 	#: get name of the screen to search and join
 	#: base of session name is $CLE_USER and this can be extended
-	NM=$CLE_USER${1:+-$1}
-	[ "$1" = -j ] && NM=${2:-.}
+	SN=CLE-$CLE_USER${1:+-$1}
+	[ "$1" = -j ] && SN=${2:-.}
 	#: list all screens with that name and find how many of them are there
-	SCRS=`screen -ls|sed -n "/$NM/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
+	SCRS=`screen -ls|sed -n "/$SN/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
 	NS=`wc -w <<<$SCRS`
 	reset #: sometimes it's necessary to reset terminal
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		#: No session with given name found, prepare to start new session
 		SCF=$CLE_D/screenrc
-		SN=$CLE_TTY-CLE.$NM
-		_clerh @ $CLE_TTY "screen -S $SN"
+		_clerh @ `tty` "screen -S $SN"
 		# prepare own screenrc
 		#: This generates nice configuration file with cool features:
 		#:  - always visible status line with list of windows, hostname and clock
@@ -42,14 +41,16 @@ lscreen () (
 		#: subsequent windows created with 'C-a C-c' (note the bind commands, above
 		#: mentioned features are cool but this part is the important one)
 		cat <<-EOS >$SCF
-			source $HOME/.screenrc
 			altscreen on
 			autodetach on
 			# enables shift-PgUp/PgDn
 			termcapinfo xterm* ti@:te@
-			# change window with ctrl-left/right
-			bindkey "^[[1;5D" prev
-			bindkey "^[[1;5C" next
+			# change window with ctrl-left/right REMOVE THIS LATER
+			#bindkey "^[[1;5D" prev
+			#bindkey "^[[1;5C" next
+			# change window with alt-, and alt-. (< and >)
+			bindkey "^[," prev
+			bindkey "^[." next
 			defscrollback 9000
 			hardstatus alwayslastline
 			hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b Y}$CLE_SHN%{G} %c'
@@ -64,13 +65,13 @@ lscreen () (
 		if [ $NS = 1 ]; then SN=$SCRS
 		else
 			#: we found more screens with simiilar names, choose one!
-			_clebold "${_CU}Current '$NM' sessions:"
+			_clebold "${_CU}Current '$SN' sessions:"
 			PS3="$_CL choose # to join: $_CN"
 			select SN in $SCRS;do
 				[ $SN ] && break
 			done
 		fi
-		_clerh @ $CLE_TTY "screen -x $SN"
+		_clerh @ `tty` "screen -x $SN"
 		screen -S $SN -X echo "$CLE_USER joining" #: alert to the original session
 		screen -x $SN
 	fi

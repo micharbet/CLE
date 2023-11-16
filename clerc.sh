@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-14 (Aquarius)
+#* version: 2023-11-15 (Aquarius)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2022 by Michael Arbet
+#* Copyright (C) 2016-2023 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -196,10 +196,6 @@ dbg_print "_N should contain resource suffix. here it is: '$_N'"
 CLE_WS=${_N#-}	#: remember origina workstation name on remote sessions
 CLE_TW=$CLE_DR/tw$_N
 CLE_ENV=$CLE_DR/env$_N
-#: TODO get rid of this CLE_TTY as it seems this variable is not really needed
-#:   - change rich history record to indicate WS or workstation name in fifth column
-#:   - remove CLE_TTY from lscreen session name
-_N=`tty`; _N=${_N#/dev}; CLE_TTY=${_N//\/}	#: tty name without slashes
 CLE_XFUN=	#: list of functions for transfer to remote session
 PROMPT_DIRTRIM=3
 
@@ -667,15 +663,28 @@ hh () {
 	dbg_var S
 	#: dbg_sleep 3
 	#: AWK script to search and display in rich history file
-	local AW='BEGIN { FS=";" }
+	local AW='
+	BEGIN {
+		FS=";"
+		#: simplest way of use defined colors I found so far
+		CN="'$_CN'"
+		CL="'$_CL'"
+		CD="'$_CD'"
+		CG="'$_CG'"
+		CR="'$_CR'"
+		Cy="'$_Cy'"
+		Cb="'$_Cb'"
+		CB="'$_CB'"
+	}
 	//'$S' {	#: search conditions will be pushed here from shell variable $S
 		CMD=substr($0,index($0,$6))	#: real command can contain semicolon, grab the whole rest of line
 		#:     update colors according to status in $4
-		CST=CE; CFL=CN; CCM=CL
-		if($4=="0") { CST=CO; CFL=CN; CCM=CL }
-		if($4=="#" || $4=="$") { CST=CH; CFL=CH; CCM=CH }
-		if($4=="*") { CST=CH; CFL=CH; CCM=CH; CMD="cd "$5 }
-		if($4=="@") { CST=CS; CFL=CS; CCM=CS }
+		CST=CR; CFL=CN; CCM=CL
+		if($4=="0") { CST=CG; CFL=CN; CCM=CL }
+		if($4=="#" || $4=="$") { CST=Cy; CFL=Cy; CCM=Cy }
+		if($4=="*") { CST=Cy; CFL=Cy; CCM=Cy; CMD="cd "$5 }
+		if($4=="@") { CST=Cb; CFL=Cb; CCM=Cb }
+		if($3!="") { ET=$3 "\"" } else { ET="" }
 		#:     output modifiers
 		if(MOD~"n") {
 			FORM=CST " %-9s" CFL " %-20s:" CCM " %s\n" CN
@@ -684,8 +693,8 @@ hh () {
 		else if(MOD~"c") print CMD
 		else if(MOD~"f") CMD=$5
 		else {
-			FORM=CD "%s" CS " %-13s" CD " %5s" CST " %-5s" CFL " %-10s:" CCM " %s\n" CN
-			printf FORM,$1,$2,$3,$4,$5,CMD
+			FORM=Cb CD "%s %-13s" CN CD " %6s" CST " %-5s" CFL " %-10s:" CCM " %s\n" CN
+			printf FORM,$1,$2,ET,$4,$5,CMD
 		}
 		if( $4~/^[0-9 *]+$/ ) CMDS[I++]=CMD
 	}
@@ -700,7 +709,7 @@ hh () {
 
 	#: execute filter stream
 	local REVB=`mktemp /tmp/clerh.XXXX`	#: reverse history buffer
-	eval tail -n $N $CLE_HIST \| awk -v CN='$_CN' -v CL='$_CL' -v CD='$_CB' -v CS='$_Cb' -v CO='$_Cg' -v CE='$_Cr' -v CH='$_Cy' -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
+	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
 
 	#: fill the rich history buffer
 	_RHBUF=() #: array of commands from history
@@ -1008,11 +1017,13 @@ EOT
 [ -r . ] || cd #: go home if this is unreadable directory
 
 # record this startup into rich history
-_T=${CLE_WS:-WS}
-_T=${STY:-$_T}
-_T=${TMUX:-$_T}
-_clerh @ $CLE_TTY "[$_T $HOME ${CLE_RC/$HOME/\~}]"
+_T=${TMUX:+tmux:$TMUX}
+_T=${_T:-${STY:+screen:$STY}}
+_T=${_T:-${SSH_CLIENT:+ssh:${SSH_CLIENT%% *}}}
+CLE_SESSION=${_T:-${CLE_WS:-WS}}
+_clerh @ ${CLE_WS:-WS} "[$CLE_SESSION]"
 [ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
+[ $CLE_DEBUG ] && _clerh @ $PWD "[$CLE_RC]"
 
 ##
 ## ** CLE command & control **
