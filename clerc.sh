@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-15 (Aquarius)
+#* version: 2023-11-16 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2023 by Michael Arbet
 
@@ -189,27 +189,25 @@ mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
 CLE_CF=$CLE_D/cf-$CLE_FHN	#: NFS homes may keep configs for several hosts
+#: TODO: allow to use global $CLE_D/cf even in NFSed environment like e.g. sdf
 CLE_AL=$CLE_D/al
 CLE_HIST=$_H/.clehistory
-_N=${CLE_RC#$CLE_DR/rc}	#: resource suffix '-workstation' to be used for other files
-dbg_print "_N should contain resource suffix. here it is: '$_N'"
-CLE_WS=${_N#-}	#: remember origina workstation name on remote sessions
-CLE_TW=$CLE_DR/tw$_N
-CLE_ENV=$CLE_DR/env$_N
-CLE_XFUN=	#: list of functions for transfer to remote session
-PROMPT_DIRTRIM=3
+#: determine if CLE is running in a workstation mode (initial login)
+#: or if it's a live session
+#: Variable $CLE_WS is empty in the first case otherwice contains workstation's FQDN
+#: and this is used as a suffix to inherited resource files (e.g. rc-workstation.name)
+CLE_WS=${CLE_RC#$CLE_DR/rc}
+CLE_TW=$CLE_DR/tw$CLE_WS
+CLE_ENV=$CLE_DR/env$CLE_WS
 
 # who I am
-#: determine username that will be inherited over the all
-#: subsquent sessions initiated with lssh and su* wrappers
-#: the regexp extracts username from following patterns:
-#: - /any/folder/.cle-username/rcfile
-#: - /any/folder/.config/cle-username/rcfile
-#: important is the dot (hidden folder), word 'cle' with dash
+#: determine username that will be inherited over the all subsquent live sessions
+#: extract the username from folder name .../.cle-USER/...
 _N=${CLE_RC#*cle-}; _N=${_N%/rc*}
 dbg_print "found username _N=$_N"
-dbg_var CLE_USER
+dbg_print "current CLE_USER=$CLE_USER"
 export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+dbg_print "  final CLE_USER=$CLE_USER"
 
 #:------------------------------------------------------------:#
 # Internal functions
@@ -378,11 +376,11 @@ _cledefp () {
 	_PA='-<(^e)>-'	#: the eye :-D
 	_PT='\u@^H'
 	#: decide color by username and if the host is remote
-	case "$USER-${CLE_WS#$CLE_FHN}" in
-	root-)	_DC=red;;	#: root@workstation
-	*-)	_DC=marley;;	#: user's basic color scheme
-	root-*)	_DC=RbB;;	#: root@remote
-	*-*)	_DC=blue;;	#: user@remote
+	case "$USER@$CLE_WS" in
+	root@)	_DC=red;;	#: root@workstation
+	*@)	_DC=marley;;	#: user's basic color scheme
+	root@*)	_DC=RbB;;	#: root@remote
+	*@*)	_DC=blue;;	#: user@remote
 	esac
 }
 
@@ -453,7 +451,7 @@ _clepreex () {
 	fi
 	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return	#: no command issued
 	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}	#: shorten command to display in terminal title
-	[ "$_PT" ] && printf "$_CT%s$_Ct" $_SC	#: show executed command in the title
+	[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"	#: show executed command in the title
 	[ "$PSB" ] && echo "${PSB@P}"		#: beforexec marker
 
 	echo -n $_CN	#: reset tty colors after any prompt
@@ -687,13 +685,13 @@ hh () {
 		if($3!="") { ET=$3 "\"" } else { ET="" }
 		#:     output modifiers
 		if(MOD~"n") {
-			FORM=CST " %-9s" CFL " %-20s:" CCM " %s\n" CN
+			FORM=CST "%-9s" CFL " %-25s:" CCM " %s\n" CN
 			printf FORM,$4,$5,CMD
 		}
 		else if(MOD~"c") print CMD
 		else if(MOD~"f") CMD=$5
 		else {
-			FORM=Cb CD "%s %-13s" CN CD " %6s" CST " %-5s" CFL " %-10s:" CCM " %s\n" CN
+			FORM=CB CD "%s" CN Cb CD" %-13s" CN CD " %6s" CN CST " %-5s" CFL " %-13s:" CCM " %s\n" CN
 			printf FORM,$1,$2,ET,$4,$5,CMD
 		}
 		if( $4~/^[0-9 *]+$/ ) CMDS[I++]=CMD
@@ -814,7 +812,8 @@ _clevdump () (
 #: If required for remote session do following:
 #:  -pack the folder with tar, and store as base64 encoded string into $C64
 #: Always: prepare $RH and $RC for live session wrappers
-CLE_XFILES=
+CLE_XFUN=	#: list of functions for transfer to remote session
+CLE_XFILES=	#: list of fies to takeaway
 _clepak () {
 	RH=${CLE_DR/\/.*/}      #: resource home is path until first dot
 	RD=${CLE_DR/$RH\//}     #: relative path to resource directory
@@ -839,10 +838,13 @@ _clepak () {
 		dbg_print "_clepak: preparing $RH/$RD"
 		#: by default prepare files in /var/tmp; fall back to the home dir
 		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
-		EN=$RD/env-$CLE_FHN
-		#: construct list of files to transfer
+		EN=$RD/env-$CLE_FHN	#: Workstation's environmen file
+		#: construct list of files to takeaway
+		#: add also custom files (CLE_XFILES)
+		#: currently all takeaway files must be in cle folder TODO: think about others!
+		#: takeaway filenames are enhanced with worksation's name - $CLE_FHN
 		XF=$EN
-		for F in $CLE_XFILES tw rc; do
+		for F in $CLE_XFILES tw rc; do		#: 'rc' must be the ast item!
 			RC=$RD/$F-$CLE_FHN
 			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC" #: only existing items!
 		done
@@ -850,18 +852,23 @@ _clepak () {
 		dbg_var XF
 		dbg_var RC
 
-		#: prepare environment to transfer: color table, prompt settings, WS name and custom exports
-		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' >>$EN #: translate _Px to CLE_Px - new defaults
-		_clevdump "$CLE_XVARS" >>$EN
-		_clevdump "CLE_DEBUG" >>$EN                     # dbg
-		cat $CLE_AL >>$EN 2>/dev/null
-		#: Add selected functions to transfer
-		for XFUN in $CLE_XFUN; do
-			declare -f $XFUN >>$EN
-		done
+		#: prepare environment to transfer: color table, prompt settings, WS name
+		#: aliases and custom variables (CLE_XVARS)
+		{
+			echo "# evironment $CLE_USER@$CLE_FHN"
+			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' #: translate _Px to CLE_Px
+			_clevdump "$CLE_XVARS"
+			cat $CLE_AL 2>/dev/null
+			#: Add selected functions to transfer
+			for XFUN in $CLE_XFUN; do
+				declare -f $XFUN
+			done
+			_clevdump "CLE_DEBUG"			# dbg
+		} >$EN
 	fi
-	#: save the envrironment tarball into $C64 if required
+	#: store the envrironment as base64 encoded tarball into $C64 if required
+	#: otherwise files are ready in $RD folder for local sessions and their list
+	#; is in $RCLIST
 	#: Note: I've never owned this computer, I had Atari 800XL instead :-)
 	#: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
 	dbg_var PWD
@@ -869,7 +876,7 @@ _clepak () {
 	popd >/dev/null
 }
 
-## `lssh [usr@]host`   - access remote system and take CLE along
+## `lssh [usr@]host`   - access remote system and run CLE
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	_clepak tar
@@ -921,6 +928,7 @@ if [ "$CLE_MOTD" ]; then
 	unset CLE_MOTD
 fi
 
+PROMPT_DIRTRIM=3 #: can be overridden in tweak file
 # Enhnace PATH
 for _T in $HOME/bin $HOME/.local/bin; do
 	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T

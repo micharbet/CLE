@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-14 (Aquarius)
+#* version: 2023-11-16 (Aquarius)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2022 by Michael Arbet
+#* Copyright (C) 2016-2023 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -120,13 +120,9 @@ mkdir -m 755 -p $CLE_D
 CLE_CF=$CLE_D/cf-$CLE_FHN
 CLE_AL=$CLE_D/al
 CLE_HIST=$_H/.clehistory
-_N=${CLE_RC#$CLE_DR/rc}
-CLE_WS=${_N#-}
-CLE_TW=$CLE_DR/tw$_N
-CLE_ENV=$CLE_DR/env$_N
-_N=`tty`; _N=${_N#/dev}; CLE_TTY=${_N//\/}
-CLE_XFUN=
-PROMPT_DIRTRIM=3
+CLE_WS=${CLE_RC#$CLE_DR/rc}
+CLE_TW=$CLE_DR/tw$CLE_WS
+CLE_ENV=$CLE_DR/env$CLE_WS
 
 # who I am
 _N=${CLE_RC#*cle-}; _N=${_N%/rc*}
@@ -285,11 +281,11 @@ _cledefp () {
 	_PB=
 	_PA='-<(^e)>-'
 	_PT='\u@^H'
-	case "$USER-${CLE_WS#$CLE_FHN}" in
-	root-)	_DC=red;;
-	*-)	_DC=marley;;
-	root-*)	_DC=RbB;;
-	*-*)	_DC=blue;;
+	case "$USER@$CLE_WS" in
+	root@)	_DC=red;;
+	*@)	_DC=marley;;
+	root@*)	_DC=RbB;;
+	*@*)	_DC=blue;;
 	esac
 }
 
@@ -338,7 +334,7 @@ _clepreex () {
 	fi
 	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return
 	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
-	[ "$_PT" ] && printf "$_CT%s$_Ct" $_SC
+	[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"
 	[ "$PSB" ] && echo "${PSB@P}"
 
 	echo -n $_CN
@@ -507,23 +503,35 @@ hh () {
 		[ "$S" ] || N=100
 	fi
 
-	local AW='BEGIN { FS=";" }
+	local AW='
+	BEGIN {
+		FS=";"
+		CN="'$_CN'"
+		CL="'$_CL'"
+		CD="'$_CD'"
+		CG="'$_CG'"
+		CR="'$_CR'"
+		Cy="'$_Cy'"
+		Cb="'$_Cb'"
+		CB="'$_CB'"
+	}
 	//'$S' {
 		CMD=substr($0,index($0,$6))
-		CST=CE; CFL=CN; CCM=CL
-		if($4=="0") { CST=CO; CFL=CN; CCM=CL }
-		if($4=="#" || $4=="$") { CST=CH; CFL=CH; CCM=CH }
-		if($4=="*") { CST=CH; CFL=CH; CCM=CH; CMD="cd "$5 }
-		if($4=="@") { CST=CS; CFL=CS; CCM=CS }
+		CST=CR; CFL=CN; CCM=CL
+		if($4=="0") { CST=CG; CFL=CN; CCM=CL }
+		if($4=="#" || $4=="$") { CST=Cy; CFL=Cy; CCM=Cy }
+		if($4=="*") { CST=Cy; CFL=Cy; CCM=Cy; CMD="cd "$5 }
+		if($4=="@") { CST=Cb; CFL=Cb; CCM=Cb }
+		if($3!="") { ET=$3 "\"" } else { ET="" }
 		if(MOD~"n") {
-			FORM=CST " %-9s" CFL " %-20s:" CCM " %s\n" CN
+			FORM=CST "%-9s" CFL " %-25s:" CCM " %s\n" CN
 			printf FORM,$4,$5,CMD
 		}
 		else if(MOD~"c") print CMD
 		else if(MOD~"f") CMD=$5
 		else {
-			FORM=CD "%s" CS " %-13s" CD " %5s" CST " %-5s" CFL " %-10s:" CCM " %s\n" CN
-			printf FORM,$1,$2,$3,$4,$5,CMD
+			FORM=CB CD "%s" CN Cb CD" %-13s" CN CD " %6s" CN CST " %-5s" CFL " %-13s:" CCM " %s\n" CN
+			printf FORM,$1,$2,ET,$4,$5,CMD
 		}
 		if( $4~/^[0-9 *]+$/ ) CMDS[I++]=CMD
 	}
@@ -537,7 +545,7 @@ hh () {
 	}'
 
 	local REVB=`mktemp /tmp/clerh.XXXX`
-	eval tail -n $N $CLE_HIST \| awk -v CN='$_CN' -v CL='$_CL' -v CD='$_CB' -v CS='$_Cb' -v CO='$_Cg' -v CE='$_Cr' -v CH='$_Cy' -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
+	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
 
 	_RHBUF=()
 	_RHLEN=0
@@ -618,6 +626,7 @@ _clevdump () (
 ## ** Live session wrappers **
 
 # Environment packer
+CLE_XFUN=
 CLE_XFILES=
 _clepak () {
 	RH=${CLE_DR/\/.*/}
@@ -640,19 +649,22 @@ _clepak () {
 			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC"
 		done
 
-		echo "# evironment $CLE_USER@$CLE_FHN" >$EN
-		_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' >>$EN
-		_clevdump "$CLE_XVARS" >>$EN
-		cat $CLE_AL >>$EN 2>/dev/null
-		for XFUN in $CLE_XFUN; do
-			declare -f $XFUN >>$EN
-		done
+		{
+			echo "# evironment $CLE_USER@$CLE_FHN"
+			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/'
+			_clevdump "$CLE_XVARS"
+			cat $CLE_AL 2>/dev/null
+			for XFUN in $CLE_XFUN; do
+				declare -f $XFUN
+			done
+		} >$EN
 	fi
+	#; is in $RCLIST
 	[ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }
 
-## `lssh [usr@]host`   - access remote system and take CLE along
+## `lssh [usr@]host`   - access remote system and run CLE
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
 	_clepak tar
@@ -690,6 +702,7 @@ if [ "$CLE_MOTD" ]; then
 	unset CLE_MOTD
 fi
 
+PROMPT_DIRTRIM=3
 # Enhnace PATH
 for _T in $HOME/bin $HOME/.local/bin; do
 	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T
@@ -775,11 +788,13 @@ EOT
 [ -r . ] || cd
 
 # record this startup into rich history
-_T=${CLE_WS:-WS}
-_T=${STY:-$_T}
-_T=${TMUX:-$_T}
-_clerh @ $CLE_TTY "[$_T $HOME ${CLE_RC/$HOME/\~}]"
+_T=${TMUX:+tmux:$TMUX}
+_T=${_T:-${STY:+screen:$STY}}
+_T=${_T:-${SSH_CLIENT:+ssh:${SSH_CLIENT%% *}}}
+CLE_SESSION=${_T:-${CLE_WS:-WS}}
+_clerh @ ${CLE_WS:-WS} "[$CLE_SESSION]"
 [ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
+[ $CLE_DEBUG ] && _clerh @ $PWD "[$CLE_RC]"
 
 ##
 ## ** CLE command & control **

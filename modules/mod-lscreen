@@ -30,7 +30,7 @@ lscreen () (
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		#: No session with given name found, prepare to start new session
-		SCF=$CLE_D/screenrc
+		SCF=$CLE_D/screenrc-main
 		_clerh @ `tty` "screen -S $SN"
 		# prepare own screenrc
 		#: This generates nice configuration file with cool features:
@@ -41,23 +41,24 @@ lscreen () (
 		#: subsequent windows created with 'C-a C-c' (note the bind commands, above
 		#: mentioned features are cool but this part is the important one)
 		cat <<-EOS >$SCF
+			source $HOME/.screenrc	# host local screenrc
 			altscreen on
 			autodetach on
 			# enables shift-PgUp/PgDn
 			termcapinfo xterm* ti@:te@
-			# change window with ctrl-left/right REMOVE THIS LATER
-			#bindkey "^[[1;5D" prev
-			#bindkey "^[[1;5C" next
-			# change window with alt-, and alt-. (< and >)
+			# change window with alt-, and alt-. (means < and >)
 			bindkey "^[," prev
 			bindkey "^[." next
 			defscrollback 9000
 			hardstatus alwayslastline
 			hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b Y}$CLE_SHN%{G} %c'
+			# This is the most important for starting CLE in new windows
 			bind c screen $CLE_RC
 			bind ^c screen $CLE_RC
-			#: user's addition to the screenrc via the variable - set in tweak file
-			$CLE_SCRC
+			# user's additions
+			source $CLE_DR/screenrc-custom$CLE_WS	# custom file
+			$CLE_SCRC	# content of a variable that can be set in tweak file
+
 		EOS
 		screen -c $SCF -S $SN $CLE_RC
 	else
@@ -77,6 +78,7 @@ lscreen () (
 	fi
 )
 
-# register lscreen function for transfer to remote sessions
+# register lscreen function and custom file for transfer to remote sessions
 CLE_XFUN="$CLE_XFUN lscreen"
+CLE_XFILES="$CLE_XFILES screenrc-custom"
 

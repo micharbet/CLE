@@ -1,6 +1,6 @@
 mod-git:2019-03-12:98d20eebd84f204b3d231c11d4460b2d:GIT helpers / shorcuts
 mod-lksu:2021-08-23:66424422a838eb6289e603f32114815a:ksu (kerberized su) live session wrapper
-mod-lscreen:2021-02-01:ddbe619c61d62420a3ff118dfbcfdfe6:GNU screen wrapper
+mod-lscreen:2023-11-15:f6478eaa271812519da94be57c3abc04:GNU screen wrapper
 mod-ltmux:2022-10-19:0aac522ef88cebbe1f6a859e9dd2a9f1:tmux live session wrapper
 mod-mancolor:2018-08-29:4cb76858862d9809fd7d5ecd821ded51:Colorize man pages
 mod-mosh:2019-11-16:992b3e33800b0b62934422d3566e2a42:Live session with `lmosh` command
