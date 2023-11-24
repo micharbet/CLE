@@ -1,11 +1,11 @@
 ##
 ## ** mod-ltmux: tmux live session wrapper **
 #
-#* version: 2022-10-19
+#* version: 2023-11-24
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
-#* Copyright (C) 2022 by Michael Arbet 
+#* Copyright (C) 2022-2023 by Michael Arbet 
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -19,25 +19,37 @@ fi
 
 ## `ltmux`     - live tmux session
 ltmux () (
+	#: $CLE_USER-$USER is a way to find one's session in multi-admin environment
+	#: e.g. result on remote root's session can be CLE_TMNAME='mich-root'
 	[ $CLE_USER = $USER ] && CLE_TMNAME=$CLE_USER || CLE_TMNAME=$CLE_USER-$USER
 	if tmux attach-session -t $CLE_TMNAME; then
-		: only attaching
+		: This was attempt to attach a session
 	else
-		CLE_TMUX=$CLE_D/ltmux.conf
-		# Create specific configuration that will:
-		# 1. source all possible configurations (host defult, inherited, user's local)
+		CLE_TMUX=$CLE_D/tmux.conf-main
+		# Create minimal configuration that ensures:
+		# 1. source all possible configurations (host defult, user's local and CLE-takeaway)
 		# 2. set CLE as the command of every new shell within ltmux
-		cat <<-EOT >$CLE_TMUX
-			source-file -q /etc/tmux.conf
-			source-file -q $CLE_DR/tmux.conf${CLE_WS:+-$CLE_WS}
-			source-file -q $HOME/.tmux.conf
-			set -g default-command $CLE_RC
-			set -g status-left-length 19
-		EOT
+		# note the 'source-file -q' (quiet if no such file) workaround:
+		# newer versions of tmux can handle option '-q' while older generate
+		# an error message.
+		# This on the other side cannot fix the issue of new and deprecated
+		# optinons in various tmux versions. There are various methods
+		# to write multi-version compatible tmux.conf file. for example:
+		# https://stackoverflow.com/questions/35016458/how-to-write-if-statement-in-tmux-conf-to-set-different-options-for-different-t
+		# https://blog.landofcrispy.com/index.php/2021/01/12/adjusting-tmux-conf-options-for-different-versions/
+		# Tmux versions need to be considered if one is usinx takeway file 
+		# ($CLE_D/tmux.conf) Unfortunately this module unfortunately can not
+		# handle version differencies.
+		{
+			for F in /etc/tmux.conf $CLE_DR/tmux.conf$CLE_WS $HOME/.tmux.conf; do
+				[ -f $F ] && echo "source-file $F"
+			done
+			echo "set -g default-command $CLE_RC"
+		} >$CLE_TMUX
 		tmux -f $CLE_TMUX new-session -s $CLE_TMNAME "$@"
 	fi
 )
 
 # Register ltmux for transfer to remote session
-CLE_XFUN="$CLE_XFUN ltmux"
-
+CLE_XFUN="$CLE_XFUN ltmux"		#: CLE takeaway function
+CLE_XFILES="$CLE_XFILES tmux.conf" 	#: CLE takeaway file
