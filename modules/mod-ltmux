@@ -1,7 +1,7 @@
 ##
 ## ** mod-ltmux: tmux live session wrapper **
 #
-#* version: 2023-11-24
+#* version: 2023-11-28
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: GNU GPL v2
@@ -19,37 +19,46 @@ fi
 
 ## `ltmux`     - live tmux session
 ltmux () (
-	#: $CLE_USER-$USER is a way to find one's session in multi-admin environment
-	#: e.g. result on remote root's session can be CLE_TMNAME='mich-root'
-	[ $CLE_USER = $USER ] && CLE_TMNAME=$CLE_USER || CLE_TMNAME=$CLE_USER-$USER
-	if tmux attach-session -t $CLE_TMNAME; then
-		: This was attempt to attach a session
-	else
-		CLE_TMUX=$CLE_D/tmux.conf-main
+	# $CLE_USER-$USER is a way to determine one's session in multi-admin
+	# environment E.g. remote root's session can be CLE_TMUX='mich-root'
+	[ $CLE_USER = $USER ] && CLE_TMUX=$CLE_USER || CLE_TMUX=$CLE_USER-$USER
+	# Attach an existing session ...
+	tmux attach-session -t $CLE_TMUX || {
+		# ... or create a new one
+		CLE_TMUXCF=$CLE_D/ltmux.conf-main
+
 		# Create minimal configuration that ensures:
-		# 1. source all possible configurations (host defult, user's local and CLE-takeaway)
+		# 1. source all possible configurations (host defult, user's local
+		#    and CLE-takeaway)
 		# 2. set CLE as the command of every new shell within ltmux
 		# note the 'source-file -q' (quiet if no such file) workaround:
 		# newer versions of tmux can handle option '-q' while older generate
-		# an error message.
-		# This on the other side cannot fix the issue of new and deprecated
-		# optinons in various tmux versions. There are various methods
-		# to write multi-version compatible tmux.conf file. for example:
-		# https://stackoverflow.com/questions/35016458/how-to-write-if-statement-in-tmux-conf-to-set-different-options-for-different-t
-		# https://blog.landofcrispy.com/index.php/2021/01/12/adjusting-tmux-conf-options-for-different-versions/
-		# Tmux versions need to be considered if one is usinx takeway file 
-		# ($CLE_D/tmux.conf) Unfortunately this module unfortunately can not
-		# handle version differencies.
+		# an error message. This on the other side cannot handle the issue
+		# of new vs. deprecated optinons in various tmux versions. (see further)
 		{
-			for F in /etc/tmux.conf $CLE_DR/tmux.conf$CLE_WS $HOME/.tmux.conf; do
+			for F in /etc/tmux.conf $CLE_DR/ltmux.conf$CLE_WS $HOME/.tmux.conf; do
 				[ -f $F ] && echo "source-file $F"
 			done
 			echo "set -g default-command $CLE_RC"
-		} >$CLE_TMUX
-		tmux -f $CLE_TMUX new-session -s $CLE_TMNAME "$@"
-	fi
+		} >$CLE_TMUXCF
+
+		# Tmux versions need to be considered if one is using takeway file ($CLE_D/ltmux.conf)
+		# Add an environment variable with tmux version multiplied by 100
+		# for easy decission within custom tmux config file.
+		# Use the variable as follows:
+		#   if-shell -b '[ $TMUX_VER -gt 210 ]' { set -g mouse on }
+		# The workaround was inspired by: 
+		# https://stackoverflow.com/questions/35016458/how-to-write-if-statement-in-tmux-conf-to-set-different-options-for-different-t
+		export TMUX_VER=`echo $(tmux -V | sed -En "s/^tmux[^0-9]*([.0-9]+).*/\1/p") *100/1 | bc`
+		# There are also other methods to write multi-version compatible tmux.conf file.
+		# for example:
+		# https://blog.landofcrispy.com/index.php/2021/01/12/adjusting-tmux-conf-options-for-different-versions/
+
+		# Start the tmux session
+		tmux -f $CLE_TMUXCF new-session -s $CLE_TMUX "$@"
+	}
 )
 
 # Register ltmux for transfer to remote session
 CLE_XFUN="$CLE_XFUN ltmux"		#: CLE takeaway function
-CLE_XFILES="$CLE_XFILES tmux.conf" 	#: CLE takeaway file
+CLE_XFILES="$CLE_XFILES ltmux.conf" 	#: CLE takeaway file

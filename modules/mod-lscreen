@@ -21,17 +21,17 @@
 lscreen () (
 	#: get name of the screen to search and join
 	#: base of session name is $CLE_USER and this can be extended
-	SN=CLE-$CLE_USER${1:+-$1}
-	[ "$1" = -j ] && SN=${2:-.}
+	SCRNAME=CLE-$CLE_USER${1:+-$1}
+	[ "$1" = -j ] && SCRNAME=${2:-.}
 	#: list all screens with that name and find how many of them are there
-	SCRS=`screen -ls|sed -n "/$SN/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
-	NS=`wc -w <<<$SCRS`
+	SCREENS=`screen -ls|sed -n "/$SCRNAME/s/^[ \t]*\([0-9]*\.[^ \t]*\)[ \t]*.*/\1/p"`
+	NS=`wc -w <<<$SCREENS`
 	reset #: sometimes it's necessary to reset terminal
 	if [ $NS = 0 ]; then
 		[ "$1" = -j ] && echo "No screen to join" && return 1
 		#: No session with given name found, prepare to start new session
-		SCF=$CLE_D/screenrc-main
-		_clerh @ `tty` "screen -S $SN"
+		SCREENRC=$CLE_D/lscreenrc-main
+		_clerh @ `tty` "screen -S $SCRNAME"
 		# prepare own screenrc
 		#: This generates nice configuration file with cool features:
 		#:  - always visible status line with list of windows, hostname and clock
@@ -40,7 +40,7 @@ lscreen () (
 		#: Own screenrc file is necessary because otherwise it wouldn't start CLE in
 		#: subsequent windows created with 'C-a C-c' (note the bind commands, above
 		#: mentioned features are cool but this part is the important one)
-		cat <<-EOS >$SCF
+		cat <<-EOS >$SCREENRC
 			source $HOME/.screenrc	# host local screenrc
 			altscreen on
 			autodetach on
@@ -56,29 +56,29 @@ lscreen () (
 			bind c screen $CLE_RC
 			bind ^c screen $CLE_RC
 			# user's additions
-			source $CLE_DR/screenrc-custom$CLE_WS	# custom file
+			source $CLE_DR/lscreenrc$CLE_WS	# custom file
 			$CLE_SCRC	# content of a variable that can be set in tweak file
 
 		EOS
-		screen -c $SCF -S $SN $CLE_RC
+		screen -c $SCREENRC -S $SCRNAME $CLE_RC
 	else
 		#: is there only one such session or more?
-		if [ $NS = 1 ]; then SN=$SCRS
+		if [ $NS = 1 ]; then SCRNAME=$SCREENS
 		else
-			#: we found more screens with simiilar names, choose one!
-			_clebold "${_CU}Current '$SN' sessions:"
+			#: we found more screens with similar names, choose one!
+			_clebold "${_CU}Current '$SCRNAME' sessions:"
 			PS3="$_CL choose # to join: $_CN"
-			select SN in $SCRS;do
-				[ $SN ] && break
+			select SCRNAME in $SCREENS;do
+				[ $SCRNAME ] && break
 			done
 		fi
-		_clerh @ `tty` "screen -x $SN"
-		screen -S $SN -X echo "$CLE_USER joining" #: alert to the original session
-		screen -x $SN
+		_clerh @ `tty` "screen -x $SCRNAME"
+		screen -S $SCRNAME -X echo "$CLE_USER joining" #: send alert to the original session
+		screen -x $SCRNAME
 	fi
 )
 
 # register lscreen function and custom file for transfer to remote sessions
 CLE_XFUN="$CLE_XFUN lscreen"
-CLE_XFILES="$CLE_XFILES screenrc-custom"
+CLE_XFILES="$CLE_XFILES lscreenrc"
 
