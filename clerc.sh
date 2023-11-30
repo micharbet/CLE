@@ -329,12 +329,25 @@ _cleclr () {
 #:  - enhanced prompt escape codes introduced with ^ sign
 _clesc () (
 	dbg_print ' _clesc'
+	#: cannot add notes to relevant lines, they would break sed expressions. So...
+	#: ^i       ... remote IP address
+	#: ^h       ... shortened hostname
+	#: ^H       ... FQDN (if could be obtained)
+	#: ^s       ... elapsed seconds of recent command 
+	#: ^tNUMBER ... threshold for displaying afterexec marker
+	#: ^g       ... git branch and status
+	#: ^?, ^e   ... return (error code)
+	#: ^E       ... return code in square brackets, highlighted red if non zero
+	#: ^Cx      ... change text color, x=one-letter-code
+	#: ^vVAR    ... display variable name and value
+	#: ^^       ... caret itself
 	sed \
 	 -e 's/\^i/\${CLE_IP}/g'\
 	 -e 's/\^h/\${CLE_SHN}/g'\
 	 -e 's/\^H/\${CLE_FHN}/g'\
 	 -e 's/\^U/\${CLE_USER}/g'\
 	 -e 's/\^s/\${_SEC}/g'\
+	 -e 's/\^t[0-9]//g'\
 	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
 	 -e 's/\^[?e]/\${_EC}/g'\
 	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
@@ -347,9 +360,9 @@ _clesc () (
 
 _cle_r () {
 	[ "$1" != h ] && return
-	printf "\n$_Cr     ,==~~-~w^, \n    /#=-.,#####\\ \n .,!. ##########!\n((###,. \`\"#######;."
-	printf "\n &######\`..#####;^###)\n$_CW   (@@$_Cr^#############\"\n$_CW"
-	printf "    \\@@@\\__,-~-__,\n     \`&@@@@@69@@/\n        ^&@@@@&*\n$_CN\n"
+	printf "\n$_Cr     ,~~---~^^, \n    /@=-. ##_##\\ \n .,(. ##########)\n(@###,. \`\"######@^."
+	printf "\n \`@#####\`..#####\`,###)\n$_CW   (@@$_Cr^#############\"\n$_CW"
+	printf "    \\@@@\\__,-~-__,\n     \`@@@@@@69@@/\n        *&@@@@&*\n$_CN\n"
 }
 
 # craft prompts from defined strings
@@ -362,8 +375,12 @@ _cleps () {
 	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
 	PS1=$PS1`_clesc "^CN^C1${CLE_P1:-$_P1}^CN^C2${CLE_P2:-$_P2}^CN^C3${CLE_P3:-$_P3}^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
-	[ "$PB" ] && PSB=`_clesc "^CN^C5$PB"`	#: PSB - before execution
-	[ "$PA" ] && PSA=`_clesc "^CN^CA$PA"`	#: PSA - after execution
+	[ "$PB" ] && PSB=`_clesc "^CN^C5$PB"`			#: PSB - before execution marker
+	[ "$PA" ] && {
+		PSA=`_clesc "^CN^CA$PA"`			#: PSA - after execution marker
+		PT=`sed -n 's/.*\^t\([0-9]*\).*/\1/p' <<<$PA`	#: search if afterexec threshold is defined
+	}
+	CLE_PAT=${PT:-0}	#: set afterexec prompt threshold
 }
 
 # default prompt strings and colors
@@ -421,7 +438,7 @@ _cleprompt () {
 	if [ "$_CMD" ]; then	# check if a command was issued
 		dbg_print "$_C5>>>>  End of command output  '$_CMD' <<<<$_CN"
 		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
-		[ "$PSA" ] && echo "${PSA@P}"			#: printout afterexecution marker
+		[ "$PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ] && echo "${PSA@P}"	#: printout afterexecution marker
 		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
 		#: no command issued
@@ -452,7 +469,7 @@ _clepreex () {
 	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return	#: no command issued
 	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}	#: shorten command to display in terminal title
 	[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"	#: show executed command in the title
-	[ "$PSB" ] && echo "${PSB@P}"		#: beforexec marker
+	[ "$PSB" ] && echo "${PSB@P}"		#: display beforexec marker if defined
 
 	echo -n $_CN	#: reset tty colors after any prompt
 	dbg_var _HR

@@ -243,6 +243,7 @@ _clesc () (
 	 -e 's/\^H/\${CLE_FHN}/g'\
 	 -e 's/\^U/\${CLE_USER}/g'\
 	 -e 's/\^s/\${_SEC}/g'\
+	 -e 's/\^t[0-9]//g'\
 	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
 	 -e 's/\^[?e]/\${_EC}/g'\
 	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
@@ -255,9 +256,9 @@ _clesc () (
 
 _cle_r () {
 	[ "$1" != h ] && return
-	printf "\n$_Cr     ,==~~-~w^, \n    /#=-.,#####\\ \n .,!. ##########!\n((###,. \`\"#######;."
-	printf "\n &######\`..#####;^###)\n$_CW   (@@$_Cr^#############\"\n$_CW"
-	printf "    \\@@@\\__,-~-__,\n     \`&@@@@@69@@/\n        ^&@@@@&*\n$_CN\n"
+	printf "\n$_Cr     ,~~---~^^, \n    /@=-. ##_##\\ \n .,(. ##########)\n(@###,. \`\"######@^."
+	printf "\n \`@#####\`..#####\`,###)\n$_CW   (@@$_Cr^#############\"\n$_CW"
+	printf "    \\@@@\\__,-~-__,\n     \`@@@@@@69@@/\n        *&@@@@&*\n$_CN\n"
 }
 
 # craft prompts from defined strings
@@ -270,7 +271,11 @@ _cleps () {
 	PS1=$PS1`_clesc "^CN^C1${CLE_P1:-$_P1}^CN^C2${CLE_P2:-$_P2}^CN^C3${CLE_P3:-$_P3}^CN^C4"`
 	PS2=`_clesc "^C3>>> ^CN^C4"`
 	[ "$PB" ] && PSB=`_clesc "^CN^C5$PB"`
-	[ "$PA" ] && PSA=`_clesc "^CN^CA$PA"`
+	[ "$PA" ] && {
+		PSA=`_clesc "^CN^CA$PA"`
+		PT=`sed -n 's/.*\^t\([0-9]*\).*/\1/p' <<<$PA`
+	}
+	CLE_PAT=${PT:-0}
 }
 
 # default prompt strings and colors
@@ -311,7 +316,7 @@ _cleprompt () {
 	[[ $PS1 =~ _GIT ]] && _clegit
 	if [ "$_CMD" ]; then	# check if a command was issued
 		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
-		[ "$PSA" ] && echo "${PSA@P}"
+		[ "$PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ] && echo "${PSA@P}"
 		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
 		_CE=
