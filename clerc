@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-16 (Aquarius)
+#* version: 2023-11-30 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2023 by Michael Arbet
 
@@ -243,7 +243,7 @@ _clesc () (
 	 -e 's/\^H/\${CLE_FHN}/g'\
 	 -e 's/\^U/\${CLE_USER}/g'\
 	 -e 's/\^s/\${_SEC}/g'\
-	 -e 's/\^t[0-9]//g'\
+	 -e 's/\^t[0-9]*//g'\
 	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
 	 -e 's/\^[?e]/\${_EC}/g'\
 	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
