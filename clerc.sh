@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-30 (Aquarius)
+#* version: 2024-01-04 (Aquarius)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2023 by Michael Arbet
+#* Copyright (C) 2016-2024 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -378,6 +378,7 @@ _cleps () {
 	[ "$PB" ] && PSB=`_clesc "^CN^C5$PB"`			#: PSB - before execution marker
 	[ "$PA" ] && {
 		PSA=`_clesc "^CN^CA$PA"`			#: PSA - after execution marker
+		[ $BASH_VERSINFO -lt 5 ] && PSA=$(sed -e 's/\\.//g' -e 's/"/\\"/g' <<<"$PSA")
 		PT=`sed -n 's/.*\^t\([0-9]*\).*/\1/p' <<<$PA`	#: search if afterexec threshold is defined
 	}
 	CLE_PAT=${PT:-0}	#: set afterexec prompt threshold
@@ -423,22 +424,22 @@ _clesave () (
 #:
 _PST='${PIPESTATUS[@]}'		#: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: bash3 workaround
-_CMD=
+_TIM=				#: empty timer indicates no command has been issued
 _cleprompt () {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
-	local IFS  		#: TODO: VERIFY WHY I NEED LOCAL IFS
-	#: Error code highlight
-	[[ $_EC =~ [1-9] ]] && _CE=$_Ce || { _EC=0; _CE=; }
-	_CA=${_CE:-$_C5}	#: afterexec marker color
-	unset IFS
-	history -a	#: immediately record commands so they are available in new shell sessions
-	[[ $PS1 =~ _GIT ]] && _clegit
-	#: TODO: note recording does not work! :#
-	if [ "$_CMD" ]; then	# check if a command was issued
+	if [ "$_TIM" ]; then	# check if a command was issued
+		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || { _EC=0; _CE=; }	#: error code highlight
+		_CA=${_CE:-$_C5}					#: afterexec marker color
 		dbg_print "$_C5>>>>  End of command output  '$_CMD' <<<<$_CN"
-		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
-		[ "$PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ] && echo "${PSA@P}"	#: printout afterexecution marker
+		_SEC=$((SECONDS-_TIM))
+		[[ $PS1 =~ _GIT ]] && _clegit
+		history -a	#: immediately record commands so they are available in new shell sessions
+		#: printout afterexecution marker
+		if [ "$PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ]; then
+			#: decide if prompt expansion can be used (bash v5 and later)
+			[ $BASH_VERSINFO -ge 5 ] && echo "${PSA@P}" || eval "echo \"$PSA\""
+		fi
 		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
 		#: no command issued
@@ -446,6 +447,7 @@ _cleprompt () {
 		_CE=
 		_EC=0
 	fi
+	_TIM=
 	trap _clepreex DEBUG
 }
 
@@ -456,26 +458,25 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }	#: keep already tweaked value if exi
 #: This fuction is used within prompt calback. Read code efficiency note above!
 history -cr $HISTFILE
 _clepreex () {
+	trap "" DEBUG
 	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1` #: get new history record
 	_HR=${_HR#*;}		#: strip sequence number
 	_DT=${_HR/;*}		#: extract date and time
 	_CMD=${_HR/$_DT;}	#: extract pure command
 	dbg_print "${_CN}_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
+	dbg_print "${_CN}_clepreex:          _HR = '$_HR'"
 	dbg_print "${_CN}_clepreex:         _CMD = '$_CMD'"
-	if [[ $_CMD =~ ^\# ]]; then
-		dbg_print "recording note '$_CMD'"
-		_clerh '#' "$PWD" "$_CMD"	#: record a note to history
-	fi
-	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return	#: no command issued
-	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}	#: shorten command to display in terminal title
-	[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"	#: show executed command in the title
-	[ "$PSB" ] && echo "${PSB@P}"		#: display beforexec marker if defined
 
-	echo -n $_CN	#: reset tty colors after any prompt
-	dbg_var _HR
-	dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
-	trap "" DEBUG
-	_TIM=$SECONDS	#: start history timer $_TIM
+	if [ "$BASH_COMMAND" = "_cleprompt" ]; then
+		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD"	#: record a note to history
+	else
+		[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}	#: shorten command to display in terminal title
+		[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"	i	#: show executed command in the title
+		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }	#: display beforexec marker if defined
+		dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
+		_TIM=$SECONDS	#: start history timer $_TIM
+		echo -n $_CN	#: reset tty colors after prompt
+	fi
 }
 
 # rich history record
@@ -498,7 +499,7 @@ _clerh () {
 	[[ $3 =~ $REX ]] && return
 	#: ignore repeating commands
 	[ "$3" = "$_CPR" ] && return	#: do not record repeating items
-	dbg_print "Cmd='$3' PrevCmd='$_CPR'"
+	dbg_print "_clerh(): Cmd='$3' PrevCmd='$_CPR'"
 	_CPR=$3
 	#: working dir (substitute home with ~)
 	W=${2/$HOME/\~}
@@ -519,7 +520,6 @@ _clerh () {
 		dbg_print "directory bookmark: $PWD;"
 		echo -E "$ID;;*;$PWD;" ;;
 	\#*) #: notes to rich history
-		#: TODO: this does not work
 		dbg_print "note: $ID;;#;$W;$3"
 		echo -E "$ID;;#;$W;$3" ;;
 	*) #: regular commands
@@ -657,7 +657,7 @@ hh () {
 	S=$S"${D:+&& ( $D )}"		#: add days 'or' conditions (if any) to the serach string
 
 	_RHARG="$*"	#: save the search arguments for future reference
-	dbg_var OPTIND
+	// dbg_var OPTIND
 	shift $((OPTIND-1))
 
 	N=+1	#: everything by dfault because 'tail -n +1' works like 'cat'
@@ -1090,6 +1090,7 @@ cle () {
 				cat $CLE_CF
 			fi
 			return;;
+		*)	return;;
 		esac
 		cle reload;;
 	deploy) ## `cle deploy`            - hook CLE into user's profile

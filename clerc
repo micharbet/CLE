@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-11-30 (Aquarius)
+#* version: 2024-01-04 (Aquarius)
 #* license: GNU GPL v2
-#* Copyright (C) 2016-2023 by Michael Arbet
+#* Copyright (C) 2016-2024 by Michael Arbet
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -273,6 +273,7 @@ _cleps () {
 	[ "$PB" ] && PSB=`_clesc "^CN^C5$PB"`
 	[ "$PA" ] && {
 		PSA=`_clesc "^CN^CA$PA"`
+		[ $BASH_VERSINFO -lt 5 ] && PSA=$(sed -e 's/\\.//g' -e 's/"/\\"/g' <<<"$PSA")
 		PT=`sed -n 's/.*\^t\([0-9]*\).*/\1/p' <<<$PA`
 	}
 	CLE_PAT=${PT:-0}
@@ -304,24 +305,25 @@ _clesave () (
 # prompt callback functions
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
-_CMD=
+_TIM=
 _cleprompt () {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
-	local IFS
-	[[ $_EC =~ [1-9] ]] && _CE=$_Ce || { _EC=0; _CE=; }
-	_CA=${_CE:-$_C5}
-	unset IFS
-	history -a
-	[[ $PS1 =~ _GIT ]] && _clegit
-	if [ "$_CMD" ]; then	# check if a command was issued
-		_SEC=$((SECONDS-${_TIM:-$SECONDS}))
-		[ "$PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ] && echo "${PSA@P}"
+	if [ "$_TIM" ]; then	# check if a command was issued
+		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || { _EC=0; _CE=; }
+		_CA=${_CE:-$_C5}
+		_SEC=$((SECONDS-_TIM))
+		[[ $PS1 =~ _GIT ]] && _clegit
+		history -a
+		if [ "$PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ]; then
+			[ $BASH_VERSINFO -ge 5 ] && echo "${PSA@P}" || eval "echo \"$PSA\""
+		fi
 		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
 		_CE=
 		_EC=0
 	fi
+	_TIM=
 	trap _clepreex DEBUG
 }
 
@@ -330,21 +332,21 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
 
 history -cr $HISTFILE
 _clepreex () {
+	trap "" DEBUG
 	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
 	_HR=${_HR#*;}
 	_DT=${_HR/;*}
 	_CMD=${_HR/$_DT;}
-	if [[ $_CMD =~ ^\# ]]; then
-		_clerh '#' "$PWD" "$_CMD"
-	fi
-	[ "$BASH_COMMAND" = "_cleprompt" ] && _CMD= && return
-	[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
-	[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"
-	[ "$PSB" ] && echo "${PSB@P}"
 
-	echo -n $_CN
-	trap "" DEBUG
-	_TIM=$SECONDS
+	if [ "$BASH_COMMAND" = "_cleprompt" ]; then
+		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD"
+	else
+		[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
+		[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"	i
+		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }
+		_TIM=$SECONDS
+		echo -n $_CN
+	fi
 }
 
 # rich history record
@@ -840,6 +842,7 @@ cle () {
 				cat $CLE_CF
 			fi
 			return;;
+		*)	return;;
 		esac
 		cle reload;;
 	deploy) ## `cle deploy`            - hook CLE into user's profile
