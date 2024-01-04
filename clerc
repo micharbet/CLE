@@ -639,25 +639,20 @@ _clepak () {
 	RH=${CLE_DR/\/.*/}
 	RD=${CLE_DR/$RH\//}
 
-
 	pushd . >/dev/null
 	if [ $CLE_WS ]; then
 		cd $RH
 		RC=${CLE_RC/$RH\//}
-		TW=${CLE_TW/$RH\//}
-		EN=${CLE_ENV/$RH\//}
+		XF=`ls $RD/*$CLE_WS`
 	else
-		RH=/var/tmp/$USER
-		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
-		EN=$RD/env-$CLE_FHN
-		XF=$EN
-		for F in $CLE_XFILES tw rc; do
-			RC=$RD/$F-$CLE_FHN
-			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC"
+		for RH in /var/tmp /tmp /home; do
+			mkdir -m 0755 -p $RH/$RD 2>/dev/null && break
 		done
-
+		cd $RH
+		EN=$RD/env-$CLE_FHN
 		{
 			echo "# evironment $CLE_USER@$CLE_FHN"
+			echo "CLE_SESSION=$1"
 			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/'
 			_clevdump "$CLE_XVARS"
 			cat $CLE_AL 2>/dev/null
@@ -665,16 +660,21 @@ _clepak () {
 				declare -f $XFUN
 			done
 		} >$EN
+		XF="$EN"
+		for F in $CLE_XFILES tw rc; do
+			RC=$RD/$F-$CLE_FHN
+			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC"
+		done
 	fi
 	#; is in $RCLIST
-	[ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
+	[ "$1" = lssh ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }
 
 ## `lssh [usr@]host`   - access remote system and run CLE
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
-	_clepak tar
+	_clepak lssh
 	command ssh -t $* "
 		for H in \$HOME /var/tmp/\$USER /tmp/\$USER; do
 			mkdir -m 755 -p \$H/${RC%/*} && break
@@ -688,13 +688,13 @@ lssh () (
 
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	_clepak
-        sudo -i -u ${1:-root} sh $RH/$RC
+	_clepak $CLE_SESSION:lsudo
+        sudo -i -u ${1:-root} $RH/$RC
 )
 
 ## `lsu [user]`        - su wrapper
 lsu () (
-        _clepak
+        _clepak $CLE_SESSION:lsu
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -l ${1:-root} $RH/$RC
@@ -725,6 +725,7 @@ _clexe $CLE_AL
 _clexe $HOME/.cle-local
 _clexe $CLE_TW
 
+CLE_SESSION=$CLE_RC
 [ $CLE_WS ] && _clexe $CLE_ENV
 _clexe $CLE_CF
 
@@ -798,10 +799,9 @@ EOT
 _T=${TMUX:+tmux:$TMUX}
 _T=${_T:-${STY:+screen:$STY}}
 _T=${_T:-${SSH_CLIENT:+ssh:${SSH_CLIENT%% *}}}
-CLE_SESSION=${_T:-${CLE_WS:-WS}}
-_clerh @ ${CLE_WS:-WS} "[$CLE_SESSION]"
-[ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
-[ $CLE_DEBUG ] && _clerh @ $PWD "[$CLE_RC]"
+_T=${_T:-$CLE_SESSION}
+_clerh @ ${CLE_WS:-WS} "[$_T]"
+_clerh @ $SHELL "$BASH_VERSION, $CLE_VER"
 
 ##
 ## ** CLE command & control **

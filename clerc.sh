@@ -834,8 +834,7 @@ CLE_XFILES=	#: list of fies to takeaway
 _clepak () {
 	RH=${CLE_DR/\/.*/}      #: resource home is path until first dot
 	RD=${CLE_DR/$RH\//}     #: relative path to resource directory
-
-	dbg_var  RH
+	dbg_var RH
 	dbg_var RD
 	dbg_var CLE_XFILES
 
@@ -844,35 +843,23 @@ _clepak () {
 		#: this is live session, all files *should* be available, just set vars
 		cd $RH
 		RC=${CLE_RC/$RH\//}
-		TW=${CLE_TW/$RH\//}
-		EN=${CLE_ENV/$RH\//}
-		dbg_print "_clepak: rc already there: $(ls -l $RC)"
+		XF=`ls $RD/*$CLE_WS`
 	else
-		#: live session is to be created - copy startup files
-		#: as per issue #78 "/var/tmp mounted noexec"
-		#: try to create files at any other place first
-		RH=/var/tmp/$USER
-		dbg_print "_clepak: preparing $RH/$RD"
-		#: by default prepare files in /var/tmp; fall back to the home dir
-		mkdir -m 0755 -p $RH/$RD 2>/dev/null && cd $RH || cd
-		EN=$RD/env-$CLE_FHN	#: Workstation's environmen file
-		#: construct list of files to takeaway
-		#: add also custom files (CLE_XFILES)
-		#: currently all takeaway files must be in cle folder TODO: think about others!
-		#: takeaway filenames are enhanced with worksation's name - $CLE_FHN
-		XF=$EN
-		for F in $CLE_XFILES tw rc; do		#: 'rc' must be the ast item!
-			RC=$RD/$F-$CLE_FHN
-			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC" #: only existing items!
+		#: Live session is to be prepared - copy startup files
+		#: First prepare temporary folder
+		#: TODO: consider issue #78 - /var/tmp mounted noexec - this may cause troubles
+		#:       IDEA: use configurable variable ?
+		for RH in /var/tmp /tmp /home; do
+			dbg_print "_clepak: preparing $RH/$RD"
+			mkdir -m 0755 -p $RH/$RD 2>/dev/null && break
 		done
-		#: side effect: $RC now contains relative path to clerc file
-		dbg_var XF
-		dbg_var RC
-
-		#: prepare environment to transfer: color table, prompt settings, WS name
+		cd $RH
+		#: prepare environment file to transfer: color table, prompt settings, WS name
 		#: aliases and custom variables (CLE_XVARS)
+		EN=$RD/env-$CLE_FHN	#: Workstation's environmen file
 		{
 			echo "# evironment $CLE_USER@$CLE_FHN"
+			echo "CLE_SESSION=$1"
 			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' #: translate _Px to CLE_Px
 			_clevdump "$CLE_XVARS"
 			cat $CLE_AL 2>/dev/null
@@ -882,6 +869,17 @@ _clepak () {
 			done
 			_clevdump "CLE_DEBUG"			# dbg
 		} >$EN
+		XF="$EN"
+		#: copy files to takeaway temporary folder and add them, to the list
+		#: add also custom files (CLE_XFILES)
+		#: takeaway filenames are enhanced with worksation's name - $CLE_FHN
+		#: NOTE: currently all takeaway files must be in cle folder
+		#: TODO: think about other locations, ev. symlinks
+		for F in $CLE_XFILES tw rc; do		#: 'rc' must be the ast item!
+			RC=$RD/$F-$CLE_FHN
+			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC" #: only existing items!
+		done
+		#: side effect: $RC now contains relative path to clerc file
 	fi
 	#: store the envrironment as base64 encoded tarball into $C64 if required
 	#: otherwise files are ready in $RD folder for local sessions and their list
@@ -889,14 +887,16 @@ _clepak () {
 	#: Note: I've never owned this computer, I had Atari 800XL instead :-)
 	#: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
 	dbg_var PWD
-	[ $1 ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
+	dbg_var XF
+	dbg_var RC
+	[ "$1" = lssh ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }
 
 ## `lssh [usr@]host`   - access remote system and run CLE
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
-	_clepak tar
+	_clepak lssh
 	[ $CLE_DEBUG ] && _clebold "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
 	#: remote startup
 	#: - create destination folder, unpack tarball and execute the code
@@ -919,16 +919,16 @@ lssh () (
 
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	_clepak
+	_clepak $CLE_SESSION:lsudo
 	dbg_print "lsudo runs: $RH/$RC"
-        sudo -i -u ${1:-root} sh $RH/$RC
+        sudo -i -u ${1:-root} $RH/$RC
 )
 
 ## `lsu [user]`        - su wrapper
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
-        _clepak
+        _clepak $CLE_SESSION:lsu
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -l ${1:-root} $RH/$RC
@@ -961,6 +961,7 @@ _clexe $CLE_AL
 _clexe $HOME/.cle-local
 _clexe $CLE_TW
 
+CLE_SESSION=$CLE_RC
 [ $CLE_WS ] && _clexe $CLE_ENV
 _clexe $CLE_CF	#: override defaults with values from config file
 
@@ -1045,10 +1046,9 @@ EOT
 _T=${TMUX:+tmux:$TMUX}
 _T=${_T:-${STY:+screen:$STY}}
 _T=${_T:-${SSH_CLIENT:+ssh:${SSH_CLIENT%% *}}}
-CLE_SESSION=${_T:-${CLE_WS:-WS}}
-_clerh @ ${CLE_WS:-WS} "[$CLE_SESSION]"
-[ $CLE_DEBUG ] && _clerh @ $PWD "[version $CLE_VER]"
-[ $CLE_DEBUG ] && _clerh @ $PWD "[$CLE_RC]"
+_T=${_T:-$CLE_SESSION}
+_clerh @ ${CLE_WS:-WS} "[$_T]"
+_clerh @ $SHELL "$BASH_VERSION, $CLE_VER"
 
 ##
 ## ** CLE command & control **
