@@ -725,7 +725,7 @@ hh () {
 	}'
 
 	#: execute filter stream
-	local REVB=`mktemp /tmp/clerh.XXXX`	#: reverse history buffer
+	local REVB=`mktemp clerh.XXXXXX`	#: reverse history buffer
 	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
 
 	#: fill the rich history buffer
@@ -1102,7 +1102,7 @@ cle () {
 		CLE_RC=$P/rc
 		unset CLE_1
 		I='# Command Live Environment'
-		S=$HOME/.${SHELL##*/}rc	#: hook into user's login shell rc
+		S=$HOME/.bashrc	#: hook into user's login shell rc
 		grep -A1 "$I" $S && _clebold CLE is already hooked in $S && return 1
 		_cleask "Do you want to add CLE to $S?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S

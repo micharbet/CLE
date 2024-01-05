@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-01-04 (Aquarius)
+#* version: 2024-01-05 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2024 by Michael Arbet
 
@@ -551,7 +551,7 @@ hh () {
 		print UNIQ >REVB
 	}'
 
-	local REVB=`mktemp /tmp/clerh.XXXX`
+	local REVB=`mktemp clerh.XXXXXX`
 	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
 
 	_RHBUF=()
@@ -852,7 +852,7 @@ cle () {
 		CLE_RC=$P/rc
 		unset CLE_1
 		I='# Command Live Environment'
-		S=$HOME/.${SHELL##*/}rc
+		S=$HOME/.bashrc
 		grep -A1 "$I" $S && _clebold CLE is already hooked in $S && return 1
 		_cleask "Do you want to add CLE to $S?" || return
 		echo -e "\n$I\n[ -f $CLE_RC ] && . $CLE_RC\n" | tee -a $S
