@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-01-04 (Aquarius)
+#* version: 2024-01-05 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2024 by Michael Arbet
 
@@ -40,7 +40,7 @@
 
 #:------------------------------------------------------------:#
 # Debugging helpers							# dbg
-dbg_print () { [ $CLE_DEBUG ] && echo "$_CN$_CD DBG: $*$_CN" >/dev/tty; }		# dbg
+dbg_print () { [ $CLE_DEBUG ] && echo "$_CN$_CD DBG: $*$_CN" >/dev/tty; }	# dbg
 dbg_var () (								# dbg
 	V=${!1}								# dbg
 	[ $CLE_DEBUG ] && printf "$_CN$_CD DBG: %-16s = %s\n" $1 "$V$_CN" >/dev/tty	# dbg
@@ -237,28 +237,30 @@ _cleask () (
 # Create color table
 #: initialize $_C* variables with terminal compatible escape sequences
 #: use them with enhanced prompt definition as "^C*"
-#: following are basic ones:
+#: Note: toe ensure wide compatibility, a tput command is used. There are
+#: however systems that do not contain it. To avoid errors at least basic
+#: colors are defined directly with escape codes.
 _cletable () {
 	dbg_print "_cletable updating color table"
 	_C_=$TERM	#: save terminal type of this table
-	_CN=`tput sgr0`
 	_Cn=$'\E[0m' #: for use inside prompt, may get additional color codes
-	_CL=`tput bold`
+	_CN=`tput sgr0`; _CN=${_CN:-$_Cn}
+	_CL=`tput bold`; _CL=${_CL:-$'\E[1m'}
 	_CU=`tput smul`;_Cu=`tput rmul`
 	_CV=`tput rev`
 	#: Note: dim and italic not available everywhere (e.g. RHEL)
 	_CI=`tput sitm`;_Ci=`tput ritm`
 	_CD=`tput dim`
-	_Ck=$(tput setaf 0)
-	_Cr=$(tput setaf 1)
-	_Cg=$(tput setaf 2)
-	_Cy=$(tput setaf 3)
-	_Cb=$(tput setaf 4)
-	_Cm=$(tput setaf 5)
-	_Cc=$(tput setaf 6)
-	_Cw=$(tput setaf 7)
+	_Ck=$(tput setaf 0); _Ck=${_Ck:-$'\E[30m'}
+	_Cr=$(tput setaf 1); _Cr=${_Cr:-$'\E[31m'}
+	_Cg=$(tput setaf 2); _Cg=${_Cg:-$'\E[32m'}
+	_Cy=$(tput setaf 3); _Cy=${_Cy:-$'\E[33m'}
+	_Cb=$(tput setaf 4); _Cb=${_Cb:-$'\E[34m'}
+	_Cm=$(tput setaf 5); _Cm=${_Cm:-$'\E[35m'}
+	_Cc=$(tput setaf 6); _Cc=${_Cc:-$'\E[36m'}
+	_Cw=$(tput setaf 7); _Cw=${_Cw:-$'\E[37m'}
 	case `tput colors` in
-	8)
+	8|'')
 		_CK=$_Ck$_CL
 		_CR=$_Cr$_CL
 		_CG=$_Cg$_CL
@@ -281,7 +283,7 @@ _cletable () {
 	esac
 	#: and... special color code for error highlight in prompt
 	_Ce=$_CR$_CL #: err highlight
-}
+} 2>/dev/null
 
 # set prompt colors
 _cleclr () {
