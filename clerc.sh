@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-01-05 (Aquarius)
+#* version: 2024-01-11 (Aquarius)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2024 by Michael Arbet
 
@@ -473,7 +473,7 @@ _clepreex () {
 		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD"	#: record a note to history
 	else
 		[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}	#: shorten command to display in terminal title
-		[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"	i	#: show executed command in the title
+		[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"		#: show executed command in the title
 		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }	#: display beforexec marker if defined
 		dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
 		_TIM=$SECONDS	#: start history timer $_TIM
@@ -659,10 +659,10 @@ hh () {
 	S=$S"${D:+&& ( $D )}"		#: add days 'or' conditions (if any) to the serach string
 
 	_RHARG="$*"	#: save the search arguments for future reference
-	// dbg_var OPTIND
+	# dbg_var OPTIND
 	shift $((OPTIND-1))
 
-	N=+1	#: everything by dfault because 'tail -n +1' works like 'cat'
+	N=+1	#: 'tail -n +1' works like 'cat'
 	if [ "$*" ]; then
 		#: select either number of records or compose search string
 		[[ $* =~ ^[0-9]+$ ]] && N=$* || {
