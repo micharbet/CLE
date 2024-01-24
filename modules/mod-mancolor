@@ -4,13 +4,8 @@
 #* version: 2018-08-29
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* license: GNU GPL v2
-#* Copyright (C) 2017-2018 by Michael Arbet 
-#
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
+#* license: MIT
+#* Copyright (C) 2017-2024 by Michael Arbet 
 
 export LESS_TERMCAP_mb=$(tput bold; tput setaf 2) # green instead of blink
 export LESS_TERMCAP_md=$(tput bold; tput setaf 6) # yellow

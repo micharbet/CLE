@@ -1,13 +1,13 @@
-mod-git:2019-03-12:98d20eebd84f204b3d231c11d4460b2d:GIT helpers / shorcuts
-mod-lksu:2021-08-23:66424422a838eb6289e603f32114815a:ksu (kerberized su) live session wrapper
-mod-lscreen:2023-11-15:b442bc6447ef474feb3946c0efd47258:GNU screen wrapper
-mod-ltmux:2023-11-28:7553a2f75fef6e4fb57e2e26c2aea81a:tmux live session wrapper
-mod-mancolor:2018-08-29:4cb76858862d9809fd7d5ecd821ded51:Colorize man pages
-mod-mosh:2019-11-16:992b3e33800b0b62934422d3566e2a42:Live session with `lmosh` command
-mod-see:2022-06-09:034c28c308d8c2dcdd9a8c69874339d3:logfile highlighter
-cle-devkit:2021-08-24:ae049bb76489e933bb65cdb2c605897a:functions to assist CLE development process
-cle-ed:2021-12-19:9e68d24478dc5e672e56543c0c475ae4:Tweak and config editor
-cle-mod:2019-08-19:7828c8cf5c20f62d21560c7b928ced9f:CLE module management
-cle-palette:2019-11-15:67f94058e5b7c07c8ca55e787d874082:Color palettes for OSC4 capable terminals
-cle-prompt:2023-10-20:44c07735c490f946b2a170726bbdc35b:pre-configured prompt themes
-cle-rcmove:2018-09-23:15507fd17d688302ad66fdf4a26f5264:Move resource files to different folder
+mod-git:2019-03-12:c508a9496f978a473661a2129be12215:GIT helpers / shorcuts
+mod-lksu:2021-08-23:d67c64c636aa1b04c1827f7b213de055:ksu (kerberized su) live session wrapper
+mod-lscreen:2023-11-15:60ebf9cb66369b7e29c820be1adf1a29:GNU screen wrapper
+mod-ltmux:2023-11-28:48667245c0728ced0c288da32cc9acb8:tmux live session wrapper
+mod-mancolor:2018-08-29:a364e78c7f0dab0c5a1352046c28d539:Colorize man pages
+mod-mosh:2019-11-16:5f80e4b23db34c1eece52ffaad634a44:Live session with `lmosh` command
+mod-see:2022-06-09:8d9cd0cbf72a313d50d08d3b962f6943:logfile highlighter
+cle-devkit:2021-08-24:7cc4f5dbbecd8b166bf9618ab4735b99:functions to assist CLE development process
+cle-ed:2021-12-19:2817dc49fbf3015b620c6877e35cd865:Tweak and config editor
+cle-mod:2019-08-19:8dbda9e659a5582b0ff53a65206fa817:CLE module management
+cle-palette:2019-11-15:194dfc9b537cb01acd4e1ffda5444895:Color palettes for OSC4 capable terminals
+cle-prompt:2023-10-20:13abaaad9a1da1c3f066807036f3d861:pre-configured prompt themes
+cle-rcmove:2018-09-23:aba2d5578baa765dc153558aa7840470:Move resource files to different folder

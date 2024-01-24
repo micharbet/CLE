@@ -12,14 +12,65 @@
 local PALNAME PALSPEC PAL BG FG HL CU CREDITS
 local PALMOD=$CLE_D/mod-palette
 
-##  ... `solarized [l|d]`       - well known theme with light/dark options
-##                                (adjusted colors of bold characteres)
+##  ... `solarized [l|d]`       - well known original theme, light/dark options
 #
 # https://ethanschoonover.com/solarized/
 # https://github.com/altercation/solarized
 # http://www.zovirl.com/2011/07/22/solarized_cheat_sheet/
 # https://en.wikipedia.org/wiki/Solarized_(color_scheme)
 #
+_pal_solarized () {
+	# Solarized background and content tones
+	local BASE03='#002b36'
+	local BASE02='#073642'
+	local BASE01='#586e75'
+	local BASE00='#657b83'
+	local BASE0='#839496'
+	local BASE1='#93a1a1'
+	local BASE2='#eee8d5'
+	local BASE3='#fdf6e3'
+	# Solarized accent colors
+	local RED='#dc322f'
+	local GREEN='#859900'
+	local YELLOW='#b58900'
+	local BLUE='#268bd2'
+	local VIOLET='#6c71c4'
+	local CYAN='#2aa198'
+	local ORANGE='#cb4b16'
+	local MAGENTA='#d33682'
+
+	# common palette definitions
+	PAL="$BASE02 $RED $GREEN $YELLOW $BLUE $MAGENTA $CYAN $BASE2"
+	PAL="$PAL $BASE03 $ORANGE $BASE01 $BASE00 $BASE0 $VIOLET $BASE1 $BASE3"
+
+	case "$1" in
+	""|d|dark)
+		BG=$BASE03
+		FG=$BASE0
+		HL=$BASE02
+		CU=$ORANGE
+		PALSPEC=dark
+		;;
+	l|light)
+		BG=$BASE3
+		FG=$BASE00
+		HL=$BASE2
+		CU=$MAGENTA
+		PALSPEC=light
+		;;
+	esac
+	#CU=$ORANGE  # override^^
+	CREDITS="Colors by Ethan Schoonover (https://ethanschoonover.com/solarized)"
+}
+
+##  ... `solarizmo [l|d]`       - Solarized theme with meningful colors
+##                                of bold characters
+#
+# https://ethanschoonover.com/solarized/
+# https://github.com/altercation/solarized
+# http://www.zovirl.com/2011/07/22/solarized_cheat_sheet/
+# https://en.wikipedia.org/wiki/Solarized_(color_scheme)
+# 
 # Note following: This is modified solarized palette. The design created
 # by Ethan Schoonover was customized for better terminal and command line
 # experience keeping it's original idea.
@@ -34,7 +85,55 @@ local PALMOD=$CLE_D/mod-palette
 # from gruvbox palette) and ORANGE/MAGENTA are not abandoned, they create nice
 # distinguished cursors.
 #
-_pal_solarized () {
+_pal_solarizmo () {
+	# Solarized background and content tones
+	local BASE03='#002b36'
+	local BASE02='#073642'
+	local BASE01='#586e75'
+	local BASE00='#657b83'
+	local BASE0='#839496'
+	local BASE1='#93a1a1'
+	local BASE2='#eee8d5'
+	local BASE3='#fdf6e3'
+	# Terminal adapted solarized palette with better bright/bold colors
+	#      solarized basic    light              dark
+	#      color              color*1.2          color*0.6
+	local RED='#dc322f'      RED1='#ff3b37'     RED0='#831e1c'
+	local GREEN='#859900'    GREEN1='#9eb600'   GREEN0='#505c00'
+	local YELLOW='#b58900'   YELLOW1='#d7a300'  YELLOW0='#6d5200'
+	local BLUE='#268bd2'     BLUE1='#2da5fa'    BLUE0='#17537e'
+	local VIOLET='#6c71c4'   VIOLET1='#8186e9'  VIOLET0='#414476'
+	local CYAN='#2aa198'     CYAN1='#32c0b5'    CYAN0='#19615b'
+	local ORANGE='#cb4b16'
+	local MAGENTA='#d33682'
+
+	case "$1" in
+	""|d|dark)
+		BG=$BASE03
+		FG=$BASE0
+		HL=$BASE02
+		CU=$ORANGE
+		PALSPEC=dark
+		PAL="$BASE03 $RED $GREEN $YELLOW $BLUE $VIOLET $CYAN $BASE2"
+		PAL="$PAL $BASE01 $RED1 $GREEN1 $YELLOW1 $BLUE1 $VIOLET1 $CYAN1 $BASE3"
+		;;
+	l|light)
+		BG=$BASE3
+		FG=$BASE00
+		HL=$BASE2
+		CU=$MAGENTA
+		PALSPEC=light
+		PAL="$BASE3 $RED $GREEN $YELLOW $BLUE $VIOLET $CYAN $BASE02"
+		PAL="$PAL $BASE1 $RED0 $GREEN0 $YELLOW0 $BLUE0 $VIOLET0 $CYAN0 $BASE03"
+		;;
+	esac
+	CREDITS="Original colors by Ethan Schoonover (https://ethanschoonover.com/solarized)
+Adapted to command live environment by Michael Arbet (https://github.com/micharbet/CLE)"
+}
+
+
+# https://github.com/jan-warchol/selenized
+_pal_selenized () {
 	# Solarized background and content tones
 	local BASE03='#002b36'
 	local BASE02='#073642'
@@ -77,8 +176,7 @@ _pal_solarized () {
 		;;
 	esac
 	#CU=$ORANGE  # override^^
-	CREDITS="Original colors by Ethan Schoonover (https://ethanschoonover.com/solarized)
-Adapted to command line by Michael Arbet (https://github.com/micharbet/CLE)"
+	CREDITS="Colors by Jan Warchol https://github.com/jan-warchol/selenized"
 }
 
 ##  ... `gruvbox [l|d] [s|m|h]` - retro groove light/dark plus contrast options
@@ -231,6 +329,19 @@ _pal_cga16 () {
 	CREDITS="Reloaded from pre-internet age"
 }
 
+##  ... `apprentice`            - dark, low contrast theme
+# https://github.com/romainl/Apprentice
+# with added cursor and highlight colors
+_pal_apprentice () {
+	PAL="#1C1C1C #AF5F5F #5F875F #87875F #5F87AF #5F5F87 #5F8787 #6C6C6C"
+        PAL="$PAL #444444 #FF8700 #87AF87 #FFFFAF #87AFD7 #8787AF #5FAFAF #FFFFFF"
+	BG="#262626"
+	FG="#BCBCBC"
+	CU="#D0D088"
+	HL="#406490"
+	CREDITS="Stolen from vim theme by Romain Lafourcade https://github.com/romainl/Apprentice"
+}
+
 #
 # main()
 #
@@ -281,7 +392,7 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 	;;
 
 "")	# show available palettes
-	_clebold "${_CU}Avaliable palettes:${_Cu}"
+	printb "${_CU}Avaliable palettes:${_Cu}"
 	declare -f | sed -n 's/.*_pal_\([[:graph:]]*\).*/- \1/p'
 	printf "${_CL}Current colors:$_CN"
 	if [ -f $PALMOD ]; then
@@ -301,22 +412,23 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 	while read; do
 		printf "## $REPLY\n" >>$PALMOD
 	done <<<$CREDITS
-	printf "\n# generated by module cle-palette\n" >>$PALMOD
+	printf "#\n#  code by Michael Arbet\n# generated using module cle-palette\n#\n" >>$PALMOD
 
 	# setup background, foreground highlight and cursor colors
 	cat <<-EOP >>$PALMOD
-		_CMAIN=$'\\e]10;$FG\\e\\\\\\e]11;$BG\\e\\\\\\e]17;$HL\\e\\\\\\e]12;$CU\\e\\\\'
+		CLE_BG='$BG'
+		_C9=$'\\e]11;$BG\\e\\\\'
+		printf '\\e]10;$FG\\e\\\\\\e]11;$BG\\e\\\\\\e]17;$HL\\e\\\\\\e]12;$CU\\e\\\\'
 	EOP
 
 	# setup 16 colors palette
 	I=0
-	printf "_CPAL=$'" >>$PALMOD
+	printf "printf '" >>$PALMOD
 	for C in $PAL; do
 		printf '\\e]4;%d;%s\\e\\\\' $I $C >>$PALMOD
 		((I++))
 	done
-	printf "'" >>$PALMOD
-	printf '\nprintf $_CMAIN$_CPAL\n' >>$PALMOD
+	printf "'\n" >>$PALMOD
 
 	. $PALMOD || return 1
 	echo Palette: $PALNAME $PALSPEC

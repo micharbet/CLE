@@ -4,13 +4,8 @@
 #* version: 2021-08-23
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
-#* license: GNU GPL v2
-#* Copyright (C) 2021 by Michael Arbet 
-#
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
+#* license: MIT
+#* Copyright (C) 2021-2024 by Michael Arbet 
 
 ## `lksu`     - live tmux session
 lksu () (
