@@ -1,16 +1,11 @@
 ##
 ## ** mod-ltmux: tmux live session wrapper **
 #
-#* version: 2023-11-28
+#* version: 2023-02-15
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
 #* Copyright (C) 2022-2024 by Michael Arbet 
-
-# prepare user's configuration on workstation to transfer
-if [ -z "$CLE_WS" ]; then
-	cp $HOME/.tmux.conf $CLE_D/tmux.conf 2>/dev/null && CLE_XFILES="$CLE_XFILES tmux.conf"
-fi
 
 ## `ltmux`     - live tmux session
 ltmux () (
@@ -19,17 +14,16 @@ ltmux () (
 	[ $CLE_USER = $USER ] && CLE_TMUX=$CLE_USER || CLE_TMUX=$CLE_USER-$USER
 	# Attach an existing session ...
 	tmux attach-session -t $CLE_TMUX || {
-		# ... or create a new one
+		# ... or open a new one
 		CLE_TMUXCF=$CLE_D/ltmux.conf-main
 
 		# Create minimal configuration that ensures:
 		# 1. source all possible configurations (host defult, user's local
-		#    and CLE-takeaway)
-		# 2. set CLE as the command of every new shell within ltmux
-		# note the 'source-file -q' (quiet if no such file) workaround:
-		# newer versions of tmux can handle option '-q' while older generate
-		# an error message. This on the other side cannot handle the issue
-		# of new vs. deprecated optinons in various tmux versions. (see further)
+		#    and CLE-custom file)
+		#    Note: the 'source-file -q' (quiet if no such file) does
+		#    not work properly on older tmux versions. The '-q' may
+		#    throw an error message.
+		# 2. ensure running CLE for new widows and panes in ltmux
 		{
 			for F in /etc/tmux.conf $CLE_DR/ltmux.conf$CLE_WS $HOME/.tmux.conf; do
 				[ -f $F ] && echo "source-file $F"
@@ -38,15 +32,13 @@ ltmux () (
 		} >$CLE_TMUXCF
 
 		# Tmux versions need to be considered if one is using takeway file ($CLE_D/ltmux.conf)
-		# Add an environment variable with tmux version multiplied by 100
-		# for easy decission within custom tmux config file.
-		# Use the variable as follows:
+		# An environment variable with tmux version multiplied by 100
+		# can be used for decission within config file like follows:
 		#   if-shell -b '[ $TMUX_VER -gt 210 ]' { set -g mouse on }
+		export TMUX_VER=`echo $(tmux -V | sed -En "s/^tmux[^0-9]*([.0-9]+).*/\1/p") *100/1 | bc`
 		# The workaround was inspired by: 
 		# https://stackoverflow.com/questions/35016458/how-to-write-if-statement-in-tmux-conf-to-set-different-options-for-different-t
-		export TMUX_VER=`echo $(tmux -V | sed -En "s/^tmux[^0-9]*([.0-9]+).*/\1/p") *100/1 | bc`
-		# There are also other methods to write multi-version compatible tmux.conf file.
-		# for example:
+		# There are also other methods to write multi-version compatible tmux.conf:
 		# https://blog.landofcrispy.com/index.php/2021/01/12/adjusting-tmux-conf-options-for-different-versions/
 
 		# Start the tmux session

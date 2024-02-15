@@ -1,7 +1,7 @@
 ##
 ## ** mod-lscreen: GNU screen wrapper **
 #
-#* version: 2023-11-15
+#* version: 2024-02-15
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
@@ -9,10 +9,11 @@
 
 ## `lscreen [name]`    - gnu screen wrapper, join your recent session or start new
 ## `lscreen -j [name]` - join other screen sessions, ev. search by name
-#: GNU screen wrapper is here 1) because of there was no way to tell screen
-#: program to start CLE on more than first window and, 2) to allow easily
-#: join detached own session and/or join cooperative session with more
-#: participants.
+#: lscreen wrapper is here beacuse:
+#:  1) there was no way to tell GNU screen program to start CLE on new windows
+#:  2) to allow easily join detached session - it automatically searches for them
+#:  3) to make it pretty and more useful with good basic configuration
+
 lscreen () (
 	#: get name of the screen to search and join
 	#: base of session name is $CLE_USER and this can be extended
@@ -28,31 +29,22 @@ lscreen () (
 		SCREENRC=$CLE_D/lscreenrc-main
 		_clerh @ `tty` "screen -S $SCRNAME"
 		# prepare own screenrc
-		#: This generates nice configuration file with cool features:
-		#:  - always visible status line with list of windows, hostname and clock
-		#:  - feature to quickly switch using Ctrl+Left/Right Arrows
-		#:  - reads good old $HOME/.screenrc
-		#: Own screenrc file is necessary because otherwise it wouldn't start CLE in
-		#: subsequent windows created with 'C-a C-c' (note the bind commands, above
-		#: mentioned features are cool but this part is the important one)
+		#: This generates configuration file with cool features:
+		#:  - nice status line with list of windows, hostname and clock
+		#:  - one touch window switch using Shift+Tab
+		#:  - option to further customize with file $CL_DR/lscreenrc - this file is
+		#:    being transferres to subsequent live session
 		cat <<-EOS >$SCREENRC
 			source $HOME/.screenrc	# host local screenrc
-			altscreen on
-			autodetach on
-			# enables shift-PgUp/PgDn
-			termcapinfo xterm* ti@:te@
-			# change window with alt-, and alt-. (means < and >)
-			bindkey "^[," prev
-			bindkey "^[." next
+			shell $CLE_RC	 	# new windows start with CLE
+			bindkey "^[[Z" next	# shortcut to next window Shift+Tab
+			termcapinfo xterm* ti@:te@	# enables shift-PgUp/PgDn
 			defscrollback 9000
 			hardstatus alwayslastline
 			hardstatus string '%{= Kk} %-w%{Wk}%n %t%{-}%+w %-=%{+b Y}$CLE_SHN%{G} %c'
-			# This is the most important for starting CLE in new windows
-			bind c screen $CLE_RC
-			bind ^c screen $CLE_RC
-			# user's additions
-			source $CLE_DR/lscreenrc$CLE_WS	# custom file
-			$CLE_SCRC	# content of a variable that can be set in tweak file
+			altscreen on
+			autodetach on
+			source $CLE_DR/lscreenrc$CLE_WS	# custom file inherited from workstation
 
 		EOS
 		screen -c $SCREENRC -S $SCRNAME $CLE_RC
