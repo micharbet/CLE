@@ -1,7 +1,7 @@
 ##
 ## ** mod-ltmux: tmux live session wrapper **
 #
-#* version: 2023-02-15
+#* version: 2024-03-14
 #* author:  Michael Arbet (micharbet@gmail.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
@@ -23,22 +23,39 @@ ltmux () (
 		#    Note: the 'source-file -q' (quiet if no such file) does
 		#    not work properly on older tmux versions. The '-q' may
 		#    throw an error message.
-		# 2. ensure running CLE for new widows and panes in ltmux
+		# 2. ensure running CLE for new windows and panes in ltmux
+		# 3. at least some colors (only blue for now)
+		#    tuned for compatibility since ver 1.8
 		{
 			for F in /etc/tmux.conf $CLE_DR/ltmux.conf$CLE_WS $HOME/.tmux.conf; do
 				[ -f $F ] && echo "source-file $F"
 			done
-			echo "set -g default-command $CLE_RC"
+			cat <<-EOCF
+				set -g default-command $CLE_RC
+				bind -rn BTab   select-window -n # Shift-Tab to switch windows (same as lscreen)
+				set -g status-fg colour17
+				set -g status-bg colour24
+				set -g status-left-length 30
+				set -g status-left "#[bg=colour31]#S "
+				set -g status-right-length 30
+				set -g status-right "#[bg=colour31] #h"
+				set -g status-justify centre
+				setw -g window-status-current-format "#[bg=colour32]#[fg=colour123]#I:#W#F"
+			EOCF
 		} >$CLE_TMUXCF
 
 		# Tmux versions need to be considered if one is using takeway file ($CLE_D/ltmux.conf)
 		# An environment variable with tmux version multiplied by 100
 		# can be used for decission within config file like follows:
 		#   if-shell -b '[ $TMUX_VER -gt 210 ]' { set -g mouse on }
-		export TMUX_VER=`echo $(tmux -V | sed -En "s/^tmux[^0-9]*([.0-9]+).*/\1/p") *100/1 | bc`
-		# The workaround was inspired by: 
+		export TMUX_VER=`tmux -V | sed -En 's/^tmux[^0-9]*([.0-9]+).*/\1/p'`
+		TMUX_ver=`awk "BEGIN { print $TMUX_VER * 100  }"`
+		# The workaround for multi-version compatible tmux.conf
+		# inspired by: 
 		# https://stackoverflow.com/questions/35016458/how-to-write-if-statement-in-tmux-conf-to-set-different-options-for-different-t
-		# There are also other methods to write multi-version compatible tmux.conf:
+		# Except 'awk' used for calculations instead of 'bc'
+		# as this was found missing on base debian.
+		# There are also other methods:
 		# https://blog.landofcrispy.com/index.php/2021/01/12/adjusting-tmux-conf-options-for-different-versions/
 
 		# Start the tmux session
