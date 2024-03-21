@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-01-24 (Aquarius)
+#* version: 2024-03-21 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2024 by Michael Arbet
 
@@ -859,7 +859,13 @@ _clepak () {
 			echo "CLE_SESSION=$1"
 			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' #: translate _Px to CLE_Px
 			_clevdump "$CLE_XVARS"
-			cat $CLE_AL 2>/dev/null
+			#: exclude aliases from transfer based on comma separated list in CLE_EXALIAL
+			#: - some aliases are just incompatible and other systems may define weird ones like
+			#:   for example Feodra's x/z/grep variants do not work on BusyBox)
+			#: - A user may want to keep some aliases on workstation only
+			#: Example of use: CLE_EXALIAS=grep,vi,which.*
+			XAL=${CLE_EXALIAS:-^$}
+			grep -v "${XAL//,/=\\|}=" $CLE_AL 2>/dev/null
 			#: Add selected functions to transfer
 			for XFUN in $CLE_XFUN; do
 				declare -f $XFUN

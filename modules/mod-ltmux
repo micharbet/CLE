@@ -49,7 +49,7 @@ ltmux () (
 		# can be used for decission within config file like follows:
 		#   if-shell -b '[ $TMUX_VER -gt 210 ]' { set -g mouse on }
 		export TMUX_VER=`tmux -V | sed -En 's/^tmux[^0-9]*([.0-9]+).*/\1/p'`
-		TMUX_ver=`awk "BEGIN { print $TMUX_VER * 100  }"`
+		TMUX_VER=`awk "BEGIN { print $TMUX_VER * 100  }"`
 		# The workaround for multi-version compatible tmux.conf
 		# inspired by: 
 		# https://stackoverflow.com/questions/35016458/how-to-write-if-statement-in-tmux-conf-to-set-different-options-for-different-t
