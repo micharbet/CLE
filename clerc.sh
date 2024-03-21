@@ -318,7 +318,7 @@ _cleclr () {
 		_cleclr gray	#: default in case of error
 		return 1
 	else
-		CLE_CLR=${C:1:4}
+		CLE_PC=${C:1:4}
 	fi
 }
 
@@ -402,7 +402,7 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	_clevdump "CLE_CLR|CLE_P."
+	_clevdump CLE_P.
 ) >$CLE_CF
 
 
@@ -981,7 +981,7 @@ esac
 
 # craft the prompt
 _cleps
-_cleclr ${CLE_CLR:-$_DC}
+_cleclr ${CLE_PC:-$_DC}
 PROMPT_COMMAND=_cleprompt
 
 # completions
@@ -1003,7 +1003,7 @@ _clecomp () {
 	pb) COMPREPLY="'${CLE_PB:-$_PB}'";;
 	pa) COMPREPLY="'${CLE_PA:-$_PA}'";;
 	pt) COMPREPLY="'${CLE_PT:-$_PT}'";;
-	color) COMPREPLY="'$CLE_CLR'";;
+	color) COMPREPLY="'$CLE_PC'";;
 	# '') COMPREPLY=$A;;	#:  TODO remove if not necessary
 	esac
 	[ "$3" != "$1" ] && return
@@ -1087,7 +1087,7 @@ cle () {
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
 			_clebold "$_CU Default/Inherited configuration:"
-			_clevdump _P. CLE_CLR
+			_clevdump _P. CLE_PC
 			if [ -f $CLE_CF ]; then
 				_clebold "$_CU$CLE_CF":
 				cat $CLE_CF
@@ -1145,15 +1145,21 @@ cle () {
 		cle mod "$@";;
 	env)	## `cle env`               - inspect variables
 		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	ls)	_clebold CLE_D: $CLE_D; ls -l $CLE_D; _clebold CLE_DR: $CLE_DR; ls -l $CLE_DR;;	# dbg
-	exe)	echo $CLE_EXE|tr : \\n;;							# dbg
-	debug)	case $1 in									# dbg
-		"")	dbg_var CLE_DEBUG ;;							# dbg
-		off)	CLE_DEBUG=''								# dbg
-			rm ~/CLEDEBUG;;								# dbg
-		*)	CLE_DEBUG=on								# dbg
-			touch ~/CLEDEBUG;;							# dbg
-		esac;;										# dbg
+	ls)	_clebold CLE_D: $CLE_D; ls -l $CLE_D					# dbg
+	       	if [ $CLE_D != $CLE_DR ]; then						# dbg
+			_clebold CLE_DR: $CLE_DR					# dbg
+			ls -l $CLE_DR							# dbg
+		else									# dbg
+			_clebold CLE_DR: same as above					# dbg
+		fi;;									# dbg
+	exe)	echo $CLE_EXE|tr : \\n;;						# dbg
+	debug)	case $1 in								# dbg
+		"")	dbg_var CLE_DEBUG ;;						# dbg
+		off)	CLE_DEBUG=''							# dbg
+			rm ~/CLEDEBUG;;							# dbg
+		*)	CLE_DEBUG=on							# dbg
+			touch ~/CLEDEBUG;;						# dbg
+		esac;;									# dbg
 	help|-h|--help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
