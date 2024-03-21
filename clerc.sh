@@ -405,7 +405,6 @@ _clesave () (
 	_clevdump CLE_P.
 ) >$CLE_CF
 
-
 # prompt callback functions
 #: 
 #: Important note about code efficiency:
@@ -525,27 +524,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-#: A few pre-defined aliases
-#: otherwise the CLE does not contain too much customized aliases and functions
-#: in order not to mess with the user's habits
-
-# colorized LS
-case $OSTYPE in
-linux*)		alias ls='ls --color=auto';;
-darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
-FreeBSD*)       alias ls='ls -G "$@"';;
-*)		alias ls='ls -F';; # at least some file type indication
-esac
-
-# colorized GREP (except on busybox)
-#: busybox identified by symlinked 'grep' file
-if [ -L `command which grep` ];then
-	#: Fedora defines this mess :(
-	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep 2>/dev/null
-else
-	alias grep='grep --color=auto'
-fi
 
 # Remove alias 'which' if there is no version supporting extended options
 #: This weird construction ensures that the 'which' will work even in case
@@ -960,15 +938,42 @@ _cledefp	#: prompt defaults
 for _T in $CLE_D/mod-*; do
 	_clexe $_T
 done
-_clexe $CLE_AL
 _clexe $HOME/.cle-local
 _clexe $CLE_TW
 
 CLE_SESSION=$CLE_RC
 [ $CLE_WS ] && _clexe $CLE_ENV
-_clexe $CLE_CF	#: override defaults with values from config file
 
-# terminal specific stuff
+#: A few pre-defined aliases that may override alias definitions inherited from
+#: the workstation. This is here for compatibility reasons. Some systems define 
+#: for example --color=auto which does not work on others. Generally bash and
+#: coreutils have more options than BSD or even BusyBox 
+#: Otherwise the CLE does not contain too much customized aliases and functions
+#: in order not to mess with the user's habits
+
+# OS dependent colorized LS and GREP
+case $OSTYPE in
+linux*)		alias ls='ls --color=auto';;
+darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
+FreeBSD*)	alias ls='ls -G "$@"';;
+*)		alias ls='ls -F';; # at least some file type indication
+esac
+
+#: busybox identified by symlinked 'grep' file
+if [ -L `command which grep` ];then
+	#: Fedora defines this mess :(
+	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep 2>/dev/null
+else
+	alias grep='grep --color=auto'
+fi
+
+#: now read local alias file where more custom aliases may be stored
+_clexe $CLE_AL
+
+#: override defaults with values from config file
+_clexe $CLE_CF
+
+#: terminal specific stuff
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable	# create color table if necessary
 _CT=$'\e]0;'; _Ct=$'\007'	#: generic titling escapes
 case $TERM in

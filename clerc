@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-01-24 (Aquarius)
+#* version: 2024-03-21 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2024 by Michael Arbet
 
@@ -226,7 +226,7 @@ _cleclr () {
 		_cleclr gray
 		return 1
 	else
-		CLE_CLR=${C:1:4}
+		CLE_PC=${C:1:4}
 	fi
 }
 
@@ -293,9 +293,8 @@ _cledefp () {
 # save configuration
 _clesave () (
 	echo "# $CLE_VER"
-	_clevdump "CLE_CLR|CLE_P."
+	_clevdump CLE_P.
 ) >$CLE_CF
-
 
 # prompt callback functions
 _PST='${PIPESTATUS[@]}'
@@ -379,22 +378,6 @@ _clerh () {
 	esac
 } >>$CLE_HIST
 
-
-
-# colorized LS
-case $OSTYPE in
-linux*)		alias ls='ls --color=auto';;
-darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
-FreeBSD*)       alias ls='ls -G "$@"';;
-*)		alias ls='ls -F';; # at least some file type indication
-esac
-
-# colorized GREP (except on busybox)
-if [ -L `command which grep` ];then
-	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep 2>/dev/null
-else
-	alias grep='grep --color=auto'
-fi
 
 # Remove alias 'which' if there is no version supporting extended options
 { alias|command which -i which || unalias which; } >/dev/null 2>&1
@@ -650,7 +633,8 @@ _clepak () {
 			echo "CLE_SESSION=$1"
 			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/'
 			_clevdump "$CLE_XVARS"
-			cat $CLE_AL 2>/dev/null
+			XAL=${CLE_EXALIAS:-^$}
+			grep -v "${XAL//,/=\\|}=" $CLE_AL 2>/dev/null
 			for XFUN in $CLE_XFUN; do
 				declare -f $XFUN
 			done
@@ -716,15 +700,31 @@ _cledefp
 for _T in $CLE_D/mod-*; do
 	_clexe $_T
 done
-_clexe $CLE_AL
 _clexe $HOME/.cle-local
 _clexe $CLE_TW
 
 CLE_SESSION=$CLE_RC
 [ $CLE_WS ] && _clexe $CLE_ENV
+
+
+# OS dependent colorized LS and GREP
+case $OSTYPE in
+linux*)		alias ls='ls --color=auto';;
+darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
+FreeBSD*)	alias ls='ls -G "$@"';;
+*)		alias ls='ls -F';; # at least some file type indication
+esac
+
+if [ -L `command which grep` ];then
+	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep 2>/dev/null
+else
+	alias grep='grep --color=auto'
+fi
+
+_clexe $CLE_AL
+
 _clexe $CLE_CF
 
-# terminal specific stuff
 [ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable	# create color table if necessary
 _CT=$'\e]0;'; _Ct=$'\007'
 case $TERM in
@@ -736,7 +736,7 @@ esac
 
 # craft the prompt
 _cleps
-_cleclr ${CLE_CLR:-$_DC}
+_cleclr ${CLE_PC:-$_DC}
 PROMPT_COMMAND=_cleprompt
 
 # completions
@@ -753,7 +753,7 @@ _clecomp () {
 	pb) COMPREPLY="'${CLE_PB:-$_PB}'";;
 	pa) COMPREPLY="'${CLE_PA:-$_PA}'";;
 	pt) COMPREPLY="'${CLE_PT:-$_PT}'";;
-	color) COMPREPLY="'$CLE_CLR'";;
+	color) COMPREPLY="'$CLE_PC'";;
 	# '') COMPREPLY=$A;;
 	esac
 	[ "$3" != "$1" ] && return
@@ -831,7 +831,7 @@ cle () {
 		rev)	cp $CLE_CF-bk $CLE_CF;;
 		"")
 			_clebold "$_CU Default/Inherited configuration:"
-			_clevdump _P. CLE_CLR
+			_clevdump _P. CLE_PC
 			if [ -f $CLE_CF ]; then
 				_clebold "$_CU$CLE_CF":
 				cat $CLE_CF
