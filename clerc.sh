@@ -877,6 +877,8 @@ _clepak () {
 ## `lssh [usr@]host`   - access remote system and run CLE
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
+	#: potential code execution before the live session
+	command -v _cleprelife >/dev/null && _cleprelife lssh "$@"
 	_clepak lssh
 	[ $CLE_DEBUG ] && _clebold "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
 	#: remote startup
@@ -893,6 +895,8 @@ lssh () (
 		exec bash --rcfile \$H/$RC"
 		#: it is not possible to use `base64 -\$D <<<$C64|tar xzf -`
 		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
+	#: executing a code after live session
+	command -v _cleafterlife >/dev/null && _cleafterlife lssh "$@"
 )
 
 #: Following are su* wrappers
@@ -900,9 +904,13 @@ lssh () (
 
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
+	#: potential code execution before the live session
+	command -v _cleprelife >/dev/null && _cleprelife lsudo "$@"
 	_clepak $CLE_SESSION:lsudo
 	dbg_print "lsudo runs: $RH/$RC"
         sudo -i -u ${1:-root} $RH/$RC
+	#: executing a code after live session
+	command -v _cleafterlife >/dev/null && _cleafterlife lsudo "$@"
 )
 
 ## `lsu [user]`        - su wrapper

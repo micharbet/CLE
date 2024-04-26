@@ -1,7 +1,7 @@
 ##
 ## ** cle-palette: Color palettes for OSC4 capable terminals **
 #
-#* version: 2019-11-15
+#* version: 2024-04-24
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
@@ -12,14 +12,65 @@
 local PALNAME PALSPEC PAL BG FG HL CU CREDITS
 local PALMOD=$CLE_D/mod-palette
 
-##  ... `solarized [l|d]`       - well known theme with light/dark options
-##                                (adjusted colors of bold characteres)
+##  ... `solarized [l|d]`       - well known original theme, light/dark options
 #
 # https://ethanschoonover.com/solarized/
 # https://github.com/altercation/solarized
 # http://www.zovirl.com/2011/07/22/solarized_cheat_sheet/
 # https://en.wikipedia.org/wiki/Solarized_(color_scheme)
 #
+_pal_solarized () {
+	# Solarized background and content tones
+	local BASE03='#002b36'
+	local BASE02='#073642'
+	local BASE01='#586e75'
+	local BASE00='#657b83'
+	local BASE0='#839496'
+	local BASE1='#93a1a1'
+	local BASE2='#eee8d5'
+	local BASE3='#fdf6e3'
+	# Solarized accent colors
+	local RED='#dc322f'
+	local GREEN='#859900'
+	local YELLOW='#b58900'
+	local BLUE='#268bd2'
+	local VIOLET='#6c71c4'
+	local CYAN='#2aa198'
+	local ORANGE='#cb4b16'
+	local MAGENTA='#d33682'
+
+	# common palette definitions
+	PAL="$BASE02 $RED $GREEN $YELLOW $BLUE $MAGENTA $CYAN $BASE2"
+	PAL="$PAL $BASE03 $ORANGE $BASE01 $BASE00 $BASE0 $VIOLET $BASE1 $BASE3"
+
+	case "$1" in
+	""|d|dark)
+		BG=$BASE03
+		FG=$BASE0
+		HL=$BASE02
+		CU=$ORANGE
+		PALSPEC=dark
+		;;
+	l|light)
+		BG=$BASE3
+		FG=$BASE00
+		HL=$BASE2
+		CU=$MAGENTA
+		PALSPEC=light
+		;;
+	esac
+	#CU=$ORANGE  # override^^
+	CREDITS="Colors by Ethan Schoonover (https://ethanschoonover.com/solarized)"
+}
+
+##  ... `solarizmo [l|d]`       - Solarized theme with meningful colors
+##                                of bold characters
+#
+# https://ethanschoonover.com/solarized/
+# https://github.com/altercation/solarized
+# http://www.zovirl.com/2011/07/22/solarized_cheat_sheet/
+# https://en.wikipedia.org/wiki/Solarized_(color_scheme)
+# 
 # Note following: This is modified solarized palette. The design created
 # by Ethan Schoonover was customized for better terminal and command line
 # experience keeping it's original idea.
@@ -34,7 +85,7 @@ local PALMOD=$CLE_D/mod-palette
 # from gruvbox palette) and ORANGE/MAGENTA are not abandoned, they create nice
 # distinguished cursors.
 #
-_pal_solarized () {
+_pal_solarizmo () {
 	# Solarized background and content tones
 	local BASE03='#002b36'
 	local BASE02='#073642'
@@ -76,9 +127,122 @@ _pal_solarized () {
 		PAL="$PAL $BASE1 $RED0 $GREEN0 $YELLOW0 $BLUE0 $VIOLET0 $CYAN0 $BASE03"
 		;;
 	esac
-	#CU=$ORANGE  # override^^
 	CREDITS="Original colors by Ethan Schoonover (https://ethanschoonover.com/solarized)
-Adapted to command line by Michael Arbet (https://github.com/micharbet/CLE)"
+Adapted to command live environment by Michael Arbet (https://github.com/micharbet/CLE)"
+}
+
+
+##  ... `selenized [d|b|l|w]`   - another adaptation of Solarized
+##                              dark/black/light/white options
+# https://github.com/jan-warchol/selenized
+_pal_selenized () {
+
+	case "$1" in
+	""|d|dark)
+		bg_0="#103c48"
+		bg_1="#184956"
+		bg_2="#2d5b69"
+		dim_0="#72898f"
+		fg_0="#adbcbc"
+		fg_1="#cad8d9"
+		red="#fa5750"
+		green="#75b938"
+		yellow="#dbb32d"
+		blue="#4695f7"
+		magenta="#f275be"
+		cyan="#41c7b9"
+		orange="#ed8649"
+		violet="#af88eb"
+		br_red="#ff665c"
+		br_green="#84c747"
+		br_yellow="#ebc13d"
+		br_blue="#58a3ff"
+		br_magenta="#ff84cd"
+		br_cyan="#53d6c7"
+		br_orange="#fd9456"
+		br_violet="#bd96fa"
+		;;
+	b|black)
+		bg_0="#181818"
+		bg_1="#252525"
+		bg_2="#3b3b3b"
+		dim_0="#777777"
+		fg_0="#b9b9b9"
+		fg_1="#dedede"
+		red="#ed4a46"
+		green="#70b433"
+		yellow="#dbb32d"
+		blue="#368aeb"
+		magenta="#eb6eb7"
+		cyan="#3fc5b7"
+		orange="#e67f43"
+		violet="#a580e2"
+		br_red="#ff5e56"
+		br_green="#83c746"
+		br_yellow="#efc541"
+		br_blue="#4f9cfe"
+		br_magenta="#ff81ca"
+		br_cyan="#56d8c9"
+		br_orange="#fa9153"
+		br_violet="#b891f5"
+		;;
+	l|light)
+		bg_0="#fbf3db"
+		bg_1="#ece3cc"
+		bg_2="#d5cdb6"
+		dim_0="#909995"
+		fg_0="#53676d"
+		fg_1="#3a4d53"
+		red="#d2212d"
+		green="#489100"
+		yellow="#ad8900"
+		blue="#0072d4"
+		magenta="#ca4898"
+		cyan="#009c8f"
+		orange="#c25d1e"
+		violet="#8762c6"
+		br_red="#cc1729"
+		br_green="#428b00"
+		br_yellow="#a78300"
+		br_blue="#006dce"
+		br_magenta="#c44392"
+		br_cyan="#00978a"
+		br_orange="#bc5819"
+		br_violet="#825dc0"
+		;;	
+	w|white)
+		bg_0="#ffffff"
+		bg_1="#ebebeb"
+		bg_2="#cdcdcd"
+		dim_0="#878787"
+		fg_0="#474747"
+		fg_1="#282828"
+		red="#d6000c"
+		green="#1d9700"
+		yellow="#c49700"
+		blue="#0064e4"
+		magenta="#dd0f9d"
+		cyan="#00ad9c"
+		orange="#d04a00"
+		violet="#7f51d6"
+		br_red="#bf0000"
+		br_green="#008400"
+		br_yellow="#af8500"
+		br_blue="#0054cf"
+		br_magenta="#c7008b"
+		br_cyan="#009a8a"
+		br_orange="#ba3700"
+		br_violet="#6b40c3"
+		;;
+	esac
+
+	PAL="$bg_1 $red $green $yellow $blue $magenta $cyan $dim_0"
+	PAL="$PAL $bg_2 $br_red $br_green $br_yellow $br_blue $br_magenta $br_cyan $fg_1"
+	BG=$bg_0
+	FG=$fg_0
+	HL=$bg_1
+	CU=$br_orange
+	CREDITS="Colors by Jan Warchol https://github.com/jan-warchol/selenized License: MIT"
 }
 
 ##  ... `gruvbox [l|d] [s|m|h]` - retro groove light/dark plus contrast options
@@ -231,6 +395,19 @@ _pal_cga16 () {
 	CREDITS="Reloaded from pre-internet age"
 }
 
+##  ... `apprentice`            - dark, low contrast theme
+# https://github.com/romainl/Apprentice
+# with added cursor and highlight colors
+_pal_apprentice () {
+	PAL="#1C1C1C #AF5F5F #5F875F #87875F #5F87AF #5F5F87 #5F8787 #6C6C6C"
+        PAL="$PAL #444444 #FF8700 #87AF87 #FFFFAF #87AFD7 #8787AF #5FAFAF #FFFFFF"
+	BG="#262626"
+	FG="#BCBCBC"
+	CU="#D0D088"
+	HL="#406490"
+	CREDITS="Stolen from vim theme by Romain Lafourcade https://github.com/romainl/Apprentice"
+}
+
 #
 # main()
 #
@@ -301,22 +478,26 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 	while read; do
 		printf "## $REPLY\n" >>$PALMOD
 	done <<<$CREDITS
-	printf "\n# generated by module cle-palette\n" >>$PALMOD
+	printf "#\n# generated using module cle-palette\n#\n" >>$PALMOD
 
-	# setup background, foreground highlight and cursor colors
+	# define background, foreground highlight and cursor colors
 	cat <<-EOP >>$PALMOD
-		_CMAIN=$'\\e]10;$FG\\e\\\\\\e]11;$BG\\e\\\\\\e]17;$HL\\e\\\\\\e]12;$CU\\e\\\\'
+		CLE_BG='$BG'
+		CLE_PALB='\\e]10;$FG\\e\\\\\\e]11;$BG\\e\\\\\\e]17;$HL\\e\\\\\\e]12;$CU\\e\\\\'
 	EOP
 
-	# setup 16 colors palette
+	# define 16 colors palette
 	I=0
-	printf "_CPAL=$'" >>$PALMOD
+	printf "CLE_PAL16='" >>$PALMOD
 	for C in $PAL; do
 		printf '\\e]4;%d;%s\\e\\\\' $I $C >>$PALMOD
 		((I++))
 	done
-	printf "'" >>$PALMOD
-	printf '\nprintf $_CMAIN$_CPAL\n' >>$PALMOD
+	printf "'\n" >>$PALMOD
+
+	cat <<-EOP >>$PALMOD
+		printf "\$CLE_PALB\$CLE_PAL16"
+	EOP
 
 	. $PALMOD || return 1
 	echo Palette: $PALNAME $PALSPEC
@@ -326,6 +507,5 @@ esac
 
 # remove unwanted functions
 #PALMOD=$BASH_SOURCE
-#       ^^^^ something else for zsh!
 #unset `sed -n 's/\(^_pal_[[:graph:]]*\).*/\1/p' $PALMOD`
 
