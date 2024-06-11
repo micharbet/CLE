@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-03-21 (Aquarius)
+#* version: 2024-06-11 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2024 by Michael Arbet
 
@@ -653,6 +653,7 @@ _clepak () {
 ## `lssh [usr@]host`   - access remote system and run CLE
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
+	command -v _cleprelife >/dev/null && _cleprelife lssh "$@"
 	_clepak lssh
 	command ssh -t $* "
 		for H in \$HOME /var/tmp/\$USER /tmp/\$USER; do
@@ -662,21 +663,32 @@ lssh () (
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
 		echo $C64|base64 -\$D|tar xzmf - 2>/dev/null
 		exec bash --rcfile \$H/$RC"
+	_EX=$?
+	command -v _cleafterlife >/dev/null && _cleafterlife lssh "$@"
+	return $_EX
 )
 
 
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
+	command -v _cleprelife >/dev/null && _cleprelife lsudo "$@"
 	_clepak $CLE_SESSION:lsudo
         sudo -i -u ${1:-root} $RH/$RC
+	_EX=$?
+	command -v _cleafterlife >/dev/null && _cleafterlife lssh "$@"
+	return $_EX
 )
 
 ## `lsu [user]`        - su wrapper
 lsu () (
+	command -v _cleprelife >/dev/null && _cleprelife lsudo "$@"
         _clepak $CLE_SESSION:lsu
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -l ${1:-root} $RH/$RC
+	_EX=$?
+	command -v _cleafterlife >/dev/null && _cleafterlife lssh "$@"
+	return $_EX
 )
 
 

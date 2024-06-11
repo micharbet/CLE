@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-03-21 (Aquarius)
+#* version: 2024-06-11 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2024 by Michael Arbet
 
@@ -874,11 +874,22 @@ _clepak () {
 	popd >/dev/null
 }
 
+#: pre and after live session helpers
+_cleprelife () {
+	[ -n "$CLE_PRELIFE" ] && eval $CLE_PRELIFE
+}
+
+_cleafterlife () {
+	_EX=$?		#: save exit code of the live seeion
+	tput reset	#: reset terminal and colors
+	[ -f $CLE_D/mod-palette ] && . $CLE_D/mod-palette
+	[ -n "$CLE_AFTERLIFE" ] && eval $CLE_AFTERLIFE
+}
+
 ## `lssh [usr@]host`   - access remote system and run CLE
 lssh () (
 	[ "$1" ] || { cle help lssh;return 1;}
-	#: potential code execution before the live session
-	command -v _cleprelife >/dev/null && _cleprelife lssh "$@"
+	_cleprelife lssh "$@"
 	_clepak lssh
 	[ $CLE_DEBUG ] && _clebold "C64 contains following:" && echo -n $C64 |base64 -d|tar tzf -			# dbg
 	#: remote startup
@@ -895,8 +906,8 @@ lssh () (
 		exec bash --rcfile \$H/$RC"
 		#: it is not possible to use `base64 -\$D <<<$C64|tar xzf -`
 		#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
-	#: executing a code after live session
-	command -v _cleafterlife >/dev/null && _cleafterlife lssh "$@"
+	_cleafterlife lssh "$@"
+	return $_EX
 )
 
 #: Following are su* wrappers
@@ -904,23 +915,27 @@ lssh () (
 
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo () (
-	#: potential code execution before the live session
-	command -v _cleprelife >/dev/null && _cleprelife lsudo "$@"
+	_cleprelife lsudo "$@"
 	_clepak $CLE_SESSION:lsudo
 	dbg_print "lsudo runs: $RH/$RC"
         sudo -i -u ${1:-root} $RH/$RC
-	#: executing a code after live session
-	command -v _cleafterlife >/dev/null && _cleafterlife lsudo "$@"
+	#: save exit code and eventually execute a code after live session
+	_cleafterlife lsudo "$@"
+	return $_EX
 )
 
 ## `lsu [user]`        - su wrapper
 #: known issue - on debian systems controlling terminal is detached in case 
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu () (
+	_cleprelife lsu "$@"
         _clepak $CLE_SESSION:lsu
 	S=
         [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
         eval su $S -l ${1:-root} $RH/$RC
+	#: save exit code and eventually execute a code after live session
+	_cleafterlife lsu "$@"
+	return $_EX
 )
 
 #:------------------------------------------------------------:#

@@ -408,6 +408,31 @@ _pal_apprentice () {
 	CREDITS="Stolen from vim theme by Romain Lafourcade https://github.com/romainl/Apprentice"
 }
 
+
+#
+# RGB calculations
+#
+rgbpercent () (
+	for IND in 0 2 4; do
+		V=$(( 0x${1:$IND:2} * $2 / 100 ))
+		[ $V -gt 255 ] && V=255
+		printf "%02x" $V
+	done
+)
+
+rgbadd () (
+	for IND in 0 2 4; do
+		A1=$((0x${1:$IND:2}))
+		A2=$((0x${2:$IND:2}))
+		[ $A2 -lt 128 ] && V=$(( A1 + A2 ))
+		[ $A2 -ge 128 ] && V=$(( A1 - 256 + A2 ))
+		[ $V -gt 255 ] && V=255
+		[ $V -lt 0 ] && V=0
+		printf "%02x" $V
+	done
+)
+
+
 #
 # main()
 #

@@ -8,6 +8,6 @@ mod-see:2022-06-09:8d9cd0cbf72a313d50d08d3b962f6943:logfile highlighter
 cle-devkit:2021-08-24:7cc4f5dbbecd8b166bf9618ab4735b99:functions to assist CLE development process
 cle-ed:2021-12-19:2817dc49fbf3015b620c6877e35cd865:Tweak and config editor
 cle-mod:2019-08-19:8dbda9e659a5582b0ff53a65206fa817:CLE module management
-cle-palette:2019-11-15:194dfc9b537cb01acd4e1ffda5444895:Color palettes for OSC4 capable terminals
+cle-palette:2024-04-24:5ca86022bef4fc02a5309fe2eb441bfd:Color palettes for OSC4 capable terminals
 cle-prompt:2023-10-20:13abaaad9a1da1c3f066807036f3d861:pre-configured prompt themes
 cle-rcmove:2018-09-23:aba2d5578baa765dc153558aa7840470:Move resource files to different folder
