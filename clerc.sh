@@ -758,10 +758,10 @@ if which git >/dev/null 2>&1; then
 		_GITC=
 		_GITB=
 		while [ "$D" != '' ]; do
-			if [ -d $D/.git ]; then
+			if [ -d $D/.git -o -f $D/.git ]; then
 				#: verify dirty status
 				git diff-index --quiet HEAD -- || _GITC=$_Cr
-				printf -v _GITB $'\ue0a0'%s "$(git symbolic-ref --short HEAD)"
+				printf -v _GITB $'\ue0a0'%s "$(git symbolic-ref --short HEAD || git rev-parse --short HEAD)"
 			fi
 			D=${D%/*}
 		done
