@@ -1044,11 +1044,11 @@ complete -F _clecomp cle
 # lssh completion
 #: there are two possibilities of ssh completion _known_hosts is more common...
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-#: while _ssh is better
+#: while _comp_cmd_ssh is better
 #: The path is valid at least on fedora and debian with installed bash-completion package
 _N=/usr/share/bash-completion
 _clexe $_N/bash_completion
-_clexe $_N/completions/ssh && complete -F _ssh lssh
+_clexe $_N/completions/ssh && complete -F _comp_cmd_ssh lssh
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess

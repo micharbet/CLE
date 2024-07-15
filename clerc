@@ -779,7 +779,7 @@ complete -F _clecomp cle
 declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 _N=/usr/share/bash-completion
 _clexe $_N/bash_completion
-_clexe $_N/completions/ssh && complete -F _ssh lssh
+_clexe $_N/completions/ssh && complete -F _comp_cmd_ssh lssh
 
 # redefine alias builtins
 alias () {
