@@ -51,7 +51,7 @@ _cle_e () (
 	else
 		FILENAME=$CLE_DK/clerc.sh
 	fi
-	vim $FILENAME
+	vi $FILENAME
 )
 
 ## `cle cp [mod]`   - copy development version of clerc or a module

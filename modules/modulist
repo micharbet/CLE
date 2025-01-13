@@ -5,7 +5,7 @@ mod-ltmux:2024-03-14:056da3cdfb943c9aa911ca38d8e16985:tmux live session wrapper
 mod-mancolor:2018-08-29:a364e78c7f0dab0c5a1352046c28d539:Colorize man pages
 mod-mosh:2019-11-16:5f80e4b23db34c1eece52ffaad634a44:Live session with `lmosh` command
 mod-see:2022-06-09:8d9cd0cbf72a313d50d08d3b962f6943:logfile highlighter
-cle-devkit:2021-08-24:7cc4f5dbbecd8b166bf9618ab4735b99:functions to assist CLE development process
+cle-devkit:2021-08-24:13c07305d553249e5b3b5cb86fee4526:functions to assist CLE development process
 cle-ed:2021-12-19:2817dc49fbf3015b620c6877e35cd865:Tweak and config editor
 cle-mod:2019-08-19:8dbda9e659a5582b0ff53a65206fa817:CLE module management
 cle-palette:2024-04-24:5ca86022bef4fc02a5309fe2eb441bfd:Color palettes for OSC4 capable terminals
