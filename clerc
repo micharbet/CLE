@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-06-11 (Aquarius)
+#* version: 2024-08-15 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2024 by Michael Arbet
 
@@ -37,9 +37,7 @@ case "$SHELL:$0" in
 *clerc*|*:*/rc*) # executed as a command
 	while [ $1 ]; do
 		case $1 in
-		-m)	CLE_MOTD=`uptime`
-			export CLE_MOTD
-			;;
+		-m)	CLE_MOTD=`uptime`; export CLE_MOTD;;
 		*)	echo "$0: unknown option '$1'"; exit 1;;
 		esac
 		shift
@@ -59,7 +57,7 @@ unset -f alias unalias 2>/dev/null
 unalias aa h hh .. ... 2>/dev/null
 
 # execute script and log its filename into CLE_EXE
-_clexe () {
+_clexe() {
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1[:$] ]] && return
 	CLE_EXE=$CLE_EXE:$1
@@ -93,12 +91,14 @@ _N=`hostname`
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
 CLE_SHN=${CLE_FHN%.*.*}
 
-_N=${SSH_CONNECTION% *}; CLE_IP=${_N##* }
+_N=${SSH_CONNECTION% *}
+CLE_IP=${_N##* }
 
 # where in the deep space CLE grows
 CLE_VER=`sed -n 's/^#\* version: //p' $CLE_RC`
-_N=${CLE_VER%)*}; CLE_REL=${_N#* (}
-CLE_REL=dev					# REMOVE THIS ON RELEASE!!!!!
+_N=${CLE_VER%)*}
+CLE_REL=${_N#* (}
+CLE_REL=dev              # REMOVE THIS ON RELEASE!!!!!
 CLE_SRC=https://raw.githubusercontent.com/micharbet/CLE/$CLE_REL
 
 # find writable folder
@@ -120,13 +120,14 @@ CLE_TW=$CLE_DR/tw$CLE_WS
 CLE_ENV=$CLE_DR/env$CLE_WS
 
 # who I am
-_N=${CLE_RC#*cle-}; _N=${_N%/rc*}
+_N=${CLE_RC#*cle-}
+_N=${_N%/rc*}
 export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 
 # Internal functions
 
-_clebnr () {
-cat <<EOT
+_clebnr() {
+	cat <<EOT
 
 $_CC   ___| |     ____| $_CN     Command Live Environment
 $_CB  |     |     __|   $_CN brings life to the command line!
@@ -137,10 +138,10 @@ EOT
 }
 
 # boldprint
-_clebold () { printf "$_CL$*$_CN\n";}
+_clebold() { printf "$_CL$*$_CN\n"; }
 
 # simple question
-_cleask () (
+_cleask() (
 	PR="$_CL$* (y/N) $_CN"
 	read -n 1 -s -p "$PR"
 	echo ${REPLY:=n}
@@ -148,16 +149,18 @@ _cleask () (
 )
 
 # Create color table
-_cletable () {
+_cletable() {
 	_C_=$TERM
 	_Cn=$'\E[0m'
 	_CN=`tput sgr0`; _CN=${_CN:-$_Cn}
 	_CL=`tput bold`; _CL=${_CL:-$'\E[1m'}
-	_CU=`tput smul`;_Cu=`tput rmul`
+	_CU=`tput smul`
+	_Cu=`tput rmul`
 	_CV=`tput rev`
-	_CI=`tput sitm`;_Ci=`tput ritm`
+	_CI=`tput sitm`
+	_Ci=`tput ritm`
 	_CD=`tput dim`
-	_Ck=$(tput setaf 0); _Ck=${_Ck:-$'\E[30m'}
+	_Ck=`tput setaf 0`; _Ck=${_Ck:-$'\E[30m'}
 	_Cr=$(tput setaf 1); _Cr=${_Cr:-$'\E[31m'}
 	_Cg=$(tput setaf 2); _Cg=${_Cg:-$'\E[32m'}
 	_Cy=$(tput setaf 3); _Cy=${_Cy:-$'\E[33m'}
@@ -165,7 +168,7 @@ _cletable () {
 	_Cm=$(tput setaf 5); _Cm=${_Cm:-$'\E[35m'}
 	_Cc=$(tput setaf 6); _Cc=${_Cc:-$'\E[36m'}
 	_Cw=$(tput setaf 7); _Cw=${_Cw:-$'\E[37m'}
-	case `tput colors` in
+	case $(tput colors) in
 	8|'')
 		_CK=$_Ck$_CL
 		_CR=$_Cr$_CL
@@ -191,19 +194,19 @@ _cletable () {
 } 2>/dev/null
 
 # set prompt colors
-_cleclr () {
+_cleclr() {
 	local C I CI E
 	case "$1" in
-	red)    C=RrR;;
-	green)  C=GgG;;
-	yellow) C=YyY;;
-	blue)   C=BbB;;
-	cyan)   C=CcC;;
-	magenta) C=MmM;;
-	grey|gray) C=wNW;;
-	tricolora) C=RBW;;
-	marley) C=RYG;; # Bob Marley style :-) have a smoke and imagine...
-	*)	C=$1;;
+	red)    C=RrR ;;
+	green)  C=GgG ;;
+	yellow) C=YyY ;;
+	blue)   C=BbB ;;
+	cyan)   C=CcC ;;
+	magenta) C=MmM ;;
+	grey | gray) C=wNW ;;
+	tricolora) C=RBW ;;
+	marley) C=RYG ;; # Bob Marley style :-) have a smoke and imagine...
+	*)		C=$1 ;;
 	esac
 	# decode colors and prompt strings
 	#[ ${#C} = 3 ] && C=D${C}L || C=${C}L
@@ -230,26 +233,32 @@ _cleclr () {
 	fi
 }
 
+# terminal background manipulations
+_clebg() {
+	[ "$CLE_BG" ] || return
+	_C0=$'\e]11;'$CLE_BG$'\e\\'
+}
+
 # CLE prompt escapes
-_clesc () (
+_clesc() (
 	sed \
-	 -e 's/\^i/\${CLE_IP}/g'\
-	 -e 's/\^h/\${CLE_SHN}/g'\
-	 -e 's/\^H/\${CLE_FHN}/g'\
-	 -e 's/\^U/\${CLE_USER}/g'\
-	 -e 's/\^s/\${_SEC}/g'\
-	 -e 's/\^t[0-9]*//g'\
-	 -e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
-	 -e 's/\^[?e]/\${_EC}/g'\
-	 -e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
-	 -e 's/\^C\([0-9]\)/\\[${_Cn}${_C\1}\\]/g'\
-	 -e 's/\^C\(.\)/\\[${_C\1}\\]/g'\
-	 -e 's/\^v\([[:alnum:]_]*\)/\1=\${\1}/g'\
-	 -e 's/\^\^/\^/g'\
-	<<<"$*"
+		-e 's/\^i/\${CLE_IP}/g'\
+		-e 's/\^h/\${CLE_SHN}/g'\
+		-e 's/\^H/\${CLE_FHN}/g'\
+		-e 's/\^U/\${CLE_USER}/g'\
+		-e 's/\^s/\${_SEC}/g'\
+		-e 's/\^t[0-9]*//g'\
+		-e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
+		-e 's/\^[?e]/\${_EC}/g'\
+		-e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
+		-e 's/\^C\([0-9]\)/\\[${_Cn}${_C\1}\\]/g'\
+		-e 's/\^C\(.\)/\\[${_C\1}\\]/g'\
+		-e 's/\^v\([[:alnum:]_]*\)/\1=\${\1}/g'\
+		-e 's/\^\^/\^/g'\
+		<<<"$*"
 )
 
-_cle_r () {
+_cle_r() {
 	[ "$1" != h ] && return
 	printf "\n$_Cr     ,~~---~^^, \n    /@=-. ##_##\\ \n .,(. ##########)\n(@###,. \`\"######@^."
 	printf "\n \`@#####\`..#####\`,###)\n$_CW   (@@$_Cr^#############\"\n$_CW"
@@ -257,15 +266,15 @@ _cle_r () {
 }
 
 # craft prompts from defined strings
-_cleps () {
+_cleps() {
 	local PT PA PB
 	[ "$_ST" ] && PT=$_ST || PT=${CLE_PT:-$_PT}
 	PA=${CLE_PA:-$_PA}
 	PB=${CLE_PB:-$_PB}
 	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
-	PS1=$PS1`_clesc "^CN^C1${CLE_P1:-$_P1}^CN^C2${CLE_P2:-$_P2}^CN^C3${CLE_P3:-$_P3}^CN^C4"`
+	PS1=$PS1$(_clesc "^CN^C1${CLE_P1:-$_P1}^CN^C2${CLE_P2:-$_P2}^CN^C3${CLE_P3:-$_P3}^CN^C4")
 	PS2=`_clesc "^C3>>> ^CN^C4"`
-	[ "$PB" ] && PSB=`_clesc "^CN^C5$PB"`
+	[ "$PB" ] && PSB=$(_clesc "^CN^C5$PB")
 	[ "$PA" ] && {
 		PSA=`_clesc "^CN^CA$PA"`
 		[ $BASH_VERSINFO -lt 5 ] && PSA=$(sed -e 's/\\.//g' -e 's/"/\\"/g' <<<"$PSA")
@@ -275,7 +284,7 @@ _cleps () {
 }
 
 # default prompt strings and colors
-_cledefp () {
+_cledefp() {
 	_P1='\u '
 	_P2='^h '
 	_P3='\w \$ '
@@ -283,15 +292,15 @@ _cledefp () {
 	_PA='-<(^e)>-'
 	_PT='\u@^H'
 	case "$USER@$CLE_WS" in
-	root@)	_DC=red;;
-	*@)	_DC=marley;;
-	root@*)	_DC=RbB;;
-	*@*)	_DC=blue;;
+	root@) _DC=red ;;
+	*@) _DC=marley ;;
+	root@*) _DC=RbB ;;
+	*@*) _DC=blue ;;
 	esac
 }
 
 # save configuration
-_clesave () (
+_clesave() (
 	echo "# $CLE_VER"
 	_clevdump CLE_P.
 ) >$CLE_CF
@@ -300,11 +309,15 @@ _clesave () (
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
 _TIM=
-_cleprompt () {
+_cleprompt() {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
-	if [ "$_TIM" ]; then	# check if a command was issued
-		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || { _EC=0; _CE=; }
+	[ $CLE_BG ] && printf '\e]11;'$CLE_BG'\e\\'
+	if [ "$_TIM" ]; then
+		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || {
+			_EC=0
+			_CE=
+		}
 		_CA=${_CE:-$_C5}
 		_SEC=$((SECONDS-_TIM))
 		[[ $PS1 =~ _GIT ]] && _clegit
@@ -312,7 +325,7 @@ _cleprompt () {
 		if [ "$PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ]; then
 			[ $BASH_VERSINFO -ge 5 ] && echo "${PSA@P}" || eval "echo \"$PSA\""
 		fi
-		 _clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
+		_clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
 		_CE=
 		_EC=0
@@ -325,12 +338,12 @@ CLE_HTF='%F %T'
 HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
 
 history -cr $HISTFILE
-_clepreex () {
+_clepreex() {
 	trap "" DEBUG
-	_HR=`HISTTIMEFORMAT=";$CLE_HTF;" history 1`
+	_HR=$(HISTTIMEFORMAT=";$CLE_HTF;" history 1)
 	_HR=${_HR#*;}
-	_DT=${_HR/;*}
-	_CMD=${_HR/$_DT;}
+	_DT=${_HR/;*/}
+	_CMD=${_HR/$_DT;/}
 
 	if [ "$BASH_COMMAND" = "_cleprompt" ]; then
 		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD"
@@ -345,11 +358,11 @@ _clepreex () {
 
 # rich history record
 _CPR=
-_clerh () {
+_clerh() {
 	local DT RC REX ID V VD W
 	case $# in
-	3)	DT=`date "+$CLE_HTF"`;SC='';;
-	4)	DT=`date "+$CLE_HTF"`;SC=$1;shift;;
+	3)	DT=$(date "+$CLE_HTF");SC='';;
+	4)	DT=$(date "+$CLE_HTF");SC=$1;shift;;
 	5)	DT=$1;SC=$2;shift 2;;
 	esac
 	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
@@ -368,38 +381,38 @@ _clerh () {
 				VD=`_clevdump $V`
 				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
-		done;;
+		done
+		;;
 	xx) # directory bookmark
-		echo -E "$ID;;*;$PWD;" ;;
+		echo -E "$ID;;*;$PWD;";;
 	\#*)
-		echo -E "$ID;;#;$W;$3" ;;
+		echo -E "$ID;;#;$W;$3";;
 	*)
-		echo -E "$ID;$SC;$1;$W;$3" ;;
+		echo -E "$ID;$SC;$1;$W;$3";;
 	esac
 } >>$CLE_HIST
 
-
-# Remove alias 'which' if there is no version supporting extended options
-{ alias|command which -i which || unalias which; } >/dev/null 2>&1
+# Remove alias 'which' if there is version not supporting extended options
+{ alias|command which -i which||unalias which; } >/dev/null 2>&1
 
 ## ** cd command enhancements **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
-- () { cd - >/dev/null; _clevdump OLDPWD;}
-.. () { cd ..;}
-... () { cd ../..;}
+-() { cd - >/dev/null;_clevdump OLDPWD;}
+..() { cd ..; }
+...() { cd ../..; }
 ## `xx` & `cx`   - bookmark $PWD & use later
-xx () { _XX=$PWD; echo path bookmark: $_XX; }
-cx () { cd $_XX; }
+xx() { _XX=$PWD;echo path bookmark: $_XX;}
+cx() { cd $_XX; }
 
 ##
 ## ** Alias management **
-aa () {
+aa() {
 	local ATMP=$CLE_AL.tmp
 	case "$1" in
-	"")	## `aa`         - show aliases
-		builtin alias|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN	\2/";;
-	-s)	## `aa -s`      - save aliases
+	"") ## `aa`         - show aliases
+		builtin alias|sed "s/^alias \([^=]*\)=\(.*\)/$_CL\1$_CN	\2/" ;;
+	-s) ## `aa -s`      - save aliases
 		if [ $CLE_WS ]; then
 			grep "^alias " $CLE_ENV >$ATMP
 			builtin alias | diff - $ATMP | sed -n 's/^< \(.*\)/\1/p' >$CLE_AL
@@ -407,69 +420,73 @@ aa () {
 		else
 			builtin alias >$CLE_AL
 		fi;;
-	-e)	## `aa -e`      - edit aliases
+	-e) ## `aa -e`      - edit aliases
 		builtin alias >$ATMP
 		vi $ATMP
 		builtin unalias -a
 		. $ATMP
 		rm -f $ATMP;;
-	*=*)	## `aa a='b'`   - create new alias and save
+	*=*) ## `aa a='b'`   - create new alias and save
 		builtin alias "$*"
 		aa -s;;
-	*)	builtin alias "$*";;
+	*) builtin alias "$*";;
 	esac
 }
-
 
 ##
 ## ** History tools **
 ## `h`               - shell 'history' wrapper
-h () (
-	(HISTTIMEFORMAT=";$CLE_HTF;" history "$@")|( IFS=';'; while read -r N DT C;do
-		echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
-	done;) 
+h() (
+	(HISTTIMEFORMAT=";$CLE_HTF;" history "$@") | (
+		IFS=';'
+		while read -r N DT C; do
+			echo -E "$_CB$N$_Cb $DT $_CN$_CL$C$_CN"
+		done
+	)
 )
 
 ## `hh [opt] [srch]` - query the rich history
 _RHI=1
 _RHLEN=0
-hh () {
+hh() {
 	local O S N D C OPTIND MOD OUT
 	while getopts "a:mtwsncflbex0123456789" O; do
 		case $O in
-		t)	## `hh -t`           - commands from current session
-			S=$S"&& \$2==\"^$CLE_USER-$$\"";;
-		w)	## `hh -w`           - search for commands issued from current working directory`
+		t) ## `hh -t`           - commands from current session/terminal
+			S=$S"&& \$2==\"$CLE_USER-$$\"";;
+		w) ## `hh -w`           - search for commands issued from current working directory`
 			N=${PWD/$HOME/\~}
 			S=$S"&& \$5==\"$N\"";;
-		m)	## `hh -m`           - my commands, exclude other users
+		m) ## `hh -m`           - my commands, exclude other users
 			S=$S"&& \$2~/^$CLE_USER-/";;
-		[0-9])	## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
+		[0-9])                                ## `hh -0..9`        - 0: today's commands, 1: yesterday's, etc.
 			C="\$1~/$(date -d -${O}days '+%F')/"
 			[ "$D" ] && D="$D || $C" || D="$C";;
-		a)	## `hh -a string`    - search for any string in history
-			S=$S"&&/${OPTARG//\//\\/}/" ;;
-		s)	## `hh -s`           - select successful commands only
+		a)  ## `hh -a string`    - search for any string in history
+			S=$S"&&/${OPTARG//\//\\/}/";;
+		s) ## `hh -s`           - select successful commands only
 			S=$S"&& \$4==0";;
-		n)	## `hh -n`           - narrow output, hide time and session id
+		n) ## `hh -n`           - narrow output, hide time and session id
 			MOD=n;;
-		c)	## `hh -c`           - show only commands
+		c) ## `hh -c`           - show only commands
 			MOD=c;;
-		f) 	## `hh -f`           - show working folder history
+		f) ## `hh -f`           - show working folder history
 			MOD=f;;
-		b)	## `hh -b`           - show unique commands in buffer
+		b) ## `hh -b`           - show unique commands in buffer
 			OUT='>/dev/null';;
-		l)	## `hh -l`           - display using 'less'
+		l) ## `hh -l`           - display using 'less'
 			OUT='|less -r +G';;
-		e)	## `hh -e`           - edit the rich history file
+		e) ## `hh -e`           - edit the rich history file
 			vi + $CLE_HIST
 			return;;
-		x)	## `hh -x`           - remove the most recent history record
+		x) ## `hh -x`           - remove the most recent history record
 			# TODO: maybe... number of lines to remove ev. string? Or add enhanced functionality to a module?
 			sed -i '$ d' $CLE_HIST
 			history -d -2
 			return;;
-		*)	cle help hh;return
+		*)
+			cle help hh
+			return;;
 		esac
 	done
 	S=$S"${D:+&& ( $D )}"
@@ -529,7 +546,7 @@ hh () {
 		print UNIQ >REVB
 	}'
 
-	local REVB=`mktemp clerh.XXXXXX`
+	local REVB=$(mktemp clerh.XXXXXX)
 	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
 
 	_RHBUF=()
@@ -544,21 +561,21 @@ hh () {
 }
 
 # rich history up/down shortcut routines
-_clerhdown () {
+_clerhdown() {
 	[[ $READLINE_LINE =~ ^[0-9]+$ ]] && _RHI=$READLINE_LINE || ((_RHI--))
 	[ $_RHI -lt 0 ] && _RHI=0
 	READLINE_LINE=${_RHBUF[$_RHI]}
 	READLINE_POINT=${#READLINE_LINE}
 }
 
-_clerhup () {
+_clerhup() {
 	[[ $READLINE_LINE =~ ^[0-9]+$ ]] && _RHI=$READLINE_LINE || ((_RHI++))
 	[ $_RHI -gt $_RHLEN ] && _RHI=$_RHLEN
 	READLINE_LINE=${_RHBUF[$_RHI]}
 	READLINE_POINT=${#READLINE_LINE}
 }
 
-_clerhbuf () {
+_clerhbuf() {
 	local A N=$_RHLEN
 	while [ $N -ge 1 ]; do
 		[ $N -eq $_RHI ] && A='*' || A=' '
@@ -574,7 +591,7 @@ bind -x '"\eh": "hh -b $READLINE_LINE"'
 bind -x '"\el": "_clerhbuf"'
 
 if which git >/dev/null 2>&1; then
-	_clegit () {
+	_clegit() {
 		# go down the folder tree and look for .git
 		local D=$PWD
 		_GITC=
@@ -588,21 +605,20 @@ if which git >/dev/null 2>&1; then
 		done
 	}
 else
-	_clegit () { return; };
+	_clegit() { return; }
 fi
 
-
-_clemdf () {
-	sed -e "s/^###\(.*\)/$_CL\1$_CN/"\
-	 -e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/"\
-	 -e "s/^#\( *\)\(.*\)/\1$_CL$_CV \2 $_CN/"\
-	 -e "s/\*\*\(.*\)\*\*/$_CL\1$_CN/"\
-	 -e "s/\<_\(.*\)_\>/$_CU\1$_Cu/g"\
-	 -e "s/\`\`\`/$_CD~~~~~~~~~~~~~~~~~$_CN/"\
-	 -e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g" | less -erFX
+_clemdf() {
+	sed -e "s/^###\(.*\)/$_CL\1$_CN/" \
+		-e "s/^##\( *\)\(.*\)/\1$_CU$_CL\2$_CN/" \
+		-e "s/^#\( *\)\(.*\)/\1$_CL$_CV \2 $_CN/" \
+		-e "s/\*\*\(.*\)\*\*/$_CL\1$_CN/" \
+		-e "s/\<_\(.*\)_\>/$_CU\1$_Cu/g" \
+		-e "s/\`\`\`/$_CD~~~~~~~~~~~~~~~~~$_CN/" \
+		-e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g" | less -erFX
 }
 
-_clevdump () (
+_clevdump() (
 	declare | awk '/^('$1')=/{print}'
 )
 
@@ -613,7 +629,7 @@ _clevdump () (
 # Environment packer
 CLE_XFUN=
 CLE_XFILES=
-_clepak () {
+_clepak() {
 	RH=${CLE_DR/\/.*/}
 	RD=${CLE_DR/$RH\//}
 
@@ -632,7 +648,7 @@ _clepak () {
 			echo "# evironment $CLE_USER@$CLE_FHN"
 			echo "CLE_SESSION=$1"
 			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/'
-			_clevdump "$CLE_XVARS"
+			_clevdump "${CLE_XVARS// /|}"
 			XAL=${CLE_EXALIAS:-^$}
 			grep -v "${XAL//,/=\\|}=" $CLE_AL 2>/dev/null
 			for XFUN in $CLE_XFUN; do
@@ -650,10 +666,23 @@ _clepak () {
 	popd >/dev/null
 }
 
+_cleprelife() {
+	#	[ -n "$CLE_PRELIFE" ] && eval $CLE_PRELIFE
+	command -v prelife >/dev/null && prelife "$@"
+}
+
+_cleafterlife() {
+	_EX=$?
+	#tput reset
+	[ -f $CLE_D/mod-palette ] && . $CLE_D/mod-palette
+	#	[ -n "$CLE_AFTERLIFE" ] && eval $CLE_AFTERLIFE
+	command -v afterlife >/dev/null && afterlife "$@"
+}
+
 ## `lssh [usr@]host`   - access remote system and run CLE
-lssh () (
-	[ "$1" ] || { cle help lssh;return 1;}
-	command -v _cleprelife >/dev/null && _cleprelife lssh "$@"
+lssh() (
+	[ "$1" ] || { cle help lssh; return 1;}
+	_cleprelife lssh "$@"
 	_clepak lssh
 	command ssh -t $* "
 		for H in \$HOME /var/tmp/\$USER /tmp/\$USER; do
@@ -663,31 +692,28 @@ lssh () (
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
 		echo $C64|base64 -\$D|tar xzmf - 2>/dev/null
 		exec bash --rcfile \$H/$RC"
-	_EX=$?
-	command -v _cleafterlife >/dev/null && _cleafterlife lssh "$@"
+	_cleafterlife lssh "$@"
 	return $_EX
 )
 
 
 ## `lsudo [user]`      - sudo wrapper; root is the default account
-lsudo () (
-	command -v _cleprelife >/dev/null && _cleprelife lsudo "$@"
+lsudo() (
+	_cleprelife lsudo "$@"
 	_clepak $CLE_SESSION:lsudo
-        sudo -i -u ${1:-root} $RH/$RC
-	_EX=$?
-	command -v _cleafterlife >/dev/null && _cleafterlife lssh "$@"
+	sudo -i -u ${1:-root} $RH/$RC
+	_cleafterlife lsudo "$@"
 	return $_EX
 )
 
 ## `lsu [user]`        - su wrapper
-lsu () (
-	command -v _cleprelife >/dev/null && _cleprelife lsudo "$@"
-        _clepak $CLE_SESSION:lsu
+lsu() (
+	_cleprelife lsu "$@"
+	_clepak $CLE_SESSION:lsu
 	S=
-        [[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
-        eval su $S -l ${1:-root} $RH/$RC
-	_EX=$?
-	command -v _cleafterlife >/dev/null && _cleafterlife lssh "$@"
+	[[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
+	eval su $S -l ${1:-root} $RH/$RC
+	_cleafterlife lsu "$@"
 	return $_EX
 )
 
@@ -721,13 +747,13 @@ CLE_SESSION=$CLE_RC
 
 # OS dependent colorized LS and GREP
 case $OSTYPE in
-linux*)		alias ls='ls --color=auto';;
-darwin*)	export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
-FreeBSD*)	alias ls='ls -G "$@"';;
-*)		alias ls='ls -F';; # at least some file type indication
+linux*) alias ls='ls --color=auto' ;;
+darwin*) export CLICOLOR=1; export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd;;
+FreeBSD*) alias ls='ls -G "$@"';;
+*) alias ls='ls -F';; # at least some file type indication
 esac
 
-if [ -L `command which grep` ];then
+if [ -L `command which grep` ]; then
 	unalias grep egrep fgrep xzgrep xzegrep xzfgrep zgrep zegrep zfgrep 2>/dev/null
 else
 	alias grep='grep --color=auto'
@@ -737,11 +763,12 @@ _clexe $CLE_AL
 
 _clexe $CLE_CF
 
-[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable	# create color table if necessary
+[ "$TERM" != "$_C_" -o -z "$_CN" ] && _cletable # create color table if necessary
 _CT=$'\e]0;'; _Ct=$'\007'
 case $TERM in
-linux)	 CLE_PT='';;
-screen*) printf "$_CT screen: $CLE_USER@$CLE_SHN$_Ct"
+linux) CLE_PT='';;
+screen*)
+	printf "$_CT screen: $CLE_USER@$CLE_SHN$_Ct"
 	_ST='\u'
 	_CT=$'\ek'; _Ct=$'\e\\';;
 esac
@@ -752,7 +779,7 @@ _cleclr ${CLE_PC:-$_DC}
 PROMPT_COMMAND=_cleprompt
 
 # completions
-_clecomp () {
+_clecomp() {
 	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help)
 	local F=
 	local E=
@@ -782,11 +809,11 @@ _clexe $_N/bash_completion
 _clexe $_N/completions/ssh && complete -F _ssh lssh
 
 # redefine alias builtins
-alias () {
+alias() {
 	[ -n "$1" ] && aa "$@" || builtin alias
 }
 
-unalias () {
+unalias() {
 	[ "$1" = -a ] && cp $CLE_AL $CLE_AL.bk
 	builtin unalias "$@"
 	aa -s
@@ -812,10 +839,10 @@ _clerh @ $SHELL "$BASH_VERSION, $CLE_VER"
 
 ##
 ## ** CLE command & control **
-cle () {
+cle() {
 	local C I P S N
 	C=$1;shift
-	if declare -f _cle_$C >/dev/null;then
+	if declare -f _cle_$C >/dev/null; then
 		_cle_$C $*
 		return $?
 	elif [ -f $CLE_D/cle-$C ]; then
@@ -823,24 +850,28 @@ cle () {
 		return $?
 	fi
 	case $C in
-	color)  ## `cle color COLOR`       - set prompt color
-		[ $1 ]  && _cleclr $1 && _clesave;;
-	p?)	## `cle pX [str]`          - show/define prompt parts
-		I=${C:1:1}; I=${I^}
+	color) ## `cle color COLOR`       - set prompt color
+		[ $1 ] && _cleclr $1 && _clesave ;;
+	p?) ## `cle pX [str]`          - show/define prompt parts
+		I=${C:1:1}
+		I=${I^}
 		case "$1" in
-		'')	_clevdump CLE_P$I;;
-		' ')	unset CLE_P$I;;
-		*)	S=$*
+		'') _clevdump CLE_P$I ;;
+		' ') unset CLE_P$I ;;
+		*)
+			S=$*
 			#eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
-			eval "CLE_P$I='$*'";;
+			eval "CLE_P$I='$*'"
+			;;
 		esac
-		_cleps;_clesave
+		_cleps
+		_clesave
 		;;
-	cf)	## `cle cf [ed|reset|rev]` - view/edit/reset/revert configuration
+	cf) ## `cle cf [ed|reset|rev]` - view/edit/reset/revert configuration
 		case "$1" in
-		ed)	vi $CLE_CF  && . $CLE_RC;;
-		reset)	mv -f $CLE_CF $CLE_CF-bk;;
-		rev)	cp $CLE_CF-bk $CLE_CF;;
+		ed) vi $CLE_CF && . $CLE_RC;;
+		reset) mv -f $CLE_CF $CLE_CF-bk;;
+		rev) cp $CLE_CF-bk $CLE_CF;;
 		"")
 			_clebold "$_CU Default/Inherited configuration:"
 			_clevdump _P. CLE_PC
@@ -849,9 +880,10 @@ cle () {
 				cat $CLE_CF
 			fi
 			return;;
-		*)	return;;
+		*) return;;
 		esac
-		cle reload;;
+		cle reload
+		;;
 	deploy) ## `cle deploy`            - hook CLE into user's profile
 		P=$HOME/.cle-$USER
 		mkdir -p $P
@@ -868,10 +900,13 @@ cle () {
 		N=$CLE_D/rc.new
 		curl -k ${CLE_SRC/$CLE_REL/${1:-$CLE_REL}}/clerc >$N
 		S=`sed -n 's/^#\* version: //p' $N`
-		[ "$S" ] || { echo "Download error"; return 1; }
+		[ "$S" ] || { echo "Download error";return 1;}
 		echo current: $CLE_VER
 		echo "new:     $S"
-		diff $CLE_RC $N >/dev/null && { echo No difference; return 1;}
+		diff $CLE_RC $N >/dev/null && {
+			echo No difference
+			return 1
+		}
 		_cleask Do you want to install new version? || return
 		cp $CLE_RC $CLE_D/rc.bk
 		chmod 755 $N
@@ -885,37 +920,37 @@ cle () {
 	reload) ## `cle reload           ` - reload CLE
 		unset CLE_EXE
 		. $CLE_RC && echo CLE reloaded: $CLE_RC $CLE_VER;;
-	mod)    ## `cle mod`               - cle module management
+	mod) ## `cle mod`               - cle module management
 		_cleask Activate CLE modules? || return
 		N=cle-mod
 		P=$CLE_D/$N
 		curl -k $CLE_SRC/modules/$N >$P
-		grep -q "# .* $N:" $P || { _clebold Module download failed; rm -f $P; return 1;}
+		grep -q "# .* $N:" $P || { _clebold Module download failed;	rm -f $P; return 1;}
 		cle mod "$@";;
-	env)	## `cle env`               - inspect variables
-		_clevdump 'CLE.*'|awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
-	help|-h|--help) ## `cle help [fnc]`        - show help
+	env) ## `cle env`               - inspect variables
+		_clevdump 'CLE.*' | awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+	help | -h | --help) ## `cle help [fnc]`        - show help
 		P=`ls $CLE_D/cle-* 2>/dev/null`
 		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf;;
-	doc)	## `cle doc`               - show documentation
+	doc) ## `cle doc`               - show documentation
 		I=`curl -sk $CLE_SRC/doc/index.md`
-		[[ $I =~ LICENSE ]] || { echo Unable to get documentation;return 1;}
+		[[ $I =~ LICENSE ]] || { echo Unable to get documentation; return 1;}
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N |_clemdf; break
+			[ $N ] && curl -sk $CLE_SRC/doc/$N | _clemdf
+			break
 		done;;
 	"")
 		_clebnr
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
 		;;
-	*)	echo unimplemented function: cle $C;
-		echo check cle help;
-		return 1
-		;;
+	*)
+		echo unimplemented function: cle $C
+		echo check cle help
+		return 1;;
 	esac
 }
 
 unset _T _H _C _N _DC
 
 # that's all, folks...
-
