@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-08-15 (Aquarius)
+#* version: 2025-01-13 (Aquarius)
 #* license: MIT
-#* Copyright (C) 2016-2024 by Michael Arbet
+#* Copyright (C) 2016-2025 by Michael Arbet
 
 # CLE provides:
 # -improved look&feel: responsive colorful prompt, highlighted exit code
@@ -434,8 +434,8 @@ aa() {
 }
 
 ##
-## ** History tools **
-## `h`               - shell 'history' wrapper
+## ** Rich history tools **
+## `h`               - regular 'history' wrapper
 h() (
 	(HISTTIMEFORMAT=";$CLE_HTF;" history "$@") | (
 		IFS=';'
@@ -615,7 +615,14 @@ _clemdf() {
 		-e "s/\*\*\(.*\)\*\*/$_CL\1$_CN/" \
 		-e "s/\<_\(.*\)_\>/$_CU\1$_Cu/g" \
 		-e "s/\`\`\`/$_CD~~~~~~~~~~~~~~~~~$_CN/" \
-		-e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g" | less -erFX
+		-e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
+}
+
+##
+## ** Additional commands **
+## `mdless [files]`  - parse markdown files or stdin and display through less
+mdless() {
+	cat $*|_clemdf|less -erFX
 }
 
 _clevdump() (
@@ -931,13 +938,13 @@ cle() {
 		_clevdump 'CLE.*' | awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	help | -h | --help) ## `cle help [fnc]`        - show help
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P |mdless;;
 	doc) ## `cle doc`               - show documentation
 		I=`curl -sk $CLE_SRC/doc/index.md`
 		[[ $I =~ LICENSE ]] || { echo Unable to get documentation; return 1;}
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N | _clemdf
+			[ $N ] && curl -sk $CLE_SRC/doc/$N | mdless
 			break
 		done;;
 	"")

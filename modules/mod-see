@@ -1,10 +1,10 @@
 ##
 ## ** mod-see: logfile highlighter **
 #
-#* version: 2022-06-09
+#* version: 2025-01-13
 #* author:  Michael Arbet (marbet@redhat.com)
 #* license: MIT
-#* Copyright (C) 2013-2024 by Michael Arbet 
+#* Copyright (C) 2013-2025 by Michael Arbet 
 
 
 see () (
@@ -50,7 +50,7 @@ see () (
 			TSTAMP=$OPTARG
 			;;
 		*)	# usage
-			declare -f see | sed -n "s/^ *: *'\(.*\)';/\1/p" | _clemdf
+			declare -f see | sed -n "s/^ *: *'\(.*\)';/\1/p" | mdless
 			exit 1
 			;;
 		esac
