@@ -4,9 +4,9 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2024-08-15 (Aquarius)
+#* version: 2025-01-13 (Aquarius)
 #* license: MIT
-#* Copyright (C) 2016-2024 by Michael Arbet
+#* Copyright (C) 2016-2025 by Michael Arbet
 
 # CLE provides:
 # -improved look&feel: responsive colorful prompt, highlighted exit code
@@ -413,7 +413,7 @@ _cledefp() {
 # save configuration
 _clesave() (
 	echo "# $CLE_VER"
-	_clevdump CLE_P.
+	vdump CLE_P.
 ) >$CLE_CF
 
 # prompt callback functions
@@ -523,7 +523,7 @@ _clerh() {
 		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				VD=`_clevdump $V`
+				VD=`vdump $V`
 				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done
@@ -550,7 +550,7 @@ _clerh() {
 ## ** cd command enhancements **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
--() { cd - >/dev/null;_clevdump OLDPWD;}
+-() { cd - >/dev/null;vdump OLDPWD;}
 ..() { cd ..; }
 ...() { cd ../..; }
 ## `xx` & `cx`   - bookmark $PWD & use later
@@ -589,8 +589,8 @@ aa() {
 }
 
 ##
-## ** History tools **
-## `h`               - shell 'history' wrapper
+## ** Rich history tools **
+## `h`               - regular 'history' wrapper
 h() (
 	(HISTTIMEFORMAT=";$CLE_HTF;" history "$@") | (
 		IFS=';'
@@ -801,11 +801,18 @@ _clemdf() {
 		-e "s/\*\*\(.*\)\*\*/$_CL\1$_CN/" \
 		-e "s/\<_\(.*\)_\>/$_CU\1$_Cu/g" \
 		-e "s/\`\`\`/$_CD~~~~~~~~~~~~~~~~~$_CN/" \
-		-e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g" | less -erFX
+		-e "s/\`\([^\`]*\)\`/$_Cg\1$_CN/g"
 }
 
-#: dump variables in reusable way
-_clevdump() (
+##
+## ** Additional commands **
+## `mdless [files]`  - parse markdown files or stdin and display through less
+mdless() {
+	cat $*|_clemdf|less -erFX
+}
+
+## `vdump VARNAMES`  - dump variables in reusable way
+vdump() (
 	#: awk: 1. exits when reaches functions
 	#:      2. finds variables matching regular expression
 	declare | awk '/^('$1')=/{print}'
@@ -853,8 +860,8 @@ _clepak() {
 		{
 			echo "# evironment $CLE_USER@$CLE_FHN"
 			echo "CLE_SESSION=$1"
-			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' #: translate _Px to CLE_Px
-			_clevdump "${CLE_XVARS// /|}"
+			vdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' #: translate _Px to CLE_Px
+			vdump "${CLE_XVARS// /|}"
 			#: exclude aliases from transfer based on comma separated list in CLE_EXALIAL
 			#: - some aliases are just incompatible and other systems may define weird ones like
 			#:   for example Feodra's x/z/grep variants do not work on BusyBox)
@@ -866,7 +873,7 @@ _clepak() {
 			for XFUN in $CLE_XFUN; do
 				declare -f $XFUN
 			done
-			_clevdump "CLE_DEBUG" # dbg
+			vdump "CLE_DEBUG" # dbg
 		} >$EN
 		XF="$EN"
 		#: copy files to takeaway temporary folder and add them, to the list
@@ -1124,7 +1131,7 @@ cle() {
 		I=${C:1:1}
 		I=${I^}
 		case "$1" in
-		'') _clevdump CLE_P$I ;;
+		'') vdump CLE_P$I ;;
 		' ') unset CLE_P$I ;;
 		*)
 			S=$*
@@ -1142,7 +1149,7 @@ cle() {
 		rev) cp $CLE_CF-bk $CLE_CF;;
 		"")
 			_clebold "$_CU Default/Inherited configuration:"
-			_clevdump _P. CLE_PC
+			vdump _P. CLE_PC
 			if [ -f $CLE_CF ]; then
 				_clebold "$_CU$CLE_CF":
 				cat $CLE_CF
@@ -1203,7 +1210,7 @@ cle() {
 		grep -q "# .* $N:" $P || { _clebold Module download failed;	rm -f $P; return 1;}
 		cle mod "$@";;
 	env) ## `cle env`               - inspect variables
-		_clevdump 'CLE.*' | awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+		vdump 'CLE.*' | awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	ls)	_clebold CLE_D: $CLE_D             # dbg
 		ls -l $CLE_DR                      # dbg
 		if [ $CLE_D != $CLE_DR ]; then     # dbg
@@ -1223,7 +1230,7 @@ cle() {
 	help | -h | --help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf;;
+		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P |mdless;;
 	doc) ## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`
@@ -1232,7 +1239,7 @@ cle() {
 		#: choose one to read
 		PS3="$_CL doc # $_CN"
 		select N in $I;do
-			[ $N ] && curl -sk $CLE_SRC/doc/$N | _clemdf
+			[ $N ] && curl -sk $CLE_SRC/doc/$N | mdless
 			break
 		done;;
 	"") #: do nothing, just show off
