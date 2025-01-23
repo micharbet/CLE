@@ -184,7 +184,8 @@ dbg_var CLE_D
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
-CLE_CF=$CLE_D/cf-$CLE_FHN #: NFS homes may keep configs for several hosts
+CLE_CF=$CLE_D/cf
+[ -f $CLE_CF-$CLE_FHN ] && CLE_CF=$CLE_D/cf-$CLE_FHN #: NFS homes may keep configs for several hosts
 #: TODO: allow to use global $CLE_D/cf even in NFSed environment like e.g. sdf
 CLE_AL=$CLE_D/al
 CLE_HIST=$_H/.clehistory
