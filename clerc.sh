@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-01-13 (Aquarius)
+#* version: 2025-02-20 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -487,7 +487,7 @@ _clepreex() {
 		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; } #: display beforexec marker if defined
 		dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
 		_TIM=$SECONDS #: start history timer $_TIM
-		echo -n $_CN  #: reset tty colors after prompt
+#		echo -n before _CN $_CN and after   #: reset tty colors after prompt
 	fi
 }
 
@@ -1073,13 +1073,17 @@ _clecomp() {
 complete -F _clecomp cle
 
 # lssh completion
-#: there are two possibilities of ssh completion _known_hosts is more common...
-declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-#: while _ssh is better
-#: The path is valid at least on fedora and debian with installed bash-completion package
+#: first initiaze installed completion scripts (just for sure)
+#: I remember completions did not work on some systems without this
 _N=/usr/share/bash-completion
 _clexe $_N/bash_completion
-_clexe $_N/completions/ssh && complete -F _ssh lssh
+_clexe $_N/completions/ssh
+#: there are more possibilities of ssh completion
+#: _known_hosts is the basic one
+declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
+#: while _ssh is better but was replaced by _comp_cmd_ssh in later versions
+declare -F _ssh >/dev/null && complete -F _ssh lssh
+declare -F _comp_cmd_ssh >/dev/null && complete -F _comp_cmd_ssh lssh
 
 # redefine alias builtins
 #: those definitions must be here, only after config and tweaks not to mess
