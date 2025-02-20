@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-01-13 (Aquarius)
+#* version: 2025-02-20 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -112,7 +112,8 @@ CLE_D=$_H/${_N%/*}
 mkdir -m 755 -p $CLE_D
 
 # config, tweak, etc...
-CLE_CF=$CLE_D/cf-$CLE_FHN
+CLE_CF=$CLE_D/cf
+[ -f $CLE_CF-$CLE_FHN ] && CLE_CF=$CLE_D/cf-$CLE_FHN
 CLE_AL=$CLE_D/al
 CLE_HIST=$_H/.clehistory
 CLE_WS=${CLE_RC#$CLE_DR/rc}
@@ -302,7 +303,7 @@ _cledefp() {
 # save configuration
 _clesave() (
 	echo "# $CLE_VER"
-	_clevdump CLE_P.
+	vdump CLE_P.
 ) >$CLE_CF
 
 # prompt callback functions
@@ -352,7 +353,7 @@ _clepreex() {
 		[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"
 		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }
 		_TIM=$SECONDS
-		echo -n $_CN
+#		echo -n before _CN $_CN and after
 	fi
 }
 
@@ -378,7 +379,7 @@ _clerh() {
 		for V in $3; do
 			if [[ $V =~ $REX ]]; then
 				V=${V/\$/}
-				VD=`_clevdump $V`
+				VD=`vdump $V`
 				echo -E "$ID;;$;;${VD:-unset $V}"
 			fi
 		done
@@ -398,7 +399,7 @@ _clerh() {
 ## ** cd command enhancements **
 ## `.. ...`     - up one or two levels
 ## `-`  (dash)  - cd to recent dir
--() { cd - >/dev/null;_clevdump OLDPWD;}
+-() { cd - >/dev/null;vdump OLDPWD;}
 ..() { cd ..; }
 ...() { cd ../..; }
 ## `xx` & `cx`   - bookmark $PWD & use later
@@ -625,7 +626,8 @@ mdless() {
 	cat $*|_clemdf|less -erFX
 }
 
-_clevdump() (
+## `vdump VARNAMES`  - dump variables in reusable way
+vdump() (
 	declare | awk '/^('$1')=/{print}'
 )
 
@@ -654,8 +656,8 @@ _clepak() {
 		{
 			echo "# evironment $CLE_USER@$CLE_FHN"
 			echo "CLE_SESSION=$1"
-			_clevdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/'
-			_clevdump "${CLE_XVARS// /|}"
+			vdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/'
+			vdump "${CLE_XVARS// /|}"
 			XAL=${CLE_EXALIAS:-^$}
 			grep -v "${XAL//,/=\\|}=" $CLE_AL 2>/dev/null
 			for XFUN in $CLE_XFUN; do
@@ -810,10 +812,12 @@ _clecomp() {
 complete -F _clecomp cle
 
 # lssh completion
-declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
 _N=/usr/share/bash-completion
 _clexe $_N/bash_completion
-_clexe $_N/completions/ssh && complete -F _ssh lssh
+_clexe $_N/completions/ssh
+declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
+declare -F _ssh >/dev/null && complete -F _ssh lssh
+declare -F _comp_cmd_ssh >/dev/null && complete -F _comp_cmd_ssh lssh
 
 # redefine alias builtins
 alias() {
@@ -863,7 +867,7 @@ cle() {
 		I=${C:1:1}
 		I=${I^}
 		case "$1" in
-		'') _clevdump CLE_P$I ;;
+		'') vdump CLE_P$I ;;
 		' ') unset CLE_P$I ;;
 		*)
 			S=$*
@@ -881,7 +885,7 @@ cle() {
 		rev) cp $CLE_CF-bk $CLE_CF;;
 		"")
 			_clebold "$_CU Default/Inherited configuration:"
-			_clevdump _P. CLE_PC
+			vdump _P. CLE_PC
 			if [ -f $CLE_CF ]; then
 				_clebold "$_CU$CLE_CF":
 				cat $CLE_CF
@@ -935,7 +939,7 @@ cle() {
 		grep -q "# .* $N:" $P || { _clebold Module download failed;	rm -f $P; return 1;}
 		cle mod "$@";;
 	env) ## `cle env`               - inspect variables
-		_clevdump 'CLE.*' | awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
+		vdump 'CLE.*' | awk -F= "{printf \"$_CL%-12s$_CN%s\n\",\$1,\$2}";;
 	help | -h | --help) ## `cle help [fnc]`        - show help
 		P=`ls $CLE_D/cle-* 2>/dev/null`
 		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P |mdless;;
