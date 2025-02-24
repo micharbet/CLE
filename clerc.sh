@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2023-07-12 (Zodiac)
+#* version: 2025-02-20 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2023 by Michael Arbet
 
@@ -1034,15 +1034,19 @@ _clecomp () {
 	done
 }
 
+# lssh completion
 if [ $BASH ]; then
-	# lssh completion
-	#: there are two possibilities of ssh completion _known_hosts is more common...
-	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
-	#: while _ssh is better
-	#: The path is valid at least on fedora and debian with installed bash-completion package
+	#: first initiaze installed completion scripts (just for sure)
+	#: I remember completions did not work on some systems without this
 	_N=/usr/share/bash-completion
 	_clexe $_N/bash_completion
-	_clexe $_N/completions/ssh && complete -F _ssh lssh
+	_clexe $_N/completions/ssh
+	#: there are more possibilities of ssh completion
+	#: _known_hosts is the basic one
+	declare -F _known_hosts >/dev/null && complete -F _known_hosts lssh
+	#: while _ssh is better but was replaced by _comp_cmd_ssh in later versions
+	declare -F _ssh >/dev/null && complete -F _ssh lssh
+	declare -F _comp_cmd_ssh >/dev/null && complete -F _comp_cmd_ssh lssh
 else
 	# ZSH completions
 	autoload compinit && compinit
