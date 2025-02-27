@@ -1052,7 +1052,7 @@ _clecomp() {
     #: List of subcommands incl additional functions and modules
 	local F=`declare -F | sed -n 's/^.*_cle_//p'`
     F=${F//$'\n'/ }
-	local M=`ls $CLE_D/cle-*|sed 's/^.*cle-//'`
+	local M=`ls $CLE_D/cle-* 2>/dev/null | sed 's/^.*cle-//'`
     M=${M//$'\n'/ }
 	#: default cle command set; 'deploy' is hidden intentionaly
 	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help $M $F)
