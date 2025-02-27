@@ -1,11 +1,11 @@
 ##
 ## ** cle-palette: Color palettes for OSC4 capable terminals **
 #
-#* version: 2024-04-24
+#* version: 2025-02-27
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
-#* Copyright (C) 2019-2024 by Michael Arbet 
+#* Copyright (C) 2019-2025 by Michael Arbet 
 
 ## `cle palette [palname]`      - colorize terminal with predefined palette
 
@@ -481,6 +481,18 @@ reset)	## `cle palette reset`          - reset palette to terminal defaults
 	unset CLE_BG _C9
 	rm -f $PALMOD
 	;;
+
+#: This is a bit tricky
+#: the _compreply code displays real subsequent options but the COMPREPLYCMD
+#: definition serves just as code searched and xecuted by _clecomp function
+#: and IS NOT executed immediately 
+_compreply)
+	#: search for available palettes for completion
+	local PALS=`declare -f | sed -n 's/.*_pal_\([[:graph:]]*\).*/\1/p'`
+	echo $PALS show reset
+	local COMPREPLYCMD="cle palette _compreply"
+	;;
+
 
 "")	# show available palettes
 	_clebold "${_CU}Avaliable palettes:${_Cu}"

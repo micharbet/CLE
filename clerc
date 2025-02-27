@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-02-20 (Aquarius)
+#* version: 2025-02-27 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -789,11 +789,14 @@ PROMPT_COMMAND=_cleprompt
 
 # completions
 _clecomp() {
-	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help)
-	local F=
-	local E=
-	local C
 	COMPREPLY=()
+    COMPREPLYCMD=
+	local C
+	local F=`declare -F | sed -n 's/^.*_cle_//p'`
+    F=${F//$'\n'/ }
+	local M=`ls $CLE_D/cle-*|sed 's/^.*cle-//'`
+    M=${M//$'\n'/ }
+	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help $M $F)
 	case $3 in
 	p1) COMPREPLY="'${CLE_P1:-$_P1}'";;
 	p2) COMPREPLY="'${CLE_P2:-$_P2}'";;
@@ -802,12 +805,16 @@ _clecomp() {
 	pa) COMPREPLY="'${CLE_PA:-$_PA}'";;
 	pt) COMPREPLY="'${CLE_PT:-$_PT}'";;
 	color) COMPREPLY="'$CLE_PC'";;
-	# '') COMPREPLY=$A;;
+	*) 
+		if [ "$3" != "$1" ]; then
+			[[ " $F " =~ " $3 " ]] && COMPREPLYCMD=`sed -n 's/.*COMPREPLYCMD="\([^"]*\)"/\1/p' <<<$(declare -f _cle_$3)`
+			[[ " $M " =~ " $3 " ]] && COMPREPLYCMD=`sed -n 's/.*COMPREPLYCMD="\([^"]*\)"/\1/p' $CLE_D/cle-$3`
+			A=(`eval $COMPREPLYCMD`)
+		fi
+		for C in ${A[@]}; do
+			[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
+		done ;;
 	esac
-	[ "$3" != "$1" ] && return
-	for C in ${A[@]}; do
-		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
-	done
 }
 complete -F _clecomp cle
 

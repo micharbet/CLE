@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-02-20 (Aquarius)
+#* version: 2025-02-27 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -1045,17 +1045,19 @@ PROMPT_COMMAND=_cleprompt
 
 # completions
 #: Command 'cle' completion
-#: as an addition, prompt strings are filled for convenience :)
 _clecomp() {
-	#: list of subcommands, this might be reworked to have possibility of expansion
-	#: with modules (TODO)
-	#: 'cle deploy' is hidden intentionaly
-	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help)
-	local F= #: PLACEHOLDER for _cle_* functions
-	local E= #: PLACEHOLDER for cle-* modules
-	local C
 	COMPREPLY=()
+    COMPREPLYCMD=
+	local C
+    #: List of subcommands incl additional functions and modules
+	local F=`declare -F | sed -n 's/^.*_cle_//p'`
+    F=${F//$'\n'/ }
+	local M=`ls $CLE_D/cle-*|sed 's/^.*cle-//'`
+    M=${M//$'\n'/ }
+	#: default cle command set; 'deploy' is hidden intentionaly
+	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help $M $F)
 	case $3 in
+	#: as an addition, current prompt strings are filled for convenience :)
 	p1) COMPREPLY="'${CLE_P1:-$_P1}'";;
 	p2) COMPREPLY="'${CLE_P2:-$_P2}'";;
 	p3) COMPREPLY="'${CLE_P3:-$_P3}'";;
@@ -1063,12 +1065,19 @@ _clecomp() {
 	pa) COMPREPLY="'${CLE_PA:-$_PA}'";;
 	pt) COMPREPLY="'${CLE_PT:-$_PT}'";;
 	color) COMPREPLY="'$CLE_PC'";;
-	# '') COMPREPLY=$A;;	#:  TODO remove if not necessary
+	*) 
+		if [ "$3" != "$1" ]; then
+			#: At this point the cle subcommand has been found, try to determine further options
+			#: first search for COMPREPLYCMD definition within function or module
+			[[ " $F " =~ " $3 " ]] && COMPREPLYCMD=`sed -n 's/.*COMPREPLYCMD="\([^"]*\)"/\1/p' <<<$(declare -f _cle_$3)`
+			[[ " $M " =~ " $3 " ]] && COMPREPLYCMD=`sed -n 's/.*COMPREPLYCMD="\([^"]*\)"/\1/p' $CLE_D/cle-$3`
+			#: then execute the code for that specific subcommand
+			A=(`eval $COMPREPLYCMD`)
+		fi
+		for C in ${A[@]}; do
+			[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
+		done ;;
 	esac
-	[ "$3" != "$1" ] && return
-	for C in ${A[@]}; do
-		[[ $C =~ ^$2 ]] && COMPREPLY+=($C)
-	done
 }
 complete -F _clecomp cle
 

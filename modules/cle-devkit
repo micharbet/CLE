@@ -1,11 +1,11 @@
 ##
 ## ** cle-devkit: functions to assist CLE development process **
 #
-#* version: 2021-08-24
+#* version: 2025-02-27
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
-#* Copyright (C) 2017-2024 by Michael Arbet
+#* Copyright (C) 2017-2025 by Michael Arbet
 
 CLE_REPO=https://github.com/micharbet/CLE.git
 
@@ -43,8 +43,13 @@ _dk_choosefile () {
 	esac
 }
 
+_dk_files () {
+    ls $CLE_DK/modules/???-* $CLE_DK/devmods/???-*|sed "s:$CLE_DK/[^/]*/...-::"
+}
+
 ## `cle e [mod]`    - edit clerc file ev. specified module
 _cle_e () (
+    COMPREPLYCMD="_dk_files"
 	cd $CLE_DK
 	if [ $1 ]; then
 		_dk_choosefile $1
@@ -56,6 +61,7 @@ _cle_e () (
 
 ## `cle cp [mod]`   - copy development version of clerc or a module
 _cle_cp() {
+    COMPREPLYCMD="_dk_files"
 	local DEST FILENAME
 	pushd $CLE_DK >/dev/null
 	if [ $1 ]; then
