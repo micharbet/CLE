@@ -1,12 +1,13 @@
 ##
 ## ** cle-ed: Tweak and config editor **
 #
-#* version: 2021-12-19
+#* version: 2025-02-27
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
-#* Copyright (C) 2018-2024 by Michael Arbet 
+#* Copyright (C) 2018-2025 by Michael Arbet 
 
+local EDIR=$CLE_D/ed
 
 # `vii filename` -- edit file and keep backup
 vii () {
@@ -14,8 +15,6 @@ vii () {
 	cp $1 $1.bk
 	vi $1
 }
-
-local EDIR=$CLE_D/ed
 
 # initialize basic shortcuts
 if [ ! -d $EDIR ]; then
@@ -67,6 +66,11 @@ ls)	## `cle ed ls`                  -- list everything in the ed folder
 	ls -al $EDIR
 	return
 	;;
+_compreply)
+    find $EDIR -type l -print | sed "s:$EDIR/::"
+    local COMPREPLYCMD="cle ed _compreply"
+    return
+    ;;
 *)	## `cle ed shortcut_to_file`    -- edit a file, make backup
 	local LINK=$EDIR/$1
 	local FILE=`readlink $LINK`
@@ -74,9 +78,8 @@ ls)	## `cle ed ls`                  -- list everything in the ed folder
 esac
 
 if [ $FILE ]; then
-	echo ed: $FILE
 	cp $LINK $LINK.bk 2>/dev/null
-	vi $LINK
+	$EDITOR $LINK
 else
 	echo unknown shortcut: $1
 	return 1
