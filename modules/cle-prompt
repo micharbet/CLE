@@ -1,30 +1,34 @@
 ##
 ## ** cle-prompt: pre-configured prompt themes **
 #
-#* version: 2023-10-20
+#* version: 2025-02-27
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
-#* Copyright (C) 2018-2024 by Michael Arbet 
+#* Copyright (C) 2018-2025 by Michael Arbet 
 
 case "$1" in
 rh)		## `cle prompt rh`       - oneline (almost) RH default
-	cle p0 '-^E-\n'
+	cle pa '-^E-\n'
 	cle p1 '[\u^CD@^C1^h '
 	cle p2 '\w^C1] '
 	cle p3 '\$ '
 	;;
 twoline)	 ## `cle prompt twoline`  - two line prompt
-	cle p0 '- ^E -\n'
+	cle pa '- ^E -\n'
 	cle p1 '\u'
 	cle p2 '@^h ${CLE_IP:+(^i)} \t\n'
 	cle p3 ' \w \$ '
 	;;
 triliner)	## `cle prompt triliner` - even more space for prompt
-	cle p0 '--- ^E ^s" \t ---'
+	cle pa '--- ^E ^s" \t ---'
 	cle p1 '\n\u'
-	cle p2 ' ^h ^CD^i\n'
+	cle p2 '@^h ^CD^i\n'
 	cle p3 ' \w^CD ^g ^C3\$ '
+	;;
+_compreply)
+	echo "rh twoline triliner"    #: just a simple completion reply for now
+	local COMPREPLYCMD="cle prompt _compreply"
 	;;
 "")
 	echo Use following commands to setup your prompt from

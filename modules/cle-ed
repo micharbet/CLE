@@ -9,13 +9,6 @@
 
 local EDIR=$CLE_D/ed
 
-# `vii filename` -- edit file and keep backup
-vii () {
-	[ $1 ] || { echo vii: filename missing; return 1; }
-	cp $1 $1.bk
-	vi $1
-}
-
 # initialize basic shortcuts
 if [ ! -d $EDIR ]; then
 	mkdir -p $EDIR
