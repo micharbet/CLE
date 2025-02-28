@@ -213,10 +213,10 @@ dbg_print "  final CLE_USER=$CLE_USER"
 _clebnr() {
 	cat <<EOT
 
-$_CC   ___| |     ____| $_CN     Command Live Environment
-$_CB  |     |     __|   $_CN brings life to the command line!
-$_Cb  |     |     |     $_CN Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
-$_Cb$_CD \____|_____|_____| $_CN Uncover the magic:$_CL less $CLE_RC$_CN
+$_CY   ___| |     ____| $_CN     Command Live Environment
+$_CG  |     |     __|   $_CN brings life to the command line!
+$_Cg  |     |     |
+$_Cg$_CD \____|_____|_____|    $_CN Read$_CI cle help$_CN and$_CI cle doc$_CN
 
 EOT
 }
@@ -1258,6 +1258,7 @@ cle() {
 		done;;
 	"") #: do nothing, just show off
 		_clebnr
+        echo -n $_CD
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC #: print lines starting with '#*' - header
 		;;
 	*)

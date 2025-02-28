@@ -130,10 +130,10 @@ export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
 _clebnr() {
 	cat <<EOT
 
-$_CC   ___| |     ____| $_CN     Command Live Environment
-$_CB  |     |     __|   $_CN brings life to the command line!
-$_Cb  |     |     |     $_CN Learn more:$_CL cle help$_CN and$_CL cle doc$_CN
-$_Cb$_CD \____|_____|_____| $_CN Uncover the magic:$_CL less $CLE_RC$_CN
+$_CY   ___| |     ____| $_CN     Command Live Environment
+$_CG  |     |     __|   $_CN brings life to the command line!
+$_Cg  |     |     |
+$_Cg$_CD \____|_____|_____|    $_CN Read$_CI cle help$_CN and$_CI cle doc$_CN
 
 EOT
 }
@@ -794,7 +794,7 @@ _clecomp() {
 	local C
 	local F=`declare -F | sed -n 's/^.*_cle_//p'`
     F=${F//$'\n'/ }
-	local M=`ls $CLE_D/cle-*|sed 's/^.*cle-//'`
+	local M=`ls $CLE_D/cle-* 2>/dev/null | sed 's/^.*cle-//'`
     M=${M//$'\n'/ }
 	local A=(color p1 p2 p3 pb pa pt cf mod env update reload doc help $M $F)
 	case $3 in
@@ -960,6 +960,7 @@ cle() {
 		done;;
 	"")
 		_clebnr
+        echo -n $_CD
 		sed -n 's/^#\*\(.*\)/\1/p' $CLE_RC
 		;;
 	*)
