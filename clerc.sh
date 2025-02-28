@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-02-27 (Aquarius)
+#* version: 2025-02-28 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -662,8 +662,8 @@ hh() {
 		#: select either number of records or compose search string
 		[[ $* =~ ^[0-9]+$ ]] && N=$* || {
 			C=${*//\//\\/} #: replace slashes wit bsckslash-slash for awk with this nice pattern
-			C=${C// /\\s+} #: ensure a space will match any number of spaces in a history record
-            [[ $C =~ ^\^ ]] && C=${C/^/} || C=".*$C" #: caret in search string indicates beginning of a command
+			C=${C// /[[:space:]]+} #: ensure a space will match any number of spaces in a history record
+			[[ $C =~ ^\^ ]] && C=${C/^/} || C=".*$C" #: caret in search string indicates beginning of a command
 			S=$S"&& /^.+;.+;.*;[0-9 ]+;.*;$C/"
 		}
 	else
