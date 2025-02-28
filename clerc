@@ -340,7 +340,6 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
 
 history -cr $HISTFILE
 _clepreex() {
-	trap "" DEBUG
 	_HR=$(HISTTIMEFORMAT=";$CLE_HTF;" history 1)
 	_HR=${_HR#*;}
 	_DT=${_HR/;*/}
@@ -451,7 +450,7 @@ _RHI=1
 _RHLEN=0
 hh() {
 	local O S N D C OPTIND MOD OUT
-	while getopts "a:mtwsncflbex0123456789" O; do
+	while getopts "a:mtwsnrcflbex0123456789" O; do
 		case $O in
 		t) ## `hh -t`           - commands from current session/terminal
 			S=$S"&& \$2==\"$CLE_USER-$$\"";;
@@ -469,7 +468,9 @@ hh() {
 			S=$S"&& \$4==0";;
 		n) ## `hh -n`           - narrow output, hide time and session id
 			MOD=n;;
-		c) ## `hh -c`           - show only commands
+		r) ## `hh -r`           - show only real commands
+			MOD=r;;
+		c) ## `hh -c`           - show only command column - good for copypaste
 			MOD=c;;
 		f) ## `hh -f`           - show working folder history
 			MOD=f;;
@@ -490,7 +491,7 @@ hh() {
 			return;;
 		esac
 	done
-	S=$S"${D:+&& ( $D )}"
+    S=$S"${D:+&& ( $D )}"
 
 	_RHARG="$*"
 	shift $((OPTIND-1))
@@ -499,14 +500,15 @@ hh() {
 	if [ "$*" ]; then
 		[[ $* =~ ^[0-9]+$ ]] && N=$* || {
 			C=${*//\//\\/}
-			C=${C/ /\\ }
-			S=$S"&& \$4~/[0..9 ]/ && /.+;.+;.*;.*;.*;.*$C/"
+			C=${C// /\\s+}
+            [[ $C =~ ^\^ ]] && C=${C/^/} || C=".*$C"
+			S=$S"&& /^.+;.+;.*;[0-9 ]+;.*;$C/"
 		}
 	else
 		[ "$S" ] || N=100
 	fi
 
-	local AW='
+	local AWK='
 	BEGIN {
 		FS=";"
 		CN="'$_CN'"
@@ -530,6 +532,7 @@ hh() {
 			FORM=CST "%-9s" CFL " %-25s:" CCM " %s\n" CN
 			printf FORM,$4,$5,CMD
 		}
+		else if(MOD~"r" && $4!~/[0-9]/) next
 		else if(MOD~"c") print CMD
 		else if(MOD~"f") CMD=$5
 		else {
@@ -548,7 +551,7 @@ hh() {
 	}'
 
 	local REVB=$(mktemp clerh.XXXXXX)
-	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
+	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AWK"' $OUT
 
 	_RHBUF=()
 	_RHLEN=0

@@ -470,7 +470,7 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF } #: keep already tweaked value if exi
 #: This fuction is used within prompt calback. Read code efficiency note above!
 history -cr $HISTFILE
 _clepreex() {
-	trap "" DEBUG
+#:	trap "" DEBUG #: this was here for a while and I have no ide why but effectively it was breaking rich history recording
 	_HR=$(HISTTIMEFORMAT=";$CLE_HTF;" history 1) #: get new history record
 	_HR=${_HR#*;}                                #: strip sequence number
 	_DT=${_HR/;*/}                               #: extract date and time
@@ -610,7 +610,7 @@ hh() {
 	#: $S   .. awk search string is composed out of comandline options
 	#: $D   .. days condition set is separate, there are 'or' inside
 	#: $MOD .. output modifers
-	while getopts "a:mtwsncflbex0123456789" O; do
+	while getopts "a:mtwsnrcflbex0123456789" O; do
 		case $O in
 		t) ## `hh -t`           - commands from current session/terminal
 			S=$S"&& \$2==\"$CLE_USER-$$\"";;
@@ -628,7 +628,9 @@ hh() {
 			S=$S"&& \$4==0";;
 		n) ## `hh -n`           - narrow output, hide time and session id
 			MOD=n;;
-		c) ## `hh -c`           - show only commands
+		r) ## `hh -r`           - show only real commands
+			MOD=r;;
+		c) ## `hh -c`           - show only command column - good for copypaste
 			MOD=c;;
 		f) ## `hh -f`           - show working folder history
 			MOD=f;;
@@ -649,7 +651,7 @@ hh() {
 			return;;
 		esac
 	done
-	S=$S"${D:+&& ( $D )}" #: add days 'or' conditions (if any) to the serach string
+    S=$S"${D:+&& ( $D )}" #: add days (0-9) if any to the serach string
 
 	_RHARG="$*" #: save the search arguments for future reference
 	# dbg_var OPTIND
@@ -660,8 +662,9 @@ hh() {
 		#: select either number of records or compose search string
 		[[ $* =~ ^[0-9]+$ ]] && N=$* || {
 			C=${*//\//\\/} #: replace slashes wit bsckslash-slash for awk with this nice pattern
-			C=${C/ /\\ }
-			S=$S"&& \$4~/[0..9 ]/ && /.+;.+;.*;.*;.*;.*$C/"
+			C=${C// /\\s+} #: ensure a space will match any number of spaces in a history record
+            [[ $C =~ ^\^ ]] && C=${C/^/} || C=".*$C" #: caret in search string indicates beginning of a command
+			S=$S"&& /^.+;.+;.*;[0-9 ]+;.*;$C/"
 		}
 	else
 		#: fallback to 100 records if there is no search expression
@@ -673,7 +676,7 @@ hh() {
 	dbg_var S
 	#: dbg_sleep 3
 	#: AWK script to search and display in rich history file
-	local AW='
+	local AWK='
 	BEGIN {
 		FS=";"
 		#: simplest way of use defined colors I found so far
@@ -700,6 +703,7 @@ hh() {
 			FORM=CST "%-9s" CFL " %-25s:" CCM " %s\n" CN
 			printf FORM,$4,$5,CMD
 		}
+		else if(MOD~"r" && $4!~/[0-9]/) next
 		else if(MOD~"c") print CMD
 		else if(MOD~"f") CMD=$5
 		else {
@@ -719,7 +723,7 @@ hh() {
 
 	#: execute filter stream
 	local REVB=$(mktemp clerh.XXXXXX) #: reverse history buffer
-	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AW"' $OUT
+	eval tail -n $N $CLE_HIST \| awk -v MOD='$MOD' -v REVB=$REVB '"$AWK"' $OUT
 
 	#: fill the rich history buffer
 	_RHBUF=()           #: array of commands from history
