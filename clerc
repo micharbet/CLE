@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-02-27 (Aquarius)
+#* version: 2025-02-28 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -500,8 +500,8 @@ hh() {
 	if [ "$*" ]; then
 		[[ $* =~ ^[0-9]+$ ]] && N=$* || {
 			C=${*//\//\\/}
-			C=${C// /\\s+}
-            [[ $C =~ ^\^ ]] && C=${C/^/} || C=".*$C"
+			C=${C// /[[:space:]]+}
+			[[ $C =~ ^\^ ]] && C=${C/^/} || C=".*$C"
 			S=$S"&& /^.+;.+;.*;[0-9 ]+;.*;$C/"
 		}
 	else
@@ -642,6 +642,7 @@ vdump() (
 CLE_XFUN=
 CLE_XFILES=
 _clepak() {
+
 	RH=${CLE_DR/\/.*/}
 	RD=${CLE_DR/$RH\//}
 
@@ -655,6 +656,7 @@ _clepak() {
 			mkdir -m 0755 -p $RH/$RD 2>/dev/null && break
 		done
 		cd $RH
+
 		EN=$RD/env-$CLE_FHN
 		{
 			echo "# evironment $CLE_USER@$CLE_FHN"
@@ -668,12 +670,13 @@ _clepak() {
 			done
 		} >$EN
 		XF="$EN"
+
 		for F in $CLE_XFILES tw rc; do
 			RC=$RD/$F-$CLE_FHN
 			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC"
 		done
 	fi
-	#; is in $RCLIST
+
 	[ "$1" = lssh ] && C64=`tar chzf - $XF 2>/dev/null | base64 | tr -d '\n\r '`
 	popd >/dev/null
 }

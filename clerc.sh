@@ -338,18 +338,24 @@ _clebg() {
 #:  - enhanced prompt escape codes introduced with ^ sign
 _clesc() (
 	dbg_print ' _clesc'
-	#: cannot add notes to relevant lines, they would break sed expressions. So...
-	#: ^i       ... remote IP address
-	#: ^h       ... shortened hostname
-	#: ^H       ... FQDN (if could be obtained)
-	#: ^s       ... elapsed seconds of recent command
-	#: ^tNUMBER ... threshold for displaying afterexec marker
-	#: ^g       ... git branch and status
-	#: ^?, ^e   ... return (error code)
-	#: ^E       ... return code in square brackets, highlighted red if non zero
-	#: ^Cx      ... change text color, x=one-letter-code
-	#: ^vVAR    ... display variable name and value
-	#: ^^       ... caret itself
+	#: This function translates CLE's custom prompt escape sequences into
+	#: the actual shell prompt escape sequences that bash can understand.
+	#: It uses a single sed command for efficiency.
+	#:
+	#: The following custom escape sequences are supported:
+	#:   ^i       ... remote IP address
+	#:   ^h       ... shortened hostname
+	#:   ^H       ... FQDN (if could be obtained)
+	#:   ^U       ... CLE username (persistent across sessions)
+	#:   ^s       ... elapsed seconds of the last command
+	#:   ^tNUMBER ... threshold for displaying the after-execution marker (the number is stripped)
+	#:   ^g       ... git branch and status
+	#:   ^? or ^e ... return code of the last command
+	#:   ^E       ... return code in brackets, highlighted if non-zero
+	#:   ^C<n>    ... change text color to one of the 5 prompt colors
+	#:   ^C<x>    ... change text color, x is a single letter color code
+	#:   ^v<VAR>  ... display a shell variable's name and its value
+	#:   ^^       ... a literal caret symbol
 	sed \
 		-e 's/\^i/\${CLE_IP}/g'\
 		-e 's/\^h/\${CLE_SHN}/g'\
@@ -676,6 +682,18 @@ hh() {
 	dbg_var S
 	#: dbg_sleep 3
 	#: AWK script to search and display in rich history file
+	#: AWK script to search and display in rich history file
+	#: This script processes the rich history file ($CLE_HIST).
+	#: - BEGIN block: Sets the field separator and imports shell color variables.
+	#: - Main block (//'$S'): This is the main filter. It runs for each line matching
+	#:   the search pattern ($S) provided by the shell.
+	#:   - It determines the command, which may contain semicolons itself.
+	#:   - It sets colors based on the command's exit code ($4).
+	#:   - It formats the output based on the modifier flags (n, r, c, f).
+	#:   - It collects valid commands into the CMDS array for the END block.
+	#: - END block: After processing all lines, this block creates a list of
+	#:   unique commands from the session. This list is written to a temporary
+	#:   file (REVB) and used as a buffer for interactive history recall (Alt-k/j).
 	local AWK='
 	BEGIN {
 		FS=";"
@@ -837,7 +855,13 @@ vdump() (
 CLE_XFUN=   #: list of functions for transfer to remote session
 CLE_XFILES= #: list of fies to takeaway
 _clepak() {
+	#: This function prepares the CLE environment for a "live session" (e.g., via lssh or lsu).
+	#: It gathers all necessary configuration, aliases, functions, and the main rc script,
+	#: then packs them into a base64-encoded tarball to be transferred to the remote host.
+
+	#: RH: Resource Home - The base directory for temporary session files (e.g., /var/tmp).
 	RH=${CLE_DR/\/.*/}  #: resource home is path until first dot
+	#: RD: Resource Directory - The relative path within RH where session files are stored.
 	RD=${CLE_DR/$RH\//} #: relative path to resource directory
 	dbg_var RH
 	dbg_var RD
@@ -845,58 +869,55 @@ _clepak() {
 
 	pushd . >/dev/null #: keep curred working directory while using relative paths
 	if [ $CLE_WS ]; then
-		#: this is live session, all files *should* be available, just set vars
+		#: This is already a live session. The necessary files should already exist.
+		#: We just need to set the paths correctly for the next nested session.
 		cd $RH
 		RC=${CLE_RC/$RH\//}
 		XF=`ls $RD/*$CLE_WS`
 	else
-		#: Live session is to be prepared - copy startup files
-		#: First prepare temporary folder
-		#: TODO: consider issue #78 - /var/tmp mounted noexec - this may cause troubles
-		#:       IDEA: use configurable variable ?
+		#: This is the initial workstation session. We need to create the package.
+		#: First, find a writable temporary directory to stage the files.
 		for RH in /var/tmp /tmp /home; do
 			dbg_print "_clepak: preparing $RH/$RD"
 			mkdir -m 0755 -p $RH/$RD 2>/dev/null && break
 		done
 		cd $RH
-		#: prepare environment file to transfer: color table, prompt settings, WS name
-		#: aliases and custom variables (CLE_XVARS)
-		EN=$RD/env-$CLE_FHN #: Workstation's environmen file
+
+		#: Create the environment file ($EN) that will be sourced on the remote host.
+		#: It contains variables, aliases, and functions to be transferred.
+		EN=$RD/env-$CLE_FHN #: Workstation's environment file
 		{
 			echo "# evironment $CLE_USER@$CLE_FHN"
 			echo "CLE_SESSION=$1"
+			#: Transfer prompt settings (_P*) and color table (_C*).
 			vdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' #: translate _Px to CLE_Px
+			#: Transfer any user-specified variables.
 			vdump "${CLE_XVARS// /|}"
-			#: exclude aliases from transfer based on comma separated list in CLE_EXALIAL
-			#: - some aliases are just incompatible and other systems may define weird ones like
-			#:   for example Feodra's x/z/grep variants do not work on BusyBox)
-			#: - A user may want to keep some aliases on workstation only
-			#: Example of use: CLE_EXALIAS=grep,vi,which.*
+			#: Transfer aliases, excluding any specified in CLE_EXALIAS.
+			#: This is useful for aliases that are not compatible with all remote systems.
 			XAL=${CLE_EXALIAS:-^$}
 			grep -v "${XAL//,/=\\|}=" $CLE_AL 2>/dev/null
-			#: Add selected functions to transfer
+			#: Transfer any user-specified functions.
 			for XFUN in $CLE_XFUN; do
 				declare -f $XFUN
 			done
 			vdump "CLE_DEBUG" # dbg
 		} >$EN
 		XF="$EN"
-		#: copy files to takeaway temporary folder and add them, to the list
-		#: add also custom files (CLE_XFILES)
-		#: takeaway filenames are enhanced with worksation's name - $CLE_FHN
-		#: NOTE: currently all takeaway files must be in cle folder
-		#: TODO: think about other locations, ev. symlinks
-		for F in $CLE_XFILES tw rc; do #: 'rc' must be the ast item!
+
+		#: Copy other necessary files (tweaks, main rc file, custom files) to the staging area.
+		#: The filenames are suffixed with the workstation's hostname ($CLE_FHN)
+		#: to avoid conflicts if multiple hosts use the same shared home directory.
+		for F in $CLE_XFILES tw rc; do #: 'rc' must be the last item!
 			RC=$RD/$F-$CLE_FHN
 			cp $CLE_DR/$F $RC 2>/dev/null && XF="$XF $RC" #: only existing items!
 		done
-		#: side effect: $RC now contains relative path to clerc file
+		#: side effect: $RC now contains the relative path to the main rc file for the remote session.
 	fi
-	#: store the envrironment as base64 encoded tarball into $C64 if required
-	#: otherwise files are ready in $RD folder for local sessions and their list
-	#; is in $RCLIST
-	#: Note: I've never owned this computer, I had Atari 800XL instead :-)
-	#: Anyway, the variable name can be considered as a tribute to the venerable 8-bit
+
+	#: For remote ssh sessions, create a compressed tarball of all staged files,
+	#: encode it in base64, and store it in the C64 variable.
+	#: The name C64 is a nod to the Commodore 64.
 	dbg_var PWD
 	dbg_var XF
 	dbg_var RC
