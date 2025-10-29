@@ -120,6 +120,8 @@ CLE_WS=${CLE_RC#$CLE_DR/rc}
 CLE_TW=$CLE_DR/tw$CLE_WS
 CLE_ENV=$CLE_DR/env$CLE_WS
 
+CLE_RHIGNORE="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ |^cle\ (p[123abpt]|color)"
+
 # who I am
 _N=${CLE_RC#*cle-}
 _N=${_N%/rc*}
@@ -269,7 +271,11 @@ _cle_r() {
 # craft prompts from defined strings
 _cleps() {
 	local PT PA PB
-	[ "$_ST" ] && PT=$_ST || PT=${CLE_PT:-$_PT}
+	if declare -p CLE_PT &>/dev/null; then
+		PT=${CLE_PT}
+	else
+		[ "$_ST" ] && PT=$_ST || PT=${_PT}
+	fi
 	PA=${CLE_PA:-$_PA}
 	PB=${CLE_PB:-$_PB}
 	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
@@ -348,8 +354,10 @@ _clepreex() {
 	if [ "$BASH_COMMAND" = "_cleprompt" ]; then
 		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD"
 	else
-		[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
-		[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC"
+		if ! [[ $_CMD =~ $CLE_RHIGNORE ]]; then
+			[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
+			{ [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC"
+		fi
 		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }
 		_TIM=$SECONDS
 #		echo -n before _CN $_CN and after
@@ -365,8 +373,7 @@ _clerh() {
 	4)	DT=$(date "+$CLE_HTF");SC=$1;shift;;
 	5)	DT=$1;SC=$2;shift 2;;
 	esac
-	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	[[ $3 =~ $REX ]] && return
+	[[ $3 =~ $CLE_RHIGNORE ]] && return
 	[ "$3" = "$_CPR" ] && return
 	_CPR=$3
 	W=${2/$HOME/\~}
@@ -523,7 +530,6 @@ hh() {
 	//'$S' {
 		CMD=substr($0,index($0,$6))
 		CST=CR; CFL=CN; CCM=CL
-		if($4=="0") { CST=CG; CFL=CN; CCM=CL }
 		if($4=="#" || $4=="$") { CST=Cy; CFL=Cy; CCM=Cy }
 		if($4=="*") { CST=Cy; CFL=Cy; CCM=Cy; CMD="cd "$5 }
 		if($4=="@") { CST=Cb; CFL=Cb; CCM=Cb }
@@ -879,15 +885,19 @@ cle() {
 	p?) ## `cle pX [str]`          - show/define prompt parts
 		I=${C:1:1}
 		I=${I^}
-		case "$1" in
-		'') vdump CLE_P$I ;;
-		' ') unset CLE_P$I ;;
-		*)
-			S=$*
-			#eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
-			eval "CLE_P$I='$*'"
-			;;
-		esac
+		if [ $# -eq 0 ]; then
+			vdump CLE_P$I
+		else
+			case "$1" in
+			'' | ' ' | off)
+				eval "CLE_P$I=''"
+				;;
+			*)
+				S=$*
+				eval "CLE_P$I='$*'"
+				;;
+			esac
+		fi
 		_cleps
 		_clesave
 		;;

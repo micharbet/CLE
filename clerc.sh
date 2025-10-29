@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-02-28 (Aquarius)
+#* version: 2025-10-29 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -197,6 +197,9 @@ CLE_WS=${CLE_RC#$CLE_DR/rc}
 CLE_TW=$CLE_DR/tw$CLE_WS
 CLE_ENV=$CLE_DR/env$CLE_WS
 
+#: Commands to ignore in rich history and dynamic title
+CLE_RHIGNORE="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ |^cle\ (p[123abpt]|color)"
+
 # who I am
 #: determine username that will be inherited over the all subsquent live sessions
 #: extract the username from folder name .../.cle-USER/...
@@ -384,7 +387,15 @@ _cle_r() {
 _cleps() {
 	dbg_print ' _cleps'
 	local PT PA PB
-	[ "$_ST" ] && PT=$_ST || PT=${CLE_PT:-$_PT} #: _ST - shortened title for screen and tmux
+	#: Handle terminal title string (PT).
+	if declare -p CLE_PT &>/dev/null; then
+		#: CLE_PT is set. If it's empty, PT will be empty, effectively disabling the title.
+		PT=${CLE_PT}
+	else
+		#: CLE_PT is not set, so fall back to the default title string (_PT).
+		#: For screen/tmux, use the shortened title (_ST).
+		[ "$_ST" ] && PT=$_ST || PT=${_PT}
+	fi
 	PA=${CLE_PA:-$_PA}
 	PB=${CLE_PB:-$_PB}
 	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
@@ -488,8 +499,11 @@ _clepreex() {
 	if [ "$BASH_COMMAND" = "_cleprompt" ]; then
 		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD" #: record a note to history
 	else
-		[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99} #: shorten command to display in terminal title
-		[ "$_PT" ] && printf "$_CT%s$_Ct" "$_SC" #: show executed command in the title
+		#: Do not update title if the command is in the ignore list.
+		if ! [[ $_CMD =~ $CLE_RHIGNORE ]]; then
+			[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99} #: shorten command to display in terminal title
+			{ [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC" #: show executed command in the title
+		fi
 		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; } #: display beforexec marker if defined
 		dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
 		_TIM=$SECONDS #: start history timer $_TIM
@@ -513,8 +527,7 @@ _clerh() {
 	5)	DT=$1;SC=$2;shift 2;;
 	esac
 	#: ignore commands that dont want to be recorded
-	REX="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ "
-	[[ $3 =~ $REX ]] && return
+	[[ $3 =~ $CLE_RHIGNORE ]] && return
 	#: ignore repeating commands
 	[ "$3" = "$_CPR" ] && return #: do not record repeating items
 	dbg_print "_clerh(): Cmd='$3' PrevCmd='$_CPR'"
@@ -682,7 +695,6 @@ hh() {
 	dbg_var S
 	#: dbg_sleep 3
 	#: AWK script to search and display in rich history file
-	#: AWK script to search and display in rich history file
 	#: This script processes the rich history file ($CLE_HIST).
 	#: - BEGIN block: Sets the field separator and imports shell color variables.
 	#: - Main block (//'$S'): This is the main filter. It runs for each line matching
@@ -707,11 +719,10 @@ hh() {
 		Cb="'$_Cb'"
 		CB="'$_CB'"
 	}
-	//'$S' {	#: search conditions will be pushed here from shell variable $S
-		CMD=substr($0,index($0,$6))	#: real command can contain semicolon, grab the whole rest of line
+	//'$S' {
+		CMD=substr($0,index($0,$6))
 		#:     update colors according to status in $4
 		CST=CR; CFL=CN; CCM=CL
-		if($4=="0") { CST=CG; CFL=CN; CCM=CL }
 		if($4=="#" || $4=="$") { CST=Cy; CFL=Cy; CCM=Cy }
 		if($4=="*") { CST=Cy; CFL=Cy; CCM=Cy; CMD="cd "$5 }
 		if($4=="@") { CST=Cb; CFL=Cb; CCM=Cb }
@@ -730,9 +741,9 @@ hh() {
 		}
 		if( $4~/^[0-9 *]+$/ ) CMDS[I++]=CMD
 	}
-	END {	#: now select only unique commands for rich history buffer
+	END {	#: only unique commands for rich history buffer
 		UNIQ="\n"
-		while(I-- && N<100 ) { #: maximum records
+		while(I-- && N<100 ) { #: max 100 records
 			C=CMDS[I] "\n"
 			if( ! index(UNIQ,"\n" C) ) { UNIQ=UNIQ C; N++ }
 		}
@@ -867,7 +878,7 @@ _clepak() {
 	dbg_var RD
 	dbg_var CLE_XFILES
 
-	pushd . >/dev/null #: keep curred working directory while using relative paths
+	pushd . >/dev/null #: keep current working directory while using relative paths
 	if [ $CLE_WS ]; then
 		#: This is already a live session. The necessary files should already exist.
 		#: We just need to set the paths correctly for the next nested session.
@@ -877,6 +888,7 @@ _clepak() {
 	else
 		#: This is the initial workstation session. We need to create the package.
 		#: First, find a writable temporary directory to stage the files.
+        #:  - use the first available (writable) folder from the list below
 		for RH in /var/tmp /tmp /home; do
 			dbg_print "_clepak: preparing $RH/$RD"
 			mkdir -m 0755 -p $RH/$RD 2>/dev/null && break
@@ -1169,15 +1181,23 @@ cle() {
 	p?) ## `cle pX [str]`          - show/define prompt parts
 		I=${C:1:1}
 		I=${I^}
-		case "$1" in
-		'') vdump CLE_P$I ;;
-		' ') unset CLE_P$I ;;
-		*)
-			S=$*
-			#eval "[ \"\$S\" != \"\$_P$I\" ] && { CLE_P$I='$*';_clepcp;_cleps;_clesave; }" || :
-			eval "CLE_P$I='$*'"
-			;;
-		esac
+		if [ $# -eq 0 ]; then
+			#: No arguments provided (e.g., 'cle pt'), so display current value.
+			vdump CLE_P$I
+		else
+			#: Arguments were provided.
+			case "$1" in
+			'' | ' ' | off)
+				#: An empty string, a space, or 'off' means set to empty to disable.
+				eval "CLE_P$I=''"
+				;;
+			*)
+				#: Any other argument sets the value.
+				S=$*
+				eval "CLE_P$I='$*'"
+				;;
+			esac
+		fi
 		_cleps
 		_clesave
 		;;
