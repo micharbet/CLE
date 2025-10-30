@@ -35,10 +35,10 @@
 
 #:------------------------------------------------------------:#
 # Debugging helpers                                                             # dbg
-dbg_print() { [ $CLE_DEBUG ] && echo "$_CN$_CD DBG: $*$_CN" >/dev/tty; }        # dbg
+dbg_print() { [ $CLE_DEBUG ] && echo "$_CN$_CD DBG: ${FUNCNAME[1]}: $*$_CN" >/dev/tty; }        # dbg
 dbg_var() (                                                                     # dbg
 	V=${!1}                                                                     # dbg
-	[ $CLE_DEBUG ] && printf "$_CN$_CD DBG: %-16s = %s\n" $1 "$V$_CN" >/dev/tty # dbg
+	[ $CLE_DEBUG ] && printf "$_CN$_CD DBG: %s: %-16s = %s\n" "${FUNCNAME[1]}" "$1" "$V$_CN" >/dev/tty # dbg
 )                                                                               # dbg
 dbg_sleep() { [ $CLE_DEBUG ] && sleep $*; }                                     # dbg
 dbg_print
@@ -104,7 +104,7 @@ _clexe() {
 	[ -f "$1" ] || return 1
 	[[ $CLE_EXE =~ :$1[:$] ]] && return
 	CLE_EXE=$CLE_EXE:$1
-	dbg_print _clexe $1
+	dbg_print "$1"
 	source $1
 }
 CLE_EXE=$CLE_RC
@@ -242,7 +242,7 @@ _cleask() (
 #: however systems that do not contain it. To avoid errors at least basic
 #: colors are defined directly with escape codes.
 _cletable() {
-	dbg_print "_cletable updating color table"
+	dbg_print "updating color table"
 	_C_=$TERM    #: save terminal type of this table
 	_Cn=$'\E[0m' #: for use inside prompt, may get additional color codes
 	_CN=`tput sgr0`; _CN=${_CN:-$_Cn}
@@ -340,7 +340,7 @@ _clebg() {
 # CLE prompt escapes
 #:  - enhanced prompt escape codes introduced with ^ sign
 _clesc() (
-	dbg_print ' _clesc'
+	dbg_print
 	#: This function translates CLE's custom prompt escape sequences into
 	#: the actual shell prompt escape sequences that bash can understand.
 	#: It uses a single sed command for efficiency.
@@ -385,7 +385,7 @@ _cle_r() {
 
 # craft prompts from defined strings
 _cleps() {
-	dbg_print ' _cleps'
+	dbg_print
 	local PT PA PB
 	#: Handle terminal title string (PT).
 	if declare -p CLE_PT &>/dev/null; then
@@ -487,14 +487,14 @@ HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF } #: keep already tweaked value if exi
 #: This fuction is used within prompt calback. Read code efficiency note above!
 history -cr $HISTFILE
 _clepreex() {
-#:	trap "" DEBUG #: this was here for a while and I have no ide why but effectively it was breaking rich history recording
+    echo -n $_CN
 	_HR=$(HISTTIMEFORMAT=";$CLE_HTF;" history 1) #: get new history record
 	_HR=${_HR#*;}                                #: strip sequence number
 	_DT=${_HR/;*/}                               #: extract date and time
 	_CMD=${_HR/$_DT;/}                           #: extract pure command
-	dbg_print "${_CN}_clepreex: BASH_COMMAND = '$BASH_COMMAND'"
-	dbg_print "${_CN}_clepreex:          _HR = '$_HR'"
-	dbg_print "${_CN}_clepreex:         _CMD = '$_CMD'"
+	dbg_print "BASH_COMMAND = '$BASH_COMMAND'"
+	dbg_print "         _HR = '$_HR'"
+	dbg_print "        _CMD = '$_CMD'"
 
 	if [ "$BASH_COMMAND" = "_cleprompt" ]; then
 		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD" #: record a note to history
@@ -517,7 +517,7 @@ _CPR= #: previously recorded command
 _clerh() {
 	local DT RC REX ID V VD W
 	#: three to five arguments, timestamp and elapsed seconds may be missing
-	dbg_print "_clerh $# arguments: '$@'"
+	dbg_print "$# arguments: '$@'"
 	case $# in
 	#: here is an exception, calling the 'date' binary
 	#: but only in special cases when no real command was executed
@@ -530,7 +530,7 @@ _clerh() {
 	[[ $3 =~ $CLE_RHIGNORE ]] && return
 	#: ignore repeating commands
 	[ "$3" = "$_CPR" ] && return #: do not record repeating items
-	dbg_print "_clerh(): Cmd='$3' PrevCmd='$_CPR'"
+	dbg_print "Cmd='$3' PrevCmd='$_CPR'"
 	_CPR=$3
 	#: working dir (substitute home with ~)
 	W=${2/$HOME/\~}
@@ -890,7 +890,7 @@ _clepak() {
 		#: First, find a writable temporary directory to stage the files.
         #:  - use the first available (writable) folder from the list below
 		for RH in /var/tmp /tmp /home; do
-			dbg_print "_clepak: preparing $RH/$RD"
+			dbg_print "preparing $RH/$RD"
 			mkdir -m 0755 -p $RH/$RD 2>/dev/null && break
 		done
 		cd $RH
@@ -984,7 +984,7 @@ lssh() (
 lsudo() (
 	_cleprelife lsudo "$@"
 	_clepak $CLE_SESSION:lsudo
-	dbg_print "lsudo runs: $RH/$RC"
+	dbg_print "runs: $RH/$RC"
 	sudo -i -u ${1:-root} $RH/$RC
 	#: save exit code and eventually execute a code after live session
 	_cleafterlife lsudo "$@"
