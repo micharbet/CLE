@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-10-29 (Aquarius)
+#* version: 2025-10-30 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -317,7 +317,7 @@ _cleclr() {
 		fi
 		eval "_C$I=\$CI"
 	done
-	_C5=$_C2$_CD #: dim color for status
+	_C5=$_C4$_CD #: dim color for status
 	if [ $E ]; then
 		printf "Choose a predefined scheme: "
 		declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
@@ -449,16 +449,47 @@ _clesave() (
 #:
 _PST='${PIPESTATUS[@]}'               #: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: bash3 workaround
-_TIM=                                 #: empty timer indicates no command has been issued
-_cleprompt() {
+_TIM=
+CLE_HTF='%F %T'                             #: default history timeformat
+HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF } #: can be tweaked
+history -cr $HISTFILE
+
+#: Bash workaround to Z-shell preexec()function.
+#: This fuction is used within prompt calback. Read code efficiency note above!
+_cle_preexec() {
+    trap - DEBUG
+	local _HR
+	_HR=$(HISTTIMEFORMAT=";$CLE_HTF;" history 1) #: get new history record
+	_HR=${_HR#*;}                                #: strip sequence number
+	_DT=${_HR/;*/}                               #: extract date and time
+	_CMD=${_HR/$_DT;/}                           #: extract pure command
+	dbg_print "BASH_COMMAND = '$BASH_COMMAND'"
+	dbg_print "         _HR = '$_HR'"
+	dbg_print "        _CMD = '$_CMD'"
+
+    #: record a note to rich history
+    [[ "$BASH_COMMAND" =~ ^_ ]] && return
+    _TIM=${_TIM:-$SECONDS} #: start history timer $_TIM
+
+    #: Do not update title if the command is in the ignore list.
+    if ! [[ $_CMD =~ $CLE_RHIGNORE ]]; then
+        #: shorten command to display in terminal title and diplay it there
+        [ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
+        { [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC"
+    fi
+    #: display beforexec marker if defined
+    [ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }
+    dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
+    echo -n $_CN
+}
+
+_cle_postexec() {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
 	[ $CLE_BG ] && printf '\e]11;'$CLE_BG'\e\\' #: reset background color
-	if [ "$_TIM" ]; then                        #: check if a command was issued
-		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || {
-			_EC=0
-			_CE=
-		}                #: error code highlight
+
+	if [[ "$_TIM" || "$_CMD" =~ ^\# ]]; then    #: check if a command or a note was entered
+		[[ $_EC =~ [1-9] ]] && _CE=$_Ce         #: error code highlight
 		_CA=${_CE:-$_C5} #: afterexec marker color
 		dbg_print "$_C5>>>>  End of command output  '$_CMD' <<<<$_CN"
 		_SEC=$((SECONDS-_TIM))
@@ -476,39 +507,8 @@ _cleprompt() {
 		_CE=
 		_EC=0
 	fi
-	_TIM=
-	trap _clepreex DEBUG
-}
-
-CLE_HTF='%F %T'
-HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF } #: keep already tweaked value if exists
-
-#: Bash workaround to Z-shell preexec()function.
-#: This fuction is used within prompt calback. Read code efficiency note above!
-history -cr $HISTFILE
-_clepreex() {
-    echo -n $_CN
-	_HR=$(HISTTIMEFORMAT=";$CLE_HTF;" history 1) #: get new history record
-	_HR=${_HR#*;}                                #: strip sequence number
-	_DT=${_HR/;*/}                               #: extract date and time
-	_CMD=${_HR/$_DT;/}                           #: extract pure command
-	dbg_print "BASH_COMMAND = '$BASH_COMMAND'"
-	dbg_print "         _HR = '$_HR'"
-	dbg_print "        _CMD = '$_CMD'"
-
-	if [ "$BASH_COMMAND" = "_cleprompt" ]; then
-		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD" #: record a note to history
-	else
-		#: Do not update title if the command is in the ignore list.
-		if ! [[ $_CMD =~ $CLE_RHIGNORE ]]; then
-			[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99} #: shorten command to display in terminal title
-			{ [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC" #: show executed command in the title
-		fi
-		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; } #: display beforexec marker if defined
-		dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
-		_TIM=$SECONDS #: start history timer $_TIM
-#		echo -n before _CN $_CN and after   #: reset tty colors after prompt
-	fi
+    _TIM=
+	trap _cle_preexec DEBUG
 }
 
 # rich history record
@@ -723,6 +723,7 @@ hh() {
 		CMD=substr($0,index($0,$6))
 		#:     update colors according to status in $4
 		CST=CR; CFL=CN; CCM=CL
+        if($4==0) { CST=CG }
 		if($4=="#" || $4=="$") { CST=Cy; CFL=Cy; CCM=Cy }
 		if($4=="*") { CST=Cy; CFL=Cy; CCM=Cy; CMD="cd "$5 }
 		if($4=="@") { CST=Cb; CFL=Cb; CCM=Cb }
@@ -1078,7 +1079,7 @@ esac
 # craft the prompt
 _cleps
 _cleclr ${CLE_PC:-$_DC}
-PROMPT_COMMAND=_cleprompt
+PROMPT_COMMAND=_cle_postexec
 
 # completions
 #: Command 'cle' completion

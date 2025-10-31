@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-02-28 (Aquarius)
+#* version: 2025-10-30 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -223,7 +223,7 @@ _cleclr() {
 		fi
 		eval "_C$I=\$CI"
 	done
-	_C5=$_C2$_CD
+	_C5=$_C4$_CD
 	if [ $E ]; then
 		printf "Choose a predefined scheme: "
 		declare -f _cleclr|sed -n 's/^[ \t]*(*\(\<[a-z |]*\)).*/ \1/p'|tr -d '\n|'
@@ -316,15 +316,36 @@ _clesave() (
 _PST='${PIPESTATUS[@]}'
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?'
 _TIM=
-_cleprompt() {
+CLE_HTF='%F %T'
+HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
+history -cr $HISTFILE
+
+_cle_preexec() {
+    trap - DEBUG
+	local _HR
+	_HR=$(HISTTIMEFORMAT=";$CLE_HTF;" history 1)
+	_HR=${_HR#*;}
+	_DT=${_HR/;*/}
+	_CMD=${_HR/$_DT;/}
+
+    [[ "$BASH_COMMAND" =~ ^_ ]] && return
+    _TIM=${_TIM:-$SECONDS}
+
+    if ! [[ $_CMD =~ $CLE_RHIGNORE ]]; then
+        [ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
+        { [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC"
+    fi
+    [ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }
+    echo -n $_CN
+}
+
+_cle_postexec() {
 	eval "_EC=$_PST"
 	_EC=${_EC// /-}
 	[ $CLE_BG ] && printf '\e]11;'$CLE_BG'\e\\'
-	if [ "$_TIM" ]; then
-		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || {
-			_EC=0
-			_CE=
-		}
+
+	if [[ "$_TIM" || "$_CMD" =~ ^\# ]]; then
+		[[ $_EC =~ [1-9] ]] && _CE=$_Ce
 		_CA=${_CE:-$_C5}
 		_SEC=$((SECONDS-_TIM))
 		[[ $PS1 =~ _GIT ]] && _clegit
@@ -337,31 +358,8 @@ _cleprompt() {
 		_CE=
 		_EC=0
 	fi
-	_TIM=
-	trap _clepreex DEBUG
-}
-
-CLE_HTF='%F %T'
-HISTTIMEFORMAT=${HISTTIMEFORMAT:-$CLE_HTF }
-
-history -cr $HISTFILE
-_clepreex() {
-	_HR=$(HISTTIMEFORMAT=";$CLE_HTF;" history 1)
-	_HR=${_HR#*;}
-	_DT=${_HR/;*/}
-	_CMD=${_HR/$_DT;/}
-
-	if [ "$BASH_COMMAND" = "_cleprompt" ]; then
-		[[ $_CMD =~ ^\# ]] && _clerh '#' "$PWD" "$_CMD"
-	else
-		if ! [[ $_CMD =~ $CLE_RHIGNORE ]]; then
-			[ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
-			{ [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC"
-		fi
-		[ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }
-		_TIM=$SECONDS
-#		echo -n before _CN $_CN and after
-	fi
+    _TIM=
+	trap _cle_preexec DEBUG
 }
 
 # rich history record
@@ -530,6 +528,7 @@ hh() {
 	//'$S' {
 		CMD=substr($0,index($0,$6))
 		CST=CR; CFL=CN; CCM=CL
+        if($4==0) { CST=CG }
 		if($4=="#" || $4=="$") { CST=Cy; CFL=Cy; CCM=Cy }
 		if($4=="*") { CST=Cy; CFL=Cy; CCM=Cy; CMD="cd "$5 }
 		if($4=="@") { CST=Cb; CFL=Cb; CCM=Cb }
@@ -797,7 +796,7 @@ esac
 # craft the prompt
 _cleps
 _cleclr ${CLE_PC:-$_DC}
-PROMPT_COMMAND=_cleprompt
+PROMPT_COMMAND=_cle_postexec
 
 # completions
 _clecomp() {
