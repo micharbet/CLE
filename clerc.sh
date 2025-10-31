@@ -26,7 +26,7 @@
 # Warning: magic inside!
 
 # Debugging helpers                                                             # dbg
-CLE_DEBUG=`cat $HOME/CLEDEBUG`                                                  # dbg
+CLE_DEBUG=`cat $HOME/CLEDEBUG 2>/dev/null`                                      # dbg
 dbg_print() (                                                                   # dbg
 	[[ "$CLE_DEBUG" =~ "${FUNCNAME[1]}" || "$CLE_DEBUG" = all ]] || return      # dbg
     echo "$_CN$_CD DBG: ${FUNCNAME[1]}: $*$_CN"                                 # dbg
@@ -147,15 +147,16 @@ dbg_var CLE_DR
 #: also 'hostname -f' isn't used as it requires flawlessly configured
 #: networking and DNS
 CLE_FHN=$HOSTNAME
-_N=`hostname`
+_N=`hostname 2>/dev/null` #: in container, the hostname utility may be missing
 [ ${#CLE_FHN} -lt ${#_N} ] && CLE_FHN=$_N
-#: now prepare shortened hostname by stripping top domain and keep the rest subdomains
+#: shorten hostname by stripping top domain (e.g. exmaple.com) and keep the rest
 CLE_SHN=${CLE_FHN%.*.*}
 
 #: It is also difficult to get local IP addres. There is no simple
 #: and multiplattform way to get it. See commands: ip, ifconfig,
 #: hostname -i/-I, netstat...
 #: Thus, on workstation its just empty string :-( Better than 5 IP's from `hostname -i`
+#: ssh on the other hand provides clear info about destination IP
 _N=${SSH_CONNECTION% *}
 CLE_IP=${_N##* }
 
@@ -405,10 +406,10 @@ _cleps() {
 	[ "$PT" ] && PS1="\\[\${_CT}$(_clesc $PT)\${_Ct}\\]" || PS1=''
 	PS1=$PS1$(_clesc "^CN^C1${CLE_P1:-$_P1}^CN^C2${CLE_P2:-$_P2}^CN^C3${CLE_P3:-$_P3}^CN^C4")
 	PS2=`_clesc "^C3>>> ^CN^C4"`
-	[ "$PB" ] && PSB=$(_clesc "^CN^C5$PB") #: PSB - before execution marker
+	[ "$PB" ] && _PSB=$(_clesc "^CN^C5$PB") #: _PSB - before execution marker
 	[ "$PA" ] && {
-		PSA=`_clesc "^CN^CA$PA"` #: PSA - after execution marker
-		[ $BASH_VERSINFO -lt 5 ] && PSA=$(sed -e 's/\\.//g' -e 's/"/\\"/g' <<<"$PSA")
+		_PSA=`_clesc "^CN^CE$PA"` #: _PSA - after execution marker
+		[ $BASH_VERSINFO -lt 5 ] && _PSA=$(sed -e 's/\\.//g' -e 's/"/\\"/g' <<<"$_PSA")
 		PT=`sed -n 's/.*\^t\([0-9]*\).*/\1/p' <<<$PA` #: search if afterexec threshold is defined
 	}
 	CLE_PAT=${PT:-0} #: set afterexec prompt threshold
@@ -449,7 +450,7 @@ _clesave() (
 #: Not only the latter expression is shorter but also much faster since `sed`
 #: would be executed as new process from binary file
 #: The same rule applies to CLE internal functions used and called within
-#: prompt callback. Namely: `_cleprompt` `_clepreex` `_clerh`
+#: prompt callback. Namely: `_cle_postexec` `_cle_preexec` `_clerh`
 #:
 _PST='${PIPESTATUS[@]}'               #: status of all command in pipeline
 [ "$BASH_VERSINFO" = 3 ] && _PST='$?' #: bash3 workaround
@@ -471,7 +472,6 @@ _cle_preexec() {
 	dbg_print "         _HR = '$_HR'"
 	dbg_print "        _CMD = '$_CMD'"
 
-    #: record a note to rich history
     [[ "$BASH_COMMAND" =~ ^_ ]] && return
     _TIM=${_TIM:-$SECONDS} #: start history timer $_TIM
 
@@ -482,28 +482,28 @@ _cle_preexec() {
         { [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC"
     fi
     #: display beforexec marker if defined
-    [ "$PSB" ] && { [ $BASH_VERSINFO -ge 5 ] && echo "${PSB@P}" || eval "echo \"$PSB\""; }
+    [ "$_PSB" ] && \
+        { [ $BASH_VERSINFO -ge 5 ] && echo "${_PSB@P}" || eval "echo \"$_PSB\""; } >/dev/tty
     dbg_print "$_C5>>>> Start of command output '$_CMD' -> '$BASH_COMMAND' <<<<$_CN"
-    echo -n $_CN
+    echo -n $_CN >/dev/tty
 }
 
 _cle_postexec() {
 	eval "_EC=$_PST"
+    dbg_var _EC
 	_EC=${_EC// /-}
-	[ $CLE_BG ] && printf '\e]11;'$CLE_BG'\e\\' #: reset background color
+	[ $CLE_BG ] && printf '\e]11;'$CLE_BG'\e\\' >/dev/tty #: reset background color
 
 	if [[ "$_TIM" || "$_CMD" =~ ^\# ]]; then    #: check if a command or a note was entered
-		[[ $_EC =~ [1-9] ]] && _CE=$_Ce         #: error code highlight
-		_CA=${_CE:-$_C5} #: afterexec marker color
+		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || _CE=$_C5         #: error code highlight
+		# _CA=${_CE:-$_C5} #: afterexec marker color
 		dbg_print "$_C5>>>>  End of command output  '$_CMD' <<<<$_CN"
 		_SEC=$((SECONDS-_TIM))
 		[[ $PS1 =~ _GIT ]] && _clegit
 		history -a #: immediately record commands so they are available in new shell sessions
 		#: printout afterexecution marker
-		if [ "$PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ]; then
-			#: decide if prompt expansion can be used (bash v5 and later)
-			[ $BASH_VERSINFO -ge 5 ] && echo "${PSA@P}" || eval "echo \"$PSA\""
-		fi
+		[ "$_PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ] && \
+			 { [ $BASH_VERSINFO -ge 5 ] && echo "${_PSA@P}" || eval "echo \"$_PSA\""; } >/dev/tty
 		_clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
 		#: no command issued
