@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-10-30 (Aquarius)
+#* version: 2025-10-31 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -23,26 +23,29 @@
 #	$ . clerc
 #	$ cle deploy
 # 3. Enjoy!
+# Warning: magic inside!
 
-[ -f $HOME/CLEDEBUG ] && { CLE_DEBUG=1; }                                       # dbg
+# Debugging helpers                                                             # dbg
+CLE_DEBUG=`cat $HOME/CLEDEBUG`                                                  # dbg
+dbg_print() (                                                                   # dbg
+	[[ "$CLE_DEBUG" =~ "${FUNCNAME[1]}" || "$CLE_DEBUG" = all ]] || return      # dbg
+    echo "$_CN$_CD DBG: ${FUNCNAME[1]}: $*$_CN"                                 # dbg
+) >/dev/tty                                                                     # dbg
+dbg_var() (                                                                     # dbg
+	V=${!1}                                                                     # dbg
+	[[ "$CLE_DEBUG" =~ "${FUNCNAME[1]}" || "$CLE_DEBUG" = all ]] || return      # dbg
+    printf "$_CN$_CD DBG: %s: %-16s '%s'$_CN\n" "${FUNCNAME[1]}" "$1" "$V"      # dbg
+) >/dev/tty                                                                     # dbg
+dbg_sleep() {                                                                   # dbg
+    [ $CLE_DEBUG ] && sleep $*;                                                 # dbg
+}                                                                               # dbg
+dbg_print                                                                       # dbg
+dbg_print pid:$$                                                                # dbg
 
 # Check if the shell is interactive and CLE not yet started
 #: required for scp compatibility and also prevents loop upon `cle reload`
 [ -t 0 -a -z "$CLE_EXE" ] || dbg_print "Warning! nested CLE start"              # dbg
 [ -t 0 -a -z "$CLE_EXE" ] || return
-
-# Now it really starts, warning: magic inside!
-
-#:------------------------------------------------------------:#
-# Debugging helpers                                                             # dbg
-dbg_print() { [ $CLE_DEBUG ] && echo "$_CN$_CD DBG: ${FUNCNAME[1]}: $*$_CN" >/dev/tty; }        # dbg
-dbg_var() (                                                                     # dbg
-	V=${!1}                                                                     # dbg
-	[ $CLE_DEBUG ] && printf "$_CN$_CD DBG: %s: %-16s = %s\n" "${FUNCNAME[1]}" "$1" "$V$_CN" >/dev/tty # dbg
-)                                                                               # dbg
-dbg_sleep() { [ $CLE_DEBUG ] && sleep $*; }                                     # dbg
-dbg_print
-dbg_print pid:$$                                                                # dbg
 
 #:------------------------------------------------------------:#
 # Startup sequence
@@ -54,6 +57,7 @@ dbg_print pid:$$                                                                
 #: Then find out suitable shell and use it to run interactive shell session with
 #: this file as init resource. The $CLE_RC variable must contain full path!
 export CLE_RC
+dbg_var CLE_DEBUG
 dbg_var CLE_RC
 dbg_var CLE_ARG
 dbg_var CLE_USER
@@ -1281,11 +1285,11 @@ cle() {
 		fi;;                               # dbg
 	exe) echo $CLE_EXE | tr : \\n ;;       # dbg
 	debug) case $1 in                      # dbg
-		"") dbg_var CLE_DEBUG ;;           # dbg
+		"") vdump CLE_DEBUG ;;             # dbg
 		off) CLE_DEBUG=''                  # dbg
 			rm ~/CLEDEBUG ;;               # dbg
-		*) CLE_DEBUG=on                    # dbg
-			touch ~/CLEDEBUG ;;            # dbg
+		*) CLE_DEBUG=$*                    # dbg
+			echo $* >~/CLEDEBUG ;;         # dbg
 		esac ;;                            # dbg
 	help | -h | --help) ## `cle help [fnc]`        - show help
 		#: double hash denotes help content

@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-10-30 (Aquarius)
+#* version: 2025-10-31 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -23,13 +23,11 @@
 #	$ . clerc
 #	$ cle deploy
 # 3. Enjoy!
+# Warning: magic inside!
 
 
 # Check if the shell is interactive and CLE not yet started
 [ -t 0 -a -z "$CLE_EXE" ] || return
-
-# Now it really starts, warning: magic inside!
-
 
 # Startup sequence
 export CLE_RC
