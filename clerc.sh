@@ -64,6 +64,7 @@ dbg_var CLE_USER
 dbg_var SHELL
 dbg_var BASH
 dbg_var BASH_SOURCE
+dbg_var 0
 dbg_print "startup case: '$SHELL:$0'"
 case "$SHELL:$0" in
 *clerc*|*:*/rc*) # executed as a command
@@ -990,7 +991,7 @@ lsudo() (
 	_cleprelife lsudo "$@"
 	_clepak $CLE_SESSION:lsudo
 	dbg_print "runs: $RH/$RC"
-	sudo -i -u ${1:-root} $RH/$RC
+	sudo -i -u ${1:-root} bash --rcfile $RH/$RC
 	#: save exit code and eventually execute a code after live session
 	_cleafterlife lsudo "$@"
 	return $_EX
@@ -1003,7 +1004,7 @@ lsu() (
 	_cleprelife lsu "$@"
 	_clepak $CLE_SESSION:lsu
 	S=
-	[[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
+	[[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/bash"
 	eval su $S -l ${1:-root} $RH/$RC
 	#: save exit code and eventually execute a code after live session
 	_cleafterlife lsu "$@"

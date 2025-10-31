@@ -719,7 +719,7 @@ lssh() (
 lsudo() (
 	_cleprelife lsudo "$@"
 	_clepak $CLE_SESSION:lsudo
-	sudo -i -u ${1:-root} $RH/$RC
+	sudo -i -u ${1:-root} bash --rcfile $RH/$RC
 	_cleafterlife lsudo "$@"
 	return $_EX
 )
@@ -729,7 +729,7 @@ lsu() (
 	_cleprelife lsu "$@"
 	_clepak $CLE_SESSION:lsu
 	S=
-	[[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/sh"
+	[[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/bash"
 	eval su $S -l ${1:-root} $RH/$RC
 	_cleafterlife lsu "$@"
 	return $_EX
