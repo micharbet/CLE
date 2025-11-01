@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-10-31 (Aquarius)
+#* version: 2025-11-01 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -31,24 +31,13 @@
 
 # Startup sequence
 export CLE_RC
-case "$SHELL:$0" in
-*clerc*|*:*/rc*) # executed as a command
-	while [ $1 ]; do
-		case $1 in
-		-m)	CLE_MOTD=`uptime`; export CLE_MOTD;;
-		*)	echo "$0: unknown option '$1'"; exit 1;;
-		esac
-		shift
-	done
-	export CLE_PROF=1
-	exec bash --rcfile $0
-	;;
-*sh:*bash) # bash session resource
-	CLE_RC=$BASH_SOURCE
-	;;
-*)	echo "CLE startup failed";;
-esac
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+    export CLE_PROF=1
+    exec bash --rcfile "${BASH_SOURCE[0]}"
+fi
 
+
+CLE_RC=${BASH_SOURCE[0]}
 
 # Use alias built-ins for startup
 unset -f alias unalias 2>/dev/null
@@ -66,9 +55,9 @@ CLE_EXE=$CLE_RC
 # Run profile files
 if [ -n "$CLE_PROF" ]; then
 	_clexe /etc/profile
+	_clexe $HOME/.bashrc
 	unset CLE_PROF
 fi
-_clexe $HOME/.bashrc
 
 # Check first run
 if [[ $CLE_RC =~ clerc ]]; then
@@ -123,7 +112,7 @@ CLE_RHIGNORE="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ |^cle\ 
 # who I am
 _N=${CLE_RC#*cle-}
 _N=${_N%/rc*}
-export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+export CLE_USER=${CLE_USER:-${_N:-$USER}}
 
 # Internal functions
 
@@ -736,6 +725,18 @@ lsu() (
 )
 
 
+_cledefp
+
+# execute modules, tweaks and aliases
+for _T in $CLE_D/mod-*; do
+	_clexe $_T
+done
+_clexe $HOME/.cle-local
+_clexe $CLE_TW
+
+CLE_SESSION=$CLE_RC
+[ $CLE_WS ] && _clexe $CLE_ENV
+
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
@@ -749,18 +750,6 @@ PROMPT_DIRTRIM=3
 for _T in $HOME/bin $HOME/.local/bin; do
 	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T
 done
-
-_cledefp
-
-# execute modules, tweaks and aliases
-for _T in $CLE_D/mod-*; do
-	_clexe $_T
-done
-_clexe $HOME/.cle-local
-_clexe $CLE_TW
-
-CLE_SESSION=$CLE_RC
-[ $CLE_WS ] && _clexe $CLE_ENV
 
 
 # OS dependent colorized LS and GREP

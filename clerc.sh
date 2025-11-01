@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-10-31 (Aquarius)
+#* version: 2025-11-01 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -54,45 +54,34 @@ dbg_print pid:$$                                                                
 #:    This happens when run for the frst time and may happen in live sessions
 #:  - if running as a shell resource, this means an interactive session,
 #:    prepare the whole live environment
-#: Then find out suitable shell and use it to run interactive shell session with
-#: this file as init resource. The $CLE_RC variable must contain full path!
 export CLE_RC
 dbg_var CLE_DEBUG
 dbg_var CLE_RC
-dbg_var CLE_ARG
 dbg_var CLE_USER
+dbg_var 0
 dbg_var SHELL
 dbg_var BASH
 dbg_var BASH_SOURCE
-dbg_var 0
-dbg_print "startup case: '$SHELL:$0'"
-case "$SHELL:$0" in
-*clerc*|*:*/rc*) # executed as a command
-	dbg_print executing the resource
-	#: process command line options
-	while [ $1 ]; do
-		case $1 in
-		-m)	CLE_MOTD=`uptime`; export CLE_MOTD;;
-		*)	echo "$0: unknown option '$1'"; exit 1;;
-		esac
-		shift
-	done
-	export CLE_PROF=1 #: profile files will be executed
-	exec bash --rcfile $0
-	;;
-*sh:*bash) # bash session resource
-	dbg_print sourcing to BASH
-	CLE_RC=$BASH_SOURCE
-	;;
-*)	echo "CLE startup failed";;
-esac
+#: If the script is executed directly, re-launch it as a sourced rcfile.
+#: This ensures variables, functions, and aliases are set in the user's shell.
+#: The BASH_SOURCE variable holds the script's path when sourced. When executed,
+#: it's the same as $0.
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+    dbg_print "Script executed, not sourced. Re-executing shell to source it."
+    export CLE_PROF=1 #: profile files will be executed
+    exec bash --rcfile "${BASH_SOURCE[0]}"
+fi
+#: Reaching this point means the script is being sourced.
+dbg_print "Sourcing to bash"
 
 #:------------------------------------------------------------:#
 #: Reaching this point means that the script is running
 #: as a resource to the interactive session.
-dbg_print ---------------
-dbg_print Resource starts
-dbg_print ---------------
+dbg_print --------------
+dbg_print   CLE starts
+dbg_print --------------
+
+CLE_RC=${BASH_SOURCE[0]}
 
 # Use alias built-ins for startup
 #: alias & unalias must be available in their natural form during CLE startup
@@ -121,9 +110,9 @@ CLE_EXE=$CLE_RC
 dbg_var CLE_PROF
 if [ -n "$CLE_PROF" ]; then
 	_clexe /etc/profile
+	_clexe $HOME/.bashrc
 	unset CLE_PROF
 fi
-_clexe $HOME/.bashrc
 
 # Check first run
 if [[ $CLE_RC =~ clerc ]]; then
@@ -213,7 +202,7 @@ _N=${CLE_RC#*cle-}
 _N=${_N%/rc*}
 dbg_print "found username _N=$_N"
 dbg_print "current CLE_USER=$CLE_USER"
-export CLE_USER=${CLE_USER:-${_N:-$(whoami)}}
+export CLE_USER=${CLE_USER:-${_N:-$USER}}
 dbg_print "  final CLE_USER=$CLE_USER"
 
 #:------------------------------------------------------------:#
@@ -1014,6 +1003,18 @@ lsu() (
 #:------------------------------------------------------------:#
 #: all fuctions declared, startup continues
 
+_cledefp #: prompt defaults
+
+# execute modules, tweaks and aliases
+for _T in $CLE_D/mod-*; do
+	_clexe $_T
+done
+_clexe $HOME/.cle-local
+_clexe $CLE_TW
+
+CLE_SESSION=$CLE_RC
+[ $CLE_WS ] && _clexe $CLE_ENV
+
 # print MOTD + more
 if [ "$CLE_MOTD" ]; then
 	[ -f /etc/motd ] && cat /etc/motd
@@ -1027,18 +1028,6 @@ PROMPT_DIRTRIM=3 #: can be overridden in tweak file
 for _T in $HOME/bin $HOME/.local/bin; do
 	[[ -d $_T && ! $PATH =~ $_T ]] && PATH=$PATH:$_T
 done
-
-_cledefp #: prompt defaults
-
-# execute modules, tweaks and aliases
-for _T in $CLE_D/mod-*; do
-	_clexe $_T
-done
-_clexe $HOME/.cle-local
-_clexe $CLE_TW
-
-CLE_SESSION=$CLE_RC
-[ $CLE_WS ] && _clexe $CLE_ENV
 
 #: A few pre-defined aliases that may override alias definitions inherited from
 #: the workstation. This is here for compatibility reasons. Some systems define
