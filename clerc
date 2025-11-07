@@ -61,7 +61,7 @@ fi
 
 # Check first run
 if [[ $CLE_RC =~ clerc ]]; then
-	CLE_DR=$HOME/.cle-`whoami`
+	CLE_DR=$HOME/.cle-$USER
 	mkdir -m 755 -p $CLE_DR
 	CLE_1=$CLE_DR/rc1
 	cp $CLE_RC $CLE_1
@@ -107,7 +107,7 @@ CLE_WS=${CLE_RC#$CLE_DR/rc}
 CLE_TW=$CLE_DR/tw$CLE_WS
 CLE_ENV=$CLE_DR/env$CLE_WS
 
-CLE_RHIGNORE="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ |^cle\ (p[123abpt]|color)"
+CLE_HIGNORE="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ |^cle\ (p[123abpt]|color)"
 
 # who I am
 _N=${CLE_RC#*cle-}
@@ -272,8 +272,8 @@ _cleps() {
 		_PSA=`_clesc "^CN^CE$PA"`
 		[ $BASH_VERSINFO -lt 5 ] && _PSA=$(sed -e 's/\\.//g' -e 's/"/\\"/g' <<<"$_PSA")
 		PT=`sed -n 's/.*\^t\([0-9]*\).*/\1/p' <<<$PA`
+        CLE_PAHOLD=${CLE_PAHOLD:-0}
 	}
-	CLE_PAT=${PT:-0}
 }
 
 # default prompt strings and colors
@@ -317,7 +317,7 @@ _cle_preexec() {
     [[ "$BASH_COMMAND" =~ ^_ ]] && return
     _TIM=${_TIM:-$SECONDS}
 
-    if ! [[ $_CMD =~ $CLE_RHIGNORE ]]; then
+    if ! [[ $_CMD =~ $CLE_HIGNORE ]]; then
         [ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
         { [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC"
     fi
@@ -337,7 +337,7 @@ _cle_postexec() {
 		_SEC=$((SECONDS-_TIM))
 		[[ $PS1 =~ _GIT ]] && _clegit
 		history -a
-		[ "$_PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ] && \
+		[ "$_PSA" ] && [ $_SEC -ge "$CLE_PAHOLD" -o "$_EC" != 0 ] && \
 			 { [ $BASH_VERSINFO -ge 5 ] && echo "${_PSA@P}" || eval "echo \"$_PSA\""; } >/dev/tty
 		_clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
@@ -357,7 +357,7 @@ _clerh() {
 	4)	DT=$(date "+$CLE_HTF");SC=$1;shift;;
 	5)	DT=$1;SC=$2;shift 2;;
 	esac
-	[[ $3 =~ $CLE_RHIGNORE ]] && return
+	[[ $3 =~ $CLE_HIGNORE ]] && return
 	[ "$3" = "$_CPR" ] && return
 	_CPR=$3
 	W=${2/$HOME/\~}
@@ -651,7 +651,6 @@ _clepak() {
 		EN=$RD/env-$CLE_FHN
 		{
 			echo "# evironment $CLE_USER@$CLE_FHN"
-			echo "CLE_SESSION=$1"
 			vdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/'
 			vdump "${CLE_XVARS// /|}"
 			XAL=${CLE_EXALIAS:-^$}
@@ -706,7 +705,7 @@ lssh() (
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo() (
 	_cleprelife lsudo "$@"
-	_clepak $CLE_SESSION:lsudo
+	_clepak lsudo
 	sudo -i -u ${1:-root} bash --rcfile $RH/$RC
 	_cleafterlife lsudo "$@"
 	return $_EX
@@ -715,7 +714,7 @@ lsudo() (
 ## `lsu [user]`        - su wrapper
 lsu() (
 	_cleprelife lsu "$@"
-	_clepak $CLE_SESSION:lsu
+	_clepak lsu
 	S=
 	[[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/bash"
 	eval su $S -l ${1:-root} $RH/$RC
@@ -733,7 +732,6 @@ done
 _clexe $HOME/.cle-local
 _clexe $CLE_TW
 
-CLE_SESSION=$CLE_RC
 [ $CLE_WS ] && _clexe $CLE_ENV
 
 # print MOTD + more
@@ -848,7 +846,7 @@ EOT
 _T=${TMUX:+tmux:$TMUX}
 _T=${_T:-${STY:+screen:$STY}}
 _T=${_T:-${SSH_CLIENT:+ssh:${SSH_CLIENT%% *}}}
-_T=${_T:-$CLE_SESSION}
+_T=${_T:-$CLE_RC}
 _clerh @ ${CLE_WS:-WS} "[$_T]"
 _clerh @ $SHELL "$BASH_VERSION, $CLE_VER"
 

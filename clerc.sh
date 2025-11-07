@@ -117,7 +117,7 @@ fi
 # Check first run
 if [[ $CLE_RC =~ clerc ]]; then
 	dbg_print First run
-	CLE_DR=$HOME/.cle-`whoami`
+	CLE_DR=$HOME/.cle-$USER
 	mkdir -m 755 -p $CLE_DR
 	CLE_1=$CLE_DR/rc1 #: rc1 is used not to disrupt already installed environment if it exists
 	cp $CLE_RC $CLE_1
@@ -193,7 +193,7 @@ CLE_TW=$CLE_DR/tw$CLE_WS
 CLE_ENV=$CLE_DR/env$CLE_WS
 
 #: Commands to ignore in rich history and dynamic title
-CLE_RHIGNORE="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ |^cle\ (p[123abpt]|color)"
+CLE_HIGNORE="^cd\ |^cd$|^-$|^\.\.$|^\.\.\.$|^aa$|^lscreen|^h$|^hh$|^hh\ |^cle\ (p[123abpt]|color)"
 
 # who I am
 #: determine username that will be inherited over the all subsquent live sessions
@@ -400,8 +400,9 @@ _cleps() {
 		_PSA=`_clesc "^CN^CE$PA"` #: _PSA - after execution marker
 		[ $BASH_VERSINFO -lt 5 ] && _PSA=$(sed -e 's/\\.//g' -e 's/"/\\"/g' <<<"$_PSA")
 		PT=`sed -n 's/.*\^t\([0-9]*\).*/\1/p' <<<$PA` #: search if afterexec threshold is defined
+        CLE_PAHOLD=${CLE_PAHOLD:-0}
 	}
-	CLE_PAT=${PT:-0} #: set afterexec prompt threshold
+    #: set threshold (in secs) for afterexec printout
 }
 
 # default prompt strings and colors
@@ -465,7 +466,7 @@ _cle_preexec() {
     _TIM=${_TIM:-$SECONDS} #: start history timer $_TIM
 
     #: Do not update title if the command is in the ignore list.
-    if ! [[ $_CMD =~ $CLE_RHIGNORE ]]; then
+    if ! [[ $_CMD =~ $CLE_HIGNORE ]]; then
         #: shorten command to display in terminal title and diplay it there
         [ "$_ST" ] && _SC=${_CMD:0:15} || _SC=${_CMD:0:99}
         { [ -z "${CLE_PT+x}" ] || [ -n "$CLE_PT" ]; } && printf "$_CT%s$_Ct" "$_SC"
@@ -491,7 +492,7 @@ _cle_postexec() {
 		[[ $PS1 =~ _GIT ]] && _clegit
 		history -a #: immediately record commands so they are available in new shell sessions
 		#: printout afterexecution marker
-		[ "$_PSA" ] && [ $_SEC -ge "$CLE_PAT" -o "$_EC" != 0 ] && \
+		[ "$_PSA" ] && [ $_SEC -ge "$CLE_PAHOLD" -o "$_EC" != 0 ] && \
 			 { [ $BASH_VERSINFO -ge 5 ] && echo "${_PSA@P}" || eval "echo \"$_PSA\""; } >/dev/tty
 		_clerh "$_DT" $_SEC "$_EC" "$PWD" "$_CMD"
 	else
@@ -520,7 +521,7 @@ _clerh() {
 	5)	DT=$1;SC=$2;shift 2;;
 	esac
 	#: ignore commands that dont want to be recorded
-	[[ $3 =~ $CLE_RHIGNORE ]] && return
+	[[ $3 =~ $CLE_HIGNORE ]] && return
 	#: ignore repeating commands
 	[ "$3" = "$_CPR" ] && return #: do not record repeating items
 	dbg_print "Cmd='$3' PrevCmd='$_CPR'"
@@ -894,7 +895,6 @@ _clepak() {
 		EN=$RD/env-$CLE_FHN #: Workstation's environment file
 		{
 			echo "# evironment $CLE_USER@$CLE_FHN"
-			echo "CLE_SESSION=$1"
 			#: Transfer prompt settings (_P*) and color table (_C*).
 			vdump "CLE_P.|^_C." | sed 's/^CLE_P\(.\)/_P\1/' #: translate _Px to CLE_Px
 			#: Transfer any user-specified variables.
@@ -977,7 +977,7 @@ lssh() (
 ## `lsudo [user]`      - sudo wrapper; root is the default account
 lsudo() (
 	_cleprelife lsudo "$@"
-	_clepak $CLE_SESSION:lsudo
+	_clepak lsudo
 	dbg_print "runs: $RH/$RC"
 	sudo -i -u ${1:-root} bash --rcfile $RH/$RC
 	#: save exit code and eventually execute a code after live session
@@ -990,7 +990,7 @@ lsudo() (
 #: a command ($CLE_RC) is specified, use 'lsudo' instead
 lsu() (
 	_cleprelife lsu "$@"
-	_clepak $CLE_SESSION:lsu
+	_clepak lsu
 	S=
 	[[ $OSTYPE =~ [Ll]inux ]] && S="-s /bin/bash"
 	eval su $S -l ${1:-root} $RH/$RC
@@ -1011,7 +1011,6 @@ done
 _clexe $HOME/.cle-local
 _clexe $CLE_TW
 
-CLE_SESSION=$CLE_RC
 [ $CLE_WS ] && _clexe $CLE_ENV
 
 # print MOTD + more
@@ -1149,10 +1148,10 @@ EOT
 [ -r . ] || cd #: go home if this is unreadable directory
 
 # record this startup into rich history
-_T=${TMUX:+tmux:$TMUX}
-_T=${_T:-${STY:+screen:$STY}}
-_T=${_T:-${SSH_CLIENT:+ssh:${SSH_CLIENT%% *}}}
-_T=${_T:-$CLE_SESSION}
+_T=${TMUX:+tmux:$TMUX}          #: either it's in TMUX
+_T=${_T:-${STY:+screen:$STY}}   #: or from within a screen
+_T=${_T:-${SSH_CLIENT:+ssh:${SSH_CLIENT%% *}}} #: perhaps a remote session
+_T=${_T:-$CLE_RC}
 _clerh @ ${CLE_WS:-WS} "[$_T]"
 _clerh @ $SHELL "$BASH_VERSION, $CLE_VER"
 
