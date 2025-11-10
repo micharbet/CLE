@@ -1,11 +1,11 @@
 #
 ## ** cle-power: powerprompt-like **
 #
-#* version: 2022-01-05
+#* version: 2025-11-10
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
 #* license: MIT
-#* Copyright (C) 2021-2024 by Michael Arbet 
+#* Copyright (C) 2021-2025 by Michael Arbet 
 
 # ALL STILL VERY EXPERIMENTAL
 # TODO: doesn't work in TMUX and GNU Screen
@@ -18,15 +18,14 @@ _clepowerbg () {
 	echo -en "\e]11;?\e\\" >/dev/tty
 	read -t 0.1 -r -d '\' </dev/tty
 	stty $OLDSTTY
-	# _clevdump REPLY
-	sed 's;.\+rgb:\(..\)../\(..\)../\(..\)...\+;\1 \2 \3;' <<<$REPLY
+	sed 's;.\+rgb:\(..\)../\(..\)../\(..\)...\+;\1:\2:\3;' <<<$REPLY
 }
 
 # calculate power shades based on backgroung RGB values
 _clepowershades () {
 	local LUM I X R RR G GG B BB
 	
-	read R G B <<<$(_clepowerbg)
+    IFS=: read R G B <<<$1
 	# calculate luminance
 	LUM=$((0x$Rx299+0x$G*587+0x$B*114))
 	LUM=$(($LUM/1000))
@@ -41,28 +40,29 @@ _clepowershades () {
 	#
 	if [ $LUM -lt 89 ]; then
 		# dark background, shade towards light tones
-		X=(75 90 105 120 200)
+		#X=(75 90 105 120 200)
+		X=(90 90 120 150 200)
 	else
 		# light background, shade to darker
-		X=(120 105 95 90 60)
+		X=(0 120 95 90 85)
 	fi
 
 	# ensure decent shades even on black background
 	if [ $LUM -lt 5 ]; then
-		R=7
-		G=7
-		B=7
+		R=10
+		G=10
+		B=10
 	fi
 
 	# calculate power-shades
 	# from $R $G $B, through variables $RR $GG $BB
 	# create $_R0 .. $_R4
 	for I in 0 1 2 3 4; do
-		RR=$((0x$R*${X[I]}/100)); [ $RR -gt 255 ] && RR=255
-		GG=$((0x$G*${X[I]}/100)); [ $GG -gt 255 ] && GG=255
-		BB=$((0x$B*${X[I]}/100)); [ $BB -gt 255 ] && BB=255
+		RR=$((0x$R*${X[I]}/100*$2/100)); [ $RR -gt 255 ] && RR=255
+		GG=$((0x$G*${X[I]}/100*$2/100)); [ $GG -gt 255 ] && GG=255
+		BB=$((0x$B*${X[I]}/100*$2/100)); [ $BB -gt 255 ] && BB=255
 		_P[$I]="$RR;$GG;$BB"
-	#	echo _P $I : ${_P[$I]}
+	#	echo _P $I: ${X[I]} : ${_P[$I]}
 	done
 
 	# RGB intros
@@ -101,7 +101,7 @@ _clepower () {
 	[ "$CLE_PT" ] && PS="\\[\${_CT}$CLE_PT\${_Ct}\\]^P00" || PS='^P00';
 
 	# Power-enhance original prompt parts
-	for I in 0 1 2 3; do
+	for I in 1 2 3; do
 		# get the current prompt part
 		PX=CLE_P$I
 		PX=${!PX}
@@ -117,6 +117,10 @@ _clepower () {
 	PS1=`_clesc "$NL0$PS"`
 }
 
-_clepowershades
+local BACKGROUND=${1:-$(_clepowerbg)}
+local INTENSITY=${2:-100}
+# vdump INTENSITY
+
+_clepowershades "$BACKGROUND" "$INTENSITY"
 _clepower
 
