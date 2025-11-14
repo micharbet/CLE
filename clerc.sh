@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-11-01 (Aquarius)
+#* version: 2025-11-11 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -362,7 +362,7 @@ _clesc() (
 		-e 's/\^t[0-9]*//g'\
 		-e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
 		-e 's/\^[?e]/\${_EC}/g'\
-		-e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
+		-e 's/\^E/\${_ET}/g'\
 		-e 's/\^C\([0-9]\)/\\[${_Cn}${_C\1}\\]/g'\
 		-e 's/\^C\(.\)/\\[${_C\1}\\]/g'\
 		-e 's/\^v\([[:alnum:]_]*\)/\1=\${\1}/g'\
@@ -485,7 +485,13 @@ _cle_postexec() {
 	[ $CLE_BG ] && printf '\e]11;'$CLE_BG'\e\\' >/dev/tty #: reset background color
 
 	if [[ "$_TIM" || "$_CMD" =~ ^\# ]]; then    #: check if a command or a note was entered
-		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || _CE=$_C5         #: error code highlight
+		if [[ $_EC =~ [1-9] ]]; then
+            _CE=$_Ce         #: error code highlight
+            _ET="Err=$_EC"
+        else
+            _CE=$_C5
+            _ET=OK
+        fi
 		# _CA=${_CE:-$_C5} #: afterexec marker color
 		dbg_print "$_C5>>>>  End of command output  '$_CMD' <<<<$_CN"
 		_SEC=$((SECONDS-_TIM))
@@ -935,16 +941,15 @@ _clepak() {
 #: execute custom defined functions if any
 #: TODO - decide if CLE_PRELIFE / CLE_AFTERLIFE or functions are better
 _cleprelife() {
-	#	[ -n "$CLE_PRELIFE" ] && eval $CLE_PRELIFE
-	command -v prelife >/dev/null && prelife "$@"
+	[ -n "$CLE_PRELIFE" ] && eval $CLE_PRELIFE "$@"
+	# command -v prelife >/dev/null && prelife "$@"
 }
 
 _cleafterlife() {
-	_EX=$? #: save exit code of the live seeion
+    _EX=$?  #: save retturn code from live session command
 	#tput reset	#: reset terminal and colors
-	[ -f $CLE_D/mod-palette ] && . $CLE_D/mod-palette
-	#	[ -n "$CLE_AFTERLIFE" ] && eval $CLE_AFTERLIFE
-	command -v afterlife >/dev/null && afterlife "$@"
+	[ -f $CLE_D/mod-palette ] && . $CLE_D/mod-palette 
+	[ -n "$CLE_AFTERLIFE" ] && eval $CLE_AFTERLIFE "$@"
 }
 
 ## `lssh [usr@]host`   - access remote system and run CLE
@@ -965,8 +970,8 @@ lssh() (
 		[ \"\$OSTYPE\" = darwin ] && D=D || D=d
 		echo $C64|base64 -\$D|tar xzmf - 2>/dev/null
 		exec bash --rcfile \$H/$RC"
-	#: it is not possible to use `base64 -\$D <<<$C64|tar xzf -`
-	#: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
+        #: it is not possible to use `base64 -\$D <<<$C64|tar xzf -`
+        #: systems with 'ash' instead of bash would generate an error (e.g. Asustor)
 	_cleafterlife lssh "$@"
 	return $_EX
 )

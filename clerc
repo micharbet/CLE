@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-11-01 (Aquarius)
+#* version: 2025-11-11 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -239,7 +239,7 @@ _clesc() (
 		-e 's/\^t[0-9]*//g'\
 		-e 's/\^g/\\[${_GITC}\\]${_GITB}/g'\
 		-e 's/\^[?e]/\${_EC}/g'\
-		-e 's/\^E/\\[\${_CE}\\](\${_EC})\\[\${_Cn}\${_C1}\\]/g'\
+		-e 's/\^E/\${_ET}/g'\
 		-e 's/\^C\([0-9]\)/\\[${_Cn}${_C\1}\\]/g'\
 		-e 's/\^C\(.\)/\\[${_C\1}\\]/g'\
 		-e 's/\^v\([[:alnum:]_]*\)/\1=\${\1}/g'\
@@ -332,7 +332,13 @@ _cle_postexec() {
 	[ $CLE_BG ] && printf '\e]11;'$CLE_BG'\e\\' >/dev/tty
 
 	if [[ "$_TIM" || "$_CMD" =~ ^\# ]]; then
-		[[ $_EC =~ [1-9] ]] && _CE=$_Ce || _CE=$_C5
+		if [[ $_EC =~ [1-9] ]]; then
+            _CE=$_Ce
+            _ET="Err=$_EC"
+        else
+            _CE=$_C5
+            _ET=OK
+        fi
 		# _CA=${_CE:-$_C5}
 		_SEC=$((SECONDS-_TIM))
 		[[ $PS1 =~ _GIT ]] && _clegit
