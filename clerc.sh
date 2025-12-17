@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-11-11 (Aquarius)
+#* version: 2025-11-27 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -1145,9 +1145,11 @@ unalias() {
 # check manual/initial run
 [ $CLE_1 ] && cat <<EOT
  It seems you started CLE running file '$CLE_1'.
- Since this is the first run, consider setup in your profile.
- Run following command to hook CLE into your $HOME/.bashrc:
-$_CL    cle deploy
+ Since this is the first run, here are some tips:
+  - get quick help: $_CL cle help$_CN
+  - learn more: $_CL cle doc$_CN
+  - start with prompt setup: $_CL cle color the_color_of_yours$_CN
+ And consider add CLE into your profile: $_CL cle deploy$_CN
 EOT
 
 [ -r . ] || cd #: go home if this is unreadable directory

@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-11-11 (Aquarius)
+#* version: 2025-11-27 (Aquarius)
 #* license: MIT
 #* Copyright (C) 2016-2025 by Michael Arbet
 
@@ -678,16 +678,15 @@ _clepak() {
 }
 
 _cleprelife() {
-	#	[ -n "$CLE_PRELIFE" ] && eval $CLE_PRELIFE
-	command -v prelife >/dev/null && prelife "$@"
+	[ -n "$CLE_PRELIFE" ] && eval $CLE_PRELIFE "$@"
+	# command -v prelife >/dev/null && prelife "$@"
 }
 
 _cleafterlife() {
-	_EX=$?
+    _EX=$?
 	#tput reset
-	[ -f $CLE_D/mod-palette ] && . $CLE_D/mod-palette
-	#	[ -n "$CLE_AFTERLIFE" ] && eval $CLE_AFTERLIFE
-	command -v afterlife >/dev/null && afterlife "$@"
+	[ -f $CLE_D/mod-palette ] && . $CLE_D/mod-palette 
+	[ -n "$CLE_AFTERLIFE" ] && eval $CLE_AFTERLIFE "$@"
 }
 
 ## `lssh [usr@]host`   - access remote system and run CLE
@@ -841,9 +840,11 @@ unalias() {
 # check manual/initial run
 [ $CLE_1 ] && cat <<EOT
  It seems you started CLE running file '$CLE_1'.
- Since this is the first run, consider setup in your profile.
- Run following command to hook CLE into your $HOME/.bashrc:
-$_CL    cle deploy
+ Since this is the first run, here are some tips:
+  - get quick help: $_CL cle help$_CN
+  - learn more: $_CL cle doc$_CN
+  - start with prompt setup: $_CL cle color the_color_of_yours$_CN
+ And consider add CLE into your profile: $_CL cle deploy$_CN
 EOT
 
 [ -r . ] || cd
