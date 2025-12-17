@@ -4,7 +4,7 @@
 ##
 #* author:  Michael Arbet (marbet@redhat.com)
 #* home:    https://github.com/micharbet/CLE
-#* version: 2025-02-20 (Zodiac)
+#* version: 2025-11-22 (Zodiac)
 #* license: GNU GPL v2
 #* Copyright (C) 2016-2023 by Michael Arbet
 
@@ -684,7 +684,7 @@ hh () (
 
 	#: number (default 100) or search string; sed-escape slashes to '\/'
 	A=${*:-100}
-	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A////\\/}/!d'"
+	[[ $A =~ ^[0-9]*$ ]] && N=$A || S=$S" -e '/${A//\//\\/}/!d'"
 
 	#: execute filter stream
 	dbg_print hh: eval "tail -n ${N:-+1} $CLE_HIST ${S:+|sed $S} | $OUTF  $DISP"
@@ -1199,9 +1199,9 @@ cle () {
 			touch ~/CLEDEBUG;;							# dbg
 		esac;;										# dbg
 	help|-h|--help) ## `cle help [fnc]`        - show help
-		#: double hash denotes help content
 		P=`ls $CLE_D/cle-* 2>/dev/null`
-		awk -F# "/\s##\s*.*$@|^##\s*.*$@/ { print \$3 }" ${CLE_EXE//:/ } $P | _clemdf | less -erFX;;
+		#: double hash denotes in-source help content
+		sed -En '/(^|.*[[:blank:]])##/s/.*##([[:blank:]]|$)(.*)/\2/p' ${CLE_EXE//:/ } $P | _clemdf | less -erFX;;
 	doc)	## `cle doc`               - show documentation
 		#: obtain index of doc files
 		I=`curl -sk $CLE_SRC/doc/index.md`
