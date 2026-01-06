@@ -926,7 +926,8 @@ cat <<<$CLE_SCRC
 # shorten hostname
 #: by default remove domain, leave subdomains
 #: eventually apply CLE_SRE as sed regexp for custom shortening
-CLE_SHN=`eval sed "${CLE_SRE:-'s:\.[^.]*\.[^.]*$::'}" <<<$CLE_FHN`
+_cleshn() { [ "$CLE_SRE" ] && sed $CLE_SRE || sed -e "s:\.[^.]*$::" -e "s:\.[^.]*$::";}
+CLE_SHN=`_cleshn <<<$CLE_FHN`
 
 #: stop annoying zsh error when '*' doesn't match any file
 [ $ZSH_NAME ] && setopt +o NOMATCH
