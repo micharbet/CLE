@@ -13,19 +13,19 @@
 #
 
 ## `gipul`            - just git pull
-gipul () {
+function gpul() {
 	git pull
 }
 
 ## `gipus`            - git push into origin / current working branch
-gipus () {
+function gpus() {
 	BRANCH=`git symbolic-ref --short HEAD`
 	_clebold git push -u origin $BRANCH 
 	git push -u origin $BRANCH 
 }
 
 ## `gicom [message]`  - git commit, if message not specified, opens editor
-gicom () {
+function gcom() {
 	if [ $# -eq 0 ]; then
 		git commit -a
 	else
@@ -33,23 +33,23 @@ gicom () {
 	fi
 }
 
-## `gista`            - git status
-gista () {
+## `gsta`            - git status
+function gsta() {
 	git status
 }
 
-## `gilog`            - git log
-gilog () {
+## `glog`            - git log
+function glog() {
 	git log
 }
 
 ## `gidif`            - git diff
-gidif () {
+function gdif() {
 	git diff
 }
 
 ## `giout`            - git checkout with branch selector
-giout ()
+function gout()
 (
 	if [ $1 ]; then
 		BR=$1
@@ -62,4 +62,10 @@ giout ()
 	fi
         git checkout $BR
 )
+
+## `gurl`            - show clickable URL of the current repository
+function gurl()
+{
+	git config --get remote.origin.url | sed -e 's/:/\//' -e 's/git@/https:\/\//' -e 's/\.git//'
+}
 

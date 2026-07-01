@@ -36,9 +36,9 @@ ltmux () (
 				set -g status-fg colour17
 				set -g status-bg colour24
 				set -g status-left-length 30
-				set -g status-left "#[bg=colour31]#S "
-				set -g status-right-length 30
-				set -g status-right "#[bg=colour31] #h"
+				set -g status-left "#[bg=colour31]#S@#h "
+				# set -g status-right-length 30
+				# set -g status-right "#[bg=colour31] #h"
 				set -g status-justify centre
 				setw -g window-status-current-format "#[bg=colour32]#[fg=colour123]#I:#W#F"
 			EOCF
