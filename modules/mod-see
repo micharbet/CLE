@@ -1,10 +1,10 @@
 ##
 ## ** mod-see: logfile highlighter **
 #
-#* version: 2025-01-13
+#* version: 2026-08-21
 #* author:  Michael Arbet (marbet@redhat.com)
 #* license: MIT
-#* Copyright (C) 2013-2025 by Michael Arbet 
+#* Copyright (C) 2013-2026 by Michael Arbet 
 
 
 see () (
@@ -78,9 +78,9 @@ see () (
 	# ensure timestamps printed in the background process
 	STAMPID=''
 	if [ $TSTAMP -gt 0 ]; then
-		bash -c "trap 'kill -15 0' EXIT;while true; do date '+$_CB[%Y-%m-%d %T] $_Cb${INFILE:-STDIN}$_CN$_Cb${HL:+$HL}$_CN'; sleep $TSTAMP; done" &
+		bash -c "trap 'kill -15 0' EXIT;while true; do printf '$_CB%([%Y-%m-%d %T])T $_Cb${INFILE:-STDIN}$_CN$_Cb${HL:+$HL}$_CN\r'; sleep $TSTAMP; done" &
 		STAMPID=$!
-		trap "date '+$_CB[%Y-%m-%d %T] unsee$_CN'; kill $STAMPID" EXIT
+		trap "printf '\n$_CB%([%Y-%m-%d %T])T unsee$_CN\n'; kill $STAMPID" EXIT
 	fi
 
 	# read and highlight
